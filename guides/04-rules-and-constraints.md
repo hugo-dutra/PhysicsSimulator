@@ -11,6 +11,7 @@
 - A segunda simulacao funcional da Fase 2 e `Mecanica > Dinamica > Plano inclinado com atrito`, usada para validar reuso antes de expandir o catalogo.
 - O primeiro lote da Fase 3 promove `Mecanica > Cinematica` com MRU, MUV/queda livre, lancamento obliquo e MCU como simulacoes `available`, todas com motor analitico compartilhado e saidas completas.
 - O segundo lote da Fase 3 promove `Mecanica > Dinamica > Maquina de Atwood`, `Mecanica > Dinamica > Forca centripeta em curva` e `Mecanica > Energia e momento > Trabalho e energia em trilho` como simulacoes `available`, todas com fixtures locais, formulas, teoria, graficos, tabela e vetores sincronizados.
+- O terceiro lote da Fase 3 promove `Mecanica > Energia e momento > Colisoes 1D e 2D`, `Mecanica > Estatica > Equilibrio de particula`, `Mecanica > Estatica > Torque, alavancas e centro de massa` e `Mecanica > Rotacao > Rotacao de corpo rigido` como simulacoes `available`, mantendo motor, cena, graficos, tabela, formulas, teoria, regimes e warnings sincronizados.
 - A taxonomia principal do catalogo deve usar `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo`; fluidos basicos entram como subarea, nao como prioridade separada antes do core.
 
 ## Regras de fisica

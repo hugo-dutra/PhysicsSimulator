@@ -29,7 +29,7 @@ describe('simulation registry', () => {
     expect(allSimulations).toHaveLength(51)
     expect(
       allSimulations.filter((item) => item.status === 'available'),
-    ).toHaveLength(9)
+    ).toHaveLength(13)
     expect(allSimulations.some((item) => item.status === 'planned')).toBe(true)
     expect(findSimulation('inclined-plane-friction').status).toBe('available')
     expect(findSimulation('projectile-motion').status).toBe('available')
@@ -121,9 +121,13 @@ describe('simulation registry', () => {
     const kinematicsSimulationIds = [
       'atwood-machine',
       'centripetal-force-curve',
+      'collisions-1d-2d',
+      'particle-equilibrium',
       'uniform-linear-motion',
       'uniformly-accelerated-motion',
       'projectile-motion',
+      'rigid-body-rotation',
+      'torque-levers-center-mass',
       'uniform-circular-motion',
       'work-energy-track',
     ] as const

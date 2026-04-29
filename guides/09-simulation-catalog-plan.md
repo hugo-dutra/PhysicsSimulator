@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Este guia define o catalogo planejado de simulacoes de fisica basica. Ele nao muda a regra core-first: a primeira entrega funcional continua sendo `Mecanica > Pendulo simples`, com dados locais, motor proprio e sincronizacao completa entre cena, graficos, tabela, formulas e teoria. No catalogo expandido, essa simulacao tambem pode receber o caminho de topico `Mecanica > Oscilacoes > Pendulo simples`. A Fase 2 ja promoveu `Mecanica > Dinamica > Plano inclinado com atrito` como segunda simulacao `available` para validar reuso. A Fase 3 iniciou a expansao de Mecanica promovendo quatro simulacoes de Cinematica para `available`: MRU, MUV/queda livre, lancamento obliquo e MCU. O segundo lote da Fase 3 promoveu `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho`.
+Este guia define o catalogo planejado de simulacoes de fisica basica. Ele nao muda a regra core-first: a primeira entrega funcional continua sendo `Mecanica > Pendulo simples`, com dados locais, motor proprio e sincronizacao completa entre cena, graficos, tabela, formulas e teoria. No catalogo expandido, essa simulacao tambem pode receber o caminho de topico `Mecanica > Oscilacoes > Pendulo simples`. A Fase 2 ja promoveu `Mecanica > Dinamica > Plano inclinado com atrito` como segunda simulacao `available` para validar reuso. A Fase 3 iniciou a expansao de Mecanica promovendo quatro simulacoes de Cinematica para `available`: MRU, MUV/queda livre, lancamento obliquo e MCU. O segundo lote da Fase 3 promoveu `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho`; o terceiro lote promoveu `Colisoes 1D e 2D`, `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido`.
 
 O catalogo amplo deve nascer como backlog planejado e virar produto funcional em fatias pequenas, sempre reaproveitando o contrato comum de simulacao. Toda promocao futura para `available` precisa aplicar o `Simulation Fidelity Adjustment Guide`, inclusive quando a simulacao parecer simples ou puramente analitica.
 
@@ -79,10 +79,10 @@ Implementacao preferencial:
 | Dinamica | Maquina de Atwood | Tensao, aceleracao, massas acopladas, energia e comparacao de massas. | Fase 3 `available`; equacoes de Newton em modelo analitico ideal; cena Three.js compartilhada. |
 | Dinamica | Forca centripeta em curva | Atrito lateral, raio, velocidade critica e perda de aderencia. | Fase 3 `available`; modelo analitico com alertas de limite; cena em Three.js. |
 | Energia e momento | Trabalho e energia em trilho | Trabalho de forcas, energia cinetica/potencial, conservacao e dissipacao. | Fase 3 `available`; modelo analitico de rampa/trilho com grafico de energia e trabalho. |
-| Energia e momento | Colisoes 1D e 2D | Momento linear, impulso, coeficiente de restituicao, colisao elastica/inelastica. | Motor proprio para poucas particulas; Rapier/Matter.js apenas se a cena crescer. |
-| Estatica | Equilibrio de particula | Soma vetorial de forcas, cabos, tracao e resultante nula. | Algebra vetorial simples; manipuladores de vetores em Three.js. |
-| Estatica | Torque, alavancas e centro de massa | Momento de forca, equilibrio rotacional, ponto de apoio e distribuicao de massa. | Modelo analitico; cena 2.5D com vetores e eixos. |
-| Rotacao | Rotacao de corpo rigido | Momento de inercia, torque, aceleracao angular, energia rotacional. | Equacoes diferenciais simples; Three.js para corpos e eixos. |
+| Energia e momento | Colisoes 1D e 2D | Momento linear, impulso, coeficiente de restituicao, colisao elastica/inelastica. | Fase 3 `available`; motor proprio para duas particulas com impulso normal e componentes 2D; Rapier/Matter.js apenas se a cena crescer. |
+| Estatica | Equilibrio de particula | Soma vetorial de forcas, cabos, tracao e resultante nula. | Fase 3 `available`; algebra vetorial simples com regime de equilibrio ou aceleracao por resultante. |
+| Estatica | Torque, alavancas e centro de massa | Momento de forca, equilibrio rotacional, ponto de apoio e distribuicao de massa. | Fase 3 `available`; modelo analitico de alavanca com pesos pontuais, forca externa, centro de massa e torque resultante. |
+| Rotacao | Rotacao de corpo rigido | Momento de inercia, torque, aceleracao angular, energia rotacional. | Fase 3 `available`; solucao angular deterministica com torque constante e amortecimento linear opcional. |
 | Rotacao | Rolamento sem escorregamento | Relacao translacao/rotacao, energia e condicao de escorregamento. | Modelo analitico com limites; Three.js para roda e trilho. |
 | Gravitacao | Campo gravitacional e orbitas | Lei da gravitacao, campo, velocidade orbital, orbitas circulares/elipticas didaticas. | Integrador Verlet/RK4; Three.js para orbitas e vetores. |
 | Fluidos basicos | Hidrostatica e empuxo | Pressao, profundidade, principio de Pascal, Arquimedes e flutuacao. | Modelo analitico; cena com corpo submerso e graficos de pressao. |
@@ -171,7 +171,7 @@ Implementacao preferencial:
 
 1. Validar o pendulo simples como simulacao modelo.
 2. Extrair `SimulationDefinition`, `topicPath` e padrao de renderer/graficos/formulas, incluindo runtime visual desacoplado do shell React.
-3. Adicionar duas ou tres simulacoes mecanicas analiticas para testar velocidade de producao. Concluido inicialmente com quatro simulacoes de Cinematica e depois expandido com Atwood, forca centripeta em curva e trabalho/energia em trilho.
+3. Adicionar simulacoes mecanicas analiticas para testar velocidade de producao. Concluido inicialmente com quatro simulacoes de Cinematica, expandido com Atwood, forca centripeta em curva e trabalho/energia em trilho, e depois ampliado com colisoes, equilibrio de particula, torque/alavancas e rotacao de corpo rigido.
 4. Adicionar uma simulacao de `Oscilacoes e Ondas` que reutilize o pendulo ou massa-mola.
 5. Adicionar uma simulacao de `Termodinamica` baseada em diagramas de estado.
 6. Adicionar uma simulacao de `Eletromagnetismo` baseada em campo eletrico ou circuito RC.

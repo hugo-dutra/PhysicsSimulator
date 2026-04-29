@@ -1243,3 +1243,42 @@ Validacao:
 - Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
 - Executado `git diff --check`; sem erros de whitespace, apenas avisos esperados de normalizacao LF/CRLF no Windows.
 - Busca de consistencia em `AGENTS.md`, `guides/` e `progress.md` confirmou que o guia aparece como gate obrigatorio para implementacao, alteracao, revisao, promocao e manutencao de simulacoes `available`.
+
+## 2026-04-29 - Fase 3 terceiro lote de Mecanica com quality
+
+Pedido executado:
+
+- `task-skill 4 :quality`, seguindo a fila de quatro proximas tasks inacabadas da Fase 3: `Colisoes 1D e 2D`, `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido`.
+
+Implementacao:
+
+- Promovidas as quatro simulacoes para `available` no catalogo local, com fixtures, parametros, presets, limites, formulas, teoria Markdown e planos de tecnologia.
+- O motor compartilhado de `Kinematics` passou a cobrir colisao com impulso/restauracao, equilibrio vetorial de tres forcas, torque/alavancas/centro de massa e rotacao de corpo rigido com torque constante e amortecimento linear opcional.
+- Os samples foram ampliados com campos de segunda particula, forcas componentes, torque, impulso, momento linear, centro de massa, momento de inercia, aceleracao angular e energia dissipada/perdida quando aplicavel.
+- A cena Three.js passou a representar corpo secundario em colisoes, diagramas vetoriais de forcas/resultante, alavanca/barra e corpo rigido rotacional, mantendo renderizacao desacoplada do shell React.
+- Graficos, tabela, metricas, legendas vetoriais, formulas e teoria foram conectados a mesma fonte de samples.
+
+Gate de fidelidade:
+
+- Colisoes: `e` limitado a `0..1`, contato ausente ou fora do ciclo gera warning, componentes tangenciais permanecem inalteradas e perda de energia aparece no sample/grafico.
+- Equilibrio: forcas nulas continuam validas; resultante acima da tolerancia vira aceleracao calculada e warning de desequilibrio.
+- Torque/alavancas: forca aplicada e braco nulos continuam validos; torque liquido, centro de massa e aceleracao angular concordam entre sample, cena, grafico e formulas.
+- Rotacao: torque zero e amortecimento zero sao validos; amortecimento opcional aparece como regime/warning e dissipacao acumulada.
+
+Quality pass:
+
+- Reaproveitado o motor e o runtime de Cinematica sem introduzir Rapier, Matter.js ou novo renderer.
+- Renomeado o helper visual de corpos vinculados para cobrir Atwood e colisoes sem semantica falsa.
+- Testes ajustados para controles duplicados por slider/input e para o tempo real do teste de catalogo expandido em WSL.
+- `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/05-roadmap.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md`, `guides/09-simulation-catalog-plan.md` e `guides/issues.md` foram atualizados para refletir o terceiro lote.
+
+Validacao:
+
+- Executado `npm run test`; 50 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `python3 /mnt/c/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py /mnt/d/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+- Executado `git diff --check -- . ':!src/features/simulation-shell/LiveLineChart.tsx'`; sem erros nas mudancas desta task. O `git diff --check` completo ainda aponta whitespace em `src/features/simulation-shell/LiveLineChart.tsx`, que ja estava modificado antes deste trabalho.
+- Dev server aberto em `http://127.0.0.1:5193/`.
+- Smoke visual headless via Chrome/CDP em desktop e mobile confirmou canvas nao vazio para as quatro simulacoes. Colisoes e rotacao tiveram diferenca entre frames; equilibrio e torque ficaram estaticos por padrao, como esperado pelos parametros iniciais.
+- Capturas geradas em `artifacts/third-lot-desktop-*-a.png`, `artifacts/third-lot-desktop-*-b.png`, `artifacts/third-lot-mobile-*-a.png` e `artifacts/third-lot-mobile-*-b.png`.

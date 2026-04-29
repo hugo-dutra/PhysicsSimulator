@@ -1,9 +1,13 @@
 import catalogJson from '../../fixtures/simulations/catalog.json'
 import atwoodMachineFixtureJson from '../../fixtures/simulations/mechanics-atwood-machine.json'
 import centripetalForceCurveFixtureJson from '../../fixtures/simulations/mechanics-centripetal-force-curve.json'
+import collisionsFixtureJson from '../../fixtures/simulations/mechanics-collisions-1d-2d.json'
 import inclinedPlaneFixtureJson from '../../fixtures/simulations/mechanics-inclined-plane-friction.json'
+import particleEquilibriumFixtureJson from '../../fixtures/simulations/mechanics-particle-equilibrium.json'
 import pendulumFixtureJson from '../../fixtures/simulations/mechanics-pendulum.json'
 import projectileMotionFixtureJson from '../../fixtures/simulations/mechanics-projectile-motion.json'
+import rigidBodyRotationFixtureJson from '../../fixtures/simulations/mechanics-rigid-body-rotation.json'
+import torqueLeversCenterMassFixtureJson from '../../fixtures/simulations/mechanics-torque-levers-center-mass.json'
 import uniformCircularMotionFixtureJson from '../../fixtures/simulations/mechanics-uniform-circular-motion.json'
 import uniformLinearMotionFixtureJson from '../../fixtures/simulations/mechanics-uniform-linear-motion.json'
 import uniformlyAcceleratedMotionFixtureJson from '../../fixtures/simulations/mechanics-uniformly-accelerated-motion.json'
@@ -27,7 +31,12 @@ export const kinematicsFixtures = {
   'atwood-machine': atwoodMachineFixtureJson as SimulationFixture,
   'centripetal-force-curve':
     centripetalForceCurveFixtureJson as SimulationFixture,
+  'collisions-1d-2d': collisionsFixtureJson as SimulationFixture,
+  'particle-equilibrium': particleEquilibriumFixtureJson as SimulationFixture,
   'projectile-motion': projectileMotionFixtureJson as SimulationFixture,
+  'rigid-body-rotation': rigidBodyRotationFixtureJson as SimulationFixture,
+  'torque-levers-center-mass':
+    torqueLeversCenterMassFixtureJson as SimulationFixture,
   'uniform-circular-motion':
     uniformCircularMotionFixtureJson as SimulationFixture,
   'uniform-linear-motion': uniformLinearMotionFixtureJson as SimulationFixture,

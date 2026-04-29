@@ -12,7 +12,7 @@
           "title": "Pendulo simples",
           "status": "available",
           "level": "introductory",
-          "modelKind": "numerical",
+          "modelKind": "analytic",
           "renderer": "three",
           "fixturePath": "fixtures/simulations/mechanics-pendulum.json",
           "theoryPath": "src/content/simulations/mechanics/pendulum/theory.md",
@@ -450,44 +450,183 @@
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Energia e momento", "Colisoes 1D e 2D"],
           "title": "Colisoes 1D e 2D",
-          "status": "planned",
+          "status": "available",
           "level": "introductory",
           "modelKind": "hybrid",
           "renderer": "three",
-          "description": "Momento linear, impulso e coeficiente de restituicao."
+          "fixturePath": "fixtures/simulations/mechanics-collisions-1d-2d.json",
+          "theoryPath": "src/content/simulations/mechanics/collisions-1d-2d/theory.md",
+          "description": "Momento linear, impulso e coeficiente de restituicao.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo proprio de duas particulas com impulso normal, restituicao e componentes 2D sem engine externa."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Posicoes dos corpos por tempo",
+              "sampleFields": ["timeSeconds", "xMeters", "secondaryXMeters"]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidades dos corpos por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "speedMetersPerSecond",
+                "secondarySpeedMetersPerSecond"
+              ]
+            },
+            {
+              "id": "momentum-time",
+              "title": "Momento e impulso por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "momentumKilogramMetersPerSecond",
+                "impulseNewtonSeconds"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "kineticEnergyLostJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
         },
         {
           "id": "particle-equilibrium",
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Estatica", "Equilibrio de particula"],
           "title": "Equilibrio de particula",
-          "status": "planned",
+          "status": "available",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
-          "description": "Soma vetorial de forcas, cabos, tracao e resultante nula."
+          "fixturePath": "fixtures/simulations/mechanics-particle-equilibrium.json",
+          "theoryPath": "src/content/simulations/mechanics/particle-equilibrium/theory.md",
+          "description": "Soma vetorial de forcas, cabos, tracao e resultante nula.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Algebra vetorial no plano com regime de equilibrio ou aceleracao por resultante nao nula."
+          },
+          "charts": [
+            {
+              "id": "forces-time",
+              "title": "Forcas e resultante por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "forceOneNewtons",
+                "forceTwoNewtons",
+                "forceThreeNewtons",
+                "netForceNewtons"
+              ]
+            },
+            {
+              "id": "acceleration-time",
+              "title": "Aceleracao por resultante",
+              "sampleFields": [
+                "timeSeconds",
+                "accelerationMetersPerSecondSquared"
+              ]
+            }
+          ]
         },
         {
           "id": "torque-levers-center-mass",
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Estatica", "Torque, alavancas e centro de massa"],
           "title": "Torque, alavancas e centro de massa",
-          "status": "planned",
+          "status": "available",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
-          "description": "Momento de forca, equilibrio rotacional e distribuicao de massa."
+          "fixturePath": "fixtures/simulations/mechanics-torque-levers-center-mass.json",
+          "theoryPath": "src/content/simulations/mechanics/torque-levers-center-mass/theory.md",
+          "description": "Momento de forca, equilibrio rotacional e distribuicao de massa.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo analitico de alavanca com pesos pontuais, forca externa, centro de massa e torque resultante."
+          },
+          "charts": [
+            {
+              "id": "torque-time",
+              "title": "Torque e centro de massa",
+              "sampleFields": [
+                "timeSeconds",
+                "netTorqueNewtonMeters",
+                "centerOfMassMeters"
+              ]
+            },
+            {
+              "id": "forces-time",
+              "title": "Pesos e forca aplicada",
+              "sampleFields": [
+                "timeSeconds",
+                "forceOneNewtons",
+                "forceTwoNewtons",
+                "appliedForceNewtons"
+              ]
+            }
+          ]
         },
         {
           "id": "rigid-body-rotation",
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Rotacao", "Rotacao de corpo rigido"],
           "title": "Rotacao de corpo rigido",
-          "status": "planned",
+          "status": "available",
           "level": "introductory",
           "modelKind": "numerical",
           "renderer": "three",
-          "description": "Momento de inercia, torque, aceleracao angular e energia rotacional."
+          "fixturePath": "fixtures/simulations/mechanics-rigid-body-rotation.json",
+          "theoryPath": "src/content/simulations/mechanics/rigid-body-rotation/theory.md",
+          "description": "Momento de inercia, torque, aceleracao angular e energia rotacional.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Solucao angular deterministica com torque constante e amortecimento linear opcional."
+          },
+          "charts": [
+            {
+              "id": "angle-time",
+              "title": "Angulo e velocidade angular por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "angleRadians",
+                "angularVelocityRadiansPerSecond"
+              ]
+            },
+            {
+              "id": "torque-time",
+              "title": "Torque e aceleracao angular",
+              "sampleFields": [
+                "timeSeconds",
+                "netTorqueNewtonMeters",
+                "angularAccelerationRadiansPerSecondSquared"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "thermalEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
         },
         {
           "id": "rolling-without-slipping",

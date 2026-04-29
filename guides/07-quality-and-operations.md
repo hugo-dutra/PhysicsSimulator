@@ -27,7 +27,7 @@ npm run test:e2e
 - Testes unitarios para o integrador do pendulo.
 - Testes unitarios para o modelo analitico/numerico por trechos do plano inclinado com atrito.
 - Testes unitarios para o motor analitico compartilhado de Cinematica, cobrindo MRU, MUV/queda livre, lancamento obliquo e MCU.
-- Testes unitarios para os modelos analiticos compartilhados de Dinamica/Energia, cobrindo Maquina de Atwood, forca centripeta em curva e trabalho/energia em trilho.
+- Testes unitarios para os modelos analiticos compartilhados de Dinamica/Energia/Estatica/Rotacao, cobrindo Maquina de Atwood, forca centripeta em curva, trabalho/energia em trilho, colisoes 1D/2D, equilibrio de particula, torque/alavancas/centro de massa e rotacao de corpo rigido.
 - Testes de invariantes fisicos dentro do modelo declarado.
 - Testes de validacao de parametros e unidades.
 - Testes de valores limite fisicamente validos, como atrito zero, forca aplicada zero e velocidades iniciais nulas quando o modelo permitir.
@@ -84,7 +84,7 @@ Depois da prova do core, cada nova simulacao promovida para `available` deve ter
 - Blocos chevron de saida pesada devem iniciar fechados e testes devem cobrir abrir e fechar pelo cabecalho.
 - O modo maximizado de viewport, graficos, tabela, formulas e apendice teorico deve mostrar apenas o painel em foco dentro da janela e voltar ao layout anterior ao minimizar.
 - A sidebar deve permitir expandir areas e subareas planejadas sem confundir itens planejados com simulacoes disponiveis.
-- A sidebar deve permitir trocar entre pendulo simples, plano inclinado com atrito, as simulacoes de Cinematica disponiveis, Maquina de Atwood, forca centripeta em curva e trabalho/energia em trilho sem abandonar o shell compartilhado.
+- A sidebar deve permitir trocar entre pendulo simples, plano inclinado com atrito, as simulacoes de Cinematica disponiveis, Maquina de Atwood, forca centripeta em curva, trabalho/energia em trilho, colisoes 1D/2D, equilibrio de particula, torque/alavancas/centro de massa e rotacao de corpo rigido sem abandonar o shell compartilhado.
 - A tabela de amostras nao deve variar sua altura durante playback por mudar a quantidade de linhas.
 - Formulas devem permanecer legiveis e indicar quando usar cada equacao.
 - Layout nao deve quebrar em desktop comum.

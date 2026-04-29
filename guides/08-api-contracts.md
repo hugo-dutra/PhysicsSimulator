@@ -188,6 +188,8 @@ type InclinedPlaneSample = {
 
 ## Exemplo de sample de Cinematica
 
+O nome historico `KinematicsSample` cobre hoje o motor analitico compartilhado de Cinematica, Dinamica, Energia/momento, Estatica e Rotacao. Campos sem uso em uma simulacao ficam zerados, mas toda grandeza exibida em cena, grafico, tabela ou formula deve vir do sample.
+
 ```ts
 type KinematicsSample = {
   timeSeconds: number;
@@ -197,6 +199,10 @@ type KinematicsSample = {
   zMeters: number;
   secondaryXMeters: number;
   secondaryZMeters: number;
+  secondaryVelocityMetersPerSecond: number;
+  secondaryVelocityXMetersPerSecond: number;
+  secondaryVelocityZMetersPerSecond: number;
+  secondarySpeedMetersPerSecond: number;
   velocityMetersPerSecond: number;
   velocityXMetersPerSecond: number;
   velocityZMetersPerSecond: number;
@@ -206,20 +212,40 @@ type KinematicsSample = {
   accelerationZMetersPerSecondSquared: number;
   angleRadians: number;
   angularVelocityRadiansPerSecond: number;
+  angularAccelerationRadiansPerSecondSquared: number;
   periodSeconds: number;
   frequencyHertz: number;
   centripetalAccelerationMetersPerSecondSquared: number;
   centripetalForceNewtons: number;
   maxStaticFrictionNewtons: number;
   frictionForceNewtons: number;
+  forceOneNewtons: number;
+  forceOneXNewtons: number;
+  forceOneZNewtons: number;
+  forceTwoNewtons: number;
+  forceTwoXNewtons: number;
+  forceTwoZNewtons: number;
+  forceThreeNewtons: number;
+  forceThreeXNewtons: number;
+  forceThreeZNewtons: number;
   normalForceNewtons: number;
   tensionNewtons: number;
   netForceNewtons: number;
+  netTorqueNewtonMeters: number;
   weightNewtons: number;
   appliedForceNewtons: number;
+  appliedForceXNewtons: number;
+  appliedForceZNewtons: number;
   appliedWorkJoules: number;
   thermalEnergyJoules: number;
   gripRatio: number;
+  impulseNewtonSeconds: number;
+  momentumKilogramMetersPerSecond: number;
+  momentumXKilogramMetersPerSecond: number;
+  momentumZKilogramMetersPerSecond: number;
+  kineticEnergyLostJoules: number;
+  centerOfMassMeters: number;
+  momentOfInertiaKilogramMetersSquared: number;
   kineticEnergyJoules: number;
   potentialEnergyJoules: number;
   totalEnergyJoules: number;

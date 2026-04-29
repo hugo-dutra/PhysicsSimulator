@@ -17,6 +17,10 @@ export function createKinematicsSceneProjection(
   simulationId: KinematicsSimulationId,
 ): KinematicsSceneProjection {
   const horizontalPlane =
+    simulationId === 'collisions-1d-2d' ||
+    simulationId === 'particle-equilibrium' ||
+    simulationId === 'rigid-body-rotation' ||
+    simulationId === 'torque-levers-center-mass' ||
     simulationId === 'uniform-circular-motion' ||
     simulationId === 'centripetal-force-curve'
   const rawBounds = estimateRawSceneBounds(

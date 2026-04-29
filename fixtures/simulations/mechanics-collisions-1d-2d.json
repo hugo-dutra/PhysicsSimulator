@@ -1,0 +1,258 @@
+{
+  "simulationId": "collisions-1d-2d",
+  "durationSeconds": 14,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 7,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Tempo do ciclo",
+      "unit": "s",
+      "kind": "number",
+      "min": 5,
+      "max": 40,
+      "step": 1,
+      "defaultValue": 14
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 20,
+      "step": 1,
+      "defaultValue": 7
+    }
+  ],
+  "defaultParameters": {
+    "massOneKilograms": 1.2,
+    "massTwoKilograms": 1.8,
+    "normalSpeedOneMetersPerSecond": 1.8,
+    "normalSpeedTwoMetersPerSecond": 0.8,
+    "tangentialSpeedOneMetersPerSecond": 0.45,
+    "tangentialSpeedTwoMetersPerSecond": -0.25,
+    "impactAngleDegrees": 18,
+    "coefficientOfRestitution": 0.85,
+    "initialSeparationMeters": 5
+  },
+  "parameters": [
+    {
+      "id": "massOneKilograms",
+      "label": "Massa do corpo 1",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.2,
+      "max": 12,
+      "step": 0.1,
+      "defaultValue": 1.2
+    },
+    {
+      "id": "massTwoKilograms",
+      "label": "Massa do corpo 2",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.2,
+      "max": 12,
+      "step": 0.1,
+      "defaultValue": 1.8
+    },
+    {
+      "id": "normalSpeedOneMetersPerSecond",
+      "label": "Vel. normal corpo 1",
+      "unit": "m/s",
+      "kind": "number",
+      "min": 0,
+      "max": 8,
+      "step": 0.05,
+      "defaultValue": 1.8
+    },
+    {
+      "id": "normalSpeedTwoMetersPerSecond",
+      "label": "Vel. normal corpo 2",
+      "unit": "m/s",
+      "kind": "number",
+      "min": 0,
+      "max": 8,
+      "step": 0.05,
+      "defaultValue": 0.8
+    },
+    {
+      "id": "tangentialSpeedOneMetersPerSecond",
+      "label": "Vel. tangencial corpo 1",
+      "unit": "m/s",
+      "kind": "number",
+      "min": -4,
+      "max": 4,
+      "step": 0.05,
+      "defaultValue": 0.45
+    },
+    {
+      "id": "tangentialSpeedTwoMetersPerSecond",
+      "label": "Vel. tangencial corpo 2",
+      "unit": "m/s",
+      "kind": "number",
+      "min": -4,
+      "max": 4,
+      "step": 0.05,
+      "defaultValue": -0.25
+    },
+    {
+      "id": "impactAngleDegrees",
+      "label": "Angulo do eixo de impacto",
+      "unit": "deg",
+      "kind": "number",
+      "min": -75,
+      "max": 75,
+      "step": 1,
+      "defaultValue": 18
+    },
+    {
+      "id": "coefficientOfRestitution",
+      "label": "Coeficiente de restituicao",
+      "kind": "number",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "defaultValue": 0.85
+    },
+    {
+      "id": "initialSeparationMeters",
+      "label": "Separacao inicial",
+      "unit": "m",
+      "kind": "number",
+      "min": 1,
+      "max": 12,
+      "step": 0.1,
+      "defaultValue": 5
+    }
+  ],
+  "presets": [
+    {
+      "id": "elastic-head-on",
+      "label": "Elastica 1D",
+      "parameters": {
+        "massOneKilograms": 1,
+        "massTwoKilograms": 1,
+        "normalSpeedOneMetersPerSecond": 2,
+        "normalSpeedTwoMetersPerSecond": 1,
+        "tangentialSpeedOneMetersPerSecond": 0,
+        "tangentialSpeedTwoMetersPerSecond": 0,
+        "impactAngleDegrees": 0,
+        "coefficientOfRestitution": 1,
+        "initialSeparationMeters": 5
+      }
+    },
+    {
+      "id": "inelastic-two-dimensional",
+      "label": "Inelastica 2D",
+      "parameters": {
+        "massOneKilograms": 1.2,
+        "massTwoKilograms": 1.8,
+        "normalSpeedOneMetersPerSecond": 1.8,
+        "normalSpeedTwoMetersPerSecond": 0.8,
+        "tangentialSpeedOneMetersPerSecond": 0.45,
+        "tangentialSpeedTwoMetersPerSecond": -0.25,
+        "impactAngleDegrees": 18,
+        "coefficientOfRestitution": 0.65,
+        "initialSeparationMeters": 5
+      }
+    },
+    {
+      "id": "no-contact-window",
+      "label": "Sem contato no ciclo",
+      "parameters": {
+        "massOneKilograms": 1,
+        "massTwoKilograms": 2,
+        "normalSpeedOneMetersPerSecond": 0.1,
+        "normalSpeedTwoMetersPerSecond": 0,
+        "tangentialSpeedOneMetersPerSecond": 0.2,
+        "tangentialSpeedTwoMetersPerSecond": 0,
+        "impactAngleDegrees": -25,
+        "coefficientOfRestitution": 0.9,
+        "initialSeparationMeters": 8
+      }
+    }
+  ],
+  "limits": [
+    "Os corpos sao particulas circulares didaticas e so trocam impulso no eixo normal do contato.",
+    "O momento linear total e conservado no contato; energia cinetica so e conservada quando e = 1.",
+    "As componentes tangenciais permanecem constantes: nao ha atrito de contato, giro, deformacao, som ou calor detalhado.",
+    "Se a velocidade de aproximacao nao gerar contato dentro do ciclo, o motor mantém os corpos em movimento livre e emite warning."
+  ],
+  "formulas": [
+    {
+      "id": "linear-momentum",
+      "title": "Momento linear total",
+      "expressionLatex": "\\vec p=m_1\\vec v_1+m_2\\vec v_2",
+      "description": "Soma o momento dos dois corpos antes e depois do impacto.",
+      "variables": [
+        { "symbol": "\\vec p", "label": "momento linear", "unit": "kg m/s" },
+        { "symbol": "m", "label": "massa", "unit": "kg" },
+        { "symbol": "\\vec v", "label": "velocidade", "unit": "m/s" }
+      ],
+      "usedWhen": "Usar para comparar o estado total do sistema isolado.",
+      "notUsedWhen": "Nao representa sistemas com forcas externas importantes durante o contato.",
+      "parameterIds": ["massOneKilograms", "massTwoKilograms"],
+      "sampleFields": [
+        "momentumKilogramMetersPerSecond",
+        "momentumXKilogramMetersPerSecond",
+        "momentumZKilogramMetersPerSecond"
+      ],
+      "relatedChartIds": ["momentum"],
+      "relatedVectorIds": ["momentum"]
+    },
+    {
+      "id": "restitution",
+      "title": "Coeficiente de restituicao",
+      "expressionLatex": "e=-\\frac{v'_{2n}-v'_{1n}}{v_{2n}-v_{1n}}",
+      "description": "Controla quanto da velocidade relativa normal retorna apos o contato.",
+      "variables": [
+        { "symbol": "e", "label": "coeficiente de restituicao" },
+        { "symbol": "v_n", "label": "velocidade normal", "unit": "m/s" }
+      ],
+      "usedWhen": "Usar em colisoes de poucos corpos quando o contato pode ser resumido por um impulso normal.",
+      "notUsedWhen": "Nao descreve esmagamento, giro ou atrito de contato.",
+      "parameterIds": ["coefficientOfRestitution"],
+      "sampleFields": ["speedMetersPerSecond", "secondarySpeedMetersPerSecond"],
+      "relatedChartIds": ["velocity"]
+    },
+    {
+      "id": "impulse",
+      "title": "Impulso no contato",
+      "expressionLatex": "J=\\frac{(1+e)(v_{1n}-v_{2n})}{1/m_1+1/m_2}",
+      "description": "Calcula o impulso normal que altera as velocidades no instante da colisao.",
+      "variables": [
+        { "symbol": "J", "label": "impulso", "unit": "N s" }
+      ],
+      "usedWhen": "Usar no instante em que a distancia entre os centros chega ao contato.",
+      "notUsedWhen": "Nao vale antes do contato nem para contatos longos com forcas variaveis.",
+      "parameterIds": [
+        "massOneKilograms",
+        "massTwoKilograms",
+        "coefficientOfRestitution"
+      ],
+      "sampleFields": ["impulseNewtonSeconds"],
+      "relatedChartIds": ["momentum"],
+      "relatedVectorIds": ["impulse"]
+    },
+    {
+      "id": "collision-energy",
+      "title": "Energia cinetica da colisao",
+      "expressionLatex": "K=\\frac{1}{2}m_1v_1^2+\\frac{1}{2}m_2v_2^2",
+      "description": "Mostra a energia cinetica total e a perda quando a colisao e inelastica.",
+      "variables": [
+        { "symbol": "K", "label": "energia cinetica", "unit": "J" }
+      ],
+      "usedWhen": "Usar para distinguir colisao elastica de inelastica.",
+      "notUsedWhen": "Nao inclui energia interna detalhada dos corpos.",
+      "parameterIds": [
+        "massOneKilograms",
+        "massTwoKilograms",
+        "coefficientOfRestitution"
+      ],
+      "sampleFields": ["kineticEnergyJoules", "kineticEnergyLostJoules"],
+      "relatedChartIds": ["energy"]
+    }
+  ]
+}

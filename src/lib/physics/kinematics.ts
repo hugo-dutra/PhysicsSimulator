@@ -1,7 +1,11 @@
 export type KinematicsSimulationId =
   | 'atwood-machine'
   | 'centripetal-force-curve'
+  | 'collisions-1d-2d'
+  | 'particle-equilibrium'
   | 'projectile-motion'
+  | 'rigid-body-rotation'
+  | 'torque-levers-center-mass'
   | 'uniform-circular-motion'
   | 'uniform-linear-motion'
   | 'uniformly-accelerated-motion'
@@ -22,6 +26,28 @@ export type CentripetalForceCurveParameters = {
   massKilograms: number
   radiusMeters: number
   speedMetersPerSecond: number
+}
+
+export type CollisionsParameters = {
+  coefficientOfRestitution: number
+  impactAngleDegrees: number
+  initialSeparationMeters: number
+  massOneKilograms: number
+  massTwoKilograms: number
+  normalSpeedOneMetersPerSecond: number
+  normalSpeedTwoMetersPerSecond: number
+  tangentialSpeedOneMetersPerSecond: number
+  tangentialSpeedTwoMetersPerSecond: number
+}
+
+export type ParticleEquilibriumParameters = {
+  forceOneAngleDegrees: number
+  forceOneNewtons: number
+  forceThreeAngleDegrees: number
+  forceThreeNewtons: number
+  forceTwoAngleDegrees: number
+  forceTwoNewtons: number
+  massKilograms: number
 }
 
 export type UniformLinearMotionParameters = {
@@ -62,10 +88,32 @@ export type WorkEnergyTrackParameters = {
   trackLengthMeters: number
 }
 
+export type TorqueLeversCenterMassParameters = {
+  appliedForceArmMeters: number
+  appliedForceNewtons: number
+  gravityMetersPerSecondSquared: number
+  leftArmMeters: number
+  leftMassKilograms: number
+  rightArmMeters: number
+  rightMassKilograms: number
+}
+
+export type RigidBodyRotationParameters = {
+  angularDampingPerSecond: number
+  appliedTorqueNewtonMeters: number
+  initialAngleDegrees: number
+  initialAngularVelocityRadiansPerSecond: number
+  momentOfInertiaKilogramMetersSquared: number
+}
+
 export type KinematicsParameters =
   | AtwoodMachineParameters
   | CentripetalForceCurveParameters
+  | CollisionsParameters
+  | ParticleEquilibriumParameters
   | ProjectileMotionParameters
+  | RigidBodyRotationParameters
+  | TorqueLeversCenterMassParameters
   | UniformCircularMotionParameters
   | UniformLinearMotionParameters
   | UniformlyAcceleratedMotionParameters
@@ -76,23 +124,47 @@ export type KinematicsSample = {
   accelerationXMetersPerSecondSquared: number
   accelerationZMetersPerSecondSquared: number
   angleRadians: number
+  angularAccelerationRadiansPerSecondSquared: number
   angularVelocityRadiansPerSecond: number
   appliedForceNewtons: number
+  appliedForceXNewtons: number
+  appliedForceZNewtons: number
   appliedWorkJoules: number
+  centerOfMassMeters: number
   centripetalForceNewtons: number
   centripetalAccelerationMetersPerSecondSquared: number
   displacementMeters: number
   frequencyHertz: number
+  forceOneNewtons: number
+  forceOneXNewtons: number
+  forceOneZNewtons: number
+  forceThreeNewtons: number
+  forceThreeXNewtons: number
+  forceThreeZNewtons: number
+  forceTwoNewtons: number
+  forceTwoXNewtons: number
+  forceTwoZNewtons: number
   frictionForceNewtons: number
   gripRatio: number
+  impulseNewtonSeconds: number
   isGrounded: boolean
   kineticEnergyJoules: number
+  kineticEnergyLostJoules: number
   maxStaticFrictionNewtons: number
+  momentOfInertiaKilogramMetersSquared: number
+  momentumKilogramMetersPerSecond: number
+  momentumXKilogramMetersPerSecond: number
+  momentumZKilogramMetersPerSecond: number
   netForceNewtons: number
+  netTorqueNewtonMeters: number
   normalForceNewtons: number
   periodSeconds: number
   positionMeters: number
   potentialEnergyJoules: number
+  secondarySpeedMetersPerSecond: number
+  secondaryVelocityMetersPerSecond: number
+  secondaryVelocityXMetersPerSecond: number
+  secondaryVelocityZMetersPerSecond: number
   secondaryXMeters: number
   secondaryZMeters: number
   speedMetersPerSecond: number
@@ -111,18 +183,37 @@ export type KinematicsSample = {
 export type KinematicsVectorOverlay = {
   id:
     | 'acceleration'
+    | 'angularAcceleration'
+    | 'angularVelocity'
     | 'appliedForce'
     | 'centripetal'
     | 'displacement'
+    | 'forceOne'
+    | 'forceThree'
+    | 'forceTwo'
     | 'friction'
     | 'gravity'
+    | 'impulse'
+    | 'momentum'
     | 'normal'
+    | 'resultant'
+    | 'secondaryVelocity'
     | 'tension'
+    | 'torque'
     | 'velocity'
     | 'weight'
   label: string
   magnitude: number
-  unit: 'm' | 'm/s' | 'm/s^2' | 'N'
+  unit:
+    | 'kg m/s'
+    | 'm'
+    | 'm/s'
+    | 'm/s^2'
+    | 'N'
+    | 'N m'
+    | 'N s'
+    | 'rad/s'
+    | 'rad/s^2'
   direction: {
     x: number
     z: number
@@ -150,6 +241,10 @@ export type KinematicsTimelineResult = {
 const kinematicsSimulationIds = [
   'atwood-machine',
   'centripetal-force-curve',
+  'collisions-1d-2d',
+  'particle-equilibrium',
+  'rigid-body-rotation',
+  'torque-levers-center-mass',
   'uniform-linear-motion',
   'uniformly-accelerated-motion',
   'projectile-motion',
@@ -162,22 +257,46 @@ const sampleNumericKeys = [
   'accelerationXMetersPerSecondSquared',
   'accelerationZMetersPerSecondSquared',
   'angleRadians',
+  'angularAccelerationRadiansPerSecondSquared',
   'angularVelocityRadiansPerSecond',
   'appliedForceNewtons',
+  'appliedForceXNewtons',
+  'appliedForceZNewtons',
   'appliedWorkJoules',
+  'centerOfMassMeters',
   'centripetalForceNewtons',
   'centripetalAccelerationMetersPerSecondSquared',
   'displacementMeters',
   'frequencyHertz',
+  'forceOneNewtons',
+  'forceOneXNewtons',
+  'forceOneZNewtons',
+  'forceThreeNewtons',
+  'forceThreeXNewtons',
+  'forceThreeZNewtons',
+  'forceTwoNewtons',
+  'forceTwoXNewtons',
+  'forceTwoZNewtons',
   'frictionForceNewtons',
   'gripRatio',
+  'impulseNewtonSeconds',
   'kineticEnergyJoules',
+  'kineticEnergyLostJoules',
   'maxStaticFrictionNewtons',
+  'momentOfInertiaKilogramMetersSquared',
+  'momentumKilogramMetersPerSecond',
+  'momentumXKilogramMetersPerSecond',
+  'momentumZKilogramMetersPerSecond',
   'netForceNewtons',
+  'netTorqueNewtonMeters',
   'normalForceNewtons',
   'periodSeconds',
   'positionMeters',
   'potentialEnergyJoules',
+  'secondarySpeedMetersPerSecond',
+  'secondaryVelocityMetersPerSecond',
+  'secondaryVelocityXMetersPerSecond',
+  'secondaryVelocityZMetersPerSecond',
   'secondaryXMeters',
   'secondaryZMeters',
   'speedMetersPerSecond',
@@ -193,8 +312,11 @@ const sampleNumericKeys = [
   'zMeters',
 ] as const
 const atwoodHorizontalOffsetMeters = 0.48
+const collisionContactDistanceMeters = 0.72
 const centripetalGripRatioDisplayCap = 99
 const centripetalSlipTolerance = 1e-9
+const equilibriumForceToleranceNewtons = 0.05
+const torqueToleranceNewtonMeters = 0.05
 
 export function isKinematicsSimulationId(
   simulationId: string,
@@ -246,6 +368,51 @@ export function toKinematicsParameters(
       validateCentripetalForceCurveParameters(parameters)
       return parameters
     }
+    case 'collisions-1d-2d': {
+      const parameters: CollisionsParameters = {
+        coefficientOfRestitution: readNumber(
+          values,
+          'coefficientOfRestitution',
+        ),
+        impactAngleDegrees: readNumber(values, 'impactAngleDegrees'),
+        initialSeparationMeters: readNumber(values, 'initialSeparationMeters'),
+        massOneKilograms: readNumber(values, 'massOneKilograms'),
+        massTwoKilograms: readNumber(values, 'massTwoKilograms'),
+        normalSpeedOneMetersPerSecond: readNumber(
+          values,
+          'normalSpeedOneMetersPerSecond',
+        ),
+        normalSpeedTwoMetersPerSecond: readNumber(
+          values,
+          'normalSpeedTwoMetersPerSecond',
+        ),
+        tangentialSpeedOneMetersPerSecond: readNumber(
+          values,
+          'tangentialSpeedOneMetersPerSecond',
+        ),
+        tangentialSpeedTwoMetersPerSecond: readNumber(
+          values,
+          'tangentialSpeedTwoMetersPerSecond',
+        ),
+      }
+
+      validateCollisionsParameters(parameters)
+      return parameters
+    }
+    case 'particle-equilibrium': {
+      const parameters: ParticleEquilibriumParameters = {
+        forceOneAngleDegrees: readNumber(values, 'forceOneAngleDegrees'),
+        forceOneNewtons: readNumber(values, 'forceOneNewtons'),
+        forceThreeAngleDegrees: readNumber(values, 'forceThreeAngleDegrees'),
+        forceThreeNewtons: readNumber(values, 'forceThreeNewtons'),
+        forceTwoAngleDegrees: readNumber(values, 'forceTwoAngleDegrees'),
+        forceTwoNewtons: readNumber(values, 'forceTwoNewtons'),
+        massKilograms: readNumber(values, 'massKilograms'),
+      }
+
+      validateParticleEquilibriumParameters(parameters)
+      return parameters
+    }
     case 'uniform-linear-motion': {
       const parameters: UniformLinearMotionParameters = {
         initialPositionMeters: readNumber(values, 'initialPositionMeters'),
@@ -289,6 +456,44 @@ export function toKinematicsParameters(
       }
 
       validateProjectileMotionParameters(parameters)
+      return parameters
+    }
+    case 'rigid-body-rotation': {
+      const parameters: RigidBodyRotationParameters = {
+        angularDampingPerSecond: readNumber(values, 'angularDampingPerSecond'),
+        appliedTorqueNewtonMeters: readNumber(
+          values,
+          'appliedTorqueNewtonMeters',
+        ),
+        initialAngleDegrees: readNumber(values, 'initialAngleDegrees'),
+        initialAngularVelocityRadiansPerSecond: readNumber(
+          values,
+          'initialAngularVelocityRadiansPerSecond',
+        ),
+        momentOfInertiaKilogramMetersSquared: readNumber(
+          values,
+          'momentOfInertiaKilogramMetersSquared',
+        ),
+      }
+
+      validateRigidBodyRotationParameters(parameters)
+      return parameters
+    }
+    case 'torque-levers-center-mass': {
+      const parameters: TorqueLeversCenterMassParameters = {
+        appliedForceArmMeters: readNumber(values, 'appliedForceArmMeters'),
+        appliedForceNewtons: readNumber(values, 'appliedForceNewtons'),
+        gravityMetersPerSecondSquared: readNumber(
+          values,
+          'gravityMetersPerSecondSquared',
+        ),
+        leftArmMeters: readNumber(values, 'leftArmMeters'),
+        leftMassKilograms: readNumber(values, 'leftMassKilograms'),
+        rightArmMeters: readNumber(values, 'rightArmMeters'),
+        rightMassKilograms: readNumber(values, 'rightMassKilograms'),
+      }
+
+      validateTorqueLeversCenterMassParameters(parameters)
       return parameters
     }
     case 'uniform-circular-motion': {
@@ -384,6 +589,16 @@ export function computeKinematicsSample(
         parameters as CentripetalForceCurveParameters,
         timeSeconds,
       )
+    case 'collisions-1d-2d':
+      return computeCollisionsSample(
+        parameters as CollisionsParameters,
+        timeSeconds,
+      )
+    case 'particle-equilibrium':
+      return computeParticleEquilibriumSample(
+        parameters as ParticleEquilibriumParameters,
+        timeSeconds,
+      )
     case 'uniform-linear-motion':
       return computeUniformLinearMotionSample(
         parameters as UniformLinearMotionParameters,
@@ -397,6 +612,16 @@ export function computeKinematicsSample(
     case 'projectile-motion':
       return computeProjectileMotionSample(
         parameters as ProjectileMotionParameters,
+        timeSeconds,
+      )
+    case 'rigid-body-rotation':
+      return computeRigidBodyRotationSample(
+        parameters as RigidBodyRotationParameters,
+        timeSeconds,
+      )
+    case 'torque-levers-center-mass':
+      return computeTorqueLeversCenterMassSample(
+        parameters as TorqueLeversCenterMassParameters,
         timeSeconds,
       )
     case 'uniform-circular-motion':
@@ -491,6 +716,164 @@ export function getKinematicsVectorOverlays(
         label: 'Atrito lateral maximo',
         magnitude: sample.maxStaticFrictionNewtons,
         unit: 'N',
+      },
+    ]
+  }
+
+  if (simulationId === 'collisions-1d-2d') {
+    return [
+      {
+        direction: normalizeVector({
+          x: sample.velocityXMetersPerSecond,
+          z: sample.velocityZMetersPerSecond,
+        }),
+        id: 'velocity',
+        label: 'Velocidade do corpo 1',
+        magnitude: sample.speedMetersPerSecond,
+        unit: 'm/s',
+      },
+      {
+        direction: normalizeVector({
+          x: sample.secondaryVelocityXMetersPerSecond,
+          z: sample.secondaryVelocityZMetersPerSecond,
+        }),
+        id: 'secondaryVelocity',
+        label: 'Velocidade do corpo 2',
+        magnitude: sample.secondarySpeedMetersPerSecond,
+        unit: 'm/s',
+      },
+      {
+        direction: normalizeVector({
+          x: sample.momentumXKilogramMetersPerSecond,
+          z: sample.momentumZKilogramMetersPerSecond,
+        }),
+        id: 'momentum',
+        label: 'Momento total',
+        magnitude: sample.momentumKilogramMetersPerSecond,
+        unit: 'kg m/s',
+      },
+      {
+        direction: normalizeVector({
+          x: -sample.velocityXMetersPerSecond + sample.secondaryVelocityXMetersPerSecond,
+          z: -sample.velocityZMetersPerSecond + sample.secondaryVelocityZMetersPerSecond,
+        }),
+        id: 'impulse',
+        label: 'Impulso no contato',
+        magnitude: sample.impulseNewtonSeconds,
+        unit: 'N s',
+      },
+    ]
+  }
+
+  if (simulationId === 'particle-equilibrium') {
+    return [
+      {
+        direction: normalizeVector({
+          x: sample.forceOneXNewtons,
+          z: sample.forceOneZNewtons,
+        }),
+        id: 'forceOne',
+        label: 'Forca A',
+        magnitude: sample.forceOneNewtons,
+        unit: 'N',
+      },
+      {
+        direction: normalizeVector({
+          x: sample.forceTwoXNewtons,
+          z: sample.forceTwoZNewtons,
+        }),
+        id: 'forceTwo',
+        label: 'Forca B',
+        magnitude: sample.forceTwoNewtons,
+        unit: 'N',
+      },
+      {
+        direction: normalizeVector({
+          x: sample.forceThreeXNewtons,
+          z: sample.forceThreeZNewtons,
+        }),
+        id: 'forceThree',
+        label: 'Forca C',
+        magnitude: sample.forceThreeNewtons,
+        unit: 'N',
+      },
+      {
+        direction: normalizeVector({
+          x: sample.accelerationXMetersPerSecondSquared,
+          z: sample.accelerationZMetersPerSecondSquared,
+        }),
+        id: 'resultant',
+        label: 'Resultante',
+        magnitude: sample.netForceNewtons,
+        unit: 'N',
+      },
+    ]
+  }
+
+  if (simulationId === 'torque-levers-center-mass') {
+    return [
+      {
+        direction: { x: 0, z: -1 },
+        id: 'forceOne',
+        label: 'Peso esquerdo',
+        magnitude: sample.forceOneNewtons,
+        unit: 'N',
+      },
+      {
+        direction: { x: 0, z: -1 },
+        id: 'forceTwo',
+        label: 'Peso direito',
+        magnitude: sample.forceTwoNewtons,
+        unit: 'N',
+      },
+      {
+        direction: { x: 0, z: Math.sign(sample.appliedForceNewtons) || 1 },
+        id: 'appliedForce',
+        label: 'Forca aplicada',
+        magnitude: Math.abs(sample.appliedForceNewtons),
+        unit: 'N',
+      },
+      {
+        direction: { x: Math.sign(sample.netTorqueNewtonMeters) || 1, z: 0 },
+        id: 'torque',
+        label: 'Torque resultante',
+        magnitude: Math.abs(sample.netTorqueNewtonMeters),
+        unit: 'N m',
+      },
+    ]
+  }
+
+  if (simulationId === 'rigid-body-rotation') {
+    return [
+      {
+        direction: {
+          x: Math.cos(sample.angleRadians + Math.PI / 2),
+          z: Math.sin(sample.angleRadians + Math.PI / 2),
+        },
+        id: 'angularVelocity',
+        label: 'Velocidade angular',
+        magnitude: Math.abs(sample.angularVelocityRadiansPerSecond),
+        unit: 'rad/s',
+      },
+      {
+        direction: {
+          x: Math.cos(sample.angleRadians),
+          z: Math.sin(sample.angleRadians),
+        },
+        id: 'torque',
+        label: 'Torque aplicado',
+        magnitude: Math.abs(sample.netTorqueNewtonMeters),
+        unit: 'N m',
+      },
+      {
+        direction: {
+          x: Math.cos(sample.angleRadians + Math.PI / 2),
+          z: Math.sin(sample.angleRadians + Math.PI / 2),
+        },
+        id: 'angularAcceleration',
+        label: 'Aceleracao angular',
+        magnitude: Math.abs(sample.angularAccelerationRadiansPerSecondSquared),
+        unit: 'rad/s^2',
       },
     ]
   }
@@ -775,6 +1158,128 @@ function computeCentripetalForceCurveSample(
   })
 }
 
+function computeCollisionsSample(
+  parameters: CollisionsParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const collision = resolveCollision(parameters, timeSeconds)
+  const primarySpeedMetersPerSecond = Math.hypot(
+    collision.primaryVelocity.x,
+    collision.primaryVelocity.z,
+  )
+  const secondarySpeedMetersPerSecond = Math.hypot(
+    collision.secondaryVelocity.x,
+    collision.secondaryVelocity.z,
+  )
+  const kineticEnergyJoules =
+    0.5 * parameters.massOneKilograms * primarySpeedMetersPerSecond ** 2 +
+    0.5 * parameters.massTwoKilograms * secondarySpeedMetersPerSecond ** 2
+  const totalMomentum = {
+    x:
+      parameters.massOneKilograms * collision.primaryVelocity.x +
+      parameters.massTwoKilograms * collision.secondaryVelocity.x,
+    z:
+      parameters.massOneKilograms * collision.primaryVelocity.z +
+      parameters.massTwoKilograms * collision.secondaryVelocity.z,
+  }
+
+  return buildSample({
+    displacementMeters: Math.hypot(
+      collision.primaryPosition.x - collision.initialPrimaryPosition.x,
+      collision.primaryPosition.z - collision.initialPrimaryPosition.z,
+    ),
+    impulseNewtonSeconds: collision.impulseNewtonSeconds,
+    kineticEnergyJoules,
+    kineticEnergyLostJoules:
+      collision.initialKineticEnergyJoules - kineticEnergyJoules,
+    momentumKilogramMetersPerSecond: Math.hypot(
+      totalMomentum.x,
+      totalMomentum.z,
+    ),
+    momentumXKilogramMetersPerSecond: totalMomentum.x,
+    momentumZKilogramMetersPerSecond: totalMomentum.z,
+    positionMeters: collision.primaryPosition.x,
+    secondarySpeedMetersPerSecond,
+    secondaryVelocityMetersPerSecond: secondarySpeedMetersPerSecond,
+    secondaryVelocityXMetersPerSecond: collision.secondaryVelocity.x,
+    secondaryVelocityZMetersPerSecond: collision.secondaryVelocity.z,
+    secondaryXMeters: collision.secondaryPosition.x,
+    secondaryZMeters: collision.secondaryPosition.z,
+    speedMetersPerSecond: primarySpeedMetersPerSecond,
+    timeSeconds,
+    totalEnergyJoules: kineticEnergyJoules,
+    velocityMetersPerSecond: primarySpeedMetersPerSecond,
+    velocityXMetersPerSecond: collision.primaryVelocity.x,
+    velocityZMetersPerSecond: collision.primaryVelocity.z,
+    xMeters: collision.primaryPosition.x,
+    zMeters: collision.primaryPosition.z,
+  })
+}
+
+function computeParticleEquilibriumSample(
+  parameters: ParticleEquilibriumParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const forceOne = vectorFromPolar(
+    parameters.forceOneNewtons,
+    parameters.forceOneAngleDegrees,
+  )
+  const forceTwo = vectorFromPolar(
+    parameters.forceTwoNewtons,
+    parameters.forceTwoAngleDegrees,
+  )
+  const forceThree = vectorFromPolar(
+    parameters.forceThreeNewtons,
+    parameters.forceThreeAngleDegrees,
+  )
+  const resultantForce = {
+    x: forceOne.x + forceTwo.x + forceThree.x,
+    z: forceOne.z + forceTwo.z + forceThree.z,
+  }
+  const netForceNewtons = Math.hypot(resultantForce.x, resultantForce.z)
+  const acceleration = {
+    x: resultantForce.x / parameters.massKilograms,
+    z: resultantForce.z / parameters.massKilograms,
+  }
+  const xMeters = 0.5 * acceleration.x * timeSeconds ** 2
+  const zMeters = 0.5 * acceleration.z * timeSeconds ** 2
+  const velocityXMetersPerSecond = acceleration.x * timeSeconds
+  const velocityZMetersPerSecond = acceleration.z * timeSeconds
+  const speedMetersPerSecond = Math.hypot(
+    velocityXMetersPerSecond,
+    velocityZMetersPerSecond,
+  )
+  const kineticEnergyJoules =
+    0.5 * parameters.massKilograms * speedMetersPerSecond ** 2
+
+  return buildSample({
+    accelerationMetersPerSecondSquared: Math.hypot(acceleration.x, acceleration.z),
+    accelerationXMetersPerSecondSquared: acceleration.x,
+    accelerationZMetersPerSecondSquared: acceleration.z,
+    displacementMeters: Math.hypot(xMeters, zMeters),
+    forceOneNewtons: parameters.forceOneNewtons,
+    forceOneXNewtons: forceOne.x,
+    forceOneZNewtons: forceOne.z,
+    forceThreeNewtons: parameters.forceThreeNewtons,
+    forceThreeXNewtons: forceThree.x,
+    forceThreeZNewtons: forceThree.z,
+    forceTwoNewtons: parameters.forceTwoNewtons,
+    forceTwoXNewtons: forceTwo.x,
+    forceTwoZNewtons: forceTwo.z,
+    kineticEnergyJoules,
+    netForceNewtons,
+    positionMeters: Math.hypot(xMeters, zMeters),
+    speedMetersPerSecond,
+    timeSeconds,
+    totalEnergyJoules: kineticEnergyJoules,
+    velocityMetersPerSecond: speedMetersPerSecond,
+    velocityXMetersPerSecond,
+    velocityZMetersPerSecond,
+    xMeters,
+    zMeters,
+  })
+}
+
 export function interpolateKinematicsSample(
   start: KinematicsSample,
   end: KinematicsSample,
@@ -1001,6 +1506,122 @@ function computeProjectileMotionSample(
   })
 }
 
+function computeRigidBodyRotationSample(
+  parameters: RigidBodyRotationParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const initialAngleRadians = degreesToRadians(parameters.initialAngleDegrees)
+  const driveAngularAcceleration =
+    parameters.appliedTorqueNewtonMeters /
+    parameters.momentOfInertiaKilogramMetersSquared
+  const angularState = computeDampedAngularMotion({
+    angularDampingPerSecond: parameters.angularDampingPerSecond,
+    driveAngularAcceleration,
+    initialAngleRadians,
+    initialAngularVelocityRadiansPerSecond:
+      parameters.initialAngularVelocityRadiansPerSecond,
+    timeSeconds,
+  })
+  const kineticEnergyJoules =
+    0.5 *
+    parameters.momentOfInertiaKilogramMetersSquared *
+    angularState.angularVelocityRadiansPerSecond ** 2
+  const initialKineticEnergyJoules =
+    0.5 *
+    parameters.momentOfInertiaKilogramMetersSquared *
+    parameters.initialAngularVelocityRadiansPerSecond ** 2
+  const angularDisplacementRadians =
+    angularState.angleRadians - initialAngleRadians
+  const appliedWorkJoules =
+    parameters.appliedTorqueNewtonMeters * angularDisplacementRadians
+  const thermalEnergyJoules = Math.max(
+    0,
+    appliedWorkJoules + initialKineticEnergyJoules - kineticEnergyJoules,
+  )
+
+  return buildSample({
+    angleRadians: angularState.angleRadians,
+    angularAccelerationRadiansPerSecondSquared:
+      angularState.angularAccelerationRadiansPerSecondSquared,
+    angularVelocityRadiansPerSecond:
+      angularState.angularVelocityRadiansPerSecond,
+    appliedWorkJoules,
+    kineticEnergyJoules,
+    momentOfInertiaKilogramMetersSquared:
+      parameters.momentOfInertiaKilogramMetersSquared,
+    netTorqueNewtonMeters: parameters.appliedTorqueNewtonMeters,
+    positionMeters: angularDisplacementRadians,
+    speedMetersPerSecond: Math.abs(angularState.angularVelocityRadiansPerSecond),
+    thermalEnergyJoules,
+    timeSeconds,
+    totalEnergyJoules: kineticEnergyJoules + thermalEnergyJoules,
+    velocityMetersPerSecond: angularState.angularVelocityRadiansPerSecond,
+    xMeters: 0,
+    zMeters: 0,
+  })
+}
+
+function computeTorqueLeversCenterMassSample(
+  parameters: TorqueLeversCenterMassParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const leftWeightNewtons =
+    parameters.leftMassKilograms * parameters.gravityMetersPerSecondSquared
+  const rightWeightNewtons =
+    parameters.rightMassKilograms * parameters.gravityMetersPerSecondSquared
+  const leftTorqueNewtonMeters = leftWeightNewtons * parameters.leftArmMeters
+  const rightTorqueNewtonMeters =
+    -rightWeightNewtons * parameters.rightArmMeters
+  const appliedTorqueNewtonMeters =
+    parameters.appliedForceNewtons * parameters.appliedForceArmMeters
+  const netTorqueNewtonMeters =
+    leftTorqueNewtonMeters +
+    rightTorqueNewtonMeters +
+    appliedTorqueNewtonMeters
+  const totalMassKilograms =
+    parameters.leftMassKilograms + parameters.rightMassKilograms
+  const centerOfMassMeters =
+    (parameters.rightMassKilograms * parameters.rightArmMeters -
+      parameters.leftMassKilograms * parameters.leftArmMeters) /
+    totalMassKilograms
+  const momentOfInertiaKilogramMetersSquared =
+    parameters.leftMassKilograms * parameters.leftArmMeters ** 2 +
+    parameters.rightMassKilograms * parameters.rightArmMeters ** 2
+  const angularAccelerationRadiansPerSecondSquared =
+    netTorqueNewtonMeters / momentOfInertiaKilogramMetersSquared
+  const angleRadians =
+    clamp(angularAccelerationRadiansPerSecondSquared * 0.08, -0.35, 0.35)
+  const angularVelocityRadiansPerSecond =
+    angularAccelerationRadiansPerSecondSquared * timeSeconds
+
+  return buildSample({
+    angleRadians,
+    angularAccelerationRadiansPerSecondSquared,
+    angularVelocityRadiansPerSecond,
+    appliedForceNewtons: parameters.appliedForceNewtons,
+    appliedForceZNewtons: parameters.appliedForceNewtons,
+    centerOfMassMeters,
+    forceOneNewtons: leftWeightNewtons,
+    forceOneXNewtons: 0,
+    forceOneZNewtons: -leftWeightNewtons,
+    forceTwoNewtons: rightWeightNewtons,
+    forceTwoXNewtons: 0,
+    forceTwoZNewtons: -rightWeightNewtons,
+    momentOfInertiaKilogramMetersSquared,
+    netForceNewtons: Math.abs(
+      parameters.appliedForceNewtons - leftWeightNewtons - rightWeightNewtons,
+    ),
+    netTorqueNewtonMeters,
+    positionMeters: centerOfMassMeters,
+    speedMetersPerSecond: Math.abs(angularVelocityRadiansPerSecond),
+    timeSeconds,
+    totalEnergyJoules: Math.abs(netTorqueNewtonMeters * angleRadians),
+    velocityMetersPerSecond: angularVelocityRadiansPerSecond,
+    xMeters: centerOfMassMeters,
+    zMeters: 0,
+  })
+}
+
 function computeUniformCircularMotionSample(
   parameters: UniformCircularMotionParameters,
   timeSeconds: number,
@@ -1083,25 +1704,57 @@ function buildSample(
     accelerationZMetersPerSecondSquared:
       sample.accelerationZMetersPerSecondSquared ?? 0,
     angleRadians: sample.angleRadians ?? 0,
+    angularAccelerationRadiansPerSecondSquared:
+      sample.angularAccelerationRadiansPerSecondSquared ?? 0,
     angularVelocityRadiansPerSecond:
       sample.angularVelocityRadiansPerSecond ?? 0,
     appliedForceNewtons: sample.appliedForceNewtons ?? 0,
+    appliedForceXNewtons: sample.appliedForceXNewtons ?? 0,
+    appliedForceZNewtons: sample.appliedForceZNewtons ?? 0,
     appliedWorkJoules: sample.appliedWorkJoules ?? 0,
+    centerOfMassMeters: sample.centerOfMassMeters ?? 0,
     centripetalForceNewtons: sample.centripetalForceNewtons ?? 0,
     centripetalAccelerationMetersPerSecondSquared:
       sample.centripetalAccelerationMetersPerSecondSquared ?? 0,
     displacementMeters: sample.displacementMeters ?? 0,
     frequencyHertz: sample.frequencyHertz ?? 0,
+    forceOneNewtons: sample.forceOneNewtons ?? 0,
+    forceOneXNewtons: sample.forceOneXNewtons ?? 0,
+    forceOneZNewtons: sample.forceOneZNewtons ?? 0,
+    forceThreeNewtons: sample.forceThreeNewtons ?? 0,
+    forceThreeXNewtons: sample.forceThreeXNewtons ?? 0,
+    forceThreeZNewtons: sample.forceThreeZNewtons ?? 0,
+    forceTwoNewtons: sample.forceTwoNewtons ?? 0,
+    forceTwoXNewtons: sample.forceTwoXNewtons ?? 0,
+    forceTwoZNewtons: sample.forceTwoZNewtons ?? 0,
     frictionForceNewtons: sample.frictionForceNewtons ?? 0,
     gripRatio: sample.gripRatio ?? 0,
+    impulseNewtonSeconds: sample.impulseNewtonSeconds ?? 0,
     isGrounded: sample.isGrounded ?? false,
     kineticEnergyJoules,
+    kineticEnergyLostJoules: sample.kineticEnergyLostJoules ?? 0,
     maxStaticFrictionNewtons: sample.maxStaticFrictionNewtons ?? 0,
+    momentOfInertiaKilogramMetersSquared:
+      sample.momentOfInertiaKilogramMetersSquared ?? 0,
+    momentumKilogramMetersPerSecond:
+      sample.momentumKilogramMetersPerSecond ?? 0,
+    momentumXKilogramMetersPerSecond:
+      sample.momentumXKilogramMetersPerSecond ?? 0,
+    momentumZKilogramMetersPerSecond:
+      sample.momentumZKilogramMetersPerSecond ?? 0,
     netForceNewtons: sample.netForceNewtons ?? 0,
+    netTorqueNewtonMeters: sample.netTorqueNewtonMeters ?? 0,
     normalForceNewtons: sample.normalForceNewtons ?? 0,
     periodSeconds: sample.periodSeconds ?? 0,
     positionMeters: sample.positionMeters ?? sample.xMeters,
     potentialEnergyJoules,
+    secondarySpeedMetersPerSecond: sample.secondarySpeedMetersPerSecond ?? 0,
+    secondaryVelocityMetersPerSecond:
+      sample.secondaryVelocityMetersPerSecond ?? 0,
+    secondaryVelocityXMetersPerSecond:
+      sample.secondaryVelocityXMetersPerSecond ?? 0,
+    secondaryVelocityZMetersPerSecond:
+      sample.secondaryVelocityZMetersPerSecond ?? 0,
     secondaryXMeters: sample.secondaryXMeters ?? 0,
     secondaryZMeters: sample.secondaryZMeters ?? 0,
     speedMetersPerSecond: sample.speedMetersPerSecond ?? 0,
@@ -1166,6 +1819,96 @@ function getKinematicsWarnings(
     return []
   }
 
+  if (simulationId === 'collisions-1d-2d') {
+    const collision = getCollisionSetup(parameters as CollisionsParameters)
+
+    if (!Number.isFinite(collision.collisionTimeSeconds)) {
+      return [
+        {
+          code: 'COLLISION_NOT_REACHED',
+          message:
+            'Os corpos nao chegam ao contato no ciclo com as velocidades atuais.',
+        },
+      ]
+    }
+
+    if (collision.collisionTimeSeconds > durationSeconds) {
+      return [
+        {
+          code: 'COLLISION_AFTER_CYCLE',
+          message:
+            'O contato ocorreria depois do tempo do ciclo; a timeline mostra apenas a aproximacao.',
+        },
+      ]
+    }
+
+    if ((parameters as CollisionsParameters).coefficientOfRestitution < 1) {
+      return [
+        {
+          code: 'COLLISION_INELASTIC_LOSS',
+          message:
+            'Coeficiente de restituicao menor que 1 conserva momento, mas dissipa parte da energia cinetica.',
+        },
+      ]
+    }
+
+    return []
+  }
+
+  if (simulationId === 'particle-equilibrium') {
+    const sample = computeParticleEquilibriumSample(
+      parameters as ParticleEquilibriumParameters,
+      0,
+    )
+
+    if (sample.netForceNewtons > equilibriumForceToleranceNewtons) {
+      return [
+        {
+          code: 'PARTICLE_NOT_IN_EQUILIBRIUM',
+          message:
+            'A soma vetorial das forcas nao e nula; o sample mostra aceleracao na direcao da resultante.',
+        },
+      ]
+    }
+
+    return []
+  }
+
+  if (simulationId === 'torque-levers-center-mass') {
+    const sample = computeTorqueLeversCenterMassSample(
+      parameters as TorqueLeversCenterMassParameters,
+      0,
+    )
+
+    if (Math.abs(sample.netTorqueNewtonMeters) > torqueToleranceNewtonMeters) {
+      return [
+        {
+          code: 'LEVER_ROTATIONAL_IMBALANCE',
+          message:
+            'O torque resultante em torno do apoio nao e nulo; o diagrama inclina para indicar desequilibrio rotacional.',
+        },
+      ]
+    }
+
+    return []
+  }
+
+  if (simulationId === 'rigid-body-rotation') {
+    const rotationParameters = parameters as RigidBodyRotationParameters
+
+    if (rotationParameters.angularDampingPerSecond > 0) {
+      return [
+        {
+          code: 'ROTATION_DAMPING_ACTIVE',
+          message:
+            'O amortecimento angular transforma parte do trabalho aplicado em dissipacao didatica.',
+        },
+      ]
+    }
+
+    return []
+  }
+
   if (simulationId === 'work-energy-track') {
     const trackParameters = parameters as WorkEnergyTrackParameters
     const lastSample = computeWorkEnergyTrackSample(trackParameters, durationSeconds)
@@ -1217,6 +1960,14 @@ function validateKinematicsParameters(
         parameters as CentripetalForceCurveParameters,
       )
       return
+    case 'collisions-1d-2d':
+      validateCollisionsParameters(parameters as CollisionsParameters)
+      return
+    case 'particle-equilibrium':
+      validateParticleEquilibriumParameters(
+        parameters as ParticleEquilibriumParameters,
+      )
+      return
     case 'uniform-linear-motion':
       validateUniformLinearMotionParameters(
         parameters as UniformLinearMotionParameters,
@@ -1229,6 +1980,16 @@ function validateKinematicsParameters(
       return
     case 'projectile-motion':
       validateProjectileMotionParameters(parameters as ProjectileMotionParameters)
+      return
+    case 'rigid-body-rotation':
+      validateRigidBodyRotationParameters(
+        parameters as RigidBodyRotationParameters,
+      )
+      return
+    case 'torque-levers-center-mass':
+      validateTorqueLeversCenterMassParameters(
+        parameters as TorqueLeversCenterMassParameters,
+      )
       return
     case 'uniform-circular-motion':
       validateUniformCircularMotionParameters(
@@ -1276,6 +2037,53 @@ function validateCentripetalForceCurveParameters(
   assertFinitePositive('massKilograms', parameters.massKilograms)
   assertFinitePositive('radiusMeters', parameters.radiusMeters)
   assertFinitePositive('speedMetersPerSecond', parameters.speedMetersPerSecond)
+}
+
+function validateCollisionsParameters(parameters: CollisionsParameters) {
+  assertFiniteNonNegative(
+    'coefficientOfRestitution',
+    parameters.coefficientOfRestitution,
+  )
+  assertFinite('impactAngleDegrees', parameters.impactAngleDegrees)
+  assertFinitePositive('initialSeparationMeters', parameters.initialSeparationMeters)
+  assertFinitePositive('massOneKilograms', parameters.massOneKilograms)
+  assertFinitePositive('massTwoKilograms', parameters.massTwoKilograms)
+  assertFiniteNonNegative(
+    'normalSpeedOneMetersPerSecond',
+    parameters.normalSpeedOneMetersPerSecond,
+  )
+  assertFiniteNonNegative(
+    'normalSpeedTwoMetersPerSecond',
+    parameters.normalSpeedTwoMetersPerSecond,
+  )
+  assertFinite(
+    'tangentialSpeedOneMetersPerSecond',
+    parameters.tangentialSpeedOneMetersPerSecond,
+  )
+  assertFinite(
+    'tangentialSpeedTwoMetersPerSecond',
+    parameters.tangentialSpeedTwoMetersPerSecond,
+  )
+
+  if (parameters.coefficientOfRestitution > 1) {
+    throw new Error('coefficientOfRestitution must be between 0 and 1.')
+  }
+
+  if (parameters.initialSeparationMeters <= collisionContactDistanceMeters) {
+    throw new Error('initialSeparationMeters must exceed the contact distance.')
+  }
+}
+
+function validateParticleEquilibriumParameters(
+  parameters: ParticleEquilibriumParameters,
+) {
+  assertFiniteNonNegative('forceOneNewtons', parameters.forceOneNewtons)
+  assertFinite('forceOneAngleDegrees', parameters.forceOneAngleDegrees)
+  assertFiniteNonNegative('forceTwoNewtons', parameters.forceTwoNewtons)
+  assertFinite('forceTwoAngleDegrees', parameters.forceTwoAngleDegrees)
+  assertFiniteNonNegative('forceThreeNewtons', parameters.forceThreeNewtons)
+  assertFinite('forceThreeAngleDegrees', parameters.forceThreeAngleDegrees)
+  assertFinitePositive('massKilograms', parameters.massKilograms)
 }
 
 function computeCentripetalGripRatio(
@@ -1348,6 +2156,43 @@ function validateProjectileMotionParameters(
   ) {
     throw new Error('launchAngleDegrees must be between 0 and 85 degrees.')
   }
+}
+
+function validateRigidBodyRotationParameters(
+  parameters: RigidBodyRotationParameters,
+) {
+  assertFiniteNonNegative(
+    'angularDampingPerSecond',
+    parameters.angularDampingPerSecond,
+  )
+  assertFinite(
+    'appliedTorqueNewtonMeters',
+    parameters.appliedTorqueNewtonMeters,
+  )
+  assertFinite('initialAngleDegrees', parameters.initialAngleDegrees)
+  assertFinite(
+    'initialAngularVelocityRadiansPerSecond',
+    parameters.initialAngularVelocityRadiansPerSecond,
+  )
+  assertFinitePositive(
+    'momentOfInertiaKilogramMetersSquared',
+    parameters.momentOfInertiaKilogramMetersSquared,
+  )
+}
+
+function validateTorqueLeversCenterMassParameters(
+  parameters: TorqueLeversCenterMassParameters,
+) {
+  assertFinite('appliedForceNewtons', parameters.appliedForceNewtons)
+  assertFiniteNonNegative('appliedForceArmMeters', parameters.appliedForceArmMeters)
+  assertFinitePositive(
+    'gravityMetersPerSecondSquared',
+    parameters.gravityMetersPerSecondSquared,
+  )
+  assertFinitePositive('leftArmMeters', parameters.leftArmMeters)
+  assertFinitePositive('leftMassKilograms', parameters.leftMassKilograms)
+  assertFinitePositive('rightArmMeters', parameters.rightArmMeters)
+  assertFinitePositive('rightMassKilograms', parameters.rightMassKilograms)
 }
 
 function validateUniformCircularMotionParameters(
@@ -1482,6 +2327,191 @@ function computeForwardSegmentMotion({
   }
 }
 
+function resolveCollision(
+  parameters: CollisionsParameters,
+  timeSeconds: number,
+) {
+  const setup = getCollisionSetup(parameters)
+  const hasCollided = timeSeconds >= setup.collisionTimeSeconds
+  const activeTimeSeconds = hasCollided
+    ? timeSeconds - setup.collisionTimeSeconds
+    : timeSeconds
+
+  if (!hasCollided) {
+    return {
+      initialKineticEnergyJoules: setup.initialKineticEnergyJoules,
+      initialPrimaryPosition: setup.initialPrimaryPosition,
+      impulseNewtonSeconds: 0,
+      primaryPosition: addVectors(
+        setup.initialPrimaryPosition,
+        scaleVector(setup.primaryVelocityBefore, activeTimeSeconds),
+      ),
+      primaryVelocity: setup.primaryVelocityBefore,
+      secondaryPosition: addVectors(
+        setup.initialSecondaryPosition,
+        scaleVector(setup.secondaryVelocityBefore, activeTimeSeconds),
+      ),
+      secondaryVelocity: setup.secondaryVelocityBefore,
+    }
+  }
+
+  const primaryCollisionPosition = addVectors(
+    setup.initialPrimaryPosition,
+    scaleVector(setup.primaryVelocityBefore, setup.collisionTimeSeconds),
+  )
+  const secondaryCollisionPosition = addVectors(
+    setup.initialSecondaryPosition,
+    scaleVector(setup.secondaryVelocityBefore, setup.collisionTimeSeconds),
+  )
+
+  return {
+    initialKineticEnergyJoules: setup.initialKineticEnergyJoules,
+    initialPrimaryPosition: setup.initialPrimaryPosition,
+    impulseNewtonSeconds: setup.impulseNewtonSeconds,
+    primaryPosition: addVectors(
+      primaryCollisionPosition,
+      scaleVector(setup.primaryVelocityAfter, activeTimeSeconds),
+    ),
+    primaryVelocity: setup.primaryVelocityAfter,
+    secondaryPosition: addVectors(
+      secondaryCollisionPosition,
+      scaleVector(setup.secondaryVelocityAfter, activeTimeSeconds),
+    ),
+    secondaryVelocity: setup.secondaryVelocityAfter,
+  }
+}
+
+function getCollisionSetup(parameters: CollisionsParameters) {
+  const angleRadians = degreesToRadians(parameters.impactAngleDegrees)
+  const normal = {
+    x: Math.cos(angleRadians),
+    z: Math.sin(angleRadians),
+  }
+  const tangent = {
+    x: -normal.z,
+    z: normal.x,
+  }
+  const initialPrimaryPosition = scaleVector(
+    normal,
+    -parameters.initialSeparationMeters / 2,
+  )
+  const initialSecondaryPosition = scaleVector(
+    normal,
+    parameters.initialSeparationMeters / 2,
+  )
+  const primaryVelocityBefore = addVectors(
+    scaleVector(normal, parameters.normalSpeedOneMetersPerSecond),
+    scaleVector(tangent, parameters.tangentialSpeedOneMetersPerSecond),
+  )
+  const secondaryVelocityBefore = addVectors(
+    scaleVector(normal, -parameters.normalSpeedTwoMetersPerSecond),
+    scaleVector(tangent, parameters.tangentialSpeedTwoMetersPerSecond),
+  )
+  const primaryNormalVelocityBefore = dotVector(primaryVelocityBefore, normal)
+  const secondaryNormalVelocityBefore = dotVector(secondaryVelocityBefore, normal)
+  const closingSpeedMetersPerSecond =
+    primaryNormalVelocityBefore - secondaryNormalVelocityBefore
+  const collisionTimeSeconds =
+    closingSpeedMetersPerSecond > 0
+      ? (parameters.initialSeparationMeters - collisionContactDistanceMeters) /
+        closingSpeedMetersPerSecond
+      : Number.POSITIVE_INFINITY
+  const sharedMomentum =
+    parameters.massOneKilograms * primaryNormalVelocityBefore +
+    parameters.massTwoKilograms * secondaryNormalVelocityBefore
+  const relativeNormalVelocity =
+    primaryNormalVelocityBefore - secondaryNormalVelocityBefore
+  const primaryNormalVelocityAfter =
+    (sharedMomentum -
+      parameters.massTwoKilograms *
+        parameters.coefficientOfRestitution *
+        relativeNormalVelocity) /
+    (parameters.massOneKilograms + parameters.massTwoKilograms)
+  const secondaryNormalVelocityAfter =
+    (sharedMomentum +
+      parameters.massOneKilograms *
+        parameters.coefficientOfRestitution *
+        relativeNormalVelocity) /
+    (parameters.massOneKilograms + parameters.massTwoKilograms)
+  const primaryTangentialVelocity = dotVector(primaryVelocityBefore, tangent)
+  const secondaryTangentialVelocity = dotVector(secondaryVelocityBefore, tangent)
+  const primaryVelocityAfter = addVectors(
+    scaleVector(normal, primaryNormalVelocityAfter),
+    scaleVector(tangent, primaryTangentialVelocity),
+  )
+  const secondaryVelocityAfter = addVectors(
+    scaleVector(normal, secondaryNormalVelocityAfter),
+    scaleVector(tangent, secondaryTangentialVelocity),
+  )
+
+  return {
+    collisionTimeSeconds,
+    impulseNewtonSeconds: Math.abs(
+      parameters.massOneKilograms *
+        (primaryNormalVelocityAfter - primaryNormalVelocityBefore),
+    ),
+    initialKineticEnergyJoules:
+      0.5 *
+        parameters.massOneKilograms *
+        vectorMagnitudeSquared(primaryVelocityBefore) +
+      0.5 *
+        parameters.massTwoKilograms *
+        vectorMagnitudeSquared(secondaryVelocityBefore),
+    initialPrimaryPosition,
+    initialSecondaryPosition,
+    primaryVelocityAfter,
+    primaryVelocityBefore,
+    secondaryVelocityAfter,
+    secondaryVelocityBefore,
+  }
+}
+
+function computeDampedAngularMotion({
+  angularDampingPerSecond,
+  driveAngularAcceleration,
+  initialAngleRadians,
+  initialAngularVelocityRadiansPerSecond,
+  timeSeconds,
+}: {
+  angularDampingPerSecond: number
+  driveAngularAcceleration: number
+  initialAngleRadians: number
+  initialAngularVelocityRadiansPerSecond: number
+  timeSeconds: number
+}) {
+  if (angularDampingPerSecond === 0) {
+    return {
+      angleRadians:
+        initialAngleRadians +
+        initialAngularVelocityRadiansPerSecond * timeSeconds +
+        0.5 * driveAngularAcceleration * timeSeconds ** 2,
+      angularAccelerationRadiansPerSecondSquared: driveAngularAcceleration,
+      angularVelocityRadiansPerSecond:
+        initialAngularVelocityRadiansPerSecond +
+        driveAngularAcceleration * timeSeconds,
+    }
+  }
+
+  const terminalAngularVelocity =
+    driveAngularAcceleration / angularDampingPerSecond
+  const transientVelocity =
+    initialAngularVelocityRadiansPerSecond - terminalAngularVelocity
+  const decay = Math.exp(-angularDampingPerSecond * timeSeconds)
+  const angularVelocityRadiansPerSecond =
+    terminalAngularVelocity + transientVelocity * decay
+
+  return {
+    angleRadians:
+      initialAngleRadians +
+      terminalAngularVelocity * timeSeconds +
+      (transientVelocity * (1 - decay)) / angularDampingPerSecond,
+    angularAccelerationRadiansPerSecondSquared:
+      driveAngularAcceleration -
+      angularDampingPerSecond * angularVelocityRadiansPerSecond,
+    angularVelocityRadiansPerSecond,
+  }
+}
+
 function validateTimelineInput(durationSeconds: number, sampleRateHz: number) {
   assertFinitePositive('durationSeconds', durationSeconds)
   assertFinitePositive('sampleRateHz', sampleRateHz)
@@ -1517,6 +2547,43 @@ function normalizeVector(vector: { x: number; z: number }) {
   }
 }
 
+function vectorFromPolar(magnitude: number, angleDegrees: number) {
+  const angleRadians = degreesToRadians(angleDegrees)
+
+  return {
+    x: magnitude * Math.cos(angleRadians),
+    z: magnitude * Math.sin(angleRadians),
+  }
+}
+
+function addVectors(
+  first: { x: number; z: number },
+  second: { x: number; z: number },
+) {
+  return {
+    x: first.x + second.x,
+    z: first.z + second.z,
+  }
+}
+
+function scaleVector(vector: { x: number; z: number }, scale: number) {
+  return {
+    x: vector.x * scale,
+    z: vector.z * scale,
+  }
+}
+
+function dotVector(
+  first: { x: number; z: number },
+  second: { x: number; z: number },
+) {
+  return first.x * second.x + first.z * second.z
+}
+
+function vectorMagnitudeSquared(vector: { x: number; z: number }) {
+  return vector.x ** 2 + vector.z ** 2
+}
+
 function readNumber(values: Record<string, unknown>, key: string) {
   const value = values[key]
 
@@ -1547,6 +2614,10 @@ function assertFiniteNonNegative(key: string, value: number) {
 
 function degreesToRadians(value: number) {
   return (value * Math.PI) / 180
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
 }
 
 function lerp(start: number, end: number, ratio: number) {

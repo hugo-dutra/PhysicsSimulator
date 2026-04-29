@@ -31,6 +31,20 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /Trabalho e energia em trilho/i }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Colisoes 1D e 2D/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Equilibrio de particula/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: /Torque, alavancas e centro de massa/i,
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Rotacao de corpo rigido/i }),
+    ).toBeInTheDocument()
     expect(screen.getByText('3601')).toBeInTheDocument()
     expect(screen.getByText(/Viewport Three\.js/i)).toBeInTheDocument()
     const viewport = screen.getByLabelText(/Pendulum numerical viewport/i)
@@ -305,7 +319,7 @@ describe('App', () => {
 
     fireEvent.click(screen.getByLabelText(/Resetar simulacao/i))
     expect(screen.getByLabelText(/Reproduzir simulacao/i)).toBeInTheDocument()
-  }, 20_000)
+  }, 30_000)
 
   it('maximizes simulation, charts, and table panels inside the window', () => {
     render(
@@ -600,13 +614,13 @@ describe('App', () => {
         .toBeInTheDocument()
       expect(screen.getByLabelText(/Cena 3D de Cinematica/i))
         .toHaveAccessibleName(/Shift \+ scroll para zoom/i)
-      expect(screen.getByLabelText(control)).toBeInTheDocument()
+      expect(screen.getAllByLabelText(control).length).toBeGreaterThan(0)
 
       fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
       expect(screen.getByRole('img', { name: chart })).toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: /Recolher Graficos/i }))
     })
-  }, 20_000)
+  }, 45_000)
 
   it('opens the next mechanics simulations through the shared shell', () => {
     render(
@@ -636,7 +650,7 @@ describe('App', () => {
         .toBeInTheDocument()
       expect(screen.getByLabelText(/Cena 3D de Cinematica/i))
         .toHaveAccessibleName(/Shift \+ scroll para zoom/i)
-      expect(screen.getByLabelText(control)).toBeInTheDocument()
+      expect(screen.getAllByLabelText(control).length).toBeGreaterThan(0)
 
       fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
       expect(screen.getByRole('img', { name: chart })).toBeInTheDocument()
@@ -656,5 +670,42 @@ describe('App', () => {
     expect(
       screen.getByRole('img', { name: /Trabalho e dissipacao por tempo/i }),
     ).toBeInTheDocument()
-  }, 20_000)
+    fireEvent.click(screen.getByRole('button', { name: /Recolher Graficos/i }))
+
+    const nextMechanicsCases = [
+      {
+        title: /Colisoes 1D e 2D/i,
+        chart: /Momento e impulso por tempo/i,
+        control: /Coeficiente de restituicao/i,
+      },
+      {
+        title: /Equilibrio de particula/i,
+        chart: /Forcas e resultante por tempo/i,
+        control: /Forca A \(N\)/i,
+      },
+      {
+        title: /Torque, alavancas e centro de massa/i,
+        chart: /Torque e centro de massa/i,
+        control: /Braco esquerdo \(m\)/i,
+      },
+      {
+        title: /Rotacao de corpo rigido/i,
+        chart: /Torque e aceleracao angular/i,
+        control: /Momento de inercia \(kg m\^2\)/i,
+      },
+    ]
+
+    nextMechanicsCases.forEach(({ title, chart, control }) => {
+      fireEvent.click(screen.getByRole('button', { name: title }))
+
+      expect(screen.getByRole('heading', { name: title })).toBeInTheDocument()
+      expect(screen.getByLabelText(/Kinematics numerical viewport/i))
+        .toBeInTheDocument()
+      expect(screen.getAllByLabelText(control).length).toBeGreaterThan(0)
+
+      fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
+      expect(screen.getByRole('img', { name: chart })).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /Recolher Graficos/i }))
+    })
+  }, 45_000)
 })

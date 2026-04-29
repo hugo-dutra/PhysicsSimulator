@@ -69,6 +69,7 @@ import {
 } from '../../lib/physics/kinematics'
 import atwoodMachineTheory from '../../content/simulations/mechanics/atwood-machine/theory.md?raw'
 import centripetalForceCurveTheory from '../../content/simulations/mechanics/centripetal-force-curve/theory.md?raw'
+import collisionsTheory from '../../content/simulations/mechanics/collisions-1d-2d/theory.md?raw'
 import {
   computePendulumTimeline,
   getPendulumVectorOverlays,
@@ -78,8 +79,11 @@ import {
   type PendulumVectorOverlay,
 } from '../../lib/physics/pendulum'
 import inclinedPlaneTheory from '../../content/simulations/mechanics/inclined-plane-friction/theory.md?raw'
+import particleEquilibriumTheory from '../../content/simulations/mechanics/particle-equilibrium/theory.md?raw'
 import pendulumTheory from '../../content/simulations/mechanics/pendulum/theory.md?raw'
 import projectileMotionTheory from '../../content/simulations/mechanics/projectile-motion/theory.md?raw'
+import rigidBodyRotationTheory from '../../content/simulations/mechanics/rigid-body-rotation/theory.md?raw'
+import torqueLeversCenterMassTheory from '../../content/simulations/mechanics/torque-levers-center-mass/theory.md?raw'
 import uniformCircularMotionTheory from '../../content/simulations/mechanics/uniform-circular-motion/theory.md?raw'
 import uniformLinearMotionTheory from '../../content/simulations/mechanics/uniform-linear-motion/theory.md?raw'
 import uniformlyAcceleratedMotionTheory from '../../content/simulations/mechanics/uniformly-accelerated-motion/theory.md?raw'
@@ -168,7 +172,11 @@ type KinematicsVectorLegendItem = {
 const kinematicsTheoryById = {
   'atwood-machine': atwoodMachineTheory,
   'centripetal-force-curve': centripetalForceCurveTheory,
+  'collisions-1d-2d': collisionsTheory,
+  'particle-equilibrium': particleEquilibriumTheory,
   'projectile-motion': projectileMotionTheory,
+  'rigid-body-rotation': rigidBodyRotationTheory,
+  'torque-levers-center-mass': torqueLeversCenterMassTheory,
   'uniform-circular-motion': uniformCircularMotionTheory,
   'uniform-linear-motion': uniformLinearMotionTheory,
   'uniformly-accelerated-motion': uniformlyAcceleratedMotionTheory,
@@ -327,6 +335,58 @@ const kinematicsVectorLegendItemsById = {
       description: 'limite de atrito estatico disponivel antes da perda de aderencia',
     },
   ],
+  'collisions-1d-2d': [
+    {
+      id: 'velocity',
+      label: 'Corpo 1',
+      color: themeTokens.cyan,
+      description: 'velocidade atual do primeiro corpo antes ou apos o impacto',
+    },
+    {
+      id: 'secondaryVelocity',
+      label: 'Corpo 2',
+      color: '#818CF8',
+      description: 'velocidade atual do segundo corpo antes ou apos o impacto',
+    },
+    {
+      id: 'momentum',
+      label: 'Momento total',
+      color: themeTokens.vector,
+      description: 'momento linear total conservado no modelo de contato ideal',
+    },
+    {
+      id: 'impulse',
+      label: 'Impulso',
+      color: themeTokens.warning,
+      description: 'impulso normal acumulado quando ocorre a colisao',
+    },
+  ],
+  'particle-equilibrium': [
+    {
+      id: 'forceOne',
+      label: 'Forca A',
+      color: themeTokens.teal,
+      description: 'primeira forca aplicada sobre a particula',
+    },
+    {
+      id: 'forceTwo',
+      label: 'Forca B',
+      color: themeTokens.cyan,
+      description: 'segunda forca aplicada sobre a particula',
+    },
+    {
+      id: 'forceThree',
+      label: 'Forca C',
+      color: themeTokens.vector,
+      description: 'terceira forca aplicada sobre a particula',
+    },
+    {
+      id: 'resultant',
+      label: 'Resultante',
+      color: themeTokens.danger,
+      description: 'soma vetorial; deve zerar para equilibrio translacional',
+    },
+  ],
   'projectile-motion': [
     {
       id: 'displacement',
@@ -365,6 +425,52 @@ const kinematicsVectorLegendItemsById = {
       label: 'Aceleracao centripeta',
       color: themeTokens.warning,
       description: 'aceleracao radial apontando para o centro',
+    },
+  ],
+  'rigid-body-rotation': [
+    {
+      id: 'angularVelocity',
+      label: 'Vel. angular',
+      color: themeTokens.cyan,
+      description: 'taxa de giro do corpo rigido em torno do eixo fixo',
+    },
+    {
+      id: 'angularAcceleration',
+      label: 'Acel. angular',
+      color: themeTokens.warning,
+      description: 'variacao de velocidade angular definida por torque e inercia',
+    },
+    {
+      id: 'torque',
+      label: 'Torque',
+      color: themeTokens.vector,
+      description: 'momento de forca externo aplicado ao corpo',
+    },
+  ],
+  'torque-levers-center-mass': [
+    {
+      id: 'forceOne',
+      label: 'Peso esquerdo',
+      color: themeTokens.teal,
+      description: 'peso aplicado no braco esquerdo da alavanca',
+    },
+    {
+      id: 'forceTwo',
+      label: 'Peso direito',
+      color: themeTokens.cyan,
+      description: 'peso aplicado no braco direito da alavanca',
+    },
+    {
+      id: 'appliedForce',
+      label: 'Forca aplicada',
+      color: themeTokens.vector,
+      description: 'forca externa que tambem produz torque sobre o apoio',
+    },
+    {
+      id: 'torque',
+      label: 'Torque',
+      color: themeTokens.warning,
+      description: 'torque resultante em torno do ponto de apoio',
     },
   ],
   'uniform-linear-motion': [
@@ -2797,6 +2903,12 @@ function KinematicsRuntime({
     return selectStableRows(visibleWindowSamples, tableRowCount)
   }, [tableExpanded, tableRowCount, visibleWindowSamples])
   const vectorLegendItems = kinematicsVectorLegendItemsById[simulationId]
+  const readoutMetrics = buildKinematicsReadoutMetrics({
+    frameStats,
+    sample: liveSample,
+    showEnergy: overlays.energy,
+    simulationId,
+  })
 
   return (
     <>
@@ -2921,49 +3033,13 @@ function KinematicsRuntime({
             p: 1.5,
           }}
         >
-          <Metric
-            label="Posicao"
-            value={formatNumber(liveSample.positionMeters, 'm')}
-          />
-          <Metric
-            label="Deslocamento"
-            value={formatNumber(liveSample.displacementMeters, 'm')}
-          />
-          <Metric
-            label="Velocidade"
-            value={formatNumber(liveSample.velocityMetersPerSecond, 'm/s')}
-          />
-          <Metric
-            label="Rapidez"
-            value={formatNumber(liveSample.speedMetersPerSecond, 'm/s')}
-          />
-          <Metric
-            label="Aceleracao"
-            value={formatNumber(
-              liveSample.accelerationMetersPerSecondSquared,
-              'm/s^2',
-            )}
-          />
-          {simulationId === 'centripetal-force-curve' ? (
+          {readoutMetrics.map((metric) => (
             <Metric
-              label="Aderencia"
-              value={liveSample.gripRatio > 1 ? 'saiu da curva' : 'aderiu'}
+              key={metric.label}
+              label={metric.label}
+              value={metric.value}
             />
-          ) : null}
-          {overlays.energy ? (
-            <Metric
-              label="Energia total"
-              value={formatNumber(liveSample.totalEnergyJoules, 'J')}
-            />
-          ) : null}
-          <Metric
-            label="Tempo do frame"
-            value={
-              frameStats.frameTimeMs > 0
-                ? formatNumber(frameStats.frameTimeMs, 'ms')
-                : '-- ms'
-            }
-          />
+          ))}
         </Box>
         {overlays.vectors ? (
           <KinematicsVectorLegend
@@ -3184,6 +3260,139 @@ function KinematicsRuntime({
       ) : null}
     </>
   )
+}
+
+function buildKinematicsReadoutMetrics({
+  frameStats,
+  sample,
+  showEnergy,
+  simulationId,
+}: {
+  frameStats: KinematicsFrameStats
+  sample: KinematicsSample
+  showEnergy: boolean
+  simulationId: KinematicsSimulationId
+}) {
+  const frameMetric = {
+    label: 'Tempo do frame',
+    value:
+      frameStats.frameTimeMs > 0
+        ? formatNumber(frameStats.frameTimeMs, 'ms')
+        : '-- ms',
+  }
+  const energyMetric = showEnergy
+    ? [
+        {
+          label: 'Energia total',
+          value: formatNumber(sample.totalEnergyJoules, 'J'),
+        },
+      ]
+    : []
+
+  if (simulationId === 'collisions-1d-2d') {
+    return [
+      { label: 'Corpo 1', value: formatNumber(sample.speedMetersPerSecond, 'm/s') },
+      {
+        label: 'Corpo 2',
+        value: formatNumber(sample.secondarySpeedMetersPerSecond, 'm/s'),
+      },
+      {
+        label: 'Momento total',
+        value: formatNumber(sample.momentumKilogramMetersPerSecond, 'kg m/s'),
+      },
+      {
+        label: 'Impulso',
+        value: formatNumber(sample.impulseNewtonSeconds, 'N s'),
+      },
+      ...energyMetric,
+      frameMetric,
+    ]
+  }
+
+  if (simulationId === 'particle-equilibrium') {
+    return [
+      {
+        label: 'Resultante',
+        value: formatNumber(sample.netForceNewtons, 'N'),
+      },
+      {
+        label: 'Aceleracao',
+        value: formatNumber(sample.accelerationMetersPerSecondSquared, 'm/s^2'),
+      },
+      { label: 'Deslocamento', value: formatNumber(sample.displacementMeters, 'm') },
+      ...energyMetric,
+      frameMetric,
+    ]
+  }
+
+  if (simulationId === 'torque-levers-center-mass') {
+    return [
+      {
+        label: 'Torque resultante',
+        value: formatNumber(sample.netTorqueNewtonMeters, 'N m'),
+      },
+      {
+        label: 'Centro de massa',
+        value: formatNumber(sample.centerOfMassMeters, 'm'),
+      },
+      {
+        label: 'Aceleracao angular',
+        value: formatNumber(
+          sample.angularAccelerationRadiansPerSecondSquared,
+          'rad/s^2',
+        ),
+      },
+      ...energyMetric,
+      frameMetric,
+    ]
+  }
+
+  if (simulationId === 'rigid-body-rotation') {
+    return [
+      { label: 'Angulo', value: formatNumber(sample.angleRadians, 'rad') },
+      {
+        label: 'Velocidade angular',
+        value: formatNumber(sample.angularVelocityRadiansPerSecond, 'rad/s'),
+      },
+      {
+        label: 'Aceleracao angular',
+        value: formatNumber(
+          sample.angularAccelerationRadiansPerSecondSquared,
+          'rad/s^2',
+        ),
+      },
+      {
+        label: 'Torque',
+        value: formatNumber(sample.netTorqueNewtonMeters, 'N m'),
+      },
+      ...energyMetric,
+      frameMetric,
+    ]
+  }
+
+  return [
+    { label: 'Posicao', value: formatNumber(sample.positionMeters, 'm') },
+    { label: 'Deslocamento', value: formatNumber(sample.displacementMeters, 'm') },
+    {
+      label: 'Velocidade',
+      value: formatNumber(sample.velocityMetersPerSecond, 'm/s'),
+    },
+    { label: 'Rapidez', value: formatNumber(sample.speedMetersPerSecond, 'm/s') },
+    {
+      label: 'Aceleracao',
+      value: formatNumber(sample.accelerationMetersPerSecondSquared, 'm/s^2'),
+    },
+    ...(simulationId === 'centripetal-force-curve'
+      ? [
+          {
+            label: 'Aderencia',
+            value: sample.gripRatio > 1 ? 'saiu da curva' : 'aderiu',
+          },
+        ]
+      : []),
+    ...energyMetric,
+    frameMetric,
+  ]
 }
 
 function ParameterControl({

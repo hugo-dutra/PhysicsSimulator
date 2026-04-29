@@ -99,10 +99,10 @@ Tasks:
 - `[x]` Implementar `Mecanica > Dinamica > Maquina de Atwood`.
 - `[x]` Implementar `Mecanica > Dinamica > Forca centripeta em curva`.
 - `[x]` Implementar `Mecanica > Energia e momento > Trabalho e energia em trilho`.
-- `[ ]` Implementar `Mecanica > Energia e momento > Colisoes 1D e 2D`.
-- `[ ]` Implementar `Mecanica > Estatica > Equilibrio de particula`.
-- `[ ]` Implementar `Mecanica > Estatica > Torque, alavancas e centro de massa`.
-- `[ ]` Implementar `Mecanica > Rotacao > Rotacao de corpo rigido`.
+- `[x]` Implementar `Mecanica > Energia e momento > Colisoes 1D e 2D`.
+- `[x]` Implementar `Mecanica > Estatica > Equilibrio de particula`.
+- `[x]` Implementar `Mecanica > Estatica > Torque, alavancas e centro de massa`.
+- `[x]` Implementar `Mecanica > Rotacao > Rotacao de corpo rigido`.
 - `[ ]` Implementar `Mecanica > Rotacao > Rolamento sem escorregamento`.
 - `[ ]` Implementar `Mecanica > Gravitacao > Campo gravitacional e orbitas`.
 - `[ ]` Implementar `Mecanica > Fluidos basicos > Hidrostatica e empuxo`.

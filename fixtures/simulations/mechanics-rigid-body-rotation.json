@@ -1,0 +1,196 @@
+{
+  "simulationId": "rigid-body-rotation",
+  "durationSeconds": 14,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 7,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Tempo do ciclo",
+      "unit": "s",
+      "kind": "number",
+      "min": 5,
+      "max": 40,
+      "step": 1,
+      "defaultValue": 14
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 20,
+      "step": 1,
+      "defaultValue": 7
+    }
+  ],
+  "defaultParameters": {
+    "momentOfInertiaKilogramMetersSquared": 1.6,
+    "appliedTorqueNewtonMeters": 0.8,
+    "initialAngularVelocityRadiansPerSecond": 0.5,
+    "initialAngleDegrees": 0,
+    "angularDampingPerSecond": 0.05
+  },
+  "parameters": [
+    {
+      "id": "momentOfInertiaKilogramMetersSquared",
+      "label": "Momento de inercia",
+      "unit": "kg m^2",
+      "kind": "number",
+      "min": 0.1,
+      "max": 12,
+      "step": 0.1,
+      "defaultValue": 1.6
+    },
+    {
+      "id": "appliedTorqueNewtonMeters",
+      "label": "Torque aplicado",
+      "unit": "N m",
+      "kind": "number",
+      "min": -6,
+      "max": 6,
+      "step": 0.05,
+      "defaultValue": 0.8
+    },
+    {
+      "id": "initialAngularVelocityRadiansPerSecond",
+      "label": "Velocidade angular inicial",
+      "unit": "rad/s",
+      "kind": "number",
+      "min": -6,
+      "max": 6,
+      "step": 0.05,
+      "defaultValue": 0.5
+    },
+    {
+      "id": "initialAngleDegrees",
+      "label": "Angulo inicial",
+      "unit": "deg",
+      "kind": "number",
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "defaultValue": 0
+    },
+    {
+      "id": "angularDampingPerSecond",
+      "label": "Amortecimento angular",
+      "unit": "1/s",
+      "kind": "number",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "defaultValue": 0.05
+    }
+  ],
+  "presets": [
+    {
+      "id": "constant-torque",
+      "label": "Torque constante",
+      "parameters": {
+        "momentOfInertiaKilogramMetersSquared": 1.6,
+        "appliedTorqueNewtonMeters": 0.8,
+        "initialAngularVelocityRadiansPerSecond": 0.5,
+        "initialAngleDegrees": 0,
+        "angularDampingPerSecond": 0
+      }
+    },
+    {
+      "id": "high-inertia",
+      "label": "Alta inercia",
+      "parameters": {
+        "momentOfInertiaKilogramMetersSquared": 5,
+        "appliedTorqueNewtonMeters": 0.8,
+        "initialAngularVelocityRadiansPerSecond": 0.5,
+        "initialAngleDegrees": 30,
+        "angularDampingPerSecond": 0.02
+      }
+    },
+    {
+      "id": "damped-spin",
+      "label": "Giro amortecido",
+      "parameters": {
+        "momentOfInertiaKilogramMetersSquared": 1.2,
+        "appliedTorqueNewtonMeters": 0,
+        "initialAngularVelocityRadiansPerSecond": 2.2,
+        "initialAngleDegrees": -20,
+        "angularDampingPerSecond": 0.18
+      }
+    }
+  ],
+  "limits": [
+    "O corpo gira em torno de eixo fixo e nao translada.",
+    "O momento de inercia e informado diretamente para comparar corpos compactos e espalhados.",
+    "Torque aplicado igual a zero e valido; nesse caso a rotacao pode ser livre ou amortecida.",
+    "O amortecimento e linear em omega e representa dissipacao didatica, nao contato real detalhado."
+  ],
+  "formulas": [
+    {
+      "id": "rotational-newton",
+      "title": "Segunda lei para rotacao",
+      "expressionLatex": "\\tau=I\\alpha",
+      "description": "Relaciona torque aplicado, momento de inercia e aceleracao angular.",
+      "variables": [
+        { "symbol": "\\tau", "label": "torque", "unit": "N m" },
+        { "symbol": "I", "label": "momento de inercia", "unit": "kg m^2" },
+        { "symbol": "\\alpha", "label": "aceleracao angular", "unit": "rad/s^2" }
+      ],
+      "usedWhen": "Usar para corpos rigidos em torno de eixo fixo.",
+      "notUsedWhen": "Nao descreve corpos deformaveis ou eixo movel.",
+      "parameterIds": [
+        "momentOfInertiaKilogramMetersSquared",
+        "appliedTorqueNewtonMeters"
+      ],
+      "sampleFields": [
+        "netTorqueNewtonMeters",
+        "angularAccelerationRadiansPerSecondSquared"
+      ],
+      "relatedChartIds": ["torque"],
+      "relatedVectorIds": ["torque", "angularAcceleration"]
+    },
+    {
+      "id": "angular-kinematics",
+      "title": "Cinematica angular",
+      "expressionLatex": "\\omega(t)=\\omega_0+\\alpha t,\\quad \\theta(t)=\\theta_0+\\omega_0t+\\frac{1}{2}\\alpha t^2",
+      "description": "Descreve o caso sem amortecimento com torque constante.",
+      "variables": [
+        { "symbol": "\\omega", "label": "velocidade angular", "unit": "rad/s" },
+        { "symbol": "\\theta", "label": "angulo", "unit": "rad" }
+      ],
+      "usedWhen": "Usar quando o amortecimento angular esta zerado.",
+      "notUsedWhen": "Com amortecimento ativo, a curva usa solucao exponencial do motor.",
+      "parameterIds": [
+        "initialAngularVelocityRadiansPerSecond",
+        "initialAngleDegrees"
+      ],
+      "sampleFields": [
+        "angleRadians",
+        "angularVelocityRadiansPerSecond"
+      ],
+      "relatedChartIds": ["angle"],
+      "relatedVectorIds": ["angularVelocity"]
+    },
+    {
+      "id": "rotational-energy",
+      "title": "Energia cinetica rotacional",
+      "expressionLatex": "K_{rot}=\\frac{1}{2}I\\omega^2",
+      "description": "Calcula a energia associada ao giro do corpo rigido.",
+      "variables": [
+        { "symbol": "K_{rot}", "label": "energia rotacional", "unit": "J" }
+      ],
+      "usedWhen": "Usar para comparar torque, inercia e velocidade angular.",
+      "notUsedWhen": "Nao inclui energia de translacao ou vibracao do corpo.",
+      "parameterIds": [
+        "momentOfInertiaKilogramMetersSquared",
+        "initialAngularVelocityRadiansPerSecond"
+      ],
+      "sampleFields": [
+        "kineticEnergyJoules",
+        "thermalEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "relatedChartIds": ["energy"]
+    }
+  ]
+}

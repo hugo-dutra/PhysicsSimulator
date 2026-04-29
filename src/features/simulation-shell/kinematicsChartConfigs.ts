@@ -10,7 +10,9 @@ export type KinematicsChartId =
   | 'angle'
   | 'energy'
   | 'forces'
+  | 'momentum'
   | 'position'
+  | 'torque'
   | 'velocity'
   | 'work'
 
@@ -164,6 +166,210 @@ export function buildKinematicsChartConfigs(
           },
         ],
         yAxisTitle: 'Aceleracao e razao',
+      },
+    )
+  } else if (simulationId === 'collisions-1d-2d') {
+    charts.push(
+      {
+        id: 'position',
+        title: 'Posicoes dos corpos por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Corpo 1 x (m)',
+            x: time,
+            y: samples.map((sample) => sample.xMeters),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Corpo 2 x (m)',
+            x: time,
+            y: samples.map((sample) => sample.secondaryXMeters),
+          },
+        ],
+        yAxisTitle: 'Posicao (metros)',
+      },
+      {
+        id: 'velocity',
+        title: 'Velocidades dos corpos por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Rapidez do corpo 1 (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.speedMetersPerSecond),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Rapidez do corpo 2 (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.secondarySpeedMetersPerSecond),
+          },
+        ],
+        yAxisTitle: 'Velocidade (metros por segundo)',
+      },
+      {
+        id: 'momentum',
+        title: 'Momento e impulso por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.vector,
+            name: 'Momento linear total (kg m/s)',
+            x: time,
+            y: samples.map(
+              (sample) => sample.momentumKilogramMetersPerSecond,
+            ),
+          },
+          {
+            lineColor: themeTokens.warning,
+            name: 'Impulso acumulado no contato (N s)',
+            x: time,
+            y: samples.map((sample) => sample.impulseNewtonSeconds),
+          },
+        ],
+        yAxisTitle: 'Momento e impulso',
+      },
+    )
+  } else if (simulationId === 'particle-equilibrium') {
+    charts.push(
+      {
+        id: 'forces',
+        title: 'Forcas e resultante por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Forca A (N)',
+            x: time,
+            y: samples.map((sample) => sample.forceOneNewtons),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Forca B (N)',
+            x: time,
+            y: samples.map((sample) => sample.forceTwoNewtons),
+          },
+          {
+            lineColor: themeTokens.vector,
+            name: 'Forca C (N)',
+            x: time,
+            y: samples.map((sample) => sample.forceThreeNewtons),
+          },
+          {
+            lineColor: themeTokens.danger,
+            name: 'Resultante (N)',
+            x: time,
+            y: samples.map((sample) => sample.netForceNewtons),
+          },
+        ],
+        yAxisTitle: 'Forca (newtons)',
+      },
+      {
+        id: 'acceleration',
+        title: 'Aceleracao por resultante',
+        traces: [
+          {
+            lineColor: themeTokens.warning,
+            name: 'Aceleracao da particula (m/s^2)',
+            x: time,
+            y: samples.map(
+              (sample) => sample.accelerationMetersPerSecondSquared,
+            ),
+          },
+        ],
+        yAxisTitle: 'Aceleracao (metros por segundo ao quadrado)',
+      },
+    )
+  } else if (simulationId === 'torque-levers-center-mass') {
+    charts.push(
+      {
+        id: 'torque',
+        title: 'Torque e centro de massa',
+        traces: [
+          {
+            lineColor: themeTokens.warning,
+            name: 'Torque resultante (N m)',
+            x: time,
+            y: samples.map((sample) => sample.netTorqueNewtonMeters),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Centro de massa relativo ao apoio (m)',
+            x: time,
+            y: samples.map((sample) => sample.centerOfMassMeters),
+          },
+        ],
+        yAxisTitle: 'Torque e posicao',
+      },
+      {
+        id: 'forces',
+        title: 'Pesos e forca aplicada',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Peso esquerdo (N)',
+            x: time,
+            y: samples.map((sample) => sample.forceOneNewtons),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Peso direito (N)',
+            x: time,
+            y: samples.map((sample) => sample.forceTwoNewtons),
+          },
+          {
+            lineColor: themeTokens.vector,
+            name: 'Forca aplicada (N)',
+            x: time,
+            y: samples.map((sample) => sample.appliedForceNewtons),
+          },
+        ],
+        yAxisTitle: 'Forca (newtons)',
+      },
+    )
+  } else if (simulationId === 'rigid-body-rotation') {
+    charts.push(
+      {
+        id: 'angle',
+        title: 'Angulo e velocidade angular por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Angulo acumulado (rad)',
+            x: time,
+            y: samples.map((sample) => sample.angleRadians),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Velocidade angular (rad/s)',
+            x: time,
+            y: samples.map(
+              (sample) => sample.angularVelocityRadiansPerSecond,
+            ),
+          },
+        ],
+        yAxisTitle: 'Rotacao',
+      },
+      {
+        id: 'torque',
+        title: 'Torque e aceleracao angular',
+        traces: [
+          {
+            lineColor: themeTokens.warning,
+            name: 'Torque aplicado (N m)',
+            x: time,
+            y: samples.map((sample) => sample.netTorqueNewtonMeters),
+          },
+          {
+            lineColor: themeTokens.vector,
+            name: 'Aceleracao angular (rad/s^2)',
+            x: time,
+            y: samples.map(
+              (sample) =>
+                sample.angularAccelerationRadiansPerSecondSquared,
+            ),
+          },
+        ],
+        yAxisTitle: 'Torque e aceleracao',
       },
     )
   } else if (simulationId === 'uniform-circular-motion') {
@@ -381,6 +587,49 @@ export function buildKinematicsChartConfigs(
       id: 'energy',
       title: 'Energia por tempo',
       traces:
+        simulationId === 'collisions-1d-2d'
+          ? [
+              {
+                lineColor: themeTokens.vector,
+                name: 'Energia cinetica total (J)',
+                x: time,
+                y: samples.map((sample) => sample.kineticEnergyJoules),
+              },
+              {
+                lineColor: themeTokens.warning,
+                name: 'Energia cinetica dissipada (J)',
+                x: time,
+                y: samples.map((sample) => sample.kineticEnergyLostJoules),
+              },
+              {
+                lineColor: themeTokens.cyan,
+                name: 'Energia total rastreada (J)',
+                x: time,
+                y: samples.map((sample) => sample.totalEnergyJoules),
+              },
+            ]
+          : simulationId === 'rigid-body-rotation'
+            ? [
+                {
+                  lineColor: themeTokens.vector,
+                  name: 'Energia cinetica rotacional (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.kineticEnergyJoules),
+                },
+                {
+                  lineColor: themeTokens.warning,
+                  name: 'Energia dissipada por amortecimento (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.thermalEnergyJoules),
+                },
+                {
+                  lineColor: themeTokens.cyan,
+                  name: 'Energia rastreada (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.totalEnergyJoules),
+                },
+              ]
+            :
         simulationId === 'atwood-machine' ||
         simulationId === 'projectile-motion' ||
         simulationId === 'work-energy-track'

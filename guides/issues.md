@@ -47,6 +47,7 @@
 - O runtime visual reutilizavel fica em `src/lib/rendering/visualRuntime.ts` e centraliza agendamento de frames, interpolacao de timeline e metricas simples, mantendo cada renderer dono dos seus objetos e buffers.
 - `Mecanica > Cinematica` iniciou a Fase 3 com quatro simulacoes `available`: `Movimento retilineo uniforme`, `Movimento uniformemente variado e queda livre`, `Lancamento obliquo` e `Movimento circular uniforme`, todas com motor analitico compartilhado, cena Three.js 2.5D, live-canvas, tabela, formulas, teoria e fixtures locais.
 - O segundo lote da Fase 3 promoveu `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho` para `available`, reutilizando o motor analitico compartilhado com campos extras de forca, tensao, atrito, trabalho, dissipacao e limites de modelo.
+- O terceiro lote da Fase 3 promoveu `Colisoes 1D e 2D`, `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido` para `available`, ampliando o motor compartilhado com momento linear, impulso, componentes de forca, centro de massa, torque, momento de inercia e grandezas angulares.
 - Simulacoes `available` devem ser auditadas pelo guia `10-simulation-fidelity-adjustment-guide.md`: parametros fisicamente validos em zero nao devem ser bloqueados por conveniencia visual, falhas de restricao devem trocar o regime no motor, e toda task futura de simulacao deve registrar essa auditoria antes de ser considerada pronta.
 - Em `Forca centripeta em curva`, atrito zero e valido. Quando `v^2/r > mu g`, o corpo deixa a curva ideal; com `mu = 0`, sai pela tangente em linha reta.
 - Em `Maquina de Atwood`, a representacao visual deve seguir o formato didatico de suporte fixo, polia fixa, fio passando pelo arco superior e massas em blocos alinhadas aos trechos verticais.
@@ -56,7 +57,7 @@
 - Definir se a aplicacao deve ser apenas web ou tambem empacotavel como desktop no futuro.
 - Definir estrategia final de testes e2e apos inicializar o frontend.
 - Definir criterios objetivos para quando PixiJS, Rapier, Matter.js, D3.js ou Manim deixam de ser opcionais e entram no bundle.
-- Definir qual sera o proximo bloco funcional apos o segundo lote de Mecanica da Fase 3.
+- Definir se a proxima fatia de Mecanica deve continuar em Rotacao com rolamento sem escorregamento ou saltar para Gravitacao/Fluidos basicos.
 
 ## Gaps deixados para depois
 

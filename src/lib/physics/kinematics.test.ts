@@ -5,8 +5,12 @@ import {
   toKinematicsParameters,
   type AtwoodMachineParameters,
   type CentripetalForceCurveParameters,
+  type CollisionsParameters,
   type KinematicsSimulationId,
+  type ParticleEquilibriumParameters,
   type ProjectileMotionParameters,
+  type RigidBodyRotationParameters,
+  type TorqueLeversCenterMassParameters,
   type UniformCircularMotionParameters,
   type UniformLinearMotionParameters,
   type UniformlyAcceleratedMotionParameters,
@@ -204,13 +208,127 @@ describe('kinematics physics engine', () => {
     expect(lastSample?.totalEnergyJoules).toBeCloseTo(initialEnergy, 4)
   })
 
+  it('conserves total momentum and applies restitution in 1D and 2D collisions', () => {
+    const parameters: CollisionsParameters = {
+      coefficientOfRestitution: 0.8,
+      impactAngleDegrees: 30,
+      initialSeparationMeters: 4,
+      massOneKilograms: 1,
+      massTwoKilograms: 2,
+      normalSpeedOneMetersPerSecond: 2,
+      normalSpeedTwoMetersPerSecond: 1,
+      tangentialSpeedOneMetersPerSecond: 0.4,
+      tangentialSpeedTwoMetersPerSecond: -0.2,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 3,
+      parameters,
+      sampleRateHz: 60,
+      simulationId: 'collisions-1d-2d',
+    })
+    const firstSample = result.samples[0]
+    const lastSample = result.samples.at(-1)
+
+    expect(lastSample?.impulseNewtonSeconds).toBeGreaterThan(0)
+    expect(lastSample?.momentumXKilogramMetersPerSecond)
+      .toBeCloseTo(firstSample.momentumXKilogramMetersPerSecond)
+    expect(lastSample?.momentumZKilogramMetersPerSecond)
+      .toBeCloseTo(firstSample.momentumZKilogramMetersPerSecond)
+    expect(lastSample?.kineticEnergyJoules)
+      .toBeLessThan(firstSample.kineticEnergyJoules)
+    expect(result.warnings[0]?.code).toBe('COLLISION_INELASTIC_LOSS')
+  })
+
+  it('keeps a particle fixed when vector forces close and accelerates when they do not', () => {
+    const balanced: ParticleEquilibriumParameters = {
+      forceOneAngleDegrees: 0,
+      forceOneNewtons: 6,
+      forceThreeAngleDegrees: -120,
+      forceThreeNewtons: 6,
+      forceTwoAngleDegrees: 120,
+      forceTwoNewtons: 6,
+      massKilograms: 2,
+    }
+    const unbalanced: ParticleEquilibriumParameters = {
+      ...balanced,
+      forceThreeNewtons: 4,
+    }
+    const balancedResult = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters: balanced,
+      sampleRateHz: 20,
+      simulationId: 'particle-equilibrium',
+    })
+    const unbalancedResult = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters: unbalanced,
+      sampleRateHz: 20,
+      simulationId: 'particle-equilibrium',
+    })
+
+    expect(balancedResult.samples.at(-1)?.displacementMeters).toBeCloseTo(0)
+    expect(balancedResult.warnings).toHaveLength(0)
+    expect(unbalancedResult.samples.at(-1)?.netForceNewtons).toBeGreaterThan(0)
+    expect(unbalancedResult.warnings[0]?.code)
+      .toBe('PARTICLE_NOT_IN_EQUILIBRIUM')
+  })
+
+  it('computes lever torque and center of mass around a fixed support', () => {
+    const parameters: TorqueLeversCenterMassParameters = {
+      appliedForceArmMeters: 2,
+      appliedForceNewtons: 0,
+      gravityMetersPerSecondSquared: 10,
+      leftArmMeters: 1,
+      leftMassKilograms: 2,
+      rightArmMeters: 2,
+      rightMassKilograms: 1,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'torque-levers-center-mass',
+    })
+    const sample = result.samples[0]
+
+    expect(sample.netTorqueNewtonMeters).toBeCloseTo(0)
+    expect(sample.centerOfMassMeters).toBeCloseTo(0)
+    expect(result.warnings).toHaveLength(0)
+  })
+
+  it('computes rigid body angular motion and damping losses', () => {
+    const parameters: RigidBodyRotationParameters = {
+      angularDampingPerSecond: 0.1,
+      appliedTorqueNewtonMeters: 0,
+      initialAngleDegrees: 0,
+      initialAngularVelocityRadiansPerSecond: 2,
+      momentOfInertiaKilogramMetersSquared: 1.5,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 2,
+      parameters,
+      sampleRateHz: 60,
+      simulationId: 'rigid-body-rotation',
+    })
+    const lastSample = result.samples.at(-1)
+
+    expect(lastSample?.angleRadians).toBeGreaterThan(0)
+    expect(lastSample?.angularVelocityRadiansPerSecond).toBeLessThan(2)
+    expect(lastSample?.thermalEnergyJoules).toBeGreaterThan(0)
+    expect(result.warnings[0]?.code).toBe('ROTATION_DAMPING_ACTIVE')
+  })
+
   it('derives vector overlays from the same kinematics samples', () => {
     const simulationIds: KinematicsSimulationId[] = [
       'atwood-machine',
       'centripetal-force-curve',
+      'collisions-1d-2d',
+      'particle-equilibrium',
       'uniform-linear-motion',
       'uniformly-accelerated-motion',
       'projectile-motion',
+      'rigid-body-rotation',
+      'torque-levers-center-mass',
       'uniform-circular-motion',
       'work-energy-track',
     ]
@@ -299,6 +417,28 @@ function readFixtureLikeParameters(
         radiusMeters: 3,
         speedMetersPerSecond: 2,
       }
+    case 'collisions-1d-2d':
+      return {
+        coefficientOfRestitution: 0.8,
+        impactAngleDegrees: 20,
+        initialSeparationMeters: 4,
+        massOneKilograms: 1,
+        massTwoKilograms: 1.4,
+        normalSpeedOneMetersPerSecond: 1.6,
+        normalSpeedTwoMetersPerSecond: 0.7,
+        tangentialSpeedOneMetersPerSecond: 0.2,
+        tangentialSpeedTwoMetersPerSecond: -0.1,
+      }
+    case 'particle-equilibrium':
+      return {
+        forceOneAngleDegrees: 0,
+        forceOneNewtons: 6,
+        forceThreeAngleDegrees: -120,
+        forceThreeNewtons: 6,
+        forceTwoAngleDegrees: 120,
+        forceTwoNewtons: 6,
+        massKilograms: 1.5,
+      }
     case 'uniformly-accelerated-motion':
       return {
         accelerationMetersPerSecondSquared: -9.81,
@@ -320,6 +460,24 @@ function readFixtureLikeParameters(
         initialAngleDegrees: 0,
         massKilograms: 1,
         radiusMeters: 1,
+      }
+    case 'rigid-body-rotation':
+      return {
+        angularDampingPerSecond: 0.05,
+        appliedTorqueNewtonMeters: 0.8,
+        initialAngleDegrees: 0,
+        initialAngularVelocityRadiansPerSecond: 0.5,
+        momentOfInertiaKilogramMetersSquared: 1.6,
+      }
+    case 'torque-levers-center-mass':
+      return {
+        appliedForceArmMeters: 2,
+        appliedForceNewtons: 0,
+        gravityMetersPerSecondSquared: 9.81,
+        leftArmMeters: 1,
+        leftMassKilograms: 2,
+        rightArmMeters: 2,
+        rightMassKilograms: 1,
       }
     case 'work-energy-track':
       return {

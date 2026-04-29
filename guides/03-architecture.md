@@ -92,7 +92,7 @@ Toda simulacao animada deve seguir o padrao adotado no pendulo:
 - Viewports devem expor medicao simples de FPS ou frame time durante desenvolvimento ou quando houver risco de peso visual.
 - Objetos principais de cena devem usar volume 3D quando isso ajuda a leitura espacial. No pendulo simples, a massa e um cubo 3D e nao um circulo 2D.
 - A segunda simulacao funcional, `Mecanica > Dinamica > Plano inclinado com atrito`, usa o mesmo padrao: bloco 3D, plano inclinado Three.js, vetores, trilha, graficos live-canvas, tabela, formulas e teoria sincronizados pela mesma timeline.
-- As primeiras simulacoes de `Mecanica > Cinematica` reutilizam um motor analitico comum e uma cena Three.js 2.5D compartilhada para MRU, MUV/queda livre, lancamento obliquo e MCU. O mesmo modulo analitico tambem atende `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho`, com campos extras de forca, tensao, atrito, trabalho e dissipacao quando o modelo exige. Cada uma ainda declara seus proprios parametros, formulas, teoria, limites e graficos.
+- As primeiras simulacoes de `Mecanica > Cinematica` reutilizam um motor analitico comum e uma cena Three.js 2.5D compartilhada para MRU, MUV/queda livre, lancamento obliquo e MCU. O mesmo modulo analitico tambem atende `Maquina de Atwood`, `Forca centripeta em curva`, `Trabalho e energia em trilho`, `Colisoes 1D e 2D`, `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido`, com campos extras de forca, tensao, atrito, trabalho, dissipacao, momento linear, impulso, torque, centro de massa, momento de inercia e grandezas angulares quando o modelo exige. Cada uma ainda declara seus proprios parametros, formulas, teoria, limites e graficos.
 
 ## Fronteiras entre core e acessorios
 
@@ -140,10 +140,10 @@ O tema inicial usa `#2DD4BF` como acento principal teal e reserva `#38BDF8` para
 Na Fase 1, usar:
 
 - `fixtures/simulations/catalog.json` para areas e simulacoes.
-- O catalogo local deve incluir todas as simulacoes planejadas em `09-simulation-catalog-plan.md`, agrupadas por `topicPath`. Depois do segundo lote da Fase 3, `simple-pendulum`, `inclined-plane-friction`, `uniform-linear-motion`, `uniformly-accelerated-motion`, `projectile-motion`, `uniform-circular-motion`, `atwood-machine`, `centripetal-force-curve` e `work-energy-track` ficam como `available`; demais itens permanecem `planned` ate terem motor, cena, graficos, tabela, formulas e teoria.
+- O catalogo local deve incluir todas as simulacoes planejadas em `09-simulation-catalog-plan.md`, agrupadas por `topicPath`. Depois do terceiro lote da Fase 3, `simple-pendulum`, `inclined-plane-friction`, `uniform-linear-motion`, `uniformly-accelerated-motion`, `projectile-motion`, `uniform-circular-motion`, `atwood-machine`, `centripetal-force-curve`, `work-energy-track`, `collisions-1d-2d`, `particle-equilibrium`, `torque-levers-center-mass` e `rigid-body-rotation` ficam como `available`; demais itens permanecem `planned` ate terem motor, cena, graficos, tabela, formulas e teoria.
 - `fixtures/simulations/mechanics-pendulum.json` para parametros, presets e defaults.
 - `fixtures/simulations/mechanics-inclined-plane-friction.json` para parametros, presets e defaults do plano inclinado.
-- `fixtures/simulations/mechanics-uniform-linear-motion.json`, `mechanics-uniformly-accelerated-motion.json`, `mechanics-projectile-motion.json`, `mechanics-uniform-circular-motion.json`, `mechanics-atwood-machine.json`, `mechanics-centripetal-force-curve.json` e `mechanics-work-energy-track.json` para parametros, presets, formulas e limites das simulacoes analiticas compartilhadas.
+- `fixtures/simulations/mechanics-uniform-linear-motion.json`, `mechanics-uniformly-accelerated-motion.json`, `mechanics-projectile-motion.json`, `mechanics-uniform-circular-motion.json`, `mechanics-atwood-machine.json`, `mechanics-centripetal-force-curve.json`, `mechanics-work-energy-track.json`, `mechanics-collisions-1d-2d.json`, `mechanics-particle-equilibrium.json`, `mechanics-torque-levers-center-mass.json` e `mechanics-rigid-body-rotation.json` para parametros, presets, formulas e limites das simulacoes analiticas compartilhadas.
 - MDX local para teoria do pendulo e guia de formulas.
 - Metadados locais para mapear formulas a parametros, samples, vetores e graficos.
 - Dados gerados pelo motor numerico em runtime para graficos e tabela, incluindo cinematicas derivadas usadas por legendas e formulas.
@@ -156,9 +156,10 @@ Na Fase 1, usar:
 4. Adicionar segunda simulacao mecanica para testar reuso.
 5. Adicionar o primeiro lote de Cinematica analitica para testar velocidade de producao.
 6. Adicionar Atwood, forca centripeta em curva e trabalho/energia em trilho para validar reuso em Dinamica e Energia.
-7. Expandir por `Mecanica`, `Oscilacoes e Ondas`, `Termodinamica` e `Eletromagnetismo` em fatias pequenas, sempre aplicando o gate de fidelidade antes de promover ou manter simulacoes como `available`.
-8. Avaliar engines especializadas somente quando a simulacao exigir.
-9. Persistencia, usuarios e backend entram depois do core comprovado.
+7. Adicionar colisoes, equilibrio, torque/alavancas e rotacao para cobrir momento, estatica e primeiros conceitos angulares no mesmo shell.
+8. Expandir por `Mecanica`, `Oscilacoes e Ondas`, `Termodinamica` e `Eletromagnetismo` em fatias pequenas, sempre aplicando o gate de fidelidade antes de promover ou manter simulacoes como `available`.
+9. Avaliar engines especializadas somente quando a simulacao exigir.
+10. Persistencia, usuarios e backend entram depois do core comprovado.
 
 ## Referencias tecnicas
 

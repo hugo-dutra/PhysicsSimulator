@@ -1,0 +1,220 @@
+{
+  "simulationId": "particle-equilibrium",
+  "durationSeconds": 10,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 6,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Tempo do ciclo",
+      "unit": "s",
+      "kind": "number",
+      "min": 4,
+      "max": 30,
+      "step": 1,
+      "defaultValue": 10
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 20,
+      "step": 1,
+      "defaultValue": 6
+    }
+  ],
+  "defaultParameters": {
+    "forceOneNewtons": 6,
+    "forceOneAngleDegrees": 0,
+    "forceTwoNewtons": 6,
+    "forceTwoAngleDegrees": 120,
+    "forceThreeNewtons": 6,
+    "forceThreeAngleDegrees": -120,
+    "massKilograms": 1.5
+  },
+  "parameters": [
+    {
+      "id": "forceOneNewtons",
+      "label": "Forca A",
+      "unit": "N",
+      "kind": "number",
+      "min": 0,
+      "max": 20,
+      "step": 0.1,
+      "defaultValue": 6
+    },
+    {
+      "id": "forceOneAngleDegrees",
+      "label": "Angulo da forca A",
+      "unit": "deg",
+      "kind": "number",
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "defaultValue": 0
+    },
+    {
+      "id": "forceTwoNewtons",
+      "label": "Forca B",
+      "unit": "N",
+      "kind": "number",
+      "min": 0,
+      "max": 20,
+      "step": 0.1,
+      "defaultValue": 6
+    },
+    {
+      "id": "forceTwoAngleDegrees",
+      "label": "Angulo da forca B",
+      "unit": "deg",
+      "kind": "number",
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "defaultValue": 120
+    },
+    {
+      "id": "forceThreeNewtons",
+      "label": "Forca C",
+      "unit": "N",
+      "kind": "number",
+      "min": 0,
+      "max": 20,
+      "step": 0.1,
+      "defaultValue": 6
+    },
+    {
+      "id": "forceThreeAngleDegrees",
+      "label": "Angulo da forca C",
+      "unit": "deg",
+      "kind": "number",
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "defaultValue": -120
+    },
+    {
+      "id": "massKilograms",
+      "label": "Massa didatica",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.2,
+      "max": 20,
+      "step": 0.1,
+      "defaultValue": 1.5
+    }
+  ],
+  "presets": [
+    {
+      "id": "balanced-three-forces",
+      "label": "Tres forcas em equilibrio",
+      "parameters": {
+        "forceOneNewtons": 6,
+        "forceOneAngleDegrees": 0,
+        "forceTwoNewtons": 6,
+        "forceTwoAngleDegrees": 120,
+        "forceThreeNewtons": 6,
+        "forceThreeAngleDegrees": -120,
+        "massKilograms": 1.5
+      }
+    },
+    {
+      "id": "unbalanced-resultant",
+      "label": "Resultante nao nula",
+      "parameters": {
+        "forceOneNewtons": 8,
+        "forceOneAngleDegrees": 0,
+        "forceTwoNewtons": 6,
+        "forceTwoAngleDegrees": 120,
+        "forceThreeNewtons": 4,
+        "forceThreeAngleDegrees": -120,
+        "massKilograms": 1.5
+      }
+    },
+    {
+      "id": "two-cables-and-load",
+      "label": "Dois cabos e carga",
+      "parameters": {
+        "forceOneNewtons": 7,
+        "forceOneAngleDegrees": 35,
+        "forceTwoNewtons": 7,
+        "forceTwoAngleDegrees": 145,
+        "forceThreeNewtons": 8,
+        "forceThreeAngleDegrees": -90,
+        "massKilograms": 1.2
+      }
+    }
+  ],
+  "limits": [
+    "A particula e pontual e todos os vetores de forca atuam no mesmo ponto.",
+    "Forca zero e fisicamente valida e apenas remove aquele vetor do diagrama.",
+    "Quando a resultante e nula dentro da tolerancia, a particula permanece em repouso.",
+    "Quando a resultante nao e nula, o motor mostra a aceleracao simplificada F_res/m para evidenciar a falha de equilibrio."
+  ],
+  "formulas": [
+    {
+      "id": "force-components",
+      "title": "Componentes cartesianas das forcas",
+      "expressionLatex": "F_x=F\\cos\\theta,\\quad F_z=F\\sin\\theta",
+      "description": "Decompoe cada forca em componentes no plano do diagrama.",
+      "variables": [
+        { "symbol": "F", "label": "modulo da forca", "unit": "N" },
+        { "symbol": "\\theta", "label": "angulo da forca", "unit": "rad" }
+      ],
+      "usedWhen": "Usar para somar vetores aplicados no mesmo ponto.",
+      "notUsedWhen": "Nao substitui analise de torque quando as linhas de acao nao passam pelo mesmo ponto.",
+      "parameterIds": [
+        "forceOneNewtons",
+        "forceTwoNewtons",
+        "forceThreeNewtons"
+      ],
+      "sampleFields": [
+        "forceOneXNewtons",
+        "forceTwoXNewtons",
+        "forceThreeXNewtons"
+      ],
+      "relatedChartIds": ["forces"],
+      "relatedVectorIds": ["forceOne", "forceTwo", "forceThree"]
+    },
+    {
+      "id": "equilibrium-condition",
+      "title": "Condicao de equilibrio translacional",
+      "expressionLatex": "\\sum \\vec F=\\vec 0",
+      "description": "A particula fica em equilibrio quando a soma vetorial das forcas e nula.",
+      "variables": [
+        { "symbol": "\\sum \\vec F", "label": "forca resultante", "unit": "N" }
+      ],
+      "usedWhen": "Usar em problemas de cabos, tracoes e particulas em repouso.",
+      "notUsedWhen": "Nao garante equilibrio rotacional de corpos extensos.",
+      "parameterIds": [
+        "forceOneAngleDegrees",
+        "forceTwoAngleDegrees",
+        "forceThreeAngleDegrees"
+      ],
+      "sampleFields": ["netForceNewtons"],
+      "relatedChartIds": ["forces"],
+      "relatedVectorIds": ["resultant"]
+    },
+    {
+      "id": "unbalanced-acceleration",
+      "title": "Aceleracao quando falha o equilibrio",
+      "expressionLatex": "\\vec a=\\frac{\\sum \\vec F}{m}",
+      "description": "Mostra a direcao do movimento quando a soma de forcas nao fecha.",
+      "variables": [
+        { "symbol": "\\vec a", "label": "aceleracao", "unit": "m/s^2" }
+      ],
+      "usedWhen": "Usar para interpretar presets desequilibrados.",
+      "notUsedWhen": "Nao inclui restricoes de cabos reais, contato ou atrito.",
+      "parameterIds": ["massKilograms"],
+      "sampleFields": [
+        "accelerationMetersPerSecondSquared",
+        "accelerationXMetersPerSecondSquared",
+        "accelerationZMetersPerSecondSquared"
+      ],
+      "relatedChartIds": ["acceleration"],
+      "relatedVectorIds": ["resultant"]
+    }
+  ]
+}

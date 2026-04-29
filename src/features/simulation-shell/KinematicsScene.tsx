@@ -88,13 +88,23 @@ type DragState = {
 
 const vectorColors: Record<KinematicsVectorOverlay['id'], number> = {
   acceleration: 0xf59e0b,
+  angularAcceleration: 0xf59e0b,
+  angularVelocity: 0x38bdf8,
   appliedForce: 0x2dd4bf,
   centripetal: 0xf59e0b,
   displacement: 0xa3e635,
+  forceOne: 0x2dd4bf,
+  forceThree: 0xa3e635,
+  forceTwo: 0x38bdf8,
   friction: 0xf59e0b,
   gravity: 0xf43f5e,
+  impulse: 0xf59e0b,
+  momentum: 0xa3e635,
   normal: 0xa3e635,
+  resultant: 0xf43f5e,
+  secondaryVelocity: 0x818cf8,
   tension: 0xa3e635,
+  torque: 0xf59e0b,
   velocity: 0x38bdf8,
   weight: 0xf43f5e,
 }
@@ -103,6 +113,8 @@ const vectorIds = [
   'displacement',
   'velocity',
   'acceleration',
+  'angularAcceleration',
+  'angularVelocity',
   'gravity',
   'centripetal',
   'tension',
@@ -110,6 +122,14 @@ const vectorIds = [
   'friction',
   'normal',
   'appliedForce',
+  'forceOne',
+  'forceTwo',
+  'forceThree',
+  'resultant',
+  'secondaryVelocity',
+  'momentum',
+  'impulse',
+  'torque',
 ] as const
 const bodySize = 0.22
 const atwoodPulleyRadius = 0.34
@@ -373,6 +393,13 @@ export function KinematicsScene({
     const body = new THREE.Mesh(
       simulationId === 'atwood-machine'
         ? new THREE.BoxGeometry(atwoodMassSize, atwoodMassSize, atwoodMassSize)
+        : simulationId === 'rigid-body-rotation' ||
+            simulationId === 'torque-levers-center-mass'
+          ? new THREE.BoxGeometry(
+              sceneBodySize * 5.2,
+              sceneBodySize * 0.78,
+              sceneBodySize * 0.38,
+            )
         : new THREE.SphereGeometry(sceneBodySize, 24, 16),
       new THREE.MeshStandardMaterial({
         color: 0x2dd4bf,
@@ -383,7 +410,9 @@ export function KinematicsScene({
     scene.add(body)
 
     const secondaryBody = new THREE.Mesh(
-      new THREE.BoxGeometry(atwoodMassSize, atwoodMassSize, atwoodMassSize),
+      simulationId === 'collisions-1d-2d'
+        ? new THREE.SphereGeometry(sceneBodySize, 24, 16)
+        : new THREE.BoxGeometry(atwoodMassSize, atwoodMassSize, atwoodMassSize),
       new THREE.MeshStandardMaterial({
         color: 0x38bdf8,
         metalness: 0.05,
@@ -660,7 +689,16 @@ function updateKinematicsObjects({
   )
 
   objects.body.position.copy(bodyPosition)
-  updateAtwoodObjects(objects, sample, simulationId)
+  objects.body.rotation.set(0, 0, 0)
+
+  if (
+    simulationId === 'rigid-body-rotation' ||
+    simulationId === 'torque-levers-center-mass'
+  ) {
+    objects.body.rotation.z = sample.angleRadians
+  }
+
+  updateConstrainedBodyObjects(objects, sample, simulationId)
   Object.values(objects.arrows).forEach((arrow) => {
     arrow.visible = false
   })
@@ -686,18 +724,33 @@ function updateKinematicsObjects({
   updateTrace(objects, samples, sampleIndex, sample, showTrace)
 }
 
-function updateAtwoodObjects(
+function updateConstrainedBodyObjects(
   objects: SceneObjects,
   sample: KinematicsSample,
   simulationId: KinematicsSimulationId,
 ) {
   const isAtwood = simulationId === 'atwood-machine'
+  const isCollision = simulationId === 'collisions-1d-2d'
 
-  objects.secondaryBody.visible = isAtwood
+  objects.secondaryBody.visible = isAtwood || isCollision
   objects.pulley.visible = isAtwood
   objects.rope.visible = isAtwood
   objects.supportBar.visible = isAtwood
   objects.supportStem.visible = isAtwood
+
+  if (isCollision) {
+    objects.secondaryBody.position.copy(
+      toKinematicsScenePosition(
+        {
+          ...sample,
+          xMeters: sample.secondaryXMeters,
+          zMeters: sample.secondaryZMeters,
+        },
+        objects.sceneProjection,
+      ),
+    )
+    return
+  }
 
   if (!isAtwood) {
     return
