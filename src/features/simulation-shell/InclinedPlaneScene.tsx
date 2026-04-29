@@ -220,6 +220,10 @@ export function InclinedPlaneScene({
 
   const handleWheel = useCallback(
     (event: ReactWheelEvent<HTMLCanvasElement>) => {
+      if (!event.shiftKey) {
+        return
+      }
+
       const objects = objectsRef.current
 
       if (!objects) {
@@ -540,7 +544,7 @@ export function InclinedPlaneScene({
       }}
     >
       <Box
-        aria-label="Cena 3D do plano inclinado com arraste horizontal para orbitar o eixo Z e scroll para zoom"
+        aria-label="Cena 3D do plano inclinado com arraste horizontal para orbitar o eixo Z e Shift + scroll para zoom"
         component="canvas"
         onPointerCancel={handlePointerEnd}
         onPointerDown={handlePointerDown}

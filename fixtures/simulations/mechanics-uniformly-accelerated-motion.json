@@ -1,8 +1,8 @@
 {
   "simulationId": "uniformly-accelerated-motion",
-  "durationSeconds": 12,
+  "durationSeconds": 4,
   "sampleRateHz": 120,
-  "chartWindowSeconds": 8,
+  "chartWindowSeconds": 4,
   "runtimeParameters": [
     {
       "id": "durationSeconds",
@@ -12,7 +12,7 @@
       "min": 4,
       "max": 40,
       "step": 1,
-      "defaultValue": 12
+      "defaultValue": 4
     },
     {
       "id": "chartWindowSeconds",
@@ -22,7 +22,7 @@
       "min": 2,
       "max": 20,
       "step": 1,
-      "defaultValue": 8
+      "defaultValue": 4
     }
   ],
   "defaultParameters": {

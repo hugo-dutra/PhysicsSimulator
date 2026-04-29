@@ -32,7 +32,7 @@ describe('App', () => {
     )
 
     expect(simulationCanvas).toBeInTheDocument()
-    expect(simulationCanvas).toHaveAccessibleName(/scroll para zoom/i)
+    expect(simulationCanvas).toHaveAccessibleName(/Shift \+ scroll para zoom/i)
     expect(within(animationVectorLegend).getByText(/^Peso \(N\)$/i))
       .toBeInTheDocument()
     expect(within(animationVectorLegend).getByText(/^Tensao \(N\)$/i))
@@ -507,7 +507,7 @@ describe('App', () => {
 
     expect(viewport).toBeInTheDocument()
     expect(screen.getByLabelText(/Cena 3D do plano inclinado/i))
-      .toHaveAccessibleName(/scroll para zoom/i)
+      .toHaveAccessibleName(/Shift \+ scroll para zoom/i)
     expect(within(animationVectorLegend).getByText(/^Peso \(N\)$/i))
       .toBeInTheDocument()
     expect(within(animationVectorLegend).getByText(/^Normal \(N\)$/i))
@@ -591,7 +591,7 @@ describe('App', () => {
       expect(screen.getByLabelText(/Kinematics numerical viewport/i))
         .toBeInTheDocument()
       expect(screen.getByLabelText(/Cena 3D de Cinematica/i))
-        .toHaveAccessibleName(/scroll para zoom/i)
+        .toHaveAccessibleName(/Shift \+ scroll para zoom/i)
       expect(screen.getByLabelText(control)).toBeInTheDocument()
 
       fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))

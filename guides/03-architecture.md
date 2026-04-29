@@ -71,7 +71,7 @@ Toda simulacao animada deve seguir o padrao adotado no pendulo:
 - O renderer visual (`Three.js`, `PixiJS` ou equivalente) deve possuir o loop de `requestAnimationFrame` e atualizar objetos de cena de forma imperativa.
 - O loop visual reutilizavel deve usar helpers comuns para agendar/cancelar frames, ler samples interpolados e atualizar metricas simples. Cada cena ainda mantem seus objetos, buffers e controles de camera locais.
 - Cenas Three.js devem usar espaco 3D com eixo Z vertical quando houver viewport espacial; o movimento fisico pode continuar planar, mas deve ser projetado para objetos 3D e camera orbitavel.
-- O padrao de camera inicial e orbitavel por drag horizontal ao redor do eixo Z, com scroll sobre o canvas fazendo zoom em direcao a cena. Esses controles pertencem ao renderer e devem atualizar camera/refs imperativamente, sem re-renderizar o shell React.
+- O padrao de camera inicial e orbitavel por drag horizontal ao redor do eixo Z, com Shift + scroll sobre o canvas fazendo zoom em direcao a cena. Esses controles pertencem ao renderer e devem atualizar camera/refs imperativamente, sem re-renderizar o shell React.
 - O shell React deve orquestrar parametros, toggles, layout, graficos, tabela, formulas e teoria, mas nao deve re-renderizar a arvore inteira a cada frame.
 - A fonte fisica continua unica: motor numerico, cena, graficos, tabela e formulas derivam dos mesmos parametros e samples.
 - Campos derivados como velocidade linear tangencial, aceleracao angular, aceleracao tangencial, aceleracao radial e modulo total de aceleracao pertencem ao sample do motor, nao a calculos soltos de UI.

@@ -57,7 +57,7 @@ Layout recomendado:
 - Blocos chevron de saida pesada devem iniciar recolhidos por padrao, para o usuario abrir apenas o que quer observar.
 - Viewport de simulacao, graficos, tabela, formulas e apendice teorico devem expor acao compacta de maximizar/minimizar no proprio card ou cabecalho chevron.
 - Ao maximizar um desses paineis, os demais paineis do shell ficam invisiveis dentro da janela; ao minimizar, o layout e os estados anteriores voltam ao normal.
-- Viewports Three.js devem ser 3D por padrao quando a simulacao tiver cena espacial. Arrastar horizontalmente no canvas deve orbitar a camera ao redor do eixo Z, e usar scroll sobre o canvas deve aproximar ou afastar a camera na direcao da simulacao.
+- Viewports Three.js devem ser 3D por padrao quando a simulacao tiver cena espacial. Arrastar horizontalmente no canvas deve orbitar a camera ao redor do eixo Z, e usar Shift + scroll sobre o canvas deve aproximar ou afastar a camera na direcao da simulacao.
 - Leituras instantaneas e legenda detalhada de vetores pertencem ao topo do viewport, acima do canvas, para o usuario interpretar valores e significados antes de observar a cena. A area de animacao tambem deve exibir uma legenda compacta no canto superior direito, com traco na cor do vetor, grandeza representada e unidade abreviada quando houver.
 - O viewport pode abrir um slot lateral direito para grafico em foco, ocupando 1/3 do container em desktop. Esse slot aparece ao clicar no icone de olho de um grafico e desaparece ao clicar novamente, devolvendo o grafico ao bloco de graficos.
 
@@ -187,7 +187,7 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 - O usuario consegue abrir as quatro primeiras simulacoes de `Mecanica > Cinematica` pela sidebar e ver cena, vetores, graficos, tabela, formulas e teoria sincronizados.
 - O canvas mostra a animacao do pendulo.
 - As metricas instantaneas e a legenda detalhada dos vetores ficam acima do canvas da simulacao; a legenda compacta dos vetores aparece no canto superior direito da animacao.
-- O canvas do pendulo e uma cena 3D; arrastar horizontalmente gira a visualizacao ao redor do eixo Z e usar scroll sobre o canvas controla o zoom da camera sem alterar a fonte numerica da simulacao.
+- O canvas do pendulo e uma cena 3D; arrastar horizontalmente gira a visualizacao ao redor do eixo Z e usar Shift + scroll sobre o canvas controla o zoom da camera sem alterar a fonte numerica da simulacao.
 - Alterar controles muda a simulacao e regenera dados derivados.
 - Alterar o tempo do ciclo muda a duracao maxima antes do playback reiniciar.
 - Alterar a janela dos graficos muda quantos segundos recentes ficam visiveis.

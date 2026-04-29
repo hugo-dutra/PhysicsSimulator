@@ -876,6 +876,7 @@ export function SimulationShell() {
                 }
                 durationSeconds={selectedKinematicsDurationSeconds}
                 isPlaying={isPlaying}
+                key={selectedKinematicsSimulationId}
                 maximizedPanel={maximizedPanel}
                 onMaximizedPanelToggle={handleMaximizedPanelToggle}
                 onOutputPanelToggle={handleOutputPanelToggle}

@@ -57,7 +57,7 @@ Depois da prova do core, cada nova simulacao promovida para `available` deve ter
 ## Validacoes visuais
 
 - Canvas nao pode estar em branco.
-- Viewports Three.js devem renderizar cena 3D com pixels nao-background, responder a arraste horizontal mudando a visualizacao da camera e responder a scroll sobre o canvas com zoom da camera.
+- Viewports Three.js devem renderizar cena 3D com pixels nao-background, responder a arraste horizontal mudando a visualizacao da camera e responder a Shift + scroll sobre o canvas com zoom da camera.
 - Vetores devem acompanhar o movimento.
 - Vetores devem ter legenda visivel com cor, modulo atual e significado fisico.
 - Metricas instantaneas e legenda detalhada de vetores devem aparecer acima do canvas do viewport.

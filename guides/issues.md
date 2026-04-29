@@ -31,7 +31,7 @@
 - O tema inicial usa `#2DD4BF` como cor primaria teal e `#38BDF8` como cor informativa/cyan.
 - O apendice teorico inicial do pendulo e renderizado como Markdown local com KaTeX abaixo do guia de formulas; o guia de formulas permanece como bloco aplicado e ligado a parametros, samples, graficos e vetores.
 - O padrao de renderizacao animada passa a ser renderer-first: `requestAnimationFrame` pertence ao renderer visual, o shell React recebe leituras periodicas e componentes pesados como Plotly, tabela, formulas e teoria ficam fora do caminho quente da animacao.
-- Viewports Three.js seguem o padrao 3D orbitavel: eixo Z vertical, camera girando por arraste horizontal, zoom por scroll sobre o canvas em refs do renderer e objetos principais com volume quando isso melhora a leitura espacial.
+- Viewports Three.js seguem o padrao 3D orbitavel: eixo Z vertical, camera girando por arraste horizontal, zoom por Shift + scroll sobre o canvas em refs do renderer e objetos principais com volume quando isso melhora a leitura espacial.
 - Graficos, tabela, formulas e teoria devem seguir o padrao de bloco chevron recolhivel: quando recolhidos, desmontam o conteudo e suspendem processamento derivado em vez de apenas esconder a UI.
 - Blocos chevron de saida pesada iniciam fechados por padrao e precisam alternar aberto/fechado ao clique no cabecalho.
 - Viewport, graficos, tabela, formulas e apendice teorico seguem o padrao de painel maximizavel: apenas um fica em foco na janela, os demais paineis ficam invisiveis, e minimizar restaura o shell anterior sem perder sincronizacao.

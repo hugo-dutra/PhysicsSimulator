@@ -23,6 +23,12 @@ import {
   type FrameStats,
 } from '../../lib/rendering/visualRuntime'
 import { themeTokens } from '../../theme/appTheme'
+import {
+  createKinematicsSceneProjection,
+  toKinematicsSceneDirection,
+  toKinematicsScenePosition,
+  type KinematicsSceneProjection,
+} from './KinematicsSceneProjection'
 
 export type KinematicsFrameStats = FrameStats
 
@@ -49,6 +55,7 @@ type SceneObjects = {
   cameraTarget: THREE.Vector3
   renderer: THREE.WebGLRenderer
   scene: THREE.Scene
+  sceneProjection: KinematicsSceneProjection
   trace: THREE.Line
   traceColorAttribute: THREE.BufferAttribute
   traceColors: Float32Array
@@ -222,6 +229,10 @@ export function KinematicsScene({
 
   const handleWheel = useCallback(
     (event: ReactWheelEvent<HTMLCanvasElement>) => {
+      if (!event.shiftKey) {
+        return
+      }
+
       const objects = objectsRef.current
 
       if (!objects) {
@@ -297,10 +308,18 @@ export function KinematicsScene({
       return
     }
 
-    const bounds = estimateSceneBounds(samples)
+    const sceneProjection = createKinematicsSceneProjection(
+      samples,
+      simulationId,
+    )
+    const bounds = estimateSceneBounds(samples, sceneProjection)
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 160)
-    const cameraTarget = new THREE.Vector3(bounds.centerX, 0, bounds.centerZ)
+    const cameraTarget = new THREE.Vector3(
+      bounds.centerX,
+      bounds.centerY,
+      bounds.centerZ,
+    )
     const cameraRadius = Math.max(4.2, bounds.span * 1.35)
     const cameraMinRadius = Math.max(1.2, cameraRadius * minCameraRadiusScale)
     const cameraMaxRadius = cameraRadius * maxCameraRadiusScale
@@ -321,15 +340,16 @@ export function KinematicsScene({
     )
 
     grid.rotation.x = Math.PI / 2
-    grid.position.set(bounds.centerX, 0, 0)
+    grid.position.set(bounds.centerX, bounds.centerY, 0)
     grid.material.transparent = true
     grid.material.opacity = 0.38
     scene.add(grid)
 
-    scene.add(createReferencePath(samples, simulationId))
+    scene.add(createReferencePath(samples, simulationId, sceneProjection))
 
+    const sceneBodySize = getBodyDisplaySize(bounds.span)
     const body = new THREE.Mesh(
-      new THREE.SphereGeometry(bodySize, 24, 16),
+      new THREE.SphereGeometry(sceneBodySize, 24, 16),
       new THREE.MeshStandardMaterial({
         color: 0x2dd4bf,
         metalness: 0.08,
@@ -402,6 +422,7 @@ export function KinematicsScene({
       cameraTarget,
       renderer,
       scene,
+      sceneProjection,
       trace,
       traceColorAttribute,
       traceColors,
@@ -502,7 +523,7 @@ export function KinematicsScene({
       }}
     >
       <Box
-        aria-label="Cena 3D de Cinematica com arraste horizontal para orbitar o eixo Z e scroll para zoom"
+        aria-label="Cena 3D de Cinematica com arraste horizontal para orbitar o eixo Z e Shift + scroll para zoom"
         component="canvas"
         onPointerCancel={handlePointerEnd}
         onPointerDown={handlePointerDown}
@@ -542,7 +563,10 @@ function updateKinematicsObjects({
   showVectors: boolean
   simulationId: KinematicsSimulationId
 }) {
-  const bodyPosition = toScenePosition(sample)
+  const bodyPosition = toKinematicsScenePosition(
+    sample,
+    objects.sceneProjection,
+  )
 
   objects.body.position.copy(bodyPosition)
   Object.values(objects.arrows).forEach((arrow) => {
@@ -551,7 +575,10 @@ function updateKinematicsObjects({
 
   getKinematicsVectorOverlays(sample, simulationId).forEach((vector) => {
     const arrow = objects.arrows[vector.id]
-    const direction = new THREE.Vector3(vector.direction.x, 0, vector.direction.z)
+    const direction = toKinematicsSceneDirection(
+      vector,
+      objects.sceneProjection,
+    )
 
     if (!showVectors || direction.lengthSq() === 0 || vector.magnitude === 0) {
       arrow.visible = false
@@ -602,7 +629,10 @@ function updateTrace(
   }
 
   traceSamples.forEach((sample, traceIndex) => {
-    const position = toScenePosition(sample)
+    const position = toKinematicsScenePosition(
+      sample,
+      objects.sceneProjection,
+    )
     const positionOffset = traceIndex * 3
     const colorOffset = traceIndex * 4
     const ageRatio = Math.min(
@@ -629,12 +659,13 @@ function updateTrace(
 function createReferencePath(
   samples: KinematicsSample[],
   simulationId: KinematicsSimulationId,
+  sceneProjection: KinematicsSceneProjection,
 ) {
   const pathSamples = downsamplePath(samples)
   const positions = new Float32Array(Math.max(2, pathSamples.length) * 3)
 
   pathSamples.forEach((sample, index) => {
-    const position = toScenePosition(sample)
+    const position = toKinematicsScenePosition(sample, sceneProjection)
     const offset = index * 3
 
     positions[offset] = position.x
@@ -673,20 +704,31 @@ function downsamplePath(samples: KinematicsSample[]) {
   return decimatedSamples
 }
 
-function estimateSceneBounds(samples: KinematicsSample[]) {
-  const xs = samples.map((sample) => sample.xMeters)
-  const zs = samples.map((sample) => sample.zMeters)
+function estimateSceneBounds(
+  samples: KinematicsSample[],
+  sceneProjection: KinematicsSceneProjection,
+) {
+  const positions = samples.map((sample) =>
+    toKinematicsScenePosition(sample, sceneProjection),
+  )
+  const xs = positions.map((position) => position.x)
+  const ys = positions.map((position) => position.y)
+  const zs = positions.map((position) => position.z)
   const minX = Math.min(0, ...xs)
   const maxX = Math.max(0, ...xs)
+  const minY = Math.min(0, ...ys)
+  const maxY = Math.max(0, ...ys)
   const minZ = Math.min(0, ...zs)
   const maxZ = Math.max(0, ...zs)
   const width = Math.max(1, maxX - minX)
+  const depth = Math.max(1, maxY - minY)
   const height = Math.max(1, maxZ - minZ)
 
   return {
     centerX: (minX + maxX) / 2,
+    centerY: (minY + maxY) / 2,
     centerZ: (minZ + maxZ) / 2,
-    span: Math.max(width, height) + 1,
+    span: Math.max(width, depth, height) + 1,
   }
 }
 
@@ -703,15 +745,14 @@ function findTraceStartIndex(
 
   return 0
 }
-
-function toScenePosition(sample: KinematicsSample) {
-  return new THREE.Vector3(sample.xMeters, 0, sample.zMeters)
-}
-
 function getVectorDisplayLength(vector: KinematicsVectorOverlay) {
   const scale = vector.unit === 'm' ? 0.32 : vector.unit === 'm/s' ? 0.18 : 0.14
 
   return clamp(vector.magnitude * scale, 0.18, 1.35)
+}
+
+function getBodyDisplaySize(sceneSpan: number) {
+  return clamp(sceneSpan * 0.022, bodySize, 0.72)
 }
 
 function updateOrbitCamera(

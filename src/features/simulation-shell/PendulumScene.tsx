@@ -213,6 +213,10 @@ export function PendulumScene({
 
   const handleWheel = useCallback(
     (event: ReactWheelEvent<HTMLCanvasElement>) => {
+      if (!event.shiftKey) {
+        return
+      }
+
       const objects = objectsRef.current
 
       if (!objects) {
@@ -521,7 +525,7 @@ export function PendulumScene({
     >
       <Box
         component="canvas"
-        aria-label="Cena 3D do pendulo simples com arraste horizontal para orbitar o eixo Z e scroll para zoom"
+        aria-label="Cena 3D do pendulo simples com arraste horizontal para orbitar o eixo Z e Shift + scroll para zoom"
         onPointerCancel={handlePointerEnd}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

@@ -1057,3 +1057,39 @@ Validacao:
 - Executado `npm run build`; build passou com aviso conhecido de chunk acima de 500 kB.
 - Executado `npm run lint`.
 - Executado `validate_guides.py`; resultado `[OK] guides pack looks core-first and complete.`
+
+## 2026-04-29 - Ajustes de viewport em Cinematica
+
+Correcoes solicitadas na interacao das cenas:
+
+- O zoom dos viewports Three.js agora exige Shift + scroll; scroll simples volta a ficar livre para rolagem da pagina.
+- A cena de Cinematica passou a resetar a amostra viva ao trocar entre simulacoes do mesmo componente, evitando leituras antigas durante a troca.
+- O MUV/queda livre passou a usar uma escala visual limitada quando a trajetoria fica grande demais, corpo visual proporcional ao enquadramento e ciclo padrao de 4 s, mantendo a animacao perceptivel sem trocar os samples do motor.
+- O MCU passou a projetar corpo, trilha e vetores no plano horizontal, mantendo o eixo Z como vertical da cena.
+
+Arquivos atualizados:
+
+- `guides/02-product-spec.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/07-quality-and-operations.md`
+- `guides/issues.md`
+- `progress.md`
+- `fixtures/simulations/mechanics-uniformly-accelerated-motion.json`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/InclinedPlaneScene.tsx`
+- `src/features/simulation-shell/KinematicsScene.tsx`
+- `src/features/simulation-shell/KinematicsSceneProjection.ts`
+- `src/features/simulation-shell/KinematicsScene.test.ts`
+- `src/features/simulation-shell/PendulumScene.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+
+Validacao:
+
+- Executado `npm run test -- src/features/simulation-shell/KinematicsScene.test.ts src/lib/physics/kinematics.test.ts src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `validate_guides.py`; resultado `[OK] guides pack looks core-first and complete.`
+- Smoke visual headless em `http://127.0.0.1:5187/` com Chrome channel em desktop `1440x1100` e mobile `390x900`: MUV e MCU com canvas nao vazio/colorido e diferenca de pixels entre frames; no desktop, scroll simples no canvas pausado nao alterou pixels e Shift + scroll alterou a visualizacao por zoom.
+- Capturas geradas em `artifacts/muv-desktop-a.png`, `artifacts/muv-desktop-b.png`, `artifacts/muv-mobile-a.png`, `artifacts/muv-mobile-b.png`, `artifacts/mcu-desktop-a.png`, `artifacts/mcu-desktop-b.png`, `artifacts/mcu-mobile-a.png` e `artifacts/mcu-mobile-b.png`.

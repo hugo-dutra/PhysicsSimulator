@@ -1,0 +1,69 @@
+import * as THREE from 'three'
+import {
+  type KinematicsSample,
+  type KinematicsSimulationId,
+  type KinematicsVectorOverlay,
+} from '../../lib/physics/kinematics'
+
+export type KinematicsSceneProjection = {
+  horizontalPlane: boolean
+  positionScale: number
+}
+
+const maxUnscaledSceneSpanMeters = 32
+
+export function createKinematicsSceneProjection(
+  samples: KinematicsSample[],
+  simulationId: KinematicsSimulationId,
+): KinematicsSceneProjection {
+  const horizontalPlane = simulationId === 'uniform-circular-motion'
+  const rawBounds = estimateRawSceneBounds(samples, horizontalPlane)
+
+  return {
+    horizontalPlane,
+    positionScale: Math.min(1, maxUnscaledSceneSpanMeters / rawBounds.span),
+  }
+}
+
+export function toKinematicsScenePosition(
+  sample: KinematicsSample,
+  sceneProjection: KinematicsSceneProjection,
+) {
+  const scale = sceneProjection.positionScale
+
+  if (sceneProjection.horizontalPlane) {
+    return new THREE.Vector3(sample.xMeters * scale, sample.zMeters * scale, 0)
+  }
+
+  return new THREE.Vector3(sample.xMeters * scale, 0, sample.zMeters * scale)
+}
+
+export function toKinematicsSceneDirection(
+  vector: KinematicsVectorOverlay,
+  sceneProjection: KinematicsSceneProjection,
+) {
+  if (sceneProjection.horizontalPlane) {
+    return new THREE.Vector3(vector.direction.x, vector.direction.z, 0)
+  }
+
+  return new THREE.Vector3(vector.direction.x, 0, vector.direction.z)
+}
+
+function estimateRawSceneBounds(
+  samples: KinematicsSample[],
+  horizontalPlane: boolean,
+) {
+  const xs = samples.map((sample) => sample.xMeters)
+  const ys = horizontalPlane ? samples.map((sample) => sample.zMeters) : [0]
+  const zs = horizontalPlane ? [0] : samples.map((sample) => sample.zMeters)
+  const minX = Math.min(0, ...xs)
+  const maxX = Math.max(0, ...xs)
+  const minY = Math.min(0, ...ys)
+  const maxY = Math.max(0, ...ys)
+  const minZ = Math.min(0, ...zs)
+  const maxZ = Math.max(0, ...zs)
+
+  return {
+    span: Math.max(1, maxX - minX, maxY - minY, maxZ - minZ),
+  }
+}
