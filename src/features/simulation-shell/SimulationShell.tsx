@@ -106,7 +106,14 @@ import {
   type PendulumChartId,
 } from './pendulumChartConfigs'
 import { PendulumScene, type PendulumFrameStats } from './PendulumScene'
-import { getMovingWindowRange, selectRecentSamples } from './sampleWindow'
+import {
+  appendLiveSample,
+  getMovingWindowRange,
+  getSampleIndexForTime,
+  readFirstSample,
+  selectRecentSamples,
+  selectStableRows,
+} from './sampleWindow'
 import { TheoryAppendix } from './TheoryAppendix'
 
 const compactNumber = new Intl.NumberFormat('pt-BR', {
@@ -1557,7 +1564,10 @@ function PendulumRuntime({
   resetVersion: number
   samples: PendulumSample[]
 }) {
-  const firstSample = useMemo(() => readFirstSample(samples), [samples])
+  const firstSample = useMemo(
+    () => readFirstSample(samples, 'Pendulum'),
+    [samples],
+  )
   const [liveSample, setLiveSample] = useState<PendulumSample>(firstSample)
   const [frameStats, setFrameStats] =
     useState<PendulumFrameStats>(initialFrameStats)
@@ -1668,7 +1678,7 @@ function PendulumRuntime({
       return []
     }
 
-    return selectStableTableRows(visibleWindowSamples, tableRowCount)
+    return selectStableRows(visibleWindowSamples, tableRowCount)
   }, [tableExpanded, tableRowCount, visibleWindowSamples])
   const angleDegrees = radiansToDegrees(liveSample.angleRadians)
 
@@ -2072,7 +2082,10 @@ function InclinedPlaneRuntime({
   resetVersion: number
   samples: InclinedPlaneSample[]
 }) {
-  const firstSample = useMemo(() => readFirstInclinedPlaneSample(samples), [samples])
+  const firstSample = useMemo(
+    () => readFirstSample(samples, 'Inclined plane'),
+    [samples],
+  )
   const [liveSample, setLiveSample] =
     useState<InclinedPlaneSample>(firstSample)
   const [frameStats, setFrameStats] =
@@ -2109,7 +2122,7 @@ function InclinedPlaneRuntime({
   const shouldShowTable = !hasMaximizedPanel || isTableMaximized
   const shouldHideSimulationCard = hasMaximizedPanel && !isSimulationMaximized
   const canFocusChartInSimulation = !shouldHideSimulationCard
-  const currentSampleIndex = getInclinedPlaneSampleIndexForTime(
+  const currentSampleIndex = getSampleIndexForTime(
     samples,
     durationSeconds,
     liveSample.timeSeconds,
@@ -2162,7 +2175,7 @@ function InclinedPlaneRuntime({
   const chartSamples = useMemo(
     () =>
       needsChartRange
-        ? appendInclinedPlaneLiveSample(visibleWindowSamples, liveSample)
+        ? appendLiveSample(visibleWindowSamples, liveSample)
         : [],
     [liveSample, needsChartRange, visibleWindowSamples],
   )
@@ -2187,7 +2200,7 @@ function InclinedPlaneRuntime({
       return []
     }
 
-    return selectStableInclinedPlaneTableRows(visibleWindowSamples, tableRowCount)
+    return selectStableRows(visibleWindowSamples, tableRowCount)
   }, [tableExpanded, tableRowCount, visibleWindowSamples])
 
   return (
@@ -2581,7 +2594,10 @@ function KinematicsRuntime({
   samples: KinematicsSample[]
   simulationId: KinematicsSimulationId
 }) {
-  const firstSample = useMemo(() => readFirstKinematicsSample(samples), [samples])
+  const firstSample = useMemo(
+    () => readFirstSample(samples, 'Kinematics'),
+    [samples],
+  )
   const [liveSample, setLiveSample] =
     useState<KinematicsSample>(firstSample)
   const [frameStats, setFrameStats] =
@@ -2618,7 +2634,7 @@ function KinematicsRuntime({
   const shouldShowTable = !hasMaximizedPanel || isTableMaximized
   const shouldHideSimulationCard = hasMaximizedPanel && !isSimulationMaximized
   const canFocusChartInSimulation = !shouldHideSimulationCard
-  const currentSampleIndex = getKinematicsSampleIndexForTime(
+  const currentSampleIndex = getSampleIndexForTime(
     samples,
     durationSeconds,
     liveSample.timeSeconds,
@@ -2671,7 +2687,7 @@ function KinematicsRuntime({
   const chartSamples = useMemo(
     () =>
       needsChartRange
-        ? appendKinematicsLiveSample(visibleWindowSamples, liveSample)
+        ? appendLiveSample(visibleWindowSamples, liveSample)
         : [],
     [liveSample, needsChartRange, visibleWindowSamples],
   )
@@ -2698,7 +2714,7 @@ function KinematicsRuntime({
       return []
     }
 
-    return selectStableKinematicsTableRows(visibleWindowSamples, tableRowCount)
+    return selectStableRows(visibleWindowSamples, tableRowCount)
   }, [tableExpanded, tableRowCount, visibleWindowSamples])
   const vectorLegendItems = kinematicsVectorLegendItemsById[simulationId]
 
@@ -3197,228 +3213,6 @@ function clampToParameterRange(
   const max = parameter.max ?? value
 
   return Math.min(max, Math.max(min, value))
-}
-
-function readFirstSample(samples: PendulumSample[]) {
-  const sample = samples[0]
-
-  if (!sample) {
-    throw new Error('Pendulum timeline must contain at least one sample.')
-  }
-
-  return sample
-}
-
-function readFirstInclinedPlaneSample(samples: InclinedPlaneSample[]) {
-  const sample = samples[0]
-
-  if (!sample) {
-    throw new Error('Inclined plane timeline must contain at least one sample.')
-  }
-
-  return sample
-}
-
-function readFirstKinematicsSample(samples: KinematicsSample[]) {
-  const sample = samples[0]
-
-  if (!sample) {
-    throw new Error('Kinematics timeline must contain at least one sample.')
-  }
-
-  return sample
-}
-
-function getSampleIndexForTime(
-  samples: PendulumSample[],
-  durationSeconds: number,
-  timeSeconds: number,
-) {
-  if (samples.length <= 1 || durationSeconds <= 0) {
-    return 0
-  }
-
-  const progress = Math.min(1, Math.max(0, timeSeconds / durationSeconds))
-
-  return Math.min(
-    samples.length - 1,
-    Math.floor(progress * (samples.length - 1)),
-  )
-}
-
-function getInclinedPlaneSampleIndexForTime(
-  samples: InclinedPlaneSample[],
-  durationSeconds: number,
-  timeSeconds: number,
-) {
-  if (samples.length <= 1 || durationSeconds <= 0) {
-    return 0
-  }
-
-  const progress = Math.min(1, Math.max(0, timeSeconds / durationSeconds))
-
-  return Math.min(
-    samples.length - 1,
-    Math.floor(progress * (samples.length - 1)),
-  )
-}
-
-function getKinematicsSampleIndexForTime(
-  samples: KinematicsSample[],
-  durationSeconds: number,
-  timeSeconds: number,
-) {
-  if (samples.length <= 1 || durationSeconds <= 0) {
-    return 0
-  }
-
-  const progress = Math.min(1, Math.max(0, timeSeconds / durationSeconds))
-
-  return Math.min(
-    samples.length - 1,
-    Math.floor(progress * (samples.length - 1)),
-  )
-}
-
-function appendLiveSample(samples: PendulumSample[], liveSample: PendulumSample) {
-  const lastSample = samples.at(-1)
-
-  if (!lastSample) {
-    return [liveSample]
-  }
-
-  if (liveSample.timeSeconds <= lastSample.timeSeconds + 0.0001) {
-    return samples
-  }
-
-  return [...samples, liveSample]
-}
-
-function appendInclinedPlaneLiveSample(
-  samples: InclinedPlaneSample[],
-  liveSample: InclinedPlaneSample,
-) {
-  const lastSample = samples.at(-1)
-
-  if (!lastSample) {
-    return [liveSample]
-  }
-
-  if (liveSample.timeSeconds <= lastSample.timeSeconds + 0.0001) {
-    return samples
-  }
-
-  return [...samples, liveSample]
-}
-
-function appendKinematicsLiveSample(
-  samples: KinematicsSample[],
-  liveSample: KinematicsSample,
-) {
-  const lastSample = samples.at(-1)
-
-  if (!lastSample) {
-    return [liveSample]
-  }
-
-  if (liveSample.timeSeconds <= lastSample.timeSeconds + 0.0001) {
-    return samples
-  }
-
-  return [...samples, liveSample]
-}
-
-function selectStableTableRows(samples: PendulumSample[], rowCount: number) {
-  const rows: Array<PendulumSample | null> = Array.from(
-    { length: rowCount },
-    () => null,
-  )
-
-  if (samples.length === 0) {
-    return rows
-  }
-
-  if (samples.length <= rowCount) {
-    samples.forEach((sample, index) => {
-      rows[index] = sample
-    })
-
-    return rows
-  }
-
-  const lastIndex = samples.length - 1
-  const lastRowIndex = Math.max(1, rowCount - 1)
-
-  for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
-    const sampleIndex = Math.round((rowIndex / lastRowIndex) * lastIndex)
-    rows[rowIndex] = samples[sampleIndex]
-  }
-
-  return rows
-}
-
-function selectStableInclinedPlaneTableRows(
-  samples: InclinedPlaneSample[],
-  rowCount: number,
-) {
-  const rows: Array<InclinedPlaneSample | null> = Array.from(
-    { length: rowCount },
-    () => null,
-  )
-
-  if (samples.length === 0) {
-    return rows
-  }
-
-  if (samples.length <= rowCount) {
-    samples.forEach((sample, index) => {
-      rows[index] = sample
-    })
-
-    return rows
-  }
-
-  const lastIndex = samples.length - 1
-  const lastRowIndex = Math.max(1, rowCount - 1)
-
-  for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
-    const sampleIndex = Math.round((rowIndex / lastRowIndex) * lastIndex)
-    rows[rowIndex] = samples[sampleIndex]
-  }
-
-  return rows
-}
-
-function selectStableKinematicsTableRows(
-  samples: KinematicsSample[],
-  rowCount: number,
-) {
-  const rows: Array<KinematicsSample | null> = Array.from(
-    { length: rowCount },
-    () => null,
-  )
-
-  if (samples.length === 0) {
-    return rows
-  }
-
-  if (samples.length <= rowCount) {
-    samples.forEach((sample, index) => {
-      rows[index] = sample
-    })
-
-    return rows
-  }
-
-  const lastIndex = samples.length - 1
-  const lastRowIndex = Math.max(1, rowCount - 1)
-
-  for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
-    const sampleIndex = Math.round((rowIndex / lastRowIndex) * lastIndex)
-    rows[rowIndex] = samples[sampleIndex]
-  }
-
-  return rows
 }
 
 function AnimationVectorLegend({

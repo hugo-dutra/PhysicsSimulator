@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { PendulumSample } from '../../lib/physics/pendulum'
-import { getMovingWindowRange, selectRecentSamples } from './sampleWindow'
+import {
+  appendLiveSample,
+  getMovingWindowRange,
+  getSampleIndexForTime,
+  readFirstSample,
+  selectRecentSamples,
+  selectStableRows,
+} from './sampleWindow'
 
 describe('sample window helpers', () => {
   it('selects only the recent samples inside the requested time window', () => {
@@ -17,7 +24,59 @@ describe('sample window helpers', () => {
   it('moves the range once the current time passes the visible window', () => {
     expect(getMovingWindowRange(18, 8, 30)).toEqual([10, 18])
   })
+
+  it('reads the first sample or fails with the timeline label', () => {
+    const samples = createSamples(0, 2)
+
+    expect(readFirstSample(samples, 'Pendulum')).toBe(samples[0])
+    expect(() => readFirstSample([], 'Demo')).toThrow(
+      'Demo timeline must contain at least one sample.',
+    )
+  })
+
+  it('maps playback time to a bounded sample index', () => {
+    const samples = createSamples(0, 10)
+
+    expect(getSampleIndexForTime(samples, 10, 4.9)).toBe(4)
+    expect(getSampleIndexForTime(samples, 10, -1)).toBe(0)
+    expect(getSampleIndexForTime(samples, 10, 99)).toBe(10)
+    expect(getSampleIndexForTime(samples, 0, 4)).toBe(0)
+  })
+
+  it('appends the live sample only when it advances time', () => {
+    const samples = createSamples(0, 2)
+
+    expect(
+      appendLiveSample(samples, { ...samples[2], timeSeconds: 2.00005 }),
+    ).toBe(samples)
+    expect(appendLiveSample(samples, { ...samples[2], timeSeconds: 3 })).toEqual([
+      ...samples,
+      { ...samples[2], timeSeconds: 3 },
+    ])
+  })
+
+  it('keeps table rows stable and evenly sampled', () => {
+    expect(selectStableRows(createSamples(0, 2), 5).map(readRowTime)).toEqual([
+      0,
+      1,
+      2,
+      null,
+      null,
+    ])
+    expect(selectStableRows(createSamples(0, 10), 5).map(readRowTime)).toEqual([
+      0,
+      3,
+      5,
+      8,
+      10,
+    ])
+    expect(selectStableRows([], 3)).toEqual([null, null, null])
+  })
 })
+
+function readRowTime(sample: PendulumSample | null) {
+  return sample?.timeSeconds ?? null
+}
 
 function createSamples(startSeconds: number, endSeconds: number) {
   const samples: PendulumSample[] = []
