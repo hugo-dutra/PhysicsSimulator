@@ -692,6 +692,8 @@ Validacao:
 - Executado `npm run lint`.
 - Executado `npm run build`; build passou com aviso conhecido de chunk acima de 500 kB.
 - Executado `validate_guides.py`.
+- Smoke visual headless com Chrome/CDP em desktop `1440x1100` e mobile `390x900`: plano inclinado aberto pela sidebar, canvas nao vazio/colorido, movimento detectado por diff de frames e sem overflow horizontal.
+- Capturas geradas em `artifacts/inclined-plane-desktop.png`, `artifacts/inclined-plane-mobile.png`, `artifacts/inclined-plane-desktop-canvas-a.png` e `artifacts/inclined-plane-mobile-canvas-a.png`.
 
 ## 2026-04-29 - Grafico em foco no viewport
 
@@ -908,6 +910,66 @@ Arquivos atualizados:
 
 Validacao:
 
+- Executado `npm run test -- src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `validate_guides.py`.
+
+## 2026-04-29 - Fase 2 completa e plano inclinado com atrito
+
+Executadas as 9 proximas tasks da Fase 2:
+
+- Extrair contrato comum `SimulationDefinition`.
+- Adicionar `topicPath` para caminhos curriculares.
+- Criar status de catalogo `planned`, `scaffolded` e `available`.
+- Criar fixtures locais para as quatro areas principais.
+- Registrar todas as simulacoes planejadas como indisponiveis ate terem core completo.
+- Adicionar `Mecanica > Dinamica > Plano inclinado com atrito` como segunda simulacao funcional.
+- Reusar shell, controles, graficos, tabela, formulas e teoria entre simulacoes disponiveis.
+- Extrair helper reutilizavel de runtime visual renderer-first.
+- Ajustar docs com aprendizados da primeira simulacao e do reuso.
+
+Arquivos e estruturas criadas/atualizadas:
+
+- `fixtures/simulations/catalog.json`
+- `fixtures/simulations/mechanics-inclined-plane-friction.json`
+- `guides/01-strategy.md`
+- `guides/02-product-spec.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/05-roadmap.md`
+- `guides/06-data-and-api.md`
+- `guides/07-quality-and-operations.md`
+- `guides/08-api-contracts.md`
+- `guides/09-simulation-catalog-plan.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/content/simulations/mechanics/inclined-plane-friction/theory.md`
+- `src/features/simulation-shell/InclinedPlaneCharts.tsx`
+- `src/features/simulation-shell/InclinedPlaneScene.tsx`
+- `src/features/simulation-shell/PendulumCharts.tsx`
+- `src/features/simulation-shell/PendulumScene.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+- `src/features/simulation-shell/TheoryAppendix.tsx`
+- `src/features/simulation-shell/inclinedPlaneChartConfigs.ts`
+- `src/lib/physics/inclinedPlane.test.ts`
+- `src/lib/physics/inclinedPlane.ts`
+- `src/lib/rendering/visualRuntime.ts`
+- `src/simulation-registry/catalog.test.ts`
+- `src/simulation-registry/catalog.ts`
+
+Decisoes:
+
+- `inclined-plane-friction` passou para `available`; o pendulo continua como simulacao inicial ativa.
+- O plano inclinado usa modelo deterministico por regimes para repouso com atrito estatico, deslizamento com atrito cinetico e limite no fim do plano.
+- A energia termica acumulada e usada como balanco didatico da energia dissipada por atrito, sem prometer simulacao termica real.
+- `visualRuntime` centraliza `requestAnimationFrame`, cancelamento, interpolacao de timeline e metricas FPS/frame time, enquanto cada cena Three.js continua dona dos objetos, buffers, camera e overlays.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/inclinedPlane.test.ts src/simulation-registry/catalog.test.ts`.
 - Executado `npm run test -- src/App.test.tsx`.
 - Executado `npm run test`.
 - Executado `npm run lint`.

@@ -1,7 +1,9 @@
-import type { PendulumSample } from '../../lib/physics/pendulum'
+type TimedSample = {
+  timeSeconds: number
+}
 
-export function selectRecentSamples(
-  samples: PendulumSample[],
+export function selectRecentSamples<TSample extends TimedSample>(
+  samples: TSample[],
   currentSampleIndex: number,
   windowSeconds: number,
 ) {
@@ -48,7 +50,7 @@ export function getMovingWindowRange(
 }
 
 function findFirstSampleAtOrAfter(
-  samples: PendulumSample[],
+  samples: TimedSample[],
   timeSeconds: number,
 ) {
   let low = 0

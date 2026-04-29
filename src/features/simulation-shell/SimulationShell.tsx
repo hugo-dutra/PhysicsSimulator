@@ -37,15 +37,26 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import {
-  activeSimulation,
+  activeSimulationId,
+  findSimulation,
+  inclinedPlaneFixture,
   pendulumFixture,
   simulationCatalog,
 } from '../../simulation-registry/catalog'
 import type {
   ParameterValue,
   SimulationDefinition,
+  SimulationFixture,
   SimulationParameter,
 } from '../../simulation-registry/types'
+import {
+  computeInclinedPlaneTimeline,
+  getInclinedPlaneVectorOverlays,
+  toInclinedPlaneParameters,
+  type InclinedPlaneParameters,
+  type InclinedPlaneSample,
+  type InclinedPlaneVectorOverlay,
+} from '../../lib/physics/inclinedPlane'
 import {
   computePendulumTimeline,
   getPendulumVectorOverlays,
@@ -54,11 +65,20 @@ import {
   type PendulumSample,
   type PendulumVectorOverlay,
 } from '../../lib/physics/pendulum'
+import inclinedPlaneTheory from '../../content/simulations/mechanics/inclined-plane-friction/theory.md?raw'
+import pendulumTheory from '../../content/simulations/mechanics/pendulum/theory.md?raw'
 import { themeTokens } from '../../theme/appTheme'
 import { ChevronSection } from './ChevronSection'
 import { FormulaGuide } from './FormulaGuide'
+import { InclinedPlaneCharts } from './InclinedPlaneCharts'
+import { InclinedPlaneScene, type InclinedPlaneFrameStats } from './InclinedPlaneScene'
 import { LiveLineChart } from './LiveLineChart'
 import { ChartFocusButton, PendulumCharts } from './PendulumCharts'
+import {
+  buildInclinedPlaneChartConfigs,
+  prepareInclinedPlaneChartSamples,
+  type InclinedPlaneChartId,
+} from './inclinedPlaneChartConfigs'
 import {
   buildPendulumChartConfigs,
   preparePendulumChartSamples,
@@ -90,6 +110,8 @@ type OutputPanelState = {
 }
 
 type MaximizedPanelId = 'charts' | 'formulas' | 'simulation' | 'table' | 'theory'
+
+type AvailableSimulationId = 'inclined-plane-friction' | 'simple-pendulum'
 
 const customPresetId = 'custom'
 const playbackRate = 0.6
@@ -134,19 +156,86 @@ const vectorLegendItems = [
   id: PendulumVectorOverlay['id']
   label: string
 }>
+const inclinedPlaneSampleTableColumnIds = [
+  'time',
+  'position',
+  'velocity',
+  'acceleration',
+  'height',
+  'normal',
+  'friction',
+  'netForce',
+  'kinetic',
+  'potential',
+  'thermal',
+  'total',
+] as const
+const inclinedPlaneVectorLegendItems = [
+  {
+    id: 'weight',
+    label: 'Peso',
+    color: themeTokens.danger,
+    description: 'forca gravitacional vertical para baixo',
+  },
+  {
+    id: 'normal',
+    label: 'Normal',
+    color: themeTokens.vector,
+    description: 'forca perpendicular da superficie sobre o bloco',
+  },
+  {
+    id: 'friction',
+    label: 'Atrito',
+    color: themeTokens.warning,
+    description: 'forca que se opoe ao deslizamento ou tendencia de movimento',
+  },
+  {
+    id: 'velocity',
+    label: 'Velocidade',
+    color: themeTokens.cyan,
+    description: 'movimento ao longo do plano inclinado',
+  },
+] satisfies Array<{
+  color: string
+  description: string
+  id: InclinedPlaneVectorOverlay['id']
+  label: string
+}>
 const initialFrameStats: PendulumFrameStats = {
+  fps: 0,
+  frameTimeMs: 0,
+}
+const initialInclinedPlaneFrameStats: InclinedPlaneFrameStats = {
   fps: 0,
   frameTimeMs: 0,
 }
 
 export function SimulationShell() {
-  const [parameterValues, setParameterValues] = useState<
+  const [selectedSimulationId, setSelectedSimulationId] =
+    useState<AvailableSimulationId>(activeSimulationId as AvailableSimulationId)
+  const selectedSimulation = useMemo(
+    () => findSimulation(selectedSimulationId),
+    [selectedSimulationId],
+  )
+  const isInclinedPlaneSelected =
+    selectedSimulationId === 'inclined-plane-friction'
+  const [pendulumParameterValues, setPendulumParameterValues] = useState<
     Record<string, ParameterValue>
   >(() => ({ ...pendulumFixture.defaultParameters }))
-  const [runtimeValues, setRuntimeValues] = useState<
+  const [pendulumRuntimeValues, setPendulumRuntimeValues] = useState<
     Record<string, ParameterValue>
-  >(() => readDefaultRuntimeValues())
-  const [selectedPresetId, setSelectedPresetId] = useState(customPresetId)
+  >(() => readDefaultRuntimeValues(pendulumFixture))
+  const [pendulumSelectedPresetId, setPendulumSelectedPresetId] =
+    useState(customPresetId)
+  const [inclinedPlaneParameterValues, setInclinedPlaneParameterValues] =
+    useState<Record<string, ParameterValue>>(() => ({
+      ...inclinedPlaneFixture.defaultParameters,
+    }))
+  const [inclinedPlaneRuntimeValues, setInclinedPlaneRuntimeValues] = useState<
+    Record<string, ParameterValue>
+  >(() => readDefaultRuntimeValues(inclinedPlaneFixture))
+  const [inclinedPlaneSelectedPresetId, setInclinedPlaneSelectedPresetId] =
+    useState(customPresetId)
   const [isPlaying, setIsPlaying] = useState(true)
   const [playbackResetVersion, setPlaybackResetVersion] = useState(0)
   const [overlays, setOverlays] = useState<OverlayState>({
@@ -162,58 +251,117 @@ export function SimulationShell() {
   })
   const [maximizedPanel, setMaximizedPanel] =
     useState<MaximizedPanelId | null>(null)
-  const parameters = useMemo(
-    () => toPendulumParameters(parameterValues),
-    [parameterValues],
+  const pendulumParameters = useMemo(
+    () => toPendulumParameters(pendulumParameterValues),
+    [pendulumParameterValues],
   )
-  const durationSeconds = readRuntimeValue(
-    runtimeValues,
+  const pendulumDurationSeconds = readRuntimeValue(
+    pendulumRuntimeValues,
     'durationSeconds',
     pendulumFixture.durationSeconds,
   )
-  const chartWindowSeconds = readRuntimeValue(
-    runtimeValues,
+  const pendulumChartWindowSeconds = readRuntimeValue(
+    pendulumRuntimeValues,
     'chartWindowSeconds',
     pendulumFixture.chartWindowSeconds,
   )
-  const effectiveChartWindowSeconds = Math.min(
-    chartWindowSeconds,
-    durationSeconds,
+  const pendulumEffectiveChartWindowSeconds = Math.min(
+    pendulumChartWindowSeconds,
+    pendulumDurationSeconds,
   )
-  const timeline = useMemo(
+  const pendulumTimeline = useMemo(
     () =>
       computePendulumTimeline({
-        parameters,
-        durationSeconds,
+        parameters: pendulumParameters,
+        durationSeconds: pendulumDurationSeconds,
         sampleRateHz: pendulumFixture.sampleRateHz,
       }),
-    [durationSeconds, parameters],
+    [pendulumDurationSeconds, pendulumParameters],
+  )
+  const inclinedPlaneParameters = useMemo(
+    () => toInclinedPlaneParameters(inclinedPlaneParameterValues),
+    [inclinedPlaneParameterValues],
+  )
+  const inclinedPlaneDurationSeconds = readRuntimeValue(
+    inclinedPlaneRuntimeValues,
+    'durationSeconds',
+    inclinedPlaneFixture.durationSeconds,
+  )
+  const inclinedPlaneChartWindowSeconds = readRuntimeValue(
+    inclinedPlaneRuntimeValues,
+    'chartWindowSeconds',
+    inclinedPlaneFixture.chartWindowSeconds,
+  )
+  const inclinedPlaneEffectiveChartWindowSeconds = Math.min(
+    inclinedPlaneChartWindowSeconds,
+    inclinedPlaneDurationSeconds,
+  )
+  const inclinedPlaneTimeline = useMemo(
+    () =>
+      computeInclinedPlaneTimeline({
+        durationSeconds: inclinedPlaneDurationSeconds,
+        parameters: inclinedPlaneParameters,
+        sampleRateHz: inclinedPlaneFixture.sampleRateHz,
+      }),
+    [inclinedPlaneDurationSeconds, inclinedPlaneParameters],
   )
 
-  const initialEnergy = timeline.samples[0]?.totalEnergyJoules ?? 0
-  const finalEnergy = timeline.samples.at(-1)?.totalEnergyJoules ?? 0
-  const energyRatio =
-    initialEnergy > 0
-      ? (finalEnergy / initialEnergy) * 100
-      : 0
+  const selectedFixture = isInclinedPlaneSelected
+    ? inclinedPlaneFixture
+    : pendulumFixture
+  const selectedRuntimeValues = isInclinedPlaneSelected
+    ? inclinedPlaneRuntimeValues
+    : pendulumRuntimeValues
+  const selectedParameterValues = isInclinedPlaneSelected
+    ? inclinedPlaneParameterValues
+    : pendulumParameterValues
+  const selectedPresetId = isInclinedPlaneSelected
+    ? inclinedPlaneSelectedPresetId
+    : pendulumSelectedPresetId
+  const selectedDurationSeconds = isInclinedPlaneSelected
+    ? inclinedPlaneDurationSeconds
+    : pendulumDurationSeconds
+  const selectedEffectiveChartWindowSeconds = isInclinedPlaneSelected
+    ? inclinedPlaneEffectiveChartWindowSeconds
+    : pendulumEffectiveChartWindowSeconds
+  const selectedTimeline = isInclinedPlaneSelected
+    ? inclinedPlaneTimeline
+    : pendulumTimeline
+  const energyRatio = readEnergyRatio(selectedTimeline.samples)
 
-  const handlePresetChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const nextPresetId = event.target.value
-    const preset = pendulumFixture.presets.find(
+  const handleSimulationSelect = (simulationId: AvailableSimulationId) => {
+    setSelectedSimulationId(simulationId)
+    setMaximizedPanel(null)
+    setPlaybackResetVersion((current) => current + 1)
+  }
+
+  const handlePresetChange = (nextPresetId: string) => {
+    const preset = selectedFixture.presets.find(
       (item) => item.id === nextPresetId,
     )
 
-    setSelectedPresetId(nextPresetId)
+    if (isInclinedPlaneSelected) {
+      setInclinedPlaneSelectedPresetId(nextPresetId)
+    } else {
+      setPendulumSelectedPresetId(nextPresetId)
+    }
     setPlaybackResetVersion((current) => current + 1)
 
     if (!preset) {
       return
     }
 
-    setParameterValues({
-      ...pendulumFixture.defaultParameters,
-      ...preset.parameters,
-    })
+    if (isInclinedPlaneSelected) {
+      setInclinedPlaneParameterValues({
+        ...inclinedPlaneFixture.defaultParameters,
+        ...preset.parameters,
+      })
+    } else {
+      setPendulumParameterValues({
+        ...pendulumFixture.defaultParameters,
+        ...preset.parameters,
+      })
+    }
   }
 
   const handleParameterChange = (
@@ -225,17 +373,28 @@ export function SimulationShell() {
     }
 
     const clampedValue = clampToParameterRange(nextValue, parameter)
+    const currentValues = isInclinedPlaneSelected
+      ? inclinedPlaneParameterValues
+      : pendulumParameterValues
 
-    if (parameterValues[parameter.id] === clampedValue) {
+    if (currentValues[parameter.id] === clampedValue) {
       return
     }
 
-    setSelectedPresetId(customPresetId)
+    if (isInclinedPlaneSelected) {
+      setInclinedPlaneSelectedPresetId(customPresetId)
+      setInclinedPlaneParameterValues((currentValues) => ({
+        ...currentValues,
+        [parameter.id]: clampedValue,
+      }))
+    } else {
+      setPendulumSelectedPresetId(customPresetId)
+      setPendulumParameterValues((currentValues) => ({
+        ...currentValues,
+        [parameter.id]: clampedValue,
+      }))
+    }
     setPlaybackResetVersion((current) => current + 1)
-    setParameterValues((currentValues) => ({
-      ...currentValues,
-      [parameter.id]: clampedValue,
-    }))
   }
 
   const handleRuntimeParameterChange = (
@@ -247,15 +406,25 @@ export function SimulationShell() {
     }
 
     const clampedValue = clampToParameterRange(nextValue, parameter)
+    const currentValues = isInclinedPlaneSelected
+      ? inclinedPlaneRuntimeValues
+      : pendulumRuntimeValues
 
-    if (runtimeValues[parameter.id] === clampedValue) {
+    if (currentValues[parameter.id] === clampedValue) {
       return
     }
 
-    setRuntimeValues((currentValues) => ({
-      ...currentValues,
-      [parameter.id]: clampedValue,
-    }))
+    if (isInclinedPlaneSelected) {
+      setInclinedPlaneRuntimeValues((currentValues) => ({
+        ...currentValues,
+        [parameter.id]: clampedValue,
+      }))
+    } else {
+      setPendulumRuntimeValues((currentValues) => ({
+        ...currentValues,
+        [parameter.id]: clampedValue,
+      }))
+    }
 
     if (parameter.id === 'durationSeconds') {
       setPlaybackResetVersion((current) => current + 1)
@@ -333,7 +502,10 @@ export function SimulationShell() {
         </Box>
         <Divider />
 
-        <SimulationSidebar />
+        <SimulationSidebar
+          onSelectSimulation={handleSimulationSelect}
+          selectedSimulationId={selectedSimulationId}
+        />
       </Box>
 
       <Box sx={{ minWidth: 0 }}>
@@ -352,9 +524,9 @@ export function SimulationShell() {
         >
           <Box>
             <Typography color="primary.main" variant="body2">
-              {activeSimulation.topicPath.join(' > ')}
+              {selectedSimulation.topicPath.join(' > ')}
             </Typography>
-            <Typography variant="h1">{activeSimulation.title}</Typography>
+            <Typography variant="h1">{selectedSimulation.title}</Typography>
           </Box>
           <Stack
             direction="row"
@@ -382,8 +554,12 @@ export function SimulationShell() {
             >
               {isPlaying ? 'Pausar animacao' : 'Reproduzir animacao'}
             </Button>
-            <Chip label="custom-numerical" size="small" variant="outlined" />
-            <Chip color="primary" label="available" size="small" />
+            <Chip
+              label={selectedSimulation.technologyPlan?.engine ?? 'custom'}
+              size="small"
+              variant="outlined"
+            />
+            <Chip color="primary" label={selectedSimulation.status} size="small" />
           </Stack>
         </Box>
 
@@ -399,27 +575,44 @@ export function SimulationShell() {
           }}
         >
           <Stack spacing={2} sx={{ minWidth: 0 }}>
-            <PendulumRuntime
-              chartWindowSeconds={effectiveChartWindowSeconds}
-              durationSeconds={durationSeconds}
-              isPlaying={isPlaying}
-              maximizedPanel={maximizedPanel}
-              onMaximizedPanelToggle={handleMaximizedPanelToggle}
-              onPlaybackToggle={handlePlaybackToggle}
-              onOutputPanelToggle={handleOutputPanelToggle}
-              overlays={overlays}
-              outputPanels={outputPanels}
-              parameters={parameters}
-              resetVersion={playbackResetVersion}
-              samples={timeline.samples}
-            />
+            {isInclinedPlaneSelected ? (
+              <InclinedPlaneRuntime
+                chartWindowSeconds={inclinedPlaneEffectiveChartWindowSeconds}
+                durationSeconds={inclinedPlaneDurationSeconds}
+                isPlaying={isPlaying}
+                maximizedPanel={maximizedPanel}
+                onMaximizedPanelToggle={handleMaximizedPanelToggle}
+                onOutputPanelToggle={handleOutputPanelToggle}
+                onPlaybackToggle={handlePlaybackToggle}
+                outputPanels={outputPanels}
+                overlays={overlays}
+                parameters={inclinedPlaneParameters}
+                resetVersion={playbackResetVersion}
+                samples={inclinedPlaneTimeline.samples}
+              />
+            ) : (
+              <PendulumRuntime
+                chartWindowSeconds={pendulumEffectiveChartWindowSeconds}
+                durationSeconds={pendulumDurationSeconds}
+                isPlaying={isPlaying}
+                maximizedPanel={maximizedPanel}
+                onMaximizedPanelToggle={handleMaximizedPanelToggle}
+                onPlaybackToggle={handlePlaybackToggle}
+                onOutputPanelToggle={handleOutputPanelToggle}
+                overlays={overlays}
+                outputPanels={outputPanels}
+                parameters={pendulumParameters}
+                resetVersion={playbackResetVersion}
+                samples={pendulumTimeline.samples}
+              />
+            )}
 
             {shouldShowFormulas || shouldShowTheory ? (
               <>
                 {shouldShowFormulas ? (
                   <FormulaGuide
                     expanded={formulasExpanded}
-                    formulas={pendulumFixture.formulas}
+                    formulas={selectedFixture.formulas}
                     maximized={isFormulasMaximized}
                     onMaximizeToggle={() => {
                       handleMaximizedPanelToggle('formulas')
@@ -427,14 +620,19 @@ export function SimulationShell() {
                     onToggle={() => {
                       handleOutputPanelToggle('formulas')
                     }}
-                    parameters={pendulumFixture.parameters}
+                    parameters={selectedFixture.parameters}
                   />
                 ) : null}
 
                 {shouldShowTheory ? (
                   <TheoryAppendix
+                    content={
+                      isInclinedPlaneSelected
+                        ? inclinedPlaneTheory
+                        : pendulumTheory
+                    }
                     expanded={theoryExpanded}
-                    limits={pendulumFixture.limits}
+                    limits={selectedFixture.limits}
                     maximized={isTheoryMaximized}
                     onMaximizeToggle={() => {
                       handleMaximizedPanelToggle('theory')
@@ -449,213 +647,280 @@ export function SimulationShell() {
           </Stack>
 
           {isPanelMaximized ? null : (
-            <Box
-              component="section"
-              sx={{
-                border: `1px solid ${themeTokens.border}`,
-                borderRadius: 1,
-                bgcolor: alpha(themeTokens.panel, 0.55),
-                minWidth: 0,
-                p: 1.5,
-              }}
-            >
-              <Stack spacing={2}>
-              <Stack
-                direction="row"
-                spacing={1}
-                sx={{
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <Box>
-                  <Typography variant="h2">Controles</Typography>
-                  <Typography color="text.secondary" variant="body2">
-                    ciclo {formatNumber(durationSeconds, 's')} | janela{' '}
-                    {formatNumber(effectiveChartWindowSeconds, 's')}
-                  </Typography>
-                </Box>
-                <Stack direction="row" spacing={0.75}>
-                  <Chip
-                    color={isPlaying ? 'primary' : 'default'}
-                    label={isPlaying ? 'rodando' : 'pausado'}
-                    size="small"
-                    variant={isPlaying ? 'filled' : 'outlined'}
-                  />
-                  <Tooltip title={isPlaying ? 'Pausar' : 'Reproduzir'}>
-                    <IconButton
-                      aria-label="Alternar reproducao da simulacao"
-                      color="primary"
-                      onClick={handlePlaybackToggle}
-                      size="small"
-                    >
-                      {isPlaying ? (
-                        <Pause aria-hidden size={18} />
-                      ) : (
-                        <Play aria-hidden size={18} />
-                      )}
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Resetar">
-                    <IconButton
-                      aria-label="Resetar simulacao"
-                      onClick={handleReset}
-                      size="small"
-                    >
-                      <RotateCcw aria-hidden size={18} />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-              </Stack>
-
-              <TextField
-                fullWidth
-                label="Preset"
-                onChange={handlePresetChange}
-                select
-                size="small"
-                value={selectedPresetId}
-              >
-                <MenuItem value={customPresetId}>Personalizado</MenuItem>
-                {pendulumFixture.presets.map((preset) => (
-                  <MenuItem key={preset.id} value={preset.id}>
-                    {preset.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <Box>
-                <Typography sx={{ mb: 0.75 }} variant="h2">
-                  Tempo e janela
-                </Typography>
-                <Stack spacing={1.5}>
-                  {pendulumFixture.runtimeParameters.map((parameter) => {
-                    const value = readNumericParameter(runtimeValues, parameter)
-
-                    return (
-                      <ParameterControl
-                        key={`${parameter.id}:${value}`}
-                        onChange={(nextValue) => {
-                          handleRuntimeParameterChange(parameter, nextValue)
-                        }}
-                        parameter={parameter}
-                        value={value}
-                      />
-                    )
-                  })}
-                </Stack>
-              </Box>
-
-              <Stack spacing={1.5}>
-                {pendulumFixture.parameters.map((parameter) => {
-                  const value = readNumericParameter(parameterValues, parameter)
-
-                  return (
-                    <ParameterControl
-                      key={`${parameter.id}:${value}`}
-                      onChange={(nextValue) => {
-                        handleParameterChange(parameter, nextValue)
-                      }}
-                      parameter={parameter}
-                      value={value}
-                    />
-                  )
-                })}
-              </Stack>
-
-              <Box>
-                <Typography sx={{ mb: 0.75 }} variant="h2">
-                  Overlays
-                </Typography>
-                <Stack spacing={0.5}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={overlays.vectors}
-                        onChange={handleOverlayChange('vectors')}
-                        size="small"
-                      />
-                    }
-                    label="Vetores"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={overlays.trace}
-                        onChange={handleOverlayChange('trace')}
-                        size="small"
-                      />
-                    }
-                    label="Trilha"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={overlays.energy}
-                        onChange={handleOverlayChange('energy')}
-                        size="small"
-                      />
-                    }
-                    label="Energia"
-                  />
-                </Stack>
-              </Box>
-
-              <Divider />
-
-              <Box>
-                <Typography sx={{ mb: 1 }} variant="h2">
-                  Integrador
-                </Typography>
-                <Stack spacing={1}>
-                  <Metric
-                    label="samples"
-                    value={String(timeline.samples.length)}
-                  />
-                  <Metric
-                    label="playback"
-                    value={`${compactNumber.format(playbackRate)}x`}
-                  />
-                  <Metric
-                    label="sample rate"
-                    value={`${pendulumFixture.sampleRateHz} Hz`}
-                  />
-                  <Metric
-                    label="janela"
-                    value={formatNumber(effectiveChartWindowSeconds, 's')}
-                  />
-                  <Metric label="render" value="Three.js rAF" />
-                  <Metric
-                    label="graficos"
-                    value={outputPanels.charts ? 'aberto' : 'recolhido'}
-                  />
-                  <Metric
-                    label="tabela"
-                    value={outputPanels.table ? 'aberto' : 'recolhido'}
-                  />
-                  <Metric
-                    label="formulas"
-                    value={outputPanels.formulas ? 'aberto' : 'recolhido'}
-                  />
-                  <Metric
-                    label="teoria"
-                    value={outputPanels.theory ? 'aberto' : 'recolhido'}
-                  />
-                  <Metric
-                    label="energia final"
-                    value={`${compactNumber.format(energyRatio)}%`}
-                  />
-                  <Metric
-                    label="avisos"
-                    value={String(timeline.warnings.length)}
-                  />
-                </Stack>
-              </Box>
-              </Stack>
-            </Box>
+            <SimulationControlsPanel
+              durationSeconds={selectedDurationSeconds}
+              effectiveChartWindowSeconds={selectedEffectiveChartWindowSeconds}
+              energyRatio={energyRatio}
+              fixture={selectedFixture}
+              isPlaying={isPlaying}
+              onOverlayChange={handleOverlayChange}
+              onParameterChange={handleParameterChange}
+              onPlaybackToggle={handlePlaybackToggle}
+              onPresetChange={handlePresetChange}
+              onReset={handleReset}
+              onRuntimeParameterChange={handleRuntimeParameterChange}
+              outputPanels={outputPanels}
+              overlays={overlays}
+              parameterValues={selectedParameterValues}
+              renderLabel="Three.js rAF"
+              runtimeValues={selectedRuntimeValues}
+              sampleCount={selectedTimeline.samples.length}
+              sampleRateHz={selectedFixture.sampleRateHz}
+              selectedPresetId={selectedPresetId}
+              warningsCount={selectedTimeline.warnings.length}
+            />
           )}
         </Box>
       </Box>
+    </Box>
+  )
+}
+
+function SimulationControlsPanel({
+  durationSeconds,
+  effectiveChartWindowSeconds,
+  energyRatio,
+  fixture,
+  isPlaying,
+  onOverlayChange,
+  onParameterChange,
+  onPlaybackToggle,
+  onPresetChange,
+  onReset,
+  onRuntimeParameterChange,
+  outputPanels,
+  overlays,
+  parameterValues,
+  renderLabel,
+  runtimeValues,
+  sampleCount,
+  sampleRateHz,
+  selectedPresetId,
+  warningsCount,
+}: {
+  durationSeconds: number
+  effectiveChartWindowSeconds: number
+  energyRatio: number
+  fixture: SimulationFixture
+  isPlaying: boolean
+  onOverlayChange: (
+    overlayId: keyof OverlayState,
+  ) => (_event: ChangeEvent<HTMLInputElement>, checked: boolean) => void
+  onParameterChange: (parameter: SimulationParameter, nextValue: number) => void
+  onPlaybackToggle: () => void
+  onPresetChange: (presetId: string) => void
+  onReset: () => void
+  onRuntimeParameterChange: (
+    parameter: SimulationParameter,
+    nextValue: number,
+  ) => void
+  outputPanels: OutputPanelState
+  overlays: OverlayState
+  parameterValues: Record<string, ParameterValue>
+  renderLabel: string
+  runtimeValues: Record<string, ParameterValue>
+  sampleCount: number
+  sampleRateHz: number
+  selectedPresetId: string
+  warningsCount: number
+}) {
+  return (
+    <Box
+      component="section"
+      sx={{
+        border: `1px solid ${themeTokens.border}`,
+        borderRadius: 1,
+        bgcolor: alpha(themeTokens.panel, 0.55),
+        minWidth: 0,
+        p: 1.5,
+      }}
+    >
+      <Stack spacing={2}>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Box>
+            <Typography variant="h2">Controles</Typography>
+            <Typography color="text.secondary" variant="body2">
+              ciclo {formatNumber(durationSeconds, 's')} | janela{' '}
+              {formatNumber(effectiveChartWindowSeconds, 's')}
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={0.75}>
+            <Chip
+              color={isPlaying ? 'primary' : 'default'}
+              label={isPlaying ? 'rodando' : 'pausado'}
+              size="small"
+              variant={isPlaying ? 'filled' : 'outlined'}
+            />
+            <Tooltip title={isPlaying ? 'Pausar' : 'Reproduzir'}>
+              <IconButton
+                aria-label="Alternar reproducao da simulacao"
+                color="primary"
+                onClick={onPlaybackToggle}
+                size="small"
+              >
+                {isPlaying ? (
+                  <Pause aria-hidden size={18} />
+                ) : (
+                  <Play aria-hidden size={18} />
+                )}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Resetar">
+              <IconButton
+                aria-label="Resetar simulacao"
+                onClick={onReset}
+                size="small"
+              >
+                <RotateCcw aria-hidden size={18} />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        </Stack>
+
+        <TextField
+          fullWidth
+          label="Preset"
+          onChange={(event) => {
+            onPresetChange(event.target.value)
+          }}
+          select
+          size="small"
+          value={selectedPresetId}
+        >
+          <MenuItem value={customPresetId}>Personalizado</MenuItem>
+          {fixture.presets.map((preset) => (
+            <MenuItem key={preset.id} value={preset.id}>
+              {preset.label}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <Box>
+          <Typography sx={{ mb: 0.75 }} variant="h2">
+            Tempo e janela
+          </Typography>
+          <Stack spacing={1.5}>
+            {fixture.runtimeParameters.map((parameter) => {
+              const value = readNumericParameter(runtimeValues, parameter)
+
+              return (
+                <ParameterControl
+                  key={`${parameter.id}:${value}`}
+                  onChange={(nextValue) => {
+                    onRuntimeParameterChange(parameter, nextValue)
+                  }}
+                  parameter={parameter}
+                  value={value}
+                />
+              )
+            })}
+          </Stack>
+        </Box>
+
+        <Stack spacing={1.5}>
+          {fixture.parameters.map((parameter) => {
+            const value = readNumericParameter(parameterValues, parameter)
+
+            return (
+              <ParameterControl
+                key={`${parameter.id}:${value}`}
+                onChange={(nextValue) => {
+                  onParameterChange(parameter, nextValue)
+                }}
+                parameter={parameter}
+                value={value}
+              />
+            )
+          })}
+        </Stack>
+
+        <Box>
+          <Typography sx={{ mb: 0.75 }} variant="h2">
+            Overlays
+          </Typography>
+          <Stack spacing={0.5}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={overlays.vectors}
+                  onChange={onOverlayChange('vectors')}
+                  size="small"
+                />
+              }
+              label="Vetores"
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={overlays.trace}
+                  onChange={onOverlayChange('trace')}
+                  size="small"
+                />
+              }
+              label="Trilha"
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={overlays.energy}
+                  onChange={onOverlayChange('energy')}
+                  size="small"
+                />
+              }
+              label="Energia"
+            />
+          </Stack>
+        </Box>
+
+        <Divider />
+
+        <Box>
+          <Typography sx={{ mb: 1 }} variant="h2">
+            Integrador
+          </Typography>
+          <Stack spacing={1}>
+            <Metric label="samples" value={String(sampleCount)} />
+            <Metric
+              label="playback"
+              value={`${compactNumber.format(playbackRate)}x`}
+            />
+            <Metric label="sample rate" value={`${sampleRateHz} Hz`} />
+            <Metric
+              label="janela"
+              value={formatNumber(effectiveChartWindowSeconds, 's')}
+            />
+            <Metric label="render" value={renderLabel} />
+            <Metric
+              label="graficos"
+              value={outputPanels.charts ? 'aberto' : 'recolhido'}
+            />
+            <Metric
+              label="tabela"
+              value={outputPanels.table ? 'aberto' : 'recolhido'}
+            />
+            <Metric
+              label="formulas"
+              value={outputPanels.formulas ? 'aberto' : 'recolhido'}
+            />
+            <Metric
+              label="teoria"
+              value={outputPanels.theory ? 'aberto' : 'recolhido'}
+            />
+            <Metric
+              label="energia final"
+              value={`${compactNumber.format(energyRatio)}%`}
+            />
+            <Metric label="avisos" value={String(warningsCount)} />
+          </Stack>
+        </Box>
+      </Stack>
     </Box>
   )
 }
@@ -665,7 +930,13 @@ type SidebarSubarea = {
   simulations: SimulationDefinition[]
 }
 
-function SimulationSidebar() {
+function SimulationSidebar({
+  onSelectSimulation,
+  selectedSimulationId,
+}: {
+  onSelectSimulation: (simulationId: AvailableSimulationId) => void
+  selectedSimulationId: string
+}) {
   const areaGroups = useMemo(
     () =>
       simulationCatalog.areas.map((area) => ({
@@ -679,7 +950,9 @@ function SimulationSidebar() {
       Object.fromEntries(
         simulationCatalog.areas.map((area) => [
           area.id,
-          area.simulations.some((simulation) => isActiveSimulation(simulation)),
+          area.simulations.some(
+            (simulation) => simulation.id === selectedSimulationId,
+          ),
         ]),
       ),
   )
@@ -689,7 +962,9 @@ function SimulationSidebar() {
     const entries = simulationCatalog.areas.flatMap((area) =>
       groupSimulationsBySubarea(area.simulations).map((subarea) => [
         getSubareaKey(area.id, subarea.label),
-        subarea.simulations.some((simulation) => isActiveSimulation(simulation)),
+        subarea.simulations.some(
+          (simulation) => simulation.id === selectedSimulationId,
+        ),
       ]),
     )
 
@@ -777,7 +1052,9 @@ function SimulationSidebar() {
                           >
                             {subarea.simulations.map((simulation) => (
                               <SidebarSimulationItem
+                                active={simulation.id === selectedSimulationId}
                                 key={simulation.id}
+                                onSelectSimulation={onSelectSimulation}
                                 simulation={simulation}
                               />
                             ))}
@@ -867,17 +1144,20 @@ function SidebarToggle({
 }
 
 function SidebarSimulationItem({
+  active,
+  onSelectSimulation,
   simulation,
 }: {
+  active: boolean
+  onSelectSimulation: (simulationId: AvailableSimulationId) => void
   simulation: SimulationDefinition
 }) {
-  const isActive = isActiveSimulation(simulation)
   const isAvailable = simulation.status === 'available'
   const commonSx = {
-    bgcolor: isActive
+    bgcolor: active
       ? alpha(themeTokens.teal, 0.12)
       : alpha(themeTokens.panel, 0.42),
-    border: `1px solid ${isActive ? themeTokens.teal : themeTokens.border}`,
+    border: `1px solid ${active ? themeTokens.teal : themeTokens.border}`,
     borderRadius: 1,
     color: isAvailable ? 'text.primary' : 'text.secondary',
     display: 'block',
@@ -890,7 +1170,7 @@ function SidebarSimulationItem({
   const content = (
     <Stack spacing={0.75}>
       <Typography
-        sx={{ fontWeight: isActive ? 750 : 600, overflowWrap: 'anywhere' }}
+        sx={{ fontWeight: active ? 750 : 600, overflowWrap: 'anywhere' }}
         variant="body2"
       >
         {simulation.title}
@@ -920,8 +1200,11 @@ function SidebarSimulationItem({
   if (isAvailable) {
     return (
       <Box
-        aria-current={isActive ? 'page' : undefined}
+        aria-current={active ? 'page' : undefined}
         component="button"
+        onClick={() => {
+          onSelectSimulation(simulation.id as AvailableSimulationId)
+        }}
         sx={{
           ...commonSx,
           cursor: 'pointer',
@@ -1457,6 +1740,509 @@ function PendulumRuntime({
   )
 }
 
+function InclinedPlaneRuntime({
+  chartWindowSeconds,
+  durationSeconds,
+  isPlaying,
+  maximizedPanel,
+  onMaximizedPanelToggle,
+  onOutputPanelToggle,
+  onPlaybackToggle,
+  outputPanels,
+  overlays,
+  parameters,
+  resetVersion,
+  samples,
+}: {
+  chartWindowSeconds: number
+  durationSeconds: number
+  isPlaying: boolean
+  maximizedPanel: MaximizedPanelId | null
+  onMaximizedPanelToggle: (panelId: MaximizedPanelId) => void
+  onOutputPanelToggle: (panelId: keyof OutputPanelState) => void
+  onPlaybackToggle: () => void
+  outputPanels: OutputPanelState
+  overlays: OverlayState
+  parameters: InclinedPlaneParameters
+  resetVersion: number
+  samples: InclinedPlaneSample[]
+}) {
+  const firstSample = useMemo(() => readFirstInclinedPlaneSample(samples), [samples])
+  const [liveSample, setLiveSample] =
+    useState<InclinedPlaneSample>(firstSample)
+  const [frameStats, setFrameStats] =
+    useState<InclinedPlaneFrameStats>(initialInclinedPlaneFrameStats)
+  const [focusedChartId, setFocusedChartId] =
+    useState<InclinedPlaneChartId | null>(null)
+
+  const handleSampleChange = useCallback(
+    (sample: InclinedPlaneSample, stats: InclinedPlaneFrameStats) => {
+      setLiveSample(sample)
+      setFrameStats(stats)
+    },
+    [],
+  )
+  const handleFocusedChartToggle = useCallback(
+    (chartId: InclinedPlaneChartId) => {
+      setFocusedChartId((currentChartId) =>
+        currentChartId === chartId ? null : chartId,
+      )
+    },
+    [],
+  )
+
+  const isSimulationMaximized = maximizedPanel === 'simulation'
+  const isChartsMaximized = maximizedPanel === 'charts'
+  const isTableMaximized = maximizedPanel === 'table'
+  const hasMaximizedPanel = maximizedPanel !== null
+  const chartsExpanded = outputPanels.charts || isChartsMaximized
+  const tableExpanded = outputPanels.table || isTableMaximized
+  const tableRowCount = isTableMaximized
+    ? maximizedSampleTableRowCount
+    : sampleTableRowCount
+  const shouldShowCharts = !hasMaximizedPanel || isChartsMaximized
+  const shouldShowTable = !hasMaximizedPanel || isTableMaximized
+  const shouldHideSimulationCard = hasMaximizedPanel && !isSimulationMaximized
+  const canFocusChartInSimulation = !shouldHideSimulationCard
+  const currentSampleIndex = getInclinedPlaneSampleIndexForTime(
+    samples,
+    durationSeconds,
+    liveSample.timeSeconds,
+  )
+  const activeFocusedChartId =
+    focusedChartId === 'energy' && !overlays.energy ? null : focusedChartId
+  const hasFocusedChart = activeFocusedChartId !== null
+  const needsChartRange = chartsExpanded || hasFocusedChart
+  const needsSampleWindow = needsChartRange || tableExpanded
+  const visibleWindowSamples = useMemo(
+    () => {
+      if (!needsSampleWindow) {
+        return []
+      }
+
+      return selectRecentSamples(
+        samples,
+        currentSampleIndex,
+        chartWindowSeconds,
+      )
+    },
+    [chartWindowSeconds, currentSampleIndex, needsSampleWindow, samples],
+  )
+  const xAxisRange = useMemo<[number, number]>(
+    () => {
+      if (!needsChartRange) {
+        return [0, chartWindowSeconds]
+      }
+
+      return getMovingWindowRange(
+        liveSample.timeSeconds,
+        chartWindowSeconds,
+        durationSeconds,
+      )
+    },
+    [
+      chartWindowSeconds,
+      durationSeconds,
+      liveSample.timeSeconds,
+      needsChartRange,
+    ],
+  )
+  const vectors = useMemo(
+    () =>
+      overlays.vectors
+        ? getInclinedPlaneVectorOverlays(liveSample, parameters)
+        : [],
+    [liveSample, overlays.vectors, parameters],
+  )
+  const chartSamples = useMemo(
+    () =>
+      needsChartRange
+        ? appendInclinedPlaneLiveSample(visibleWindowSamples, liveSample)
+        : [],
+    [liveSample, needsChartRange, visibleWindowSamples],
+  )
+  const focusedChart = useMemo(
+    () => {
+      if (!activeFocusedChartId) {
+        return null
+      }
+
+      const focusedChartSamples = prepareInclinedPlaneChartSamples(chartSamples)
+
+      return (
+        buildInclinedPlaneChartConfigs(focusedChartSamples)
+          .filter((chart) => overlays.energy || chart.id !== 'energy')
+          .find((chart) => chart.id === activeFocusedChartId) ?? null
+      )
+    },
+    [activeFocusedChartId, chartSamples, overlays.energy],
+  )
+  const tableRows = useMemo(() => {
+    if (!tableExpanded) {
+      return []
+    }
+
+    return selectStableInclinedPlaneTableRows(visibleWindowSamples, tableRowCount)
+  }, [tableExpanded, tableRowCount, visibleWindowSamples])
+
+  return (
+    <>
+      <Box
+        aria-hidden={shouldHideSimulationCard ? true : undefined}
+        aria-label="Inclined plane numerical viewport"
+        sx={[
+          {
+            border: `1px solid ${themeTokens.border}`,
+            borderRadius: 1,
+            bgcolor: alpha(themeTokens.panel, 0.58),
+            minHeight: 322,
+            overflow: 'hidden',
+            position: 'relative',
+          },
+          isSimulationMaximized
+            ? {
+                minHeight: 'calc(100svh - 24px)',
+              }
+            : null,
+          shouldHideSimulationCard
+            ? {
+                border: 0,
+                height: 1,
+                left: -10000,
+                minHeight: 1,
+                opacity: 0,
+                overflow: 'hidden',
+                pointerEvents: 'none',
+                position: 'fixed',
+                top: 0,
+                visibility: 'hidden',
+                width: 1,
+              }
+            : null,
+        ]}
+      >
+        <Box
+          sx={{
+            alignItems: 'center',
+            borderBottom: `1px solid ${themeTokens.border}`,
+            display: 'flex',
+            gap: 1,
+            justifyContent: 'space-between',
+            px: 1.5,
+            py: 1,
+          }}
+        >
+          <Typography variant="body2">Viewport Three.js</Typography>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <Chip
+              label={formatFps(frameStats.fps)}
+              size="small"
+              variant="outlined"
+            />
+            <Typography color="text.secondary" variant="body2">
+              t = {formatNumber(liveSample.timeSeconds, 's')}
+            </Typography>
+            <Button
+              aria-label={
+                isPlaying
+                  ? 'Pausar simulacao no viewport'
+                  : 'Reproduzir simulacao no viewport'
+              }
+              color="primary"
+              onClick={onPlaybackToggle}
+              size="small"
+              startIcon={
+                isPlaying ? (
+                  <Pause aria-hidden size={16} />
+                ) : (
+                  <Play aria-hidden size={16} />
+                )
+              }
+              variant="outlined"
+            >
+              {isPlaying ? 'Pausar' : 'Reproduzir'}
+            </Button>
+            <Tooltip
+              title={isSimulationMaximized ? 'Minimizar' : 'Maximizar'}
+            >
+              <IconButton
+                aria-label={
+                  isSimulationMaximized
+                    ? 'Minimizar simulacao'
+                    : 'Maximizar simulacao'
+                }
+                aria-pressed={isSimulationMaximized}
+                color={isSimulationMaximized ? 'primary' : 'default'}
+                onClick={() => {
+                  onMaximizedPanelToggle('simulation')
+                }}
+                size="small"
+              >
+                {isSimulationMaximized ? (
+                  <Minimize2 aria-hidden size={17} />
+                ) : (
+                  <Maximize2 aria-hidden size={17} />
+                )}
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        </Box>
+
+        <Box
+          sx={{
+            borderBottom: `1px solid ${themeTokens.border}`,
+            display: 'grid',
+            gap: 1,
+            gridTemplateColumns: {
+              xs: '1fr 1fr',
+              md: 'repeat(7, minmax(0, 1fr))',
+            },
+            p: 1.5,
+          }}
+        >
+          <Metric
+            label="Posicao no plano"
+            value={formatNumber(liveSample.positionMeters, 'm')}
+          />
+          <Metric
+            label="Velocidade no plano"
+            value={formatNumber(liveSample.velocityMetersPerSecond, 'm/s')}
+          />
+          <Metric
+            label="Aceleracao no plano"
+            value={formatNumber(
+              liveSample.accelerationMetersPerSecondSquared,
+              'm/s^2',
+            )}
+          />
+          <Metric
+            label="Forca resultante"
+            value={formatNumber(liveSample.netForceNewtons, 'N')}
+          />
+          <Metric
+            label="Forca normal"
+            value={formatNumber(liveSample.normalForceNewtons, 'N')}
+          />
+          {overlays.energy ? (
+            <Metric
+              label="Energia total"
+              value={formatNumber(liveSample.totalEnergyJoules, 'J')}
+            />
+          ) : null}
+          <Metric
+            label="Tempo do frame"
+            value={
+              frameStats.frameTimeMs > 0
+                ? formatNumber(frameStats.frameTimeMs, 'ms')
+                : '-- ms'
+            }
+          />
+        </Box>
+        {overlays.vectors ? <InclinedPlaneVectorLegend vectors={vectors} /> : null}
+        <Box
+          sx={{
+            display: 'grid',
+            gap: focusedChart ? 1.5 : 0,
+            gridTemplateColumns: {
+              xs: '1fr',
+              lg: focusedChart
+                ? 'minmax(0, 2fr) minmax(280px, 1fr)'
+                : '1fr',
+            },
+            p: focusedChart ? 1.5 : 0,
+          }}
+        >
+          <Box sx={{ minWidth: 0 }}>
+            <InclinedPlaneScene
+              durationSeconds={durationSeconds}
+              isPlaying={isPlaying}
+              maximized={isSimulationMaximized}
+              onSampleChange={handleSampleChange}
+              parameters={parameters}
+              playbackRate={playbackRate}
+              resetVersion={resetVersion}
+              samples={samples}
+              showTrace={overlays.trace}
+              showVectors={overlays.vectors}
+            />
+          </Box>
+          {focusedChart ? (
+            <Box
+              aria-label="Slot de grafico em foco da simulacao"
+              sx={{ minWidth: 0 }}
+            >
+              <LiveLineChart
+                action={
+                  <ChartFocusButton
+                    chart={focusedChart}
+                    focused
+                    onToggle={handleFocusedChartToggle}
+                  />
+                }
+                title={focusedChart.title}
+                traces={focusedChart.traces}
+                xAxisRange={xAxisRange}
+                yAxisTitle={focusedChart.yAxisTitle}
+              />
+            </Box>
+          ) : null}
+        </Box>
+      </Box>
+
+      {shouldShowCharts ? (
+        <InclinedPlaneCharts
+          chartWindowSeconds={chartWindowSeconds}
+          expanded={chartsExpanded}
+          focusedChartId={
+            canFocusChartInSimulation ? activeFocusedChartId : null
+          }
+          maximized={isChartsMaximized}
+          onFocusedChartToggle={
+            canFocusChartInSimulation ? handleFocusedChartToggle : undefined
+          }
+          onMaximizeToggle={() => {
+            onMaximizedPanelToggle('charts')
+          }}
+          onToggle={() => {
+            onOutputPanelToggle('charts')
+          }}
+          samples={chartSamples}
+          showEnergy={overlays.energy}
+          xAxisRange={xAxisRange}
+        />
+      ) : null}
+
+      {shouldShowTable ? (
+        <ChevronSection
+          action={
+            <Chip
+              label={tableExpanded ? `${tableRowCount} linhas` : 'recolhido'}
+              size="small"
+              variant="outlined"
+            />
+          }
+          expanded={tableExpanded}
+          maximized={isTableMaximized}
+          onMaximizeToggle={() => {
+            onMaximizedPanelToggle('table')
+          }}
+          onToggle={() => {
+            onOutputPanelToggle('table')
+          }}
+          subtitle={
+            tableExpanded
+              ? `${samples.length} amostras em ${formatNumber(
+                  durationSeconds,
+                  's',
+                )} | janela ${formatNumber(chartWindowSeconds, 's')}`
+              : 'Recolhida; selecao e renderizacao de linhas suspensas.'
+          }
+          title="Tabela de amostras"
+        >
+          {tableExpanded ? (
+            <TableContainer
+              sx={{
+                border: `1px solid ${themeTokens.border}`,
+                borderRadius: 1,
+                maxHeight: isTableMaximized ? 'calc(100svh - 128px)' : 'none',
+              }}
+            >
+              <Table
+                aria-label="Tabela sincronizada de amostras do plano inclinado"
+                size="small"
+              >
+                <TableHead>
+                  <TableRow>
+                    <TableCell>t</TableCell>
+                    <TableCell>s</TableCell>
+                    <TableCell>v</TableCell>
+                    <TableCell>a</TableCell>
+                    <TableCell>h</TableCell>
+                    <TableCell>N</TableCell>
+                    <TableCell>F_at</TableCell>
+                    <TableCell>F_res</TableCell>
+                    <TableCell>K</TableCell>
+                    <TableCell>U</TableCell>
+                    <TableCell>E_t</TableCell>
+                    <TableCell>E</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {tableRows.map((sample, rowIndex) => (
+                    <TableRow
+                      key={
+                        sample ? `${sample.timeSeconds}-${rowIndex}` : rowIndex
+                      }
+                      sx={{ height: 34 }}
+                    >
+                      {sample ? (
+                        <>
+                          <TableCell>
+                            {formatNumber(sample.timeSeconds, 's')}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(sample.positionMeters, 'm')}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(
+                              sample.velocityMetersPerSecond,
+                              'm/s',
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(
+                              sample.accelerationMetersPerSecondSquared,
+                              'm/s^2',
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(sample.heightMeters, 'm')}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(sample.normalForceNewtons, 'N')}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(sample.frictionMagnitudeNewtons, 'N')}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(sample.netForceNewtons, 'N')}
+                          </TableCell>
+                          <TableCell>
+                            {formatEnergy(sample.kineticEnergyJoules)}
+                          </TableCell>
+                          <TableCell>
+                            {formatEnergy(sample.potentialEnergyJoules)}
+                          </TableCell>
+                          <TableCell>
+                            {formatEnergy(sample.thermalEnergyJoules)}
+                          </TableCell>
+                          <TableCell>
+                            {formatEnergy(sample.totalEnergyJoules)}
+                          </TableCell>
+                        </>
+                      ) : (
+                        renderEmptyInclinedPlaneTableCells()
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : null}
+        </ChevronSection>
+      ) : null}
+    </>
+  )
+}
+
 function ParameterControl({
   onChange,
   parameter,
@@ -1546,9 +2332,11 @@ function ParameterControl({
   )
 }
 
-function readDefaultRuntimeValues(): Record<string, ParameterValue> {
+function readDefaultRuntimeValues(
+  fixture: SimulationFixture,
+): Record<string, ParameterValue> {
   return Object.fromEntries(
-    pendulumFixture.runtimeParameters.map((parameter) => [
+    fixture.runtimeParameters.map((parameter) => [
       parameter.id,
       parameter.defaultValue,
     ]),
@@ -1596,8 +2384,35 @@ function readFirstSample(samples: PendulumSample[]) {
   return sample
 }
 
+function readFirstInclinedPlaneSample(samples: InclinedPlaneSample[]) {
+  const sample = samples[0]
+
+  if (!sample) {
+    throw new Error('Inclined plane timeline must contain at least one sample.')
+  }
+
+  return sample
+}
+
 function getSampleIndexForTime(
   samples: PendulumSample[],
+  durationSeconds: number,
+  timeSeconds: number,
+) {
+  if (samples.length <= 1 || durationSeconds <= 0) {
+    return 0
+  }
+
+  const progress = Math.min(1, Math.max(0, timeSeconds / durationSeconds))
+
+  return Math.min(
+    samples.length - 1,
+    Math.floor(progress * (samples.length - 1)),
+  )
+}
+
+function getInclinedPlaneSampleIndexForTime(
+  samples: InclinedPlaneSample[],
   durationSeconds: number,
   timeSeconds: number,
 ) {
@@ -1627,8 +2442,57 @@ function appendLiveSample(samples: PendulumSample[], liveSample: PendulumSample)
   return [...samples, liveSample]
 }
 
+function appendInclinedPlaneLiveSample(
+  samples: InclinedPlaneSample[],
+  liveSample: InclinedPlaneSample,
+) {
+  const lastSample = samples.at(-1)
+
+  if (!lastSample) {
+    return [liveSample]
+  }
+
+  if (liveSample.timeSeconds <= lastSample.timeSeconds + 0.0001) {
+    return samples
+  }
+
+  return [...samples, liveSample]
+}
+
 function selectStableTableRows(samples: PendulumSample[], rowCount: number) {
   const rows: Array<PendulumSample | null> = Array.from(
+    { length: rowCount },
+    () => null,
+  )
+
+  if (samples.length === 0) {
+    return rows
+  }
+
+  if (samples.length <= rowCount) {
+    samples.forEach((sample, index) => {
+      rows[index] = sample
+    })
+
+    return rows
+  }
+
+  const lastIndex = samples.length - 1
+  const lastRowIndex = Math.max(1, rowCount - 1)
+
+  for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+    const sampleIndex = Math.round((rowIndex / lastRowIndex) * lastIndex)
+    rows[rowIndex] = samples[sampleIndex]
+  }
+
+  return rows
+}
+
+function selectStableInclinedPlaneTableRows(
+  samples: InclinedPlaneSample[],
+  rowCount: number,
+) {
+  const rows: Array<InclinedPlaneSample | null> = Array.from(
     { length: rowCount },
     () => null,
   )
@@ -1727,8 +2591,91 @@ function VectorLegend({ vectors }: { vectors: PendulumVectorOverlay[] }) {
   )
 }
 
+function InclinedPlaneVectorLegend({
+  vectors,
+}: {
+  vectors: InclinedPlaneVectorOverlay[]
+}) {
+  const vectorsById = new Map(vectors.map((vector) => [vector.id, vector]))
+
+  return (
+    <Box
+      aria-label="Legenda dos vetores"
+      sx={{
+        borderBottom: `1px solid ${themeTokens.border}`,
+        display: 'grid',
+        gap: 1,
+        gridTemplateColumns: {
+          xs: '1fr',
+          md: 'repeat(4, minmax(0, 1fr))',
+        },
+        p: 1.5,
+        pt: 1,
+      }}
+    >
+      {inclinedPlaneVectorLegendItems.map((item) => {
+        const vector = vectorsById.get(item.id)
+
+        return (
+          <Box
+            key={item.id}
+            sx={{
+              bgcolor: alpha(themeTokens.background, 0.7),
+              border: `1px solid ${themeTokens.border}`,
+              borderRadius: 1,
+              minWidth: 0,
+              p: 1,
+            }}
+          >
+            <Stack
+              direction="row"
+              spacing={0.75}
+              sx={{ alignItems: 'center', minWidth: 0 }}
+            >
+              <Box
+                aria-hidden
+                sx={{
+                  bgcolor: item.color,
+                  borderRadius: '50%',
+                  flex: '0 0 auto',
+                  height: 9,
+                  width: 9,
+                }}
+              />
+              <Typography
+                sx={{ fontWeight: 700, overflowWrap: 'anywhere' }}
+                variant="body2"
+              >
+                {item.label}
+              </Typography>
+              <Typography
+                color="text.secondary"
+                sx={{ ml: 'auto', overflowWrap: 'anywhere' }}
+                variant="body2"
+              >
+                {vector ? formatNumber(vector.magnitude, vector.unit) : '--'}
+              </Typography>
+            </Stack>
+            <Typography color="text.secondary" variant="body2">
+              {item.description}
+            </Typography>
+          </Box>
+        )
+      })}
+    </Box>
+  )
+}
+
 function renderEmptyTableCells() {
   return sampleTableColumnIds.map((columnId) => (
+    <TableCell key={columnId} sx={{ color: 'text.disabled' }}>
+      --
+    </TableCell>
+  ))
+}
+
+function renderEmptyInclinedPlaneTableCells() {
+  return inclinedPlaneSampleTableColumnIds.map((columnId) => (
     <TableCell key={columnId} sx={{ color: 'text.disabled' }}>
       --
     </TableCell>
@@ -1782,10 +2729,6 @@ function getSimulationSubarea(simulation: SimulationDefinition) {
 
 function getSubareaKey(areaId: string, subarea: string) {
   return `${areaId}:${subarea}`
-}
-
-function isActiveSimulation(simulation: SimulationDefinition) {
-  return simulation.id === activeSimulation.id
 }
 
 function slugify(value: string) {
@@ -1843,6 +2786,13 @@ function formatEnergy(value: number) {
 
 function formatFps(value: number) {
   return value > 0 ? `${value} FPS` : 'medindo FPS'
+}
+
+function readEnergyRatio(samples: Array<{ totalEnergyJoules: number }>) {
+  const initialEnergy = samples[0]?.totalEnergyJoules ?? 0
+  const finalEnergy = samples.at(-1)?.totalEnergyJoules ?? 0
+
+  return initialEnergy > 0 ? (finalEnergy / initialEnergy) * 100 : 0
 }
 
 function formatNumber(value: number, unit = '') {

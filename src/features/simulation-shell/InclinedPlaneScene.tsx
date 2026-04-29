@@ -8,11 +8,11 @@ import {
 import { Box } from '@mui/material'
 import * as THREE from 'three'
 import {
-  getPendulumVectorOverlays,
-  type PendulumParameters,
-  type PendulumSample,
-  type PendulumVectorOverlay,
-} from '../../lib/physics/pendulum'
+  getInclinedPlaneVectorOverlays,
+  type InclinedPlaneParameters,
+  type InclinedPlaneSample,
+  type InclinedPlaneVectorOverlay,
+} from '../../lib/physics/inclinedPlane'
 import {
   cancelAnimationFrameSafe,
   createFrameStatsWindow,
@@ -23,46 +23,51 @@ import {
 } from '../../lib/rendering/visualRuntime'
 import { themeTokens } from '../../theme/appTheme'
 
-export type PendulumFrameStats = FrameStats
+export type InclinedPlaneFrameStats = FrameStats
 
-type PendulumSceneProps = {
+type InclinedPlaneSceneProps = {
   durationSeconds: number
   isPlaying: boolean
   maximized?: boolean
-  onSampleChange: (sample: PendulumSample, stats: PendulumFrameStats) => void
-  parameters: PendulumParameters
+  onSampleChange: (
+    sample: InclinedPlaneSample,
+    stats: InclinedPlaneFrameStats,
+  ) => void
+  parameters: InclinedPlaneParameters
   playbackRate: number
   resetVersion: number
-  samples: PendulumSample[]
+  samples: InclinedPlaneSample[]
   showTrace: boolean
   showVectors: boolean
 }
 
 type SceneObjects = {
+  arrows: Record<InclinedPlaneVectorOverlay['id'], THREE.ArrowHelper>
+  block: THREE.Mesh
+  camera: THREE.PerspectiveCamera
+  cameraMaxRadius: number
+  cameraMinRadius: number
+  cameraRadius: number
+  cameraTarget: THREE.Vector3
+  planeLengthMeters: number
   renderer: THREE.WebGLRenderer
   scene: THREE.Scene
-  camera: THREE.PerspectiveCamera
-  cameraRadius: number
-  cameraMinRadius: number
-  cameraMaxRadius: number
-  cameraTarget: THREE.Vector3
-  rod: THREE.Line
-  rodPositions: Float32Array
-  bob: THREE.Mesh
   trace: THREE.Line
-  tracePositions: Float32Array
-  tracePositionAttribute: THREE.BufferAttribute
-  traceColors: Float32Array
   traceColorAttribute: THREE.BufferAttribute
-  arrows: Record<PendulumVectorOverlay['id'], THREE.ArrowHelper>
+  traceColors: Float32Array
+  tracePositionAttribute: THREE.BufferAttribute
+  tracePositions: Float32Array
 }
 
 type RuntimeProps = {
   durationSeconds: number
-  onSampleChange: (sample: PendulumSample, stats: PendulumFrameStats) => void
-  parameters: PendulumParameters
+  onSampleChange: (
+    sample: InclinedPlaneSample,
+    stats: InclinedPlaneFrameStats,
+  ) => void
+  parameters: InclinedPlaneParameters
   playbackRate: number
-  samples: PendulumSample[]
+  samples: InclinedPlaneSample[]
   showTrace: boolean
   showVectors: boolean
 }
@@ -72,17 +77,19 @@ type DragState = {
   pointerId: number
 }
 
-const vectorColors: Record<PendulumVectorOverlay['id'], number> = {
-  weight: 0xf43f5e,
-  tension: 0xa3e635,
+const vectorColors: Record<InclinedPlaneVectorOverlay['id'], number> = {
+  friction: 0xf59e0b,
+  normal: 0xa3e635,
   velocity: 0x38bdf8,
+  weight: 0xf43f5e,
 }
 
-const vectorIds = ['weight', 'tension', 'velocity'] as const
-const maxTracePoints = 96
-const traceFadeSeconds = 1.35
-const traceMinOpacity = 0.03
-const traceMaxOpacity = 0.5
+const vectorIds = ['weight', 'normal', 'friction', 'velocity'] as const
+const blockSize = 0.28
+const maxTracePoints = 120
+const traceFadeSeconds = 2.2
+const traceMinOpacity = 0.04
+const traceMaxOpacity = 0.58
 const traceColor = {
   blue: 0xf8 / 255,
   green: 0xbd / 255,
@@ -90,13 +97,13 @@ const traceColor = {
 }
 const readoutIntervalMs = 33
 const maxFrameDeltaSeconds = 0.12
-const initialCameraYawRadians = -0.48
+const initialCameraYawRadians = -0.62
 const dragYawRadiansPerPixel = 0.008
 const wheelZoomSensitivity = 0.0014
-const minCameraRadiusScale = 0.38
-const maxCameraRadiusScale = 2.25
+const minCameraRadiusScale = 0.42
+const maxCameraRadiusScale = 2.35
 
-export function PendulumScene({
+export function InclinedPlaneScene({
   durationSeconds,
   isPlaying,
   maximized = false,
@@ -107,7 +114,7 @@ export function PendulumScene({
   samples,
   showTrace,
   showVectors,
-}: PendulumSceneProps) {
+}: InclinedPlaneSceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const objectsRef = useRef<SceneObjects | null>(null)
   const runtimeRef = useRef<RuntimeProps>({
@@ -142,7 +149,7 @@ export function PendulumScene({
       return
     }
 
-    updatePendulumObjects({
+    updateInclinedPlaneObjects({
       objects,
       parameters: runtime.parameters,
       sample,
@@ -280,79 +287,93 @@ export function PendulumScene({
 
     try {
       renderer = new THREE.WebGLRenderer({
-        canvas,
         antialias: false,
+        canvas,
         powerPreference: 'high-performance',
       })
     } catch {
       return
     }
 
-    const maxLength = Math.max(
-      1,
-      ...samples.map((item) => Math.hypot(item.xMeters, item.yMeters)),
-    )
-    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100)
+    const theta = degreesToRadians(parameters.planeAngleDegrees)
+    const planeLengthMeters = parameters.planeLengthMeters
+    const planeHorizontalMeters = planeLengthMeters * Math.cos(theta)
+    const planeHeightMeters = planeLengthMeters * Math.sin(theta)
     const scene = new THREE.Scene()
-    const cameraTarget = new THREE.Vector3(0, 0, -maxLength * 0.54)
-    const cameraRadius = Math.max(3.7, maxLength * 3.15)
-    const cameraMinRadius = Math.max(1.15, cameraRadius * minCameraRadiusScale)
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100)
+    const cameraTarget = new THREE.Vector3(
+      planeHorizontalMeters * 0.52,
+      0,
+      planeHeightMeters * 0.46,
+    )
+    const cameraRadius = Math.max(4.4, planeLengthMeters * 1.15)
+    const cameraMinRadius = Math.max(1.8, cameraRadius * minCameraRadiusScale)
     const cameraMaxRadius = cameraRadius * maxCameraRadiusScale
 
     camera.up.set(0, 0, 1)
     scene.background = new THREE.Color(themeTokens.background)
-    scene.add(new THREE.AmbientLight(0xffffff, 0.64))
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.1)
+    scene.add(new THREE.AmbientLight(0xffffff, 0.62))
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.08)
 
-    keyLight.position.set(-2.5, -3.5, 4)
+    keyLight.position.set(-2.4, -3.2, 5)
     scene.add(keyLight)
 
-    const grid = new THREE.GridHelper(maxLength * 2.6, 8, 0x2a2f3a, 0x20242d)
+    const grid = new THREE.GridHelper(
+      Math.max(5, planeLengthMeters * 1.35),
+      8,
+      0x2a2f3a,
+      0x20242d,
+    )
 
     grid.rotation.x = Math.PI / 2
-    grid.position.z = -maxLength * 1.08
+    grid.position.set(planeHorizontalMeters * 0.5, 0, -0.02)
     grid.material.transparent = true
-    grid.material.opacity = 0.42
+    grid.material.opacity = 0.38
     scene.add(grid)
 
-    const pivot = new THREE.Mesh(
-      new THREE.SphereGeometry(0.055, 16, 12),
-      new THREE.MeshBasicMaterial({ color: 0x38bdf8 }),
+    const plane = new THREE.Mesh(
+      new THREE.BoxGeometry(planeLengthMeters, 0.72, 0.08),
+      new THREE.MeshStandardMaterial({
+        color: 0x20242d,
+        metalness: 0.04,
+        roughness: 0.72,
+      }),
     )
-    scene.add(pivot)
 
-    const rodPositions = new Float32Array(6)
-    const rodGeometry = new THREE.BufferGeometry()
-    const rodPositionAttribute = new THREE.BufferAttribute(rodPositions, 3)
+    plane.position.set(planeHorizontalMeters / 2, 0, planeHeightMeters / 2)
+    plane.rotation.y = theta
+    scene.add(plane)
 
-    rodPositionAttribute.setUsage(THREE.DynamicDrawUsage)
-    rodGeometry.setAttribute('position', rodPositionAttribute)
-
-    const rod = new THREE.Line(
-      rodGeometry,
-      new THREE.LineBasicMaterial({ color: 0x2dd4bf }),
+    const planeEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(plane.geometry),
+      new THREE.LineBasicMaterial({
+        color: 0x2dd4bf,
+        transparent: true,
+        opacity: 0.5,
+      }),
     )
-    scene.add(rod)
 
-    const bob = new THREE.Mesh(
-      new THREE.BoxGeometry(0.24, 0.24, 0.24),
+    plane.add(planeEdges)
+
+    const block = new THREE.Mesh(
+      new THREE.BoxGeometry(blockSize, blockSize, blockSize),
       new THREE.MeshStandardMaterial({
         color: 0x2dd4bf,
         metalness: 0.08,
         roughness: 0.44,
       }),
     )
-    const bobEdges = new THREE.LineSegments(
-      new THREE.EdgesGeometry(bob.geometry),
+    const blockEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(block.geometry),
       new THREE.LineBasicMaterial({
         color: 0xe6e8ec,
         transparent: true,
-        opacity: 0.46,
+        opacity: 0.5,
       }),
     )
 
-    bob.add(bobEdges)
-    scene.add(bob)
+    block.add(blockEdges)
+    scene.add(block)
 
     const tracePositions = new Float32Array(maxTracePoints * 3)
     const traceColors = new Float32Array(maxTracePoints * 4)
@@ -380,15 +401,15 @@ export function PendulumScene({
       vectorIds.map((vectorId) => [
         vectorId,
         new THREE.ArrowHelper(
-          new THREE.Vector3(0, -1, 0),
+          new THREE.Vector3(0, 0, -1),
           new THREE.Vector3(0, 0, 0),
-          0.25,
+          0.35,
           vectorColors[vectorId],
           0.08,
           0.045,
         ),
       ]),
-    ) as Record<PendulumVectorOverlay['id'], THREE.ArrowHelper>
+    ) as Record<InclinedPlaneVectorOverlay['id'], THREE.ArrowHelper>
 
     Object.values(arrows).forEach((arrow) => {
       scene.add(arrow)
@@ -409,22 +430,21 @@ export function PendulumScene({
     const observer = new ResizeObserver(resizeRenderer)
 
     objectsRef.current = {
+      arrows,
+      block,
+      camera,
+      cameraMaxRadius,
+      cameraMinRadius,
+      cameraRadius,
+      cameraTarget,
+      planeLengthMeters,
       renderer,
       scene,
-      camera,
-      cameraRadius,
-      cameraMinRadius,
-      cameraMaxRadius,
-      cameraTarget,
-      rod,
-      rodPositions,
-      bob,
       trace,
-      tracePositions,
-      tracePositionAttribute,
-      traceColors,
       traceColorAttribute,
-      arrows,
+      traceColors,
+      tracePositionAttribute,
+      tracePositions,
     }
 
     observer.observe(parent)
@@ -442,7 +462,7 @@ export function PendulumScene({
       renderer.dispose()
       objectsRef.current = null
     }
-  }, [renderCurrentFrame, samples])
+  }, [parameters, renderCurrentFrame, samples])
 
   useEffect(() => {
     elapsedSecondsRef.current = 0
@@ -520,8 +540,8 @@ export function PendulumScene({
       }}
     >
       <Box
+        aria-label="Cena 3D do plano inclinado com arraste horizontal para orbitar o eixo Z e scroll para zoom"
         component="canvas"
-        aria-label="Cena 3D do pendulo simples com arraste horizontal para orbitar o eixo Z e scroll para zoom"
         onPointerCancel={handlePointerEnd}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -543,7 +563,7 @@ export function PendulumScene({
   )
 }
 
-function updatePendulumObjects({
+function updateInclinedPlaneObjects({
   objects,
   parameters,
   sample,
@@ -553,34 +573,21 @@ function updatePendulumObjects({
   showVectors,
 }: {
   objects: SceneObjects
-  parameters: PendulumParameters
-  sample: PendulumSample
+  parameters: InclinedPlaneParameters
+  sample: InclinedPlaneSample
   sampleIndex: number
-  samples: PendulumSample[]
+  samples: InclinedPlaneSample[]
   showTrace: boolean
   showVectors: boolean
 }) {
-  const bobPosition = toScenePosition(sample)
-  const rodPositionAttribute = objects.rod.geometry.getAttribute(
-    'position',
-  ) as THREE.BufferAttribute
+  const blockPosition = toScenePosition(sample, parameters)
 
-  objects.rodPositions[0] = 0
-  objects.rodPositions[1] = 0
-  objects.rodPositions[2] = 0
-  objects.rodPositions[3] = bobPosition.x
-  objects.rodPositions[4] = bobPosition.y
-  objects.rodPositions[5] = bobPosition.z
-  rodPositionAttribute.needsUpdate = true
-  objects.bob.position.copy(bobPosition)
+  objects.block.position.copy(blockPosition)
+  objects.block.rotation.y = degreesToRadians(parameters.planeAngleDegrees)
 
-  getPendulumVectorOverlays(sample, parameters).forEach((vector) => {
+  getInclinedPlaneVectorOverlays(sample, parameters).forEach((vector) => {
     const arrow = objects.arrows[vector.id]
-    const direction = new THREE.Vector3(
-      vector.direction.x,
-      0,
-      vector.direction.y,
-    )
+    const direction = new THREE.Vector3(vector.direction.x, 0, vector.direction.z)
 
     if (!showVectors || direction.lengthSq() === 0 || vector.magnitude === 0) {
       arrow.visible = false
@@ -588,19 +595,20 @@ function updatePendulumObjects({
     }
 
     arrow.visible = true
-    arrow.position.copy(bobPosition)
+    arrow.position.copy(blockPosition)
     arrow.setDirection(direction.normalize())
     arrow.setLength(getVectorDisplayLength(vector), 0.08, 0.045)
   })
 
-  updateTrace(objects, samples, sampleIndex, sample, showTrace)
+  updateTrace(objects, samples, sampleIndex, sample, parameters, showTrace)
 }
 
 function updateTrace(
   objects: SceneObjects,
-  samples: PendulumSample[],
+  samples: InclinedPlaneSample[],
   sampleIndex: number,
-  currentSample: PendulumSample,
+  currentSample: InclinedPlaneSample,
+  parameters: InclinedPlaneParameters,
   showTrace: boolean,
 ) {
   if (!showTrace || sampleIndex < 1) {
@@ -631,15 +639,33 @@ function updateTrace(
   ) {
     const traceSample = samples[sampleIndexForTrace]
 
-    writeTracePoint(objects, pointIndex, traceSample, newestTimeSeconds)
+    writeTracePoint(
+      objects,
+      pointIndex,
+      traceSample,
+      parameters,
+      newestTimeSeconds,
+    )
     pointIndex += 1
     lastWrittenSampleIndex = sampleIndexForTrace
   }
 
   if (lastWrittenSampleIndex === sampleIndex) {
-    writeTracePoint(objects, pointIndex - 1, currentSample, newestTimeSeconds)
+    writeTracePoint(
+      objects,
+      pointIndex - 1,
+      currentSample,
+      parameters,
+      newestTimeSeconds,
+    )
   } else if (pointIndex < maxTracePoints) {
-    writeTracePoint(objects, pointIndex, currentSample, newestTimeSeconds)
+    writeTracePoint(
+      objects,
+      pointIndex,
+      currentSample,
+      parameters,
+      newestTimeSeconds,
+    )
     pointIndex += 1
   }
 
@@ -656,7 +682,7 @@ function updateTrace(
 }
 
 function findTraceStartIndex(
-  samples: PendulumSample[],
+  samples: InclinedPlaneSample[],
   sampleIndex: number,
   oldestVisibleTimeSeconds: number,
 ) {
@@ -675,9 +701,11 @@ function findTraceStartIndex(
 function writeTracePoint(
   objects: SceneObjects,
   pointIndex: number,
-  sample: PendulumSample,
+  sample: InclinedPlaneSample,
+  parameters: InclinedPlaneParameters,
   newestTimeSeconds: number,
 ) {
+  const position = toScenePosition(sample, parameters, blockSize * 0.3)
   const positionIndex = pointIndex * 3
   const colorIndex = pointIndex * 4
   const ageSeconds = Math.max(0, newestTimeSeconds - sample.timeSeconds)
@@ -686,9 +714,9 @@ function writeTracePoint(
     traceMinOpacity +
     (1 - fadeProgress) * (traceMaxOpacity - traceMinOpacity)
 
-  objects.tracePositions[positionIndex] = sample.xMeters
-  objects.tracePositions[positionIndex + 1] = 0
-  objects.tracePositions[positionIndex + 2] = sample.yMeters - 0.04
+  objects.tracePositions[positionIndex] = position.x
+  objects.tracePositions[positionIndex + 1] = position.y
+  objects.tracePositions[positionIndex + 2] = position.z
   objects.traceColors[colorIndex] = traceColor.red
   objects.traceColors[colorIndex + 1] = traceColor.green
   objects.traceColors[colorIndex + 2] = traceColor.blue
@@ -696,60 +724,68 @@ function writeTracePoint(
 }
 
 function interpolateSample(
-  start: PendulumSample,
-  end: PendulumSample,
+  start: InclinedPlaneSample,
+  end: InclinedPlaneSample,
   ratio: number,
-): PendulumSample {
+): InclinedPlaneSample {
   return {
-    timeSeconds: interpolate(start.timeSeconds, end.timeSeconds, ratio),
-    angleRadians: interpolate(start.angleRadians, end.angleRadians, ratio),
-    angularVelocityRadiansPerSecond: interpolate(
-      start.angularVelocityRadiansPerSecond,
-      end.angularVelocityRadiansPerSecond,
+    accelerationMetersPerSecondSquared: interpolate(
+      start.accelerationMetersPerSecondSquared,
+      end.accelerationMetersPerSecondSquared,
       ratio,
     ),
-    angularAccelerationRadiansPerSecondSquared: interpolate(
-      start.angularAccelerationRadiansPerSecondSquared,
-      end.angularAccelerationRadiansPerSecondSquared,
+    frictionForceNewtons: interpolate(
+      start.frictionForceNewtons,
+      end.frictionForceNewtons,
       ratio,
     ),
-    linearVelocityMetersPerSecond: interpolate(
-      start.linearVelocityMetersPerSecond,
-      end.linearVelocityMetersPerSecond,
+    frictionMagnitudeNewtons: interpolate(
+      start.frictionMagnitudeNewtons,
+      end.frictionMagnitudeNewtons,
       ratio,
     ),
-    tangentialAccelerationMetersPerSecondSquared: interpolate(
-      start.tangentialAccelerationMetersPerSecondSquared,
-      end.tangentialAccelerationMetersPerSecondSquared,
-      ratio,
-    ),
-    radialAccelerationMetersPerSecondSquared: interpolate(
-      start.radialAccelerationMetersPerSecondSquared,
-      end.radialAccelerationMetersPerSecondSquared,
-      ratio,
-    ),
-    totalAccelerationMetersPerSecondSquared: interpolate(
-      start.totalAccelerationMetersPerSecondSquared,
-      end.totalAccelerationMetersPerSecondSquared,
-      ratio,
-    ),
-    xMeters: interpolate(start.xMeters, end.xMeters, ratio),
-    yMeters: interpolate(start.yMeters, end.yMeters, ratio),
+    heightMeters: interpolate(start.heightMeters, end.heightMeters, ratio),
+    isMoving: start.isMoving || end.isMoving,
     kineticEnergyJoules: interpolate(
       start.kineticEnergyJoules,
       end.kineticEnergyJoules,
       ratio,
     ),
+    netForceNewtons: interpolate(start.netForceNewtons, end.netForceNewtons, ratio),
+    normalForceNewtons: interpolate(
+      start.normalForceNewtons,
+      end.normalForceNewtons,
+      ratio,
+    ),
+    positionMeters: interpolate(start.positionMeters, end.positionMeters, ratio),
     potentialEnergyJoules: interpolate(
       start.potentialEnergyJoules,
       end.potentialEnergyJoules,
       ratio,
     ),
+    thermalEnergyJoules: interpolate(
+      start.thermalEnergyJoules,
+      end.thermalEnergyJoules,
+      ratio,
+    ),
+    timeSeconds: interpolate(start.timeSeconds, end.timeSeconds, ratio),
     totalEnergyJoules: interpolate(
       start.totalEnergyJoules,
       end.totalEnergyJoules,
       ratio,
     ),
+    velocityMetersPerSecond: interpolate(
+      start.velocityMetersPerSecond,
+      end.velocityMetersPerSecond,
+      ratio,
+    ),
+    weightParallelNewtons: interpolate(
+      start.weightParallelNewtons,
+      end.weightParallelNewtons,
+      ratio,
+    ),
+    xMeters: interpolate(start.xMeters, end.xMeters, ratio),
+    zMeters: interpolate(start.zMeters, end.zMeters, ratio),
   }
 }
 
@@ -757,14 +793,26 @@ function interpolate(start: number, end: number, ratio: number) {
   return start + (end - start) * ratio
 }
 
-function getVectorDisplayLength(vector: PendulumVectorOverlay) {
-  const scale = vector.id === 'velocity' ? 0.34 : 0.11
+function getVectorDisplayLength(vector: InclinedPlaneVectorOverlay) {
+  const scale = vector.id === 'velocity' ? 0.28 : 0.055
 
-  return Math.min(0.82, Math.max(0.16, vector.magnitude * scale))
+  return Math.min(0.92, Math.max(0.16, vector.magnitude * scale))
 }
 
-function toScenePosition(sample: Pick<PendulumSample, 'xMeters' | 'yMeters'>) {
-  return new THREE.Vector3(sample.xMeters, 0, sample.yMeters)
+function toScenePosition(
+  sample: Pick<InclinedPlaneSample, 'positionMeters'>,
+  parameters: InclinedPlaneParameters,
+  lift = blockSize * 0.58,
+) {
+  const theta = degreesToRadians(parameters.planeAngleDegrees)
+  const normal = new THREE.Vector3(Math.sin(theta), 0, Math.cos(theta))
+  const planePosition = new THREE.Vector3(
+    sample.positionMeters * Math.cos(theta),
+    0,
+    (parameters.planeLengthMeters - sample.positionMeters) * Math.sin(theta),
+  )
+
+  return planePosition.add(normal.multiplyScalar(lift))
 }
 
 function updateOrbitCamera(
@@ -780,7 +828,7 @@ function updateOrbitCamera(
   camera.position.set(
     cameraTarget.x + Math.sin(yawRadians) * cameraRadius,
     cameraTarget.y - Math.cos(yawRadians) * cameraRadius,
-    cameraTarget.z + cameraRadius * 0.34,
+    cameraTarget.z + cameraRadius * 0.38,
   )
   camera.lookAt(cameraTarget)
 }
@@ -815,4 +863,8 @@ function disposeScene(scene: THREE.Scene) {
       mesh.material?.dispose()
     }
   })
+}
+
+function degreesToRadians(value: number) {
+  return (value * Math.PI) / 180
 }

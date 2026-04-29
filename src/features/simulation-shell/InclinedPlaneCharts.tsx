@@ -1,24 +1,24 @@
 import { memo, useMemo } from 'react'
-import { Box, IconButton, Tooltip } from '@mui/material'
-import { Eye, EyeOff } from 'lucide-react'
-import type { PendulumSample } from '../../lib/physics/pendulum'
+import { Box } from '@mui/material'
+import type { InclinedPlaneSample } from '../../lib/physics/inclinedPlane'
 import { ChevronSection } from './ChevronSection'
+import { ChartFocusButton } from './PendulumCharts'
 import { LiveLineChart } from './LiveLineChart'
 import {
-  buildPendulumChartConfigs,
-  preparePendulumChartSamples,
-  type PendulumChartId,
-} from './pendulumChartConfigs'
+  buildInclinedPlaneChartConfigs,
+  prepareInclinedPlaneChartSamples,
+  type InclinedPlaneChartId,
+} from './inclinedPlaneChartConfigs'
 
-type PendulumChartsProps = {
+type InclinedPlaneChartsProps = {
   chartWindowSeconds: number
   expanded: boolean
-  focusedChartId?: PendulumChartId | null
+  focusedChartId?: InclinedPlaneChartId | null
   maximized?: boolean
+  onFocusedChartToggle?: (chartId: InclinedPlaneChartId) => void
   onMaximizeToggle?: () => void
-  onFocusedChartToggle?: (chartId: PendulumChartId) => void
   onToggle: () => void
-  samples: PendulumSample[]
+  samples: InclinedPlaneSample[]
   showEnergy: boolean
   xAxisRange: [number, number]
 }
@@ -27,25 +27,29 @@ const compactSeconds = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
 })
 
-export const PendulumCharts = memo(function PendulumCharts({
+export const InclinedPlaneCharts = memo(function InclinedPlaneCharts({
   chartWindowSeconds,
   expanded,
   focusedChartId = null,
   maximized = false,
-  onMaximizeToggle,
   onFocusedChartToggle,
+  onMaximizeToggle,
   onToggle,
   samples,
   showEnergy,
   xAxisRange,
-}: PendulumChartsProps) {
+}: InclinedPlaneChartsProps) {
   const chartSamples = useMemo(
-    () => (expanded ? preparePendulumChartSamples(samples) : []),
+    () => (expanded ? prepareInclinedPlaneChartSamples(samples) : []),
     [expanded, samples],
   )
   const chartConfigs = useMemo(
     () =>
-      expanded ? buildPendulumChartConfigs(chartSamples, showEnergy) : [],
+      expanded
+        ? buildInclinedPlaneChartConfigs(chartSamples).filter(
+            (chart) => showEnergy || chart.id !== 'energy',
+          )
+        : [],
     [chartSamples, expanded, showEnergy],
   )
   const visibleChartConfigs = useMemo(
@@ -108,51 +112,6 @@ export const PendulumCharts = memo(function PendulumCharts({
     </ChevronSection>
   )
 })
-
-type FocusableChart<TChartId extends string> = {
-  id: TChartId
-  title: string
-}
-
-export function ChartFocusButton<TChartId extends string>({
-  chart,
-  focused,
-  onToggle,
-}: {
-  chart: FocusableChart<TChartId>
-  focused: boolean
-  onToggle: (chartId: TChartId) => void
-}) {
-  return (
-    <Tooltip
-      title={
-        focused
-          ? 'Remover grafico do lado da simulacao'
-          : 'Mostrar grafico ao lado da simulacao'
-      }
-    >
-      <IconButton
-        aria-label={
-          focused
-            ? `Remover ${chart.title} do lado da simulacao`
-            : `Mostrar ${chart.title} ao lado da simulacao`
-        }
-        aria-pressed={focused}
-        color={focused ? 'primary' : 'default'}
-        onClick={() => {
-          onToggle(chart.id)
-        }}
-        size="small"
-      >
-        {focused ? (
-          <EyeOff aria-hidden size={17} />
-        ) : (
-          <Eye aria-hidden size={17} />
-        )}
-      </IconButton>
-    </Tooltip>
-  )
-}
 
 function formatSeconds(value: number) {
   return `${compactSeconds.format(value)} s`

@@ -35,6 +35,7 @@ Dependencias opcionais por fase:
 - `simulation-registry`: lista areas, simulacoes, status e metadados.
 - `physics-core`: funcoes numericas puras, integradores e calculos derivados.
 - `rendering`: adaptadores Three.js/PixiJS para desenhar o estado fisico.
+- `rendering/visualRuntime`: utilitarios compartilhados de renderer-first para `requestAnimationFrame`, leitura interpolada da timeline e metricas de FPS/frame time sem mover o loop para o shell React.
 - `charts`: adaptadores Plotly.js, canvas ou SVG para series de dados, escolhidos pela cadencia visual necessaria.
 - `theme`: tokens MUI, dark mode, paleta, componentes e densidade.
 - `content`: MDX/Markdown, formulas, exemplos e metadados teoricos das simulacoes.
@@ -68,6 +69,7 @@ Usuario altera parametro
 Toda simulacao animada deve seguir o padrao adotado no pendulo:
 
 - O renderer visual (`Three.js`, `PixiJS` ou equivalente) deve possuir o loop de `requestAnimationFrame` e atualizar objetos de cena de forma imperativa.
+- O loop visual reutilizavel deve usar helpers comuns para agendar/cancelar frames, ler samples interpolados e atualizar metricas simples. Cada cena ainda mantem seus objetos, buffers e controles de camera locais.
 - Cenas Three.js devem usar espaco 3D com eixo Z vertical quando houver viewport espacial; o movimento fisico pode continuar planar, mas deve ser projetado para objetos 3D e camera orbitavel.
 - O padrao de camera inicial e orbitavel por drag horizontal ao redor do eixo Z, com scroll sobre o canvas fazendo zoom em direcao a cena. Esses controles pertencem ao renderer e devem atualizar camera/refs imperativamente, sem re-renderizar o shell React.
 - O shell React deve orquestrar parametros, toggles, layout, graficos, tabela, formulas e teoria, mas nao deve re-renderizar a arvore inteira a cada frame.
@@ -88,6 +90,7 @@ Toda simulacao animada deve seguir o padrao adotado no pendulo:
 - Tabelas sincronizadas devem manter quantidade estavel de linhas visiveis durante playback, preenchendo slots vazios ou decimando amostras sem mudar a altura do bloco.
 - Viewports devem expor medicao simples de FPS ou frame time durante desenvolvimento ou quando houver risco de peso visual.
 - Objetos principais de cena devem usar volume 3D quando isso ajuda a leitura espacial. No pendulo simples, a massa e um cubo 3D e nao um circulo 2D.
+- A segunda simulacao funcional, `Mecanica > Dinamica > Plano inclinado com atrito`, usa o mesmo padrao: bloco 3D, plano inclinado Three.js, vetores, trilha, graficos live-canvas, tabela, formulas e teoria sincronizados pela mesma timeline.
 
 ## Fronteiras entre core e acessorios
 
@@ -135,8 +138,9 @@ O tema inicial usa `#2DD4BF` como acento principal teal e reserva `#38BDF8` para
 Na Fase 1, usar:
 
 - `fixtures/simulations/catalog.json` para areas e simulacoes.
-- O catalogo local deve incluir todas as simulacoes planejadas em `09-simulation-catalog-plan.md`, agrupadas por `topicPath`, com apenas o pendulo como `available` ate o core ser expandido.
+- O catalogo local deve incluir todas as simulacoes planejadas em `09-simulation-catalog-plan.md`, agrupadas por `topicPath`. Depois da Fase 2, `simple-pendulum` e `inclined-plane-friction` ficam como `available`; demais itens permanecem `planned` ate terem motor, cena, graficos, tabela, formulas e teoria.
 - `fixtures/simulations/mechanics-pendulum.json` para parametros, presets e defaults.
+- `fixtures/simulations/mechanics-inclined-plane-friction.json` para parametros, presets e defaults do plano inclinado.
 - MDX local para teoria do pendulo e guia de formulas.
 - Metadados locais para mapear formulas a parametros, samples, vetores e graficos.
 - Dados gerados pelo motor numerico em runtime para graficos e tabela, incluindo cinematicas derivadas usadas por legendas e formulas.

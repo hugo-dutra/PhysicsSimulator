@@ -42,12 +42,15 @@
 - Leituras instantaneas e legenda de vetores ficam no topo do viewport, acima do canvas, para que valores e significados antecedam a observacao da cena.
 - Graficos devem manter escala numerica visivel no eixo Y e legendas com nomes fisicos completos para as grandezas; unidades podem usar abreviacoes fisicas padrao como `rad/s`, `m/s`, `m/s^2` e `J`.
 - Graficos temporais devem oferecer acao de olho para mover um unico grafico para um slot lateral direito dentro do viewport, preservando a mesma janela de samples e retornando ao bloco original quando a acao for desligada.
+- `Mecanica > Dinamica > Plano inclinado com atrito` e a segunda simulacao `available`, com fixture local, motor deterministico por regimes, cena Three.js, graficos live-canvas, tabela, formulas e teoria no mesmo shell.
+- O runtime visual reutilizavel fica em `src/lib/rendering/visualRuntime.ts` e centraliza agendamento de frames, interpolacao de timeline e metricas simples, mantendo cada renderer dono dos seus objetos e buffers.
 
 ## Decisoes pendentes
 
 - Definir se a aplicacao deve ser apenas web ou tambem empacotavel como desktop no futuro.
 - Definir estrategia final de testes e2e apos inicializar o frontend.
 - Definir criterios objetivos para quando PixiJS, Rapier, Matter.js, D3.js ou Manim deixam de ser opcionais e entram no bundle.
+- Definir qual sera a terceira simulacao funcional apos validar a Fase 2 completa.
 
 ## Gaps deixados para depois
 

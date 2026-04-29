@@ -136,6 +136,30 @@ type PendulumSample = {
 };
 ```
 
+## Exemplo de sample do plano inclinado
+
+```ts
+type InclinedPlaneSample = {
+  timeSeconds: number;
+  positionMeters: number;
+  velocityMetersPerSecond: number;
+  accelerationMetersPerSecondSquared: number;
+  heightMeters: number;
+  xMeters: number;
+  zMeters: number;
+  normalForceNewtons: number;
+  weightParallelNewtons: number;
+  frictionMagnitudeNewtons: number;
+  frictionForceNewtons: number;
+  netForceNewtons: number;
+  kineticEnergyJoules: number;
+  potentialEnergyJoules: number;
+  thermalEnergyJoules: number;
+  totalEnergyJoules: number;
+  isMoving: boolean;
+};
+```
+
 ## Erros esperados
 
 - `INVALID_PARAMETER_RANGE`: parametro fora de minimo/maximo.

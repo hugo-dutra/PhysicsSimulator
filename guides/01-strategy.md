@@ -28,7 +28,7 @@ O core e uma simulacao completa e local que prove a experiencia principal:
 
 > Alterar parametros fisicos em uma simulacao de Mecanica deve atualizar, de forma sincronizada, a animacao, os vetores, os graficos, a tabela de amostras, as formulas aplicadas e o apendice teorico.
 
-Se essa parte falhar, o produto inteiro perde sentido. Por isso, o MVP deve comecar por uma simulacao exemplar de `Mecanica > Pendulo simples`.
+Se essa parte falhar, o produto inteiro perde sentido. Por isso, o MVP deve comecar por uma simulacao exemplar de `Mecanica > Pendulo simples`. Depois da prova inicial, a Fase 2 adiciona `Mecanica > Dinamica > Plano inclinado com atrito` para validar que o contrato, o shell e o runtime visual suportam mais de uma simulacao funcional.
 
 ## Escopo curricular planejado
 
@@ -65,4 +65,5 @@ Esse escopo deve ser tratado como roadmap planejado, nao como promessa da primei
 - React + MUI + Three.js + adaptadores de grafico entregam uma experiencia rica sem complexidade excessiva; Plotly.js fica para graficos declarativos e canvas/SVG para series progressivas que precisam parecer desenhadas continuamente.
 - Um layout com sidebar, canvas central, controles laterais, graficos, tabela e teoria cabe bem em desktop e permanece usavel em telas menores.
 - A primeira simulacao pode definir um contrato reutilizavel para as proximas.
+- A segunda simulacao mecanica valida se o mesmo shell, os mesmos blocos de dados e o helper renderer-first reduzem o custo de adicionar novos modelos.
 - Conteudo teorico em MDX/Markdown com KaTeX e suficiente para explicar a fisica, as formulas e seus contextos de uso sem criar um CMS cedo demais.

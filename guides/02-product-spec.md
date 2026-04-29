@@ -26,7 +26,7 @@ A aplicacao deve agrupar simulacoes por area do conhecimento em uma sidebar:
 - Oscilacoes e Ondas, com Oscilacoes, Ondas mecanicas, Som e Optica basica.
 - Eletromagnetismo, com Eletrostatica, Circuitos, Magnetismo, Inducao e Ondas eletromagneticas.
 
-No MVP, apenas `Mecanica > Pendulo simples` precisa estar funcional. As demais areas podem aparecer como itens planejados, desde que nao confundam com simulacoes prontas.
+No core inicial, `Mecanica > Pendulo simples` provou a experiencia completa. Na Fase 2, `Mecanica > Dinamica > Plano inclinado com atrito` tambem fica funcional para validar reuso do shell, controles, graficos, tabela, formulas e teoria. As demais areas podem aparecer como itens planejados, desde que nao confundam com simulacoes prontas.
 Mesmo quando ainda estiverem planejadas, as simulacoes do catalogo curricular devem aparecer na sidebar em menus navegaveis de area e subarea, com status claro de `planejado`.
 
 ## Catalogo curricular planejado
@@ -40,7 +40,7 @@ O catalogo detalhado de simulacoes fica em `09-simulation-catalog-plan.md`. A ex
 - filtros ou agrupamentos por area, nivel e tipo de modelo quando o catalogo crescer.
 
 Itens planejados podem aparecer na sidebar como bloqueados, desabilitados ou marcados como `planejado`. Eles nao devem parecer clicaveis como simulacoes completas enquanto nao tiverem motor, visualizacao, graficos, tabela, formulas e teoria.
-A sidebar deve ser organizada como arvore compacta: area principal expansivel, subarea expansivel e simulacoes como folhas marcadas por status. O fixture local de catalogo deve conter todas as simulacoes planejadas em `09-simulation-catalog-plan.md`, mesmo que apenas o pendulo esteja disponivel.
+A sidebar deve ser organizada como arvore compacta: area principal expansivel, subarea expansivel e simulacoes como folhas marcadas por status. O fixture local de catalogo deve conter todas as simulacoes planejadas em `09-simulation-catalog-plan.md`; no estado atual, pendulo simples e plano inclinado com atrito aparecem como `available`.
 
 ## Tela da simulacao
 
@@ -81,6 +81,23 @@ Layout recomendado:
 - Botao de maximizar/minimizar no viewport da simulacao, graficos, tabela, formulas e apendice teorico para inspecao ampliada durante aula ou demonstracao.
 - Botao com icone de olho em cada grafico para mover temporariamente uma unica serie de graficos para o slot lateral do viewport.
 
+## Controles esperados no plano inclinado com atrito
+
+- Play/pause.
+- Reset.
+- Presets de demonstracao.
+- Angulo do plano.
+- Massa do bloco.
+- Gravidade.
+- Coeficiente de atrito.
+- Posicao inicial.
+- Velocidade inicial.
+- Comprimento do plano.
+- Tempo maximo do ciclo de simulacao.
+- Janela temporal dos graficos.
+- Toggles de vetores, trilha e energia.
+- Blocos chevron e maximizacao com o mesmo comportamento do pendulo.
+
 ## Representacoes esperadas
 
 - Cena 3D animada do pendulo, com massa renderizada como cubo didatico em vez de circulo plano.
@@ -93,6 +110,7 @@ Layout recomendado:
 - Graficos devem mostrar valores numericos na escala do eixo Y e legendas de series com nomes fisicos claros. A grandeza fisica nao deve ser abreviada, mas a unidade pode usar simbolo padrao entre parenteses, como `rad/s`, `m/s`, `m/s^2` ou `J`.
 - Um grafico por vez pode ser destacado no slot direito do viewport para comparar a curva com o evento visual da simulacao, sempre usando a mesma janela temporal e a mesma fonte de samples do bloco de graficos.
 - Tabela com tempo, angulo, velocidade angular, velocidade linear, aceleracoes, posicao e energia, mantendo quantidade fixa de linhas visiveis para evitar oscilacao de layout durante o playback.
+- No plano inclinado, graficos e tabela devem expor posicao no plano, altura, velocidade, aceleracao, normal, atrito, resultante, energia cinetica, potencial, termica e total.
 - Formulas do processo analisado, com variaveis, unidades, condicoes de uso e exemplo curto.
 - Apendice teorico com equacoes, unidades, contexto de uso e limites da aproximacao.
 
@@ -119,6 +137,14 @@ No pendulo simples, o guia deve cobrir pelo menos:
 - velocidade linear tangencial e aceleracoes tangencial/radial/total;
 - vetores principais, como peso, tensao e velocidade.
 
+No plano inclinado com atrito, o guia deve cobrir pelo menos:
+
+- componentes do peso;
+- forca normal;
+- atrito estatico e cinetico no modelo didatico;
+- aceleracao ao longo do plano quando ha deslizamento;
+- energia mecanica e energia termica acumulada pelo atrito.
+
 ## Estados de tela
 
 - Inicial: carrega preset padrao do pendulo ja em modo rodando, com acao visivel para pausar/reproduzir.
@@ -135,6 +161,7 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 ## Criterios de aceite do MVP
 
 - O usuario consegue abrir `Mecanica > Pendulo simples` pela sidebar.
+- O usuario consegue abrir `Mecanica > Dinamica > Plano inclinado com atrito` pela sidebar quando quiser validar a segunda simulacao disponivel.
 - O canvas mostra a animacao do pendulo.
 - As metricas instantaneas e a legenda dos vetores ficam acima do canvas da simulacao.
 - O canvas do pendulo e uma cena 3D; arrastar horizontalmente gira a visualizacao ao redor do eixo Z e usar scroll sobre o canvas controla o zoom da camera sem alterar a fonte numerica da simulacao.
@@ -159,5 +186,5 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 - Nao precisa salvar simulacoes do usuario.
 - Nao precisa compartilhar links configurados.
 - Nao precisa autenticar usuarios.
-- Nao precisa ter mais de uma simulacao funcional.
+- O core inicial nao precisava ter mais de uma simulacao funcional; a Fase 2 passa a manter duas simulacoes funcionais para validar reuso.
 - Nao precisa de simulacao fisica de alta fidelidade alem do modelo declarado.

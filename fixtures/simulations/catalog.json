@@ -102,11 +102,61 @@
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Dinamica", "Plano inclinado com atrito"],
           "title": "Plano inclinado com atrito",
-          "status": "planned",
+          "status": "available",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
-          "description": "Forcas normal, peso, atrito e regimes de repouso ou deslizamento."
+          "fixturePath": "fixtures/simulations/mechanics-inclined-plane-friction.json",
+          "theoryPath": "src/content/simulations/mechanics/inclined-plane-friction/theory.md",
+          "description": "Forcas normal, peso, atrito e regimes de repouso ou deslizamento.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo proprio por trechos para validar reuso do shell e do runtime visual sem adicionar engine externa."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Posicao no plano por tempo",
+              "sampleFields": ["timeSeconds", "positionMeters", "heightMeters"]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidade no plano por tempo",
+              "sampleFields": ["timeSeconds", "velocityMetersPerSecond"]
+            },
+            {
+              "id": "acceleration-time",
+              "title": "Aceleracao no plano por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "accelerationMetersPerSecondSquared"
+              ]
+            },
+            {
+              "id": "forces-time",
+              "title": "Forcas no plano por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "weightParallelNewtons",
+                "normalForceNewtons",
+                "frictionMagnitudeNewtons",
+                "netForceNewtons"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "potentialEnergyJoules",
+                "thermalEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
         },
         {
           "id": "atwood-machine",

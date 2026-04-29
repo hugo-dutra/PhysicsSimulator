@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Este guia define o catalogo planejado de simulacoes de fisica basica. Ele nao muda a regra core-first: a primeira entrega funcional continua sendo `Mecanica > Pendulo simples`, com dados locais, motor proprio e sincronizacao completa entre cena, graficos, tabela, formulas e teoria. No catalogo expandido, essa simulacao tambem pode receber o caminho de topico `Mecanica > Oscilacoes > Pendulo simples`.
+Este guia define o catalogo planejado de simulacoes de fisica basica. Ele nao muda a regra core-first: a primeira entrega funcional continua sendo `Mecanica > Pendulo simples`, com dados locais, motor proprio e sincronizacao completa entre cena, graficos, tabela, formulas e teoria. No catalogo expandido, essa simulacao tambem pode receber o caminho de topico `Mecanica > Oscilacoes > Pendulo simples`. A Fase 2 ja promove `Mecanica > Dinamica > Plano inclinado com atrito` como segunda simulacao `available` para validar reuso.
 
 O catalogo amplo deve nascer como backlog planejado e virar produto funcional em fatias pequenas, sempre reaproveitando o contrato comum de simulacao.
 
@@ -44,7 +44,7 @@ Base comum:
 - Three.js como renderer principal para cenas 3D/2.5D, vetores, orbitas, corpos e campos.
 - Plotly.js para graficos cientificos declarativos e live-canvas para series temporais progressivas que precisam ser desenhadas continuamente.
 - MDX/Markdown + KaTeX para teoria e formulas.
-- JSON local para catalogo, parametros, presets e status enquanto o core nao estiver validado.
+- JSON local para catalogo, parametros, presets e status enquanto o core e o reuso de simulacoes ainda estiverem em validacao local.
 - `physics-core` proprio para modelos analiticos, integradores simples e geracao de samples.
 
 Tecnologias opcionais, introduzidas apenas quando a simulacao exigir:
@@ -73,7 +73,7 @@ Implementacao preferencial:
 | Cinematica | Movimento uniformemente variado e queda livre | Aceleracao constante, lancamento vertical, queda livre, graficos `x(t)`, `v(t)` e `a(t)`. | Solucao analitica; preset com gravidade terrestre e gravidade customizada. |
 | Cinematica | Lancamento obliquo | Alcance, altura maxima, tempo de voo, decomposicao vetorial e trajetoria. | Solucao analitica sem arrasto no primeiro passo; arrasto como extensao numerica posterior. |
 | Cinematica | Movimento circular uniforme | Velocidade angular, periodo, frequencia, aceleracao centripeta e vetores tangencial/radial. | Solucao analitica; cena circular com vetores em Three.js. |
-| Dinamica | Plano inclinado com atrito | Forcas normal, peso, atrito, aceleracao, energia e condicoes de repouso/deslizamento. | Modelo analitico por regimes; diagrama de corpo livre em Three.js. |
+| Dinamica | Plano inclinado com atrito | Forcas normal, peso, atrito, aceleracao, energia e condicoes de repouso/deslizamento. | Fase 2 `available`; modelo analitico por regimes, Three.js, live-canvas e KaTeX. |
 | Dinamica | Maquina de Atwood | Tensao, aceleracao, massas acopladas, energia e comparacao de massas. | Equacoes de Newton; integracao deterministica simples para playback. |
 | Dinamica | Forca centripeta em curva | Atrito lateral, raio, velocidade critica e perda de aderencia. | Modelo analitico com alertas de limite; cena em Three.js. |
 | Energia e momento | Trabalho e energia em trilho | Trabalho de forcas, energia cinetica/potencial, conservacao e dissipacao. | Integrador simples; grafico de energia e marcadores de trabalho. |

@@ -1,4 +1,5 @@
 import catalogJson from '../../fixtures/simulations/catalog.json'
+import inclinedPlaneFixtureJson from '../../fixtures/simulations/mechanics-inclined-plane-friction.json'
 import pendulumFixtureJson from '../../fixtures/simulations/mechanics-pendulum.json'
 import type {
   KnowledgeArea,
@@ -10,6 +11,9 @@ import type {
 export const simulationCatalog = catalogJson as SimulationCatalog
 
 export const pendulumFixture = pendulumFixtureJson as SimulationFixture
+
+export const inclinedPlaneFixture =
+  inclinedPlaneFixtureJson as SimulationFixture
 
 export const activeSimulationId = 'simple-pendulum'
 

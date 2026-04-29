@@ -23,6 +23,7 @@ npm run test:e2e
 ## Estrategia de testes do core
 
 - Testes unitarios para o integrador do pendulo.
+- Testes unitarios para o modelo analitico/numerico por trechos do plano inclinado com atrito.
 - Testes de invariantes fisicos dentro do modelo declarado.
 - Testes de validacao de parametros e unidades.
 - Testes de geracao de samples para graficos e tabela.
@@ -31,12 +32,14 @@ npm run test:e2e
 - Testes de que blocos chevron recolhidos desmontam graficos, tabela, formulas e teoria em vez de apenas ocultar visualmente.
 - Testes de que viewport, graficos, tabela, formulas e apendice teorico podem ser maximizados, escondem os demais paineis e restauram o shell ao minimizar.
 - Testes de que a sidebar renderiza o catalogo planejado por menus de area, subarea e simulacoes com status claro.
+- Testes de que a sidebar abre as simulacoes `available` pelo mesmo shell compartilhado.
 - Testes de que a tabela de amostras mantem quantidade fixa de linhas visiveis enquanto esta aberta.
 - Testes de consistencia entre formulas documentadas, parametros e dados gerados.
 - Testes de contrato para `SimulationDefinition`.
 - Smoke test da tela principal abrindo o pendulo.
 - Checagem de que o loop de animacao nao força re-render do shell completo, graficos, tabela, formulas ou teoria a cada frame.
 - Checagem de que alteracoes de parametros nao desmontam graficos ou viewport pesados sem necessidade.
+- Checagem de que cenas reutilizam o helper `visualRuntime` para interpolacao de timeline, loop renderer-first e metricas de FPS/frame time.
 
 ## Criterio de qualidade para novas simulacoes
 
@@ -68,6 +71,7 @@ Depois da prova do core, cada nova simulacao promovida para `available` deve ter
 - Blocos chevron de saida pesada devem iniciar fechados e testes devem cobrir abrir e fechar pelo cabecalho.
 - O modo maximizado de viewport, graficos, tabela, formulas e apendice teorico deve mostrar apenas o painel em foco dentro da janela e voltar ao layout anterior ao minimizar.
 - A sidebar deve permitir expandir areas e subareas planejadas sem confundir itens planejados com simulacoes disponiveis.
+- A sidebar deve permitir trocar entre pendulo simples e plano inclinado com atrito sem abandonar o shell compartilhado.
 - A tabela de amostras nao deve variar sua altura durante playback por mudar a quantidade de linhas.
 - Formulas devem permanecer legiveis e indicar quando usar cada equacao.
 - Layout nao deve quebrar em desktop comum.

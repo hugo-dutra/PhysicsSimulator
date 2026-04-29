@@ -1,0 +1,325 @@
+{
+  "simulationId": "inclined-plane-friction",
+  "durationSeconds": 30,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 12,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Tempo do ciclo",
+      "unit": "s",
+      "kind": "number",
+      "min": 6,
+      "max": 90,
+      "step": 1,
+      "defaultValue": 30
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 45,
+      "step": 1,
+      "defaultValue": 12
+    }
+  ],
+  "defaultParameters": {
+    "planeAngleDegrees": 28,
+    "blockMassKilograms": 2,
+    "gravityMetersPerSecondSquared": 9.81,
+    "frictionCoefficient": 0.18,
+    "initialPositionMeters": 0,
+    "initialVelocityMetersPerSecond": 0,
+    "planeLengthMeters": 6
+  },
+  "parameters": [
+    {
+      "id": "planeAngleDegrees",
+      "label": "Angulo do plano",
+      "unit": "deg",
+      "kind": "number",
+      "min": 5,
+      "max": 70,
+      "step": 1,
+      "defaultValue": 28
+    },
+    {
+      "id": "blockMassKilograms",
+      "label": "Massa do bloco",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.2,
+      "max": 20,
+      "step": 0.1,
+      "defaultValue": 2
+    },
+    {
+      "id": "gravityMetersPerSecondSquared",
+      "label": "Gravidade",
+      "unit": "m/s^2",
+      "kind": "number",
+      "min": 1,
+      "max": 25,
+      "step": 0.01,
+      "defaultValue": 9.81
+    },
+    {
+      "id": "frictionCoefficient",
+      "label": "Coeficiente de atrito",
+      "kind": "number",
+      "min": 0,
+      "max": 1.2,
+      "step": 0.01,
+      "defaultValue": 0.18
+    },
+    {
+      "id": "initialPositionMeters",
+      "label": "Posicao inicial",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 6,
+      "step": 0.05,
+      "defaultValue": 0
+    },
+    {
+      "id": "initialVelocityMetersPerSecond",
+      "label": "Velocidade inicial",
+      "unit": "m/s",
+      "kind": "number",
+      "min": -4,
+      "max": 4,
+      "step": 0.05,
+      "defaultValue": 0
+    },
+    {
+      "id": "planeLengthMeters",
+      "label": "Comprimento do plano",
+      "unit": "m",
+      "kind": "number",
+      "min": 2,
+      "max": 12,
+      "step": 0.1,
+      "defaultValue": 6
+    }
+  ],
+  "presets": [
+    {
+      "id": "slide-down",
+      "label": "Deslizamento moderado",
+      "parameters": {
+        "planeAngleDegrees": 28,
+        "blockMassKilograms": 2,
+        "gravityMetersPerSecondSquared": 9.81,
+        "frictionCoefficient": 0.18,
+        "initialPositionMeters": 0,
+        "initialVelocityMetersPerSecond": 0,
+        "planeLengthMeters": 6
+      }
+    },
+    {
+      "id": "static-hold",
+      "label": "Atrito segura",
+      "parameters": {
+        "planeAngleDegrees": 18,
+        "blockMassKilograms": 2,
+        "gravityMetersPerSecondSquared": 9.81,
+        "frictionCoefficient": 0.55,
+        "initialPositionMeters": 0,
+        "initialVelocityMetersPerSecond": 0,
+        "planeLengthMeters": 6
+      }
+    },
+    {
+      "id": "low-friction",
+      "label": "Atrito baixo",
+      "parameters": {
+        "planeAngleDegrees": 36,
+        "blockMassKilograms": 1.5,
+        "gravityMetersPerSecondSquared": 9.81,
+        "frictionCoefficient": 0.05,
+        "initialPositionMeters": 0,
+        "initialVelocityMetersPerSecond": 0,
+        "planeLengthMeters": 7
+      }
+    }
+  ],
+  "limits": [
+    "Bloco tratado como corpo rigido pontual para o calculo translacional.",
+    "Atrito cinetico e estatico usam o mesmo coeficiente didatico.",
+    "Resistencia do ar, rolamento, deformacao e rotacao do bloco ficam fora do modelo.",
+    "O bloco e limitado ao comprimento visual do plano; ao chegar ao fim, a simulacao o mantem no limite."
+  ],
+  "formulas": [
+    {
+      "id": "weight-components",
+      "title": "Componentes do peso",
+      "expressionLatex": "P_{\\parallel}=mg\\sin(\\alpha),\\quad P_{\\perp}=mg\\cos(\\alpha)",
+      "description": "Decompoe o peso nos eixos paralelo e perpendicular ao plano.",
+      "variables": [
+        {
+          "symbol": "m",
+          "label": "massa",
+          "unit": "kg"
+        },
+        {
+          "symbol": "g",
+          "label": "gravidade",
+          "unit": "m/s^2"
+        },
+        {
+          "symbol": "\\alpha",
+          "label": "angulo do plano",
+          "unit": "deg"
+        }
+      ],
+      "usedWhen": "Usar para entender quais componentes do peso puxam o bloco para baixo do plano e pressionam o bloco contra a superficie.",
+      "notUsedWhen": "Nao substitui a soma completa de forcas se houver cabos, molas ou empurroes externos.",
+      "parameterIds": [
+        "blockMassKilograms",
+        "gravityMetersPerSecondSquared",
+        "planeAngleDegrees"
+      ],
+      "sampleFields": ["weightParallelNewtons", "normalForceNewtons"],
+      "relatedChartIds": ["forces-time"],
+      "relatedVectorIds": ["weight", "normal"],
+      "example": "Com m = 2 kg e alpha = 30 deg, a componente paralela vale m g sen(30 deg)."
+    },
+    {
+      "id": "normal-force",
+      "title": "Forca normal",
+      "expressionLatex": "N=mg\\cos(\\alpha)",
+      "description": "Forca perpendicular da superficie sobre o bloco no modelo sem outras forcas normais.",
+      "variables": [
+        {
+          "symbol": "N",
+          "label": "normal",
+          "unit": "N"
+        },
+        {
+          "symbol": "m",
+          "label": "massa",
+          "unit": "kg"
+        },
+        {
+          "symbol": "g",
+          "label": "gravidade",
+          "unit": "m/s^2"
+        }
+      ],
+      "usedWhen": "Usar para calcular a intensidade maxima do atrito e a leitura do vetor normal.",
+      "notUsedWhen": "Nao vale se o bloco perde contato ou recebe forcas externas com componente perpendicular.",
+      "parameterIds": [
+        "blockMassKilograms",
+        "gravityMetersPerSecondSquared",
+        "planeAngleDegrees"
+      ],
+      "sampleFields": ["normalForceNewtons"],
+      "relatedChartIds": ["forces-time"],
+      "relatedVectorIds": ["normal"],
+      "example": "Aumentar o angulo reduz cos(alpha), logo reduz a normal."
+    },
+    {
+      "id": "friction",
+      "title": "Atrito estatico e cinetico",
+      "expressionLatex": "F_{at}\\leq \\mu N,\\quad F_{at,c}=\\mu N",
+      "description": "O atrito se opoe ao movimento ou a tendencia de movimento ao longo do plano.",
+      "variables": [
+        {
+          "symbol": "\\mu",
+          "label": "coeficiente de atrito"
+        },
+        {
+          "symbol": "N",
+          "label": "normal",
+          "unit": "N"
+        }
+      ],
+      "usedWhen": "Usar para comparar se o bloco fica parado ou escorrega e para estimar a perda de energia mecanica.",
+      "notUsedWhen": "Nao distingue coeficientes estatico e cinetico reais; aqui ambos sao aproximados por um unico controle.",
+      "parameterIds": ["frictionCoefficient"],
+      "sampleFields": ["frictionMagnitudeNewtons", "frictionForceNewtons"],
+      "relatedChartIds": ["forces-time"],
+      "relatedVectorIds": ["friction"],
+      "example": "Se mg sen(alpha) for menor que mu N, o bloco permanece em repouso."
+    },
+    {
+      "id": "net-acceleration",
+      "title": "Aceleracao no plano",
+      "expressionLatex": "a=g\\sin(\\alpha)-\\mu g\\cos(\\alpha)",
+      "description": "Aceleracao ao longo do plano quando o bloco desliza para baixo.",
+      "variables": [
+        {
+          "symbol": "a",
+          "label": "aceleracao",
+          "unit": "m/s^2"
+        },
+        {
+          "symbol": "\\alpha",
+          "label": "angulo do plano",
+          "unit": "deg"
+        },
+        {
+          "symbol": "\\mu",
+          "label": "coeficiente de atrito"
+        }
+      ],
+      "usedWhen": "Usar quando o bloco esta deslizando para baixo e o atrito cinetico se opoe ao movimento.",
+      "notUsedWhen": "Nao usar diretamente no repouso estatico nem em movimento para cima sem revisar o sentido do atrito.",
+      "parameterIds": [
+        "planeAngleDegrees",
+        "gravityMetersPerSecondSquared",
+        "frictionCoefficient"
+      ],
+      "sampleFields": [
+        "accelerationMetersPerSecondSquared",
+        "netForceNewtons"
+      ],
+      "relatedChartIds": ["acceleration-time", "forces-time"],
+      "relatedVectorIds": ["friction"],
+      "example": "Aumentar mu diminui a aceleracao ate o atrito conseguir segurar o bloco."
+    },
+    {
+      "id": "energy-balance",
+      "title": "Balanco de energia",
+      "expressionLatex": "E=K+U+E_{termica}",
+      "description": "A energia mecanica diminui com atrito, enquanto a energia termica acumulada fecha o balanco didatico.",
+      "variables": [
+        {
+          "symbol": "K",
+          "label": "energia cinetica",
+          "unit": "J"
+        },
+        {
+          "symbol": "U",
+          "label": "energia potencial gravitacional",
+          "unit": "J"
+        },
+        {
+          "symbol": "E_{termica}",
+          "label": "energia dissipada",
+          "unit": "J"
+        }
+      ],
+      "usedWhen": "Usar para comparar conversao entre energia potencial, cinetica e dissipacao por atrito.",
+      "notUsedWhen": "Nao representa aquecimento real do material nem perdas por som, deformacao ou ar.",
+      "parameterIds": [
+        "blockMassKilograms",
+        "gravityMetersPerSecondSquared",
+        "planeLengthMeters",
+        "planeAngleDegrees"
+      ],
+      "sampleFields": [
+        "kineticEnergyJoules",
+        "potentialEnergyJoules",
+        "thermalEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "relatedChartIds": ["energy-time"],
+      "relatedVectorIds": [],
+      "example": "Com atrito maior, a parcela termica cresce mais rapido e a velocidade final diminui."
+    }
+  ]
+}

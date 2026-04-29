@@ -469,4 +469,63 @@ describe('App', () => {
     expect(screen.getByText(/Circuito RLC/i)).toBeInTheDocument()
     expect(screen.getByText(/Fasores e potencia AC/i)).toBeInTheDocument()
   }, 20_000)
+
+  it('opens the inclined plane simulation through the shared shell', () => {
+    render(
+      <ThemeProvider theme={appTheme}>
+        <App />
+      </ThemeProvider>,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Dinamica/i }),
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: /Plano inclinado com atrito/i }),
+    )
+
+    expect(
+      screen.getByRole('heading', { name: /Plano inclinado com atrito/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Mecanica > Dinamica > Plano inclinado com atrito/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByLabelText(/Inclined plane numerical viewport/i),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText(/Cena 3D do plano inclinado/i))
+      .toHaveAccessibleName(/scroll para zoom/i)
+    expect(screen.getByLabelText(/Angulo do plano \(deg\)/i))
+      .toBeInTheDocument()
+    expect(screen.getAllByLabelText(/Coeficiente de atrito/i).length)
+      .toBeGreaterThan(0)
+
+    fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
+    expect(
+      screen.getByRole('img', { name: /Posicao no plano por tempo/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('img', { name: /Forcas no plano por tempo/i }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Abrir Tabela de amostras/i }),
+    )
+    const sampleTable = screen.getByRole('table', {
+      name: /Tabela sincronizada de amostras do plano inclinado/i,
+    })
+    expect(within(sampleTable).getAllByRole('row')).toHaveLength(10)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Abrir Guia de formulas/i }),
+    )
+    expect(screen.getAllByText(/Componentes do peso/i).length)
+      .toBeGreaterThan(0)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Abrir Apendice teorico/i }),
+    )
+    expect(screen.getAllByText(/Atrito estatico/i).length)
+      .toBeGreaterThan(0)
+  }, 20_000)
 })

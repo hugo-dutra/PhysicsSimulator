@@ -3,11 +3,11 @@ import ReactMarkdown from 'react-markdown'
 import rehypeKatex from 'rehype-katex'
 import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
-import pendulumTheory from '../../content/simulations/mechanics/pendulum/theory.md?raw'
 import { themeTokens } from '../../theme/appTheme'
 import { ChevronSection } from './ChevronSection'
 
 type TheoryAppendixProps = {
+  content: string
   expanded: boolean
   limits: string[]
   maximized?: boolean
@@ -16,6 +16,7 @@ type TheoryAppendixProps = {
 }
 
 export function TheoryAppendix({
+  content,
   expanded,
   limits,
   maximized = false,
@@ -84,7 +85,7 @@ export function TheoryAppendix({
               rehypePlugins={[rehypeKatex]}
               remarkPlugins={[remarkMath]}
             >
-              {pendulumTheory}
+              {content}
             </ReactMarkdown>
           </Box>
 

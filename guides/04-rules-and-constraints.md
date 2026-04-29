@@ -7,6 +7,7 @@
 - Itens planejados podem aparecer na sidebar, mas devem ser claramente marcados como indisponiveis ou planejados.
 - A sidebar deve ser hierarquica e navegavel por area e subarea; simulacoes planejadas podem aparecer como folhas marcadas, sem parecerem disponiveis.
 - A primeira entrega funcional deve ser `Mecanica > Pendulo simples`.
+- A segunda simulacao funcional da Fase 2 e `Mecanica > Dinamica > Plano inclinado com atrito`, usada para validar reuso antes de expandir o catalogo.
 - A taxonomia principal do catalogo deve usar `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo`; fluidos basicos entram como subarea, nao como prioridade separada antes do core.
 
 ## Regras de fisica
@@ -18,6 +19,7 @@
 - Formulas exibidas devem corresponder ao modelo numerico implementado.
 - O modelo numerico deve ser deterministico para os mesmos parametros.
 - Tabela, graficos e animacao devem ser derivados da mesma fonte de dados.
+- Cada simulacao `available` deve ter uma unica fonte de samples para cena, graficos, tabela, metricas, formulas e legenda.
 - Velocidades e aceleracoes derivadas exibidas em graficos, tabela, metricas ou formulas devem ser calculadas no motor/sample e manter unidades explicitas.
 - Quando houver aproximacao, a teoria e o guia de formulas devem explicar a aproximacao e seus limites.
 - O produto educacional nao deve sugerir precisao de simulador profissional quando o modelo for didatico.
@@ -60,6 +62,7 @@
 - Nao recriar renderers, materiais, geometrias, buffers ou series Plotly no caminho quente da animacao sem justificativa medida.
 - Nao implementar orbitacao ou zoom da camera via estado React de alta frequencia; interacao de camera deve ficar em refs e atualizar o renderer diretamente.
 - Nao desmontar/remontar graficos ou viewport como mecanismo padrao de reset de parametro; preferir atualizar dados e refs preservando os componentes pesados montados.
+- O helper compartilhado de runtime visual pode ser usado para agendar frames, interpolar samples e medir FPS/frame time, mas nao deve substituir o ownership local dos objetos e buffers de cada renderer.
 - Nao manter canvas de grafico, tabela tabular, KaTeX ou Markdown processando quando o bloco chevron correspondente estiver recolhido.
 - Nao congelar graficos ou tabela ao maximizar um painel: se a cena for a fonte atual do sample vivo, ela pode ficar invisivel, mas precisa continuar alimentando o runtime ate esse relogio ser extraido.
 - Renderers interativos devem limitar custo de preenchimento e densidade visual, por exemplo com `devicePixelRatio` maximo, downsampling, trilhas limitadas e toggles de saidas pesadas.

@@ -63,15 +63,15 @@ Objetivo: provar que a arquitetura suporta mais de uma simulacao sem duplicar a 
 
 Tasks:
 
-- `[ ]` Extrair contrato comum `SimulationDefinition`.
-- `[ ]` Adicionar `topicPath` para representar caminhos como `Mecanica > Cinematica > MRU`.
-- `[ ]` Criar status de catalogo `planned`, `scaffolded` e `available`.
-- `[ ]` Criar fixtures locais para as quatro areas principais: `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo`.
-- `[ ]` Registrar todas as simulacoes planejadas como itens indisponiveis ate terem motor, cena, graficos, tabela, formulas e teoria.
-- `[ ]` Adicionar segunda simulacao de Mecanica, preferencialmente `Mecanica > Dinamica > Plano inclinado com atrito` ou `Oscilacoes e Ondas > Oscilacoes > Massa-mola`.
-- `[ ]` Reusar shell, controles, graficos, tabela e guia de formulas.
-- `[ ]` Extrair o padrao reutilizavel de runtime visual: renderer com loop proprio, UI React em cadencia reduzida, buffers reutilizados e metricas de FPS/frame time.
-- `[ ]` Ajustar docs com aprendizados da primeira simulacao.
+- `[x]` Extrair contrato comum `SimulationDefinition`.
+- `[x]` Adicionar `topicPath` para representar caminhos como `Mecanica > Cinematica > MRU`.
+- `[x]` Criar status de catalogo `planned`, `scaffolded` e `available`.
+- `[x]` Criar fixtures locais para as quatro areas principais: `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo`.
+- `[x]` Registrar todas as simulacoes planejadas como itens indisponiveis ate terem motor, cena, graficos, tabela, formulas e teoria.
+- `[x]` Adicionar segunda simulacao de Mecanica, preferencialmente `Mecanica > Dinamica > Plano inclinado com atrito` ou `Oscilacoes e Ondas > Oscilacoes > Massa-mola`.
+- `[x]` Reusar shell, controles, graficos, tabela e guia de formulas.
+- `[x]` Extrair o padrao reutilizavel de runtime visual: renderer com loop proprio, UI React em cadencia reduzida, buffers reutilizados e metricas de FPS/frame time.
+- `[x]` Ajustar docs com aprendizados da primeira simulacao.
 
 Criterio de saida:
 

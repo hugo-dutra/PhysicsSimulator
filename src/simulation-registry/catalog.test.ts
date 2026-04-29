@@ -3,6 +3,7 @@ import {
   activeSimulation,
   findSimulation,
   getAreaForSimulation,
+  inclinedPlaneFixture,
   pendulumFixture,
   simulationCatalog,
 } from './catalog'
@@ -25,10 +26,11 @@ describe('simulation registry', () => {
     )
 
     expect(allSimulations).toHaveLength(51)
-    expect(allSimulations.filter((item) => item.status === 'available')).toHaveLength(
-      1,
-    )
+    expect(
+      allSimulations.filter((item) => item.status === 'available'),
+    ).toHaveLength(2)
     expect(allSimulations.some((item) => item.status === 'planned')).toBe(true)
+    expect(findSimulation('inclined-plane-friction').status).toBe('available')
     expect(findSimulation('projectile-motion').status).toBe('planned')
   })
 
@@ -83,5 +85,34 @@ describe('simulation registry', () => {
     expect(pendulumFixture.presets.length).toBeGreaterThan(0)
     expect(pendulumFixture.limits.length).toBeGreaterThan(0)
     expect(pendulumFixture.formulas.length).toBeGreaterThan(0)
+  })
+
+  it('declares the inclined plane as the second available mechanics simulation', () => {
+    const inclinedPlane = findSimulation('inclined-plane-friction')
+
+    expect(inclinedPlane.topicPath).toEqual([
+      'Mecanica',
+      'Dinamica',
+      'Plano inclinado com atrito',
+    ])
+    expect(inclinedPlane.technologyPlan?.engine).toBe('custom-analytic')
+    expect(inclinedPlane.technologyPlan?.charting).toBe('live-canvas')
+    expect(inclinedPlaneFixture.simulationId).toBe('inclined-plane-friction')
+    expect(inclinedPlaneFixture.runtimeParameters.map((parameter) => parameter.id)).toEqual([
+      'durationSeconds',
+      'chartWindowSeconds',
+    ])
+    expect(inclinedPlaneFixture.parameters.map((parameter) => parameter.id)).toEqual([
+      'planeAngleDegrees',
+      'blockMassKilograms',
+      'gravityMetersPerSecondSquared',
+      'frictionCoefficient',
+      'initialPositionMeters',
+      'initialVelocityMetersPerSecond',
+      'planeLengthMeters',
+    ])
+    expect(inclinedPlaneFixture.presets.length).toBeGreaterThan(0)
+    expect(inclinedPlaneFixture.limits.length).toBeGreaterThan(0)
+    expect(inclinedPlaneFixture.formulas.length).toBeGreaterThan(0)
   })
 })
