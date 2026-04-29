@@ -16,8 +16,14 @@ export function createKinematicsSceneProjection(
   samples: KinematicsSample[],
   simulationId: KinematicsSimulationId,
 ): KinematicsSceneProjection {
-  const horizontalPlane = simulationId === 'uniform-circular-motion'
-  const rawBounds = estimateRawSceneBounds(samples, horizontalPlane)
+  const horizontalPlane =
+    simulationId === 'uniform-circular-motion' ||
+    simulationId === 'centripetal-force-curve'
+  const rawBounds = estimateRawSceneBounds(
+    samples,
+    horizontalPlane,
+    simulationId,
+  )
 
   return {
     horizontalPlane,
@@ -52,10 +58,27 @@ export function toKinematicsSceneDirection(
 function estimateRawSceneBounds(
   samples: KinematicsSample[],
   horizontalPlane: boolean,
+  simulationId: KinematicsSimulationId,
 ) {
-  const xs = samples.map((sample) => sample.xMeters)
+  if (simulationId === 'centripetal-force-curve') {
+    const firstSample = samples[0]
+    const radiusMeters = firstSample
+      ? Math.hypot(firstSample.xMeters, firstSample.zMeters)
+      : 1
+
+    return {
+      span: Math.max(1, radiusMeters * 2.8),
+    }
+  }
+
+  const xs = samples.flatMap((sample) => [
+    sample.xMeters,
+    sample.secondaryXMeters,
+  ])
   const ys = horizontalPlane ? samples.map((sample) => sample.zMeters) : [0]
-  const zs = horizontalPlane ? [0] : samples.map((sample) => sample.zMeters)
+  const zs = horizontalPlane
+    ? [0]
+    : samples.flatMap((sample) => [sample.zMeters, sample.secondaryZMeters])
   const minX = Math.min(0, ...xs)
   const maxX = Math.max(0, ...xs)
   const minY = Math.min(0, ...ys)

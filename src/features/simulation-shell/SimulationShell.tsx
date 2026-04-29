@@ -67,6 +67,8 @@ import {
   type KinematicsSimulationId,
   type KinematicsVectorOverlay,
 } from '../../lib/physics/kinematics'
+import atwoodMachineTheory from '../../content/simulations/mechanics/atwood-machine/theory.md?raw'
+import centripetalForceCurveTheory from '../../content/simulations/mechanics/centripetal-force-curve/theory.md?raw'
 import {
   computePendulumTimeline,
   getPendulumVectorOverlays,
@@ -81,6 +83,7 @@ import projectileMotionTheory from '../../content/simulations/mechanics/projecti
 import uniformCircularMotionTheory from '../../content/simulations/mechanics/uniform-circular-motion/theory.md?raw'
 import uniformLinearMotionTheory from '../../content/simulations/mechanics/uniform-linear-motion/theory.md?raw'
 import uniformlyAcceleratedMotionTheory from '../../content/simulations/mechanics/uniformly-accelerated-motion/theory.md?raw'
+import workEnergyTrackTheory from '../../content/simulations/mechanics/work-energy-track/theory.md?raw'
 import { themeTokens } from '../../theme/appTheme'
 import { ChevronSection } from './ChevronSection'
 import { FormulaGuide } from './FormulaGuide'
@@ -163,10 +166,13 @@ type KinematicsVectorLegendItem = {
 }
 
 const kinematicsTheoryById = {
+  'atwood-machine': atwoodMachineTheory,
+  'centripetal-force-curve': centripetalForceCurveTheory,
   'projectile-motion': projectileMotionTheory,
   'uniform-circular-motion': uniformCircularMotionTheory,
   'uniform-linear-motion': uniformLinearMotionTheory,
   'uniformly-accelerated-motion': uniformlyAcceleratedMotionTheory,
+  'work-energy-track': workEnergyTrackTheory,
 } satisfies Record<KinematicsSimulationId, string>
 
 const customPresetId = 'custom'
@@ -266,11 +272,61 @@ const kinematicsSampleTableColumnIds = [
   'velocity',
   'speed',
   'acceleration',
+  'force',
+  'tension',
   'kinetic',
   'potential',
+  'thermal',
+  'work',
   'total',
 ] as const
 const kinematicsVectorLegendItemsById = {
+  'atwood-machine': [
+    {
+      id: 'velocity',
+      label: 'Velocidade',
+      color: themeTokens.cyan,
+      description: 'velocidade comum das massas no fio ideal',
+    },
+    {
+      id: 'acceleration',
+      label: 'Aceleracao',
+      color: themeTokens.warning,
+      description: 'aceleracao comum causada pela diferenca entre os pesos',
+    },
+    {
+      id: 'tension',
+      label: 'Tensao',
+      color: themeTokens.vector,
+      description: 'forca transmitida pelo fio ideal nos dois lados da polia',
+    },
+    {
+      id: 'weight',
+      label: 'Peso',
+      color: themeTokens.danger,
+      description: 'peso da massa 2 no lado direito do sistema',
+    },
+  ],
+  'centripetal-force-curve': [
+    {
+      id: 'velocity',
+      label: 'Velocidade tangencial',
+      color: themeTokens.cyan,
+      description: 'vetor tangente a curva circular',
+    },
+    {
+      id: 'centripetal',
+      label: 'Forca centripeta',
+      color: themeTokens.warning,
+      description: 'resultante radial requerida para manter a curva',
+    },
+    {
+      id: 'friction',
+      label: 'Atrito maximo',
+      color: themeTokens.vector,
+      description: 'limite de atrito estatico disponivel antes da perda de aderencia',
+    },
+  ],
   'projectile-motion': [
     {
       id: 'displacement',
@@ -349,6 +405,32 @@ const kinematicsVectorLegendItemsById = {
       label: 'Aceleracao',
       color: themeTokens.warning,
       description: 'vetor constante que curva x(t) no MUV',
+    },
+  ],
+  'work-energy-track': [
+    {
+      id: 'velocity',
+      label: 'Velocidade',
+      color: themeTokens.cyan,
+      description: 'velocidade do corpo ao longo do trilho',
+    },
+    {
+      id: 'acceleration',
+      label: 'Aceleracao',
+      color: themeTokens.warning,
+      description: 'resultante tangencial entre gravidade, atrito e forca aplicada',
+    },
+    {
+      id: 'friction',
+      label: 'Atrito',
+      color: themeTokens.danger,
+      description: 'forca dissipativa oposta ao movimento no trilho',
+    },
+    {
+      id: 'appliedForce',
+      label: 'Forca aplicada',
+      color: themeTokens.teal,
+      description: 'forca externa constante projetada no trilho',
     },
   ],
 } satisfies Record<KinematicsSimulationId, KinematicsVectorLegendItem[]>
@@ -639,9 +721,7 @@ export function SimulationShell() {
     }
 
     const clampedValue = clampToParameterRange(nextValue, parameter)
-    const currentValues = isInclinedPlaneSelected
-      ? inclinedPlaneParameterValues
-      : pendulumParameterValues
+    const currentValues = selectedParameterValues
 
     if (currentValues[parameter.id] === clampedValue) {
       return
@@ -684,9 +764,7 @@ export function SimulationShell() {
     }
 
     const clampedValue = clampToParameterRange(nextValue, parameter)
-    const currentValues = isInclinedPlaneSelected
-      ? inclinedPlaneRuntimeValues
-      : pendulumRuntimeValues
+    const currentValues = selectedRuntimeValues
 
     if (currentValues[parameter.id] === clampedValue) {
       return
@@ -1269,7 +1347,9 @@ function SimulationSidebar({
       groupSimulationsBySubarea(area.simulations).map((subarea) => [
         getSubareaKey(area.id, subarea.label),
         subarea.simulations.some(
-          (simulation) => simulation.id === selectedSimulationId,
+          (simulation) =>
+            simulation.id === selectedSimulationId ||
+            simulation.status === 'available',
         ),
       ]),
     )
@@ -2864,6 +2944,12 @@ function KinematicsRuntime({
               'm/s^2',
             )}
           />
+          {simulationId === 'centripetal-force-curve' ? (
+            <Metric
+              label="Aderencia"
+              value={liveSample.gripRatio > 1 ? 'saiu da curva' : 'aderiu'}
+            />
+          ) : null}
           {overlays.energy ? (
             <Metric
               label="Energia total"
@@ -3014,8 +3100,12 @@ function KinematicsRuntime({
                     <TableCell>v</TableCell>
                     <TableCell>|v|</TableCell>
                     <TableCell>a</TableCell>
+                    <TableCell>F</TableCell>
+                    <TableCell>T</TableCell>
                     <TableCell>K</TableCell>
                     <TableCell>U</TableCell>
+                    <TableCell>E_t</TableCell>
+                    <TableCell>W</TableCell>
                     <TableCell>E</TableCell>
                   </TableRow>
                 </TableHead>
@@ -3054,16 +3144,28 @@ function KinematicsRuntime({
                             {formatNumber(sample.speedMetersPerSecond, 'm/s')}
                           </TableCell>
                           <TableCell>
-                            {formatNumber(
+                          {formatNumber(
                               sample.accelerationMetersPerSecondSquared,
                               'm/s^2',
                             )}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(sample.netForceNewtons, 'N')}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(sample.tensionNewtons, 'N')}
                           </TableCell>
                           <TableCell>
                             {formatEnergy(sample.kineticEnergyJoules)}
                           </TableCell>
                           <TableCell>
                             {formatEnergy(sample.potentialEnergyJoules)}
+                          </TableCell>
+                          <TableCell>
+                            {formatEnergy(sample.thermalEnergyJoules)}
+                          </TableCell>
+                          <TableCell>
+                            {formatEnergy(sample.appliedWorkJoules)}
                           </TableCell>
                           <TableCell>
                             {formatEnergy(sample.totalEnergyJoules)}

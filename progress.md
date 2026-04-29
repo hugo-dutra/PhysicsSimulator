@@ -1093,3 +1093,117 @@ Validacao:
 - Executado `validate_guides.py`; resultado `[OK] guides pack looks core-first and complete.`
 - Smoke visual headless em `http://127.0.0.1:5187/` com Chrome channel em desktop `1440x1100` e mobile `390x900`: MUV e MCU com canvas nao vazio/colorido e diferenca de pixels entre frames; no desktop, scroll simples no canvas pausado nao alterou pixels e Shift + scroll alterou a visualizacao por zoom.
 - Capturas geradas em `artifacts/muv-desktop-a.png`, `artifacts/muv-desktop-b.png`, `artifacts/muv-mobile-a.png`, `artifacts/muv-mobile-b.png`, `artifacts/mcu-desktop-a.png`, `artifacts/mcu-desktop-b.png`, `artifacts/mcu-mobile-a.png` e `artifacts/mcu-mobile-b.png`.
+
+## 2026-04-29 - Fase 3: Atwood, centripeta e trabalho-energia
+
+Executadas as proximas 3 tasks da Fase 3 com modo quality:
+
+- Implementar `Mecanica > Dinamica > Maquina de Atwood`.
+- Implementar `Mecanica > Dinamica > Forca centripeta em curva`.
+- Implementar `Mecanica > Energia e momento > Trabalho e energia em trilho`.
+
+Ajuste de trilho:
+
+- `Mecanica > Dinamica > Plano inclinado com atrito` foi marcado como concluido na Fase 3 porque ja havia sido promovido para `available` na Fase 2.
+
+Arquivos e estruturas criadas/atualizadas:
+
+- `fixtures/simulations/catalog.json`
+- `fixtures/simulations/mechanics-atwood-machine.json`
+- `fixtures/simulations/mechanics-centripetal-force-curve.json`
+- `fixtures/simulations/mechanics-work-energy-track.json`
+- `guides/01-strategy.md`
+- `guides/02-product-spec.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/05-roadmap.md`
+- `guides/06-data-and-api.md`
+- `guides/07-quality-and-operations.md`
+- `guides/08-api-contracts.md`
+- `guides/09-simulation-catalog-plan.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/content/simulations/mechanics/atwood-machine/theory.md`
+- `src/content/simulations/mechanics/centripetal-force-curve/theory.md`
+- `src/content/simulations/mechanics/work-energy-track/theory.md`
+- `src/features/simulation-shell/KinematicsScene.tsx`
+- `src/features/simulation-shell/KinematicsSceneProjection.ts`
+- `src/features/simulation-shell/SimulationShell.tsx`
+- `src/features/simulation-shell/kinematicsChartConfigs.ts`
+- `src/lib/physics/kinematics.test.ts`
+- `src/lib/physics/kinematics.ts`
+- `src/simulation-registry/catalog.test.ts`
+- `src/simulation-registry/catalog.ts`
+
+Decisoes:
+
+- As tres novas simulacoes usam o motor analitico compartilhado existente, estendido com campos de tensao, forca centripeta, atrito maximo, trabalho aplicado e dissipacao termica.
+- A cena compartilhada de Cinematica passou a renderizar tambem massas acopladas da Maquina de Atwood com polia/fio simples, alem de continuar suportando trajetorias circulares e trilho inclinado.
+- `atwood-machine`, `centripetal-force-curve` e `work-energy-track` foram promovidas para `available` no catalogo local.
+
+Quality pass:
+
+- Revisao local manteve o comportamento publico do shell e limitou o refactor a pequenos ajustes nos arquivos tocados.
+- A troca de parametros passou a comparar contra os valores selecionados da simulacao ativa, evitando acoplamento acidental ao pendulo/plano inclinado quando a simulacao ativa vem do motor compartilhado.
+- A legenda/vetores da curva centripeta foram ajustados para nao exibir normal como vetor horizontal na cena 2.5D.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/simulation-registry/catalog.test.ts src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `python3 /mnt/c/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py /mnt/d/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+- Smoke visual headless em `http://172.24.222.147:5190/` com Playwright/Edge: Atwood, forca centripeta e trabalho-energia abriram pela sidebar, receberam reset/play e exibiram canvas com pixels nao-background/coloridos e diferenca de pixels entre frames (`atwood-machine`: 5728/3179 coloridos, 8137 pixels diferentes; `centripetal-force-curve`: 1530/1308 coloridos, 1140 pixels diferentes; `work-energy-track`: 677/717 coloridos, 615 pixels diferentes).
+- Capturas geradas em `artifacts/atwood-machine-smoke.png`, `artifacts/atwood-machine-canvas-a.png`, `artifacts/atwood-machine-canvas-b.png`, `artifacts/centripetal-force-curve-smoke.png`, `artifacts/centripetal-force-curve-canvas-a.png`, `artifacts/centripetal-force-curve-canvas-b.png`, `artifacts/work-energy-track-smoke.png`, `artifacts/work-energy-track-canvas-a.png` e `artifacts/work-energy-track-canvas-b.png`.
+
+## 2026-04-29 - Ajuste de visibilidade da sidebar
+
+Problema reportado:
+
+- As novas simulacoes estavam cadastradas e acessiveis, mas nao apareciam imediatamente no menu inicial porque a sidebar abria apenas a subarea da simulacao atual.
+
+Ajuste:
+
+- Subareas que contenham ao menos uma simulacao `available` agora iniciam abertas na area expandida, enquanto subareas somente planejadas continuam recolhidas.
+- `src/App.test.tsx` passou a cobrir que Cinematica, Dinamica e Energia com simulacoes disponiveis aparecem no menu inicial.
+
+Validacao:
+
+- Executado `npm run test -- src/App.test.tsx`; 7 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `python3 /mnt/c/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py /mnt/d/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+- Smoke headless em `http://127.0.0.1:5191/` confirmou que `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho` aparecem no menu inicial.
+
+## 2026-04-29 - Ajuste fisico e visual de Atwood/curva centripeta
+
+Problema reportado:
+
+- A Maquina de Atwood estava visualmente pouco didatica, com massas/fio fora do formato de diagrama esperado.
+- Forca centripeta em curva bloqueava atrito zero e mantinha a animacao circular mesmo quando os parametros tornavam a aderencia impossivel.
+- Foi pedido um guia para revisar outras simulacoes que ainda parecam animacoes parametrizadas em vez de simulacoes fisicas.
+
+Ajustes:
+
+- `src/lib/physics/kinematics.ts` agora aceita `frictionCoefficient = 0` na curva centripeta.
+- A curva centripeta passou a comparar `v^2/r` com `mu*g`; se faltar aderencia, o motor gera uma trajetoria real de raio maior e, com `mu = 0`, saida tangencial em linha reta.
+- Graficos da curva passaram a comparar forca/aceleracao requerida, limite disponivel e valor lateral real usado.
+- A Maquina de Atwood passou a usar suporte fixo, polia fixa, fio com arco superior e massas em blocos alinhadas aos trechos verticais.
+- O enquadramento da cena foi ajustado para manter a polia/suporte visiveis em Atwood e a curva ideal legivel mesmo quando o corpo sai da curva.
+- Criado `guides/10-simulation-fidelity-adjustment-guide.md` com checklist de auditoria fisica/visual para as demais simulacoes.
+
+Documentacao:
+
+- Atualizados `guides/00-index.md`, `guides/02-product-spec.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/issues.md`, fixture e teoria da curva centripeta.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts`; 10 testes passaram.
+- Executado `npm run test`; 46 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+- Dev server aberto em `http://127.0.0.1:5192/`.
+- Smoke visual headless com Chrome/CDP: Atwood renderizou canvas nao vazio com 12176 pixels nao-background e 3960 pixels diferentes entre frames; curva com `mu = 0` exibiu status `saiu da curva`, canvas nao vazio com 78893 pixels nao-background e 1006 pixels diferentes entre frames.
+- Capturas geradas em `artifacts/atwood-format-fixed-canvas-a.png`, `artifacts/atwood-format-fixed-canvas-b.png`, `artifacts/centripetal-zero-friction-visible-canvas-a.png` e `artifacts/centripetal-zero-friction-visible-canvas-b.png`.

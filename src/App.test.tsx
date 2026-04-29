@@ -19,6 +19,18 @@ describe('App', () => {
       screen.getByRole('heading', { name: /Pendulo simples/i }),
     ).toBeInTheDocument()
     expect(screen.getByText(/Catalogo local/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Movimento retilineo uniforme/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Maquina de Atwood/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Forca centripeta em curva/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Trabalho e energia em trilho/i }),
+    ).toBeInTheDocument()
     expect(screen.getByText('3601')).toBeInTheDocument()
     expect(screen.getByText(/Viewport Three\.js/i)).toBeInTheDocument()
     const viewport = screen.getByLabelText(/Pendulum numerical viewport/i)
@@ -557,10 +569,6 @@ describe('App', () => {
       </ThemeProvider>,
     )
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
-    )
-
     const kinematicsCases = [
       {
         title: /Movimento retilineo uniforme/i,
@@ -598,5 +606,55 @@ describe('App', () => {
       expect(screen.getByRole('img', { name: chart })).toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: /Recolher Graficos/i }))
     })
+  }, 20_000)
+
+  it('opens the next mechanics simulations through the shared shell', () => {
+    render(
+      <ThemeProvider theme={appTheme}>
+        <App />
+      </ThemeProvider>,
+    )
+
+    const dynamicsCases = [
+      {
+        title: /Maquina de Atwood/i,
+        chart: /Tensao e resultante por tempo/i,
+        control: /Massa 1 \(kg\)/i,
+      },
+      {
+        title: /Forca centripeta em curva/i,
+        chart: /Forca centripeta e atrito por tempo/i,
+        control: /Raio da curva \(m\)/i,
+      },
+    ]
+
+    dynamicsCases.forEach(({ title, chart, control }) => {
+      fireEvent.click(screen.getByRole('button', { name: title }))
+
+      expect(screen.getByRole('heading', { name: title })).toBeInTheDocument()
+      expect(screen.getByLabelText(/Kinematics numerical viewport/i))
+        .toBeInTheDocument()
+      expect(screen.getByLabelText(/Cena 3D de Cinematica/i))
+        .toHaveAccessibleName(/Shift \+ scroll para zoom/i)
+      expect(screen.getByLabelText(control)).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
+      expect(screen.getByRole('img', { name: chart })).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /Recolher Graficos/i }))
+    })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Trabalho e energia em trilho/i }),
+    )
+
+    expect(
+      screen.getByRole('heading', { name: /Trabalho e energia em trilho/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText(/Forca aplicada \(N\)/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
+    expect(
+      screen.getByRole('img', { name: /Trabalho e dissipacao por tempo/i }),
+    ).toBeInTheDocument()
   }, 20_000)
 })

@@ -1,0 +1,263 @@
+{
+  "simulationId": "atwood-machine",
+  "durationSeconds": 18,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 8,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Tempo do ciclo",
+      "unit": "s",
+      "kind": "number",
+      "min": 6,
+      "max": 60,
+      "step": 1,
+      "defaultValue": 18
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 30,
+      "step": 1,
+      "defaultValue": 8
+    }
+  ],
+  "defaultParameters": {
+    "massOneKilograms": 1.2,
+    "massTwoKilograms": 1.8,
+    "gravityMetersPerSecondSquared": 9.81,
+    "initialDisplacementMeters": 1.4,
+    "initialVelocityMetersPerSecond": 0,
+    "travelLimitMeters": 3
+  },
+  "parameters": [
+    {
+      "id": "massOneKilograms",
+      "label": "Massa 1",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.2,
+      "max": 8,
+      "step": 0.1,
+      "defaultValue": 1.2
+    },
+    {
+      "id": "massTwoKilograms",
+      "label": "Massa 2",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.2,
+      "max": 8,
+      "step": 0.1,
+      "defaultValue": 1.8
+    },
+    {
+      "id": "gravityMetersPerSecondSquared",
+      "label": "Gravidade",
+      "unit": "m/s^2",
+      "kind": "number",
+      "min": 1,
+      "max": 25,
+      "step": 0.01,
+      "defaultValue": 9.81
+    },
+    {
+      "id": "initialDisplacementMeters",
+      "label": "Deslocamento inicial",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 3,
+      "step": 0.05,
+      "defaultValue": 1.4
+    },
+    {
+      "id": "initialVelocityMetersPerSecond",
+      "label": "Velocidade inicial",
+      "unit": "m/s",
+      "kind": "number",
+      "min": -2,
+      "max": 2,
+      "step": 0.05,
+      "defaultValue": 0
+    },
+    {
+      "id": "travelLimitMeters",
+      "label": "Curso vertical",
+      "unit": "m",
+      "kind": "number",
+      "min": 1.5,
+      "max": 6,
+      "step": 0.1,
+      "defaultValue": 3
+    }
+  ],
+  "presets": [
+    {
+      "id": "mass-two-heavy",
+      "label": "Massa 2 desce",
+      "parameters": {
+        "massOneKilograms": 1.2,
+        "massTwoKilograms": 1.8,
+        "gravityMetersPerSecondSquared": 9.81,
+        "initialDisplacementMeters": 1.4,
+        "initialVelocityMetersPerSecond": 0,
+        "travelLimitMeters": 3
+      }
+    },
+    {
+      "id": "near-balance",
+      "label": "Quase equilibrio",
+      "parameters": {
+        "massOneKilograms": 1.6,
+        "massTwoKilograms": 1.7,
+        "gravityMetersPerSecondSquared": 9.81,
+        "initialDisplacementMeters": 1.5,
+        "initialVelocityMetersPerSecond": 0,
+        "travelLimitMeters": 3
+      }
+    },
+    {
+      "id": "mass-one-heavy",
+      "label": "Massa 1 desce",
+      "parameters": {
+        "massOneKilograms": 2.2,
+        "massTwoKilograms": 1.1,
+        "gravityMetersPerSecondSquared": 9.81,
+        "initialDisplacementMeters": 1.6,
+        "initialVelocityMetersPerSecond": 0,
+        "travelLimitMeters": 3.4
+      }
+    }
+  ],
+  "limits": [
+    "As massas sao tratadas como pontos ligados por fio ideal e inextensivel.",
+    "A polia e ideal: sem massa, sem atrito e sem momento de inercia.",
+    "O modelo usa aceleracao constante enquanto nenhuma massa atinge o limite visual do curso.",
+    "Resistencia do ar, elasticidade do fio e colisao com suportes ficam fora do modelo."
+  ],
+  "formulas": [
+    {
+      "id": "atwood-acceleration",
+      "title": "Aceleracao do sistema",
+      "expressionLatex": "a=\\frac{(m_2-m_1)g}{m_1+m_2}",
+      "description": "Calcula a aceleracao comum das massas em uma maquina de Atwood ideal.",
+      "variables": [
+        {
+          "symbol": "a",
+          "label": "aceleracao",
+          "unit": "m/s^2"
+        },
+        {
+          "symbol": "m_1,m_2",
+          "label": "massas acopladas",
+          "unit": "kg"
+        },
+        {
+          "symbol": "g",
+          "label": "gravidade",
+          "unit": "m/s^2"
+        }
+      ],
+      "usedWhen": "Usar quando o fio e a polia podem ser tratados como ideais e as massas se movem juntas.",
+      "notUsedWhen": "Nao usar se a polia tiver inercia relevante, atrito no eixo ou fio elastico.",
+      "parameterIds": [
+        "massOneKilograms",
+        "massTwoKilograms",
+        "gravityMetersPerSecondSquared"
+      ],
+      "sampleFields": [
+        "accelerationMetersPerSecondSquared",
+        "netForceNewtons"
+      ],
+      "relatedChartIds": ["forces-time"],
+      "relatedVectorIds": ["acceleration"],
+      "example": "Se m2 > m1, a massa 2 desce e o sinal de a fica positivo no eixo escolhido."
+    },
+    {
+      "id": "atwood-tension",
+      "title": "Tensao no fio",
+      "expressionLatex": "T=m_1(g+a)=m_2(g-a)",
+      "description": "Relaciona a tensao comum ao fio ideal com a aceleracao calculada.",
+      "variables": [
+        {
+          "symbol": "T",
+          "label": "tensao",
+          "unit": "N"
+        },
+        {
+          "symbol": "a",
+          "label": "aceleracao",
+          "unit": "m/s^2"
+        }
+      ],
+      "usedWhen": "Usar para comparar a leitura da tensao com as massas e a diferenca entre os pesos.",
+      "notUsedWhen": "Nao vale para polia com atrito ou fio com massa significativa.",
+      "parameterIds": ["massOneKilograms", "massTwoKilograms"],
+      "sampleFields": ["tensionNewtons"],
+      "relatedChartIds": ["forces-time"],
+      "relatedVectorIds": ["tension"]
+    },
+    {
+      "id": "atwood-motion",
+      "title": "Posicao com aceleracao constante",
+      "expressionLatex": "s(t)=s_0+v_0t+\\frac{1}{2}at^2",
+      "description": "Atualiza a posicao das massas antes de uma delas alcancar o limite do curso.",
+      "variables": [
+        {
+          "symbol": "s",
+          "label": "deslocamento no curso",
+          "unit": "m"
+        },
+        {
+          "symbol": "v_0",
+          "label": "velocidade inicial",
+          "unit": "m/s"
+        }
+      ],
+      "usedWhen": "Usar no trecho em que a aceleracao permanece constante.",
+      "notUsedWhen": "Nao usar apos colisao com batentes ou fim do curso visual.",
+      "parameterIds": [
+        "initialDisplacementMeters",
+        "initialVelocityMetersPerSecond"
+      ],
+      "sampleFields": ["positionMeters", "velocityMetersPerSecond"],
+      "relatedChartIds": ["position-time", "velocity-time"],
+      "relatedVectorIds": ["velocity"]
+    },
+    {
+      "id": "atwood-energy",
+      "title": "Energia mecanica ideal",
+      "expressionLatex": "E=K+U_g",
+      "description": "Soma energia cinetica das duas massas e energia potencial gravitacional.",
+      "variables": [
+        {
+          "symbol": "K",
+          "label": "energia cinetica total",
+          "unit": "J"
+        },
+        {
+          "symbol": "U_g",
+          "label": "energia potencial gravitacional",
+          "unit": "J"
+        }
+      ],
+      "usedWhen": "Usar para verificar a troca entre energia potencial e cinetica antes dos limites visuais.",
+      "notUsedWhen": "Nao inclui perdas por polia real, som, deformacao ou impacto.",
+      "parameterIds": [
+        "massOneKilograms",
+        "massTwoKilograms",
+        "gravityMetersPerSecondSquared"
+      ],
+      "sampleFields": [
+        "kineticEnergyJoules",
+        "potentialEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "relatedChartIds": ["energy-time"]
+    }
+  ]
+}

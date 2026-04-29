@@ -89,10 +89,10 @@ Tasks:
 - `[x]` Implementar `Mecanica > Cinematica > Movimento uniformemente variado e queda livre`.
 - `[x]` Implementar `Mecanica > Cinematica > Lancamento obliquo`.
 - `[x]` Implementar `Mecanica > Cinematica > Movimento circular uniforme`.
-- `[ ]` Implementar `Mecanica > Dinamica > Plano inclinado com atrito`.
-- `[ ]` Implementar `Mecanica > Dinamica > Maquina de Atwood`.
-- `[ ]` Implementar `Mecanica > Dinamica > Forca centripeta em curva`.
-- `[ ]` Implementar `Mecanica > Energia e momento > Trabalho e energia em trilho`.
+- `[x]` Implementar `Mecanica > Dinamica > Plano inclinado com atrito`.
+- `[x]` Implementar `Mecanica > Dinamica > Maquina de Atwood`.
+- `[x]` Implementar `Mecanica > Dinamica > Forca centripeta em curva`.
+- `[x]` Implementar `Mecanica > Energia e momento > Trabalho e energia em trilho`.
 - `[ ]` Implementar `Mecanica > Energia e momento > Colisoes 1D e 2D`.
 - `[ ]` Implementar `Mecanica > Estatica > Equilibrio de particula`.
 - `[ ]` Implementar `Mecanica > Estatica > Torque, alavancas e centro de massa`.

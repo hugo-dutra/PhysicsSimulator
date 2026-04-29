@@ -1,0 +1,251 @@
+{
+  "simulationId": "centripetal-force-curve",
+  "durationSeconds": 16,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 8,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Tempo do ciclo",
+      "unit": "s",
+      "kind": "number",
+      "min": 6,
+      "max": 60,
+      "step": 1,
+      "defaultValue": 16
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 30,
+      "step": 1,
+      "defaultValue": 8
+    }
+  ],
+  "defaultParameters": {
+    "massKilograms": 1.2,
+    "radiusMeters": 3,
+    "speedMetersPerSecond": 3.2,
+    "frictionCoefficient": 0.45,
+    "gravityMetersPerSecondSquared": 9.81
+  },
+  "parameters": [
+    {
+      "id": "massKilograms",
+      "label": "Massa",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.2,
+      "max": 12,
+      "step": 0.1,
+      "defaultValue": 1.2
+    },
+    {
+      "id": "radiusMeters",
+      "label": "Raio da curva",
+      "unit": "m",
+      "kind": "number",
+      "min": 0.8,
+      "max": 12,
+      "step": 0.1,
+      "defaultValue": 3
+    },
+    {
+      "id": "speedMetersPerSecond",
+      "label": "Velocidade tangencial",
+      "unit": "m/s",
+      "kind": "number",
+      "min": 0.2,
+      "max": 12,
+      "step": 0.05,
+      "defaultValue": 3.2
+    },
+    {
+      "id": "frictionCoefficient",
+      "label": "Coeficiente de atrito",
+      "kind": "number",
+      "min": 0,
+      "max": 1.2,
+      "step": 0.01,
+      "defaultValue": 0.45
+    },
+    {
+      "id": "gravityMetersPerSecondSquared",
+      "label": "Gravidade",
+      "unit": "m/s^2",
+      "kind": "number",
+      "min": 1,
+      "max": 25,
+      "step": 0.01,
+      "defaultValue": 9.81
+    }
+  ],
+  "presets": [
+    {
+      "id": "safe-curve",
+      "label": "Curva com aderencia",
+      "parameters": {
+        "massKilograms": 1.2,
+        "radiusMeters": 3,
+        "speedMetersPerSecond": 3.2,
+        "frictionCoefficient": 0.45,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    },
+    {
+      "id": "near-limit",
+      "label": "Perto do limite",
+      "parameters": {
+        "massKilograms": 1.2,
+        "radiusMeters": 3,
+        "speedMetersPerSecond": 3.55,
+        "frictionCoefficient": 0.45,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    },
+    {
+      "id": "lost-grip",
+      "label": "Perda de aderencia",
+      "parameters": {
+        "massKilograms": 1.2,
+        "radiusMeters": 2.2,
+        "speedMetersPerSecond": 4.2,
+        "frictionCoefficient": 0.35,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    },
+    {
+      "id": "zero-friction",
+      "label": "Sem atrito",
+      "parameters": {
+        "massKilograms": 1.2,
+        "radiusMeters": 3,
+        "speedMetersPerSecond": 3.2,
+        "frictionCoefficient": 0,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    }
+  ],
+  "limits": [
+    "A curva e horizontal e o atrito estatico fornece a forca centripeta.",
+    "O corpo e tratado como ponto material; inclinacao de pista e suspensao nao entram no modelo.",
+    "Quando a forca centripeta requerida supera o atrito maximo, o corpo deixa a curva ideal e segue uma trajetoria de raio maior; com atrito zero, sai em linha reta pela tangente.",
+    "A perda de aderencia e didatica: usa a aceleracao lateral maxima mu*g sem modelar pneus reais, giro do corpo ou dissipacao de velocidade.",
+    "Arrasto do ar, deformacao de pneus e variacao de coeficiente com velocidade ficam fora do modelo."
+  ],
+  "formulas": [
+    {
+      "id": "centripetal-acceleration",
+      "title": "Aceleracao centripeta",
+      "expressionLatex": "a_c=\\frac{v^2}{r}",
+      "description": "Calcula a aceleracao radial necessaria para manter o corpo na curva.",
+      "variables": [
+        {
+          "symbol": "a_c",
+          "label": "aceleracao centripeta",
+          "unit": "m/s^2"
+        },
+        {
+          "symbol": "v",
+          "label": "velocidade tangencial",
+          "unit": "m/s"
+        },
+        {
+          "symbol": "r",
+          "label": "raio da curva",
+          "unit": "m"
+        }
+      ],
+      "usedWhen": "Usar em movimento circular com rapidez aproximadamente constante.",
+      "notUsedWhen": "Nao descreve curvas com raio variavel ou mudanca rapida de velocidade; quando falta atrito, esta grandeza vira a demanda da curva ideal, nao a aceleracao real do corpo.",
+      "parameterIds": ["speedMetersPerSecond", "radiusMeters"],
+      "sampleFields": [
+        "centripetalAccelerationMetersPerSecondSquared",
+        "accelerationMetersPerSecondSquared"
+      ],
+      "relatedChartIds": ["acceleration-time"],
+      "relatedVectorIds": ["centripetal"]
+    },
+    {
+      "id": "centripetal-force",
+      "title": "Forca centripeta requerida",
+      "expressionLatex": "F_c=m\\frac{v^2}{r}",
+      "description": "Converte a aceleracao centripeta na forca radial necessaria.",
+      "variables": [
+        {
+          "symbol": "F_c",
+          "label": "forca centripeta",
+          "unit": "N"
+        },
+        {
+          "symbol": "m",
+          "label": "massa",
+          "unit": "kg"
+        }
+      ],
+      "usedWhen": "Usar para comparar a demanda de curva com a forca lateral disponivel.",
+      "notUsedWhen": "Nao e uma forca extra; e o nome da resultante radial.",
+      "parameterIds": ["massKilograms", "speedMetersPerSecond", "radiusMeters"],
+      "sampleFields": ["centripetalForceNewtons", "netForceNewtons"],
+      "relatedChartIds": ["forces-time"],
+      "relatedVectorIds": ["centripetal"],
+      "example": "Dobrar a velocidade quadruplica a forca centripeta requerida."
+    },
+    {
+      "id": "friction-limit",
+      "title": "Limite de atrito estatico",
+      "expressionLatex": "F_{at,max}=\\mu_s N=\\mu_s mg",
+      "description": "Estima a maior forca lateral que o contato consegue fornecer em pista horizontal, incluindo o caso limite de atrito zero.",
+      "variables": [
+        {
+          "symbol": "\\mu_s",
+          "label": "coeficiente de atrito estatico"
+        },
+        {
+          "symbol": "N",
+          "label": "normal",
+          "unit": "N"
+        }
+      ],
+      "usedWhen": "Usar para decidir se a curva ainda tem aderencia.",
+      "notUsedWhen": "Nao inclui pista inclinada, pneu real, aquaplanagem, transferencia de carga ou perda de energia durante derrapagem.",
+      "parameterIds": [
+        "frictionCoefficient",
+        "massKilograms",
+        "gravityMetersPerSecondSquared"
+      ],
+      "sampleFields": [
+        "maxStaticFrictionNewtons",
+        "frictionForceNewtons",
+        "gripRatio"
+      ],
+      "relatedChartIds": ["forces-time"],
+      "relatedVectorIds": ["friction"]
+    },
+    {
+      "id": "critical-speed",
+      "title": "Velocidade critica",
+      "expressionLatex": "v_{max}=\\sqrt{\\mu_s g r}",
+      "description": "Indica a maior velocidade ideal antes de exigir mais atrito do que o contato fornece; com mu = 0, a velocidade critica e 0.",
+      "variables": [
+        {
+          "symbol": "v_{max}",
+          "label": "velocidade critica",
+          "unit": "m/s"
+        }
+      ],
+      "usedWhen": "Usar para comparar presets seguros e casos de perda de aderencia.",
+      "notUsedWhen": "Nao vale para curvas inclinadas ou dinamica veicular real.",
+      "parameterIds": [
+        "frictionCoefficient",
+        "gravityMetersPerSecondSquared",
+        "radiusMeters"
+      ],
+      "sampleFields": ["gripRatio"],
+      "relatedChartIds": ["acceleration-time"]
+    }
+  ]
+}

@@ -3,11 +3,14 @@ import {
   computeKinematicsTimeline,
   getKinematicsVectorOverlays,
   toKinematicsParameters,
+  type AtwoodMachineParameters,
+  type CentripetalForceCurveParameters,
   type KinematicsSimulationId,
   type ProjectileMotionParameters,
   type UniformCircularMotionParameters,
   type UniformLinearMotionParameters,
   type UniformlyAcceleratedMotionParameters,
+  type WorkEnergyTrackParameters,
 } from './kinematics'
 
 describe('kinematics physics engine', () => {
@@ -104,12 +107,112 @@ describe('kinematics physics engine', () => {
     expect(sample.centripetalAccelerationMetersPerSecondSquared).toBeCloseTo(6)
   })
 
+  it('computes Atwood acceleration, tension, and coupled positions', () => {
+    const parameters: AtwoodMachineParameters = {
+      gravityMetersPerSecondSquared: 9.81,
+      initialDisplacementMeters: 1,
+      initialVelocityMetersPerSecond: 0,
+      massOneKilograms: 1,
+      massTwoKilograms: 2,
+      travelLimitMeters: 4,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 0.5,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'atwood-machine',
+    })
+    const sample = result.samples[5]
+
+    expect(sample.accelerationMetersPerSecondSquared).toBeCloseTo(3.27)
+    expect(sample.tensionNewtons).toBeCloseTo(13.08)
+    expect(sample.secondaryZMeters + sample.zMeters).toBeCloseTo(4)
+  })
+
+  it('flags centripetal grip demand against available friction', () => {
+    const parameters: CentripetalForceCurveParameters = {
+      frictionCoefficient: 0.4,
+      gravityMetersPerSecondSquared: 9.81,
+      massKilograms: 1.5,
+      radiusMeters: 2,
+      speedMetersPerSecond: 4,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'centripetal-force-curve',
+    })
+    const sample = result.samples[0]
+
+    expect(sample.centripetalForceNewtons).toBeCloseTo(12)
+    expect(sample.maxStaticFrictionNewtons).toBeCloseTo(5.886)
+    expect(sample.accelerationMetersPerSecondSquared).toBeCloseTo(3.924)
+    expect(sample.centripetalAccelerationMetersPerSecondSquared)
+      .toBeCloseTo(8)
+    expect(sample.gripRatio).toBeGreaterThan(1)
+    expect(result.warnings[0]?.code).toBe('CENTRIPETAL_GRIP_LIMIT_EXCEEDED')
+  })
+
+  it('lets a curve simulation leave tangentially when friction is zero', () => {
+    const parameters: CentripetalForceCurveParameters = {
+      frictionCoefficient: 0,
+      gravityMetersPerSecondSquared: 9.81,
+      massKilograms: 1,
+      radiusMeters: 3,
+      speedMetersPerSecond: 4,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'centripetal-force-curve',
+    })
+    const sample = result.samples.at(-1)
+
+    expect(sample?.xMeters).toBeCloseTo(3)
+    expect(sample?.zMeters).toBeCloseTo(4)
+    expect(sample?.accelerationMetersPerSecondSquared).toBeCloseTo(0)
+    expect(sample?.maxStaticFrictionNewtons).toBeCloseTo(0)
+    expect(sample?.frictionForceNewtons).toBeCloseTo(0)
+    expect(sample?.gripRatio).toBeGreaterThan(1)
+    expect(result.warnings[0]?.code).toBe('CENTRIPETAL_GRIP_LIMIT_EXCEEDED')
+  })
+
+  it('balances work, potential energy, kinetic energy, and dissipation on a track', () => {
+    const parameters: WorkEnergyTrackParameters = {
+      appliedForceNewtons: 2,
+      frictionCoefficient: 0.1,
+      gravityMetersPerSecondSquared: 9.81,
+      heightDropMeters: 2,
+      initialSpeedMetersPerSecond: 0.5,
+      massKilograms: 1,
+      trackLengthMeters: 8,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'work-energy-track',
+    })
+    const initialEnergy = result.samples[0].totalEnergyJoules
+    const lastSample = result.samples.at(-1)
+
+    expect(lastSample?.positionMeters).toBeGreaterThan(0)
+    expect(lastSample?.appliedWorkJoules).toBeGreaterThan(0)
+    expect(lastSample?.thermalEnergyJoules).toBeGreaterThan(0)
+    expect(lastSample?.totalEnergyJoules).toBeCloseTo(initialEnergy, 4)
+  })
+
   it('derives vector overlays from the same kinematics samples', () => {
     const simulationIds: KinematicsSimulationId[] = [
+      'atwood-machine',
+      'centripetal-force-curve',
       'uniform-linear-motion',
       'uniformly-accelerated-motion',
       'projectile-motion',
       'uniform-circular-motion',
+      'work-energy-track',
     ]
 
     simulationIds.forEach((simulationId) => {
@@ -179,6 +282,23 @@ function readFixtureLikeParameters(
         massKilograms: 1,
         velocityMetersPerSecond: 1,
       }
+    case 'atwood-machine':
+      return {
+        gravityMetersPerSecondSquared: 9.81,
+        initialDisplacementMeters: 1.4,
+        initialVelocityMetersPerSecond: 0,
+        massOneKilograms: 1,
+        massTwoKilograms: 1.5,
+        travelLimitMeters: 3,
+      }
+    case 'centripetal-force-curve':
+      return {
+        frictionCoefficient: 0.5,
+        gravityMetersPerSecondSquared: 9.81,
+        massKilograms: 1,
+        radiusMeters: 3,
+        speedMetersPerSecond: 2,
+      }
     case 'uniformly-accelerated-motion':
       return {
         accelerationMetersPerSecondSquared: -9.81,
@@ -200,6 +320,16 @@ function readFixtureLikeParameters(
         initialAngleDegrees: 0,
         massKilograms: 1,
         radiusMeters: 1,
+      }
+    case 'work-energy-track':
+      return {
+        appliedForceNewtons: 0,
+        frictionCoefficient: 0.08,
+        gravityMetersPerSecondSquared: 9.81,
+        heightDropMeters: 1.5,
+        initialSpeedMetersPerSecond: 0.2,
+        massKilograms: 1,
+        trackLengthMeters: 6,
       }
   }
 }

@@ -1,10 +1,13 @@
 import catalogJson from '../../fixtures/simulations/catalog.json'
+import atwoodMachineFixtureJson from '../../fixtures/simulations/mechanics-atwood-machine.json'
+import centripetalForceCurveFixtureJson from '../../fixtures/simulations/mechanics-centripetal-force-curve.json'
 import inclinedPlaneFixtureJson from '../../fixtures/simulations/mechanics-inclined-plane-friction.json'
 import pendulumFixtureJson from '../../fixtures/simulations/mechanics-pendulum.json'
 import projectileMotionFixtureJson from '../../fixtures/simulations/mechanics-projectile-motion.json'
 import uniformCircularMotionFixtureJson from '../../fixtures/simulations/mechanics-uniform-circular-motion.json'
 import uniformLinearMotionFixtureJson from '../../fixtures/simulations/mechanics-uniform-linear-motion.json'
 import uniformlyAcceleratedMotionFixtureJson from '../../fixtures/simulations/mechanics-uniformly-accelerated-motion.json'
+import workEnergyTrackFixtureJson from '../../fixtures/simulations/mechanics-work-energy-track.json'
 import type { KinematicsSimulationId } from '../lib/physics/kinematics'
 import type {
   KnowledgeArea,
@@ -21,12 +24,16 @@ export const inclinedPlaneFixture =
   inclinedPlaneFixtureJson as SimulationFixture
 
 export const kinematicsFixtures = {
+  'atwood-machine': atwoodMachineFixtureJson as SimulationFixture,
+  'centripetal-force-curve':
+    centripetalForceCurveFixtureJson as SimulationFixture,
   'projectile-motion': projectileMotionFixtureJson as SimulationFixture,
   'uniform-circular-motion':
     uniformCircularMotionFixtureJson as SimulationFixture,
   'uniform-linear-motion': uniformLinearMotionFixtureJson as SimulationFixture,
   'uniformly-accelerated-motion':
     uniformlyAcceleratedMotionFixtureJson as SimulationFixture,
+  'work-energy-track': workEnergyTrackFixtureJson as SimulationFixture,
 } satisfies Record<KinematicsSimulationId, SimulationFixture>
 
 export const activeSimulationId = 'simple-pendulum'

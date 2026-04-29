@@ -1,0 +1,289 @@
+{
+  "simulationId": "work-energy-track",
+  "durationSeconds": 18,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 8,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Tempo do ciclo",
+      "unit": "s",
+      "kind": "number",
+      "min": 6,
+      "max": 60,
+      "step": 1,
+      "defaultValue": 18
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 30,
+      "step": 1,
+      "defaultValue": 8
+    }
+  ],
+  "defaultParameters": {
+    "massKilograms": 1.4,
+    "trackLengthMeters": 7,
+    "heightDropMeters": 2.2,
+    "initialSpeedMetersPerSecond": 0.4,
+    "frictionCoefficient": 0.12,
+    "appliedForceNewtons": 0,
+    "gravityMetersPerSecondSquared": 9.81
+  },
+  "parameters": [
+    {
+      "id": "massKilograms",
+      "label": "Massa",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.2,
+      "max": 15,
+      "step": 0.1,
+      "defaultValue": 1.4
+    },
+    {
+      "id": "trackLengthMeters",
+      "label": "Comprimento do trilho",
+      "unit": "m",
+      "kind": "number",
+      "min": 6,
+      "max": 15,
+      "step": 0.1,
+      "defaultValue": 7
+    },
+    {
+      "id": "heightDropMeters",
+      "label": "Desnivel vertical",
+      "unit": "m",
+      "kind": "number",
+      "min": 0.2,
+      "max": 5.5,
+      "step": 0.1,
+      "defaultValue": 2.2
+    },
+    {
+      "id": "initialSpeedMetersPerSecond",
+      "label": "Velocidade inicial",
+      "unit": "m/s",
+      "kind": "number",
+      "min": 0,
+      "max": 8,
+      "step": 0.05,
+      "defaultValue": 0.4
+    },
+    {
+      "id": "frictionCoefficient",
+      "label": "Coeficiente de atrito",
+      "kind": "number",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "defaultValue": 0.12
+    },
+    {
+      "id": "appliedForceNewtons",
+      "label": "Forca aplicada",
+      "unit": "N",
+      "kind": "number",
+      "min": -10,
+      "max": 25,
+      "step": 0.1,
+      "defaultValue": 0
+    },
+    {
+      "id": "gravityMetersPerSecondSquared",
+      "label": "Gravidade",
+      "unit": "m/s^2",
+      "kind": "number",
+      "min": 1,
+      "max": 25,
+      "step": 0.01,
+      "defaultValue": 9.81
+    }
+  ],
+  "presets": [
+    {
+      "id": "conservative-drop",
+      "label": "Trilho quase conservativo",
+      "parameters": {
+        "massKilograms": 1.4,
+        "trackLengthMeters": 7,
+        "heightDropMeters": 2.2,
+        "initialSpeedMetersPerSecond": 0.4,
+        "frictionCoefficient": 0.03,
+        "appliedForceNewtons": 0,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    },
+    {
+      "id": "friction-dissipation",
+      "label": "Dissipacao por atrito",
+      "parameters": {
+        "massKilograms": 1.4,
+        "trackLengthMeters": 7,
+        "heightDropMeters": 2.2,
+        "initialSpeedMetersPerSecond": 0.4,
+        "frictionCoefficient": 0.22,
+        "appliedForceNewtons": 0,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    },
+    {
+      "id": "external-work",
+      "label": "Trabalho externo",
+      "parameters": {
+        "massKilograms": 1.4,
+        "trackLengthMeters": 7,
+        "heightDropMeters": 1.2,
+        "initialSpeedMetersPerSecond": 0.2,
+        "frictionCoefficient": 0.18,
+        "appliedForceNewtons": 6,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    }
+  ],
+  "limits": [
+    "O trilho e aproximado por uma rampa reta para destacar trabalho e energia.",
+    "O corpo e pontual; rolamento, rotacao, deformacao e colisao no fim do trilho nao entram no modelo.",
+    "Atrito cinetico usa coeficiente constante e transforma energia mecanica em parcela termica didatica.",
+    "A forca aplicada age ao longo do trilho e permanece constante durante o ciclo."
+  ],
+  "formulas": [
+    {
+      "id": "work-definition",
+      "title": "Trabalho de uma forca constante",
+      "expressionLatex": "W=F\\Delta s",
+      "description": "Calcula o trabalho da forca aplicada ao longo do deslocamento no trilho.",
+      "variables": [
+        {
+          "symbol": "W",
+          "label": "trabalho",
+          "unit": "J"
+        },
+        {
+          "symbol": "F",
+          "label": "forca aplicada",
+          "unit": "N"
+        },
+        {
+          "symbol": "\\Delta s",
+          "label": "deslocamento no trilho",
+          "unit": "m"
+        }
+      ],
+      "usedWhen": "Usar quando a forca e aproximadamente constante e paralela ao deslocamento.",
+      "notUsedWhen": "Nao usar diretamente para forcas variaveis ou inclinadas sem projetar no deslocamento.",
+      "parameterIds": ["appliedForceNewtons"],
+      "sampleFields": ["appliedWorkJoules", "positionMeters"],
+      "relatedChartIds": ["work-time"],
+      "relatedVectorIds": ["appliedForce"]
+    },
+    {
+      "id": "kinetic-energy-track",
+      "title": "Energia cinetica",
+      "expressionLatex": "K=\\frac{1}{2}mv^2",
+      "description": "Representa a energia associada a rapidez do corpo no trilho.",
+      "variables": [
+        {
+          "symbol": "K",
+          "label": "energia cinetica",
+          "unit": "J"
+        },
+        {
+          "symbol": "m",
+          "label": "massa",
+          "unit": "kg"
+        }
+      ],
+      "usedWhen": "Usar para comparar como trabalho e queda gravitacional alteram a rapidez.",
+      "notUsedWhen": "Nao inclui energia de rotacao ou deformacao.",
+      "parameterIds": ["massKilograms", "initialSpeedMetersPerSecond"],
+      "sampleFields": ["kineticEnergyJoules", "speedMetersPerSecond"],
+      "relatedChartIds": ["energy-time"],
+      "relatedVectorIds": ["velocity"]
+    },
+    {
+      "id": "potential-energy-track",
+      "title": "Energia potencial gravitacional",
+      "expressionLatex": "U_g=mgh",
+      "description": "Calcula a energia potencial pela altura atual do corpo no trilho.",
+      "variables": [
+        {
+          "symbol": "U_g",
+          "label": "energia potencial",
+          "unit": "J"
+        },
+        {
+          "symbol": "h",
+          "label": "altura",
+          "unit": "m"
+        }
+      ],
+      "usedWhen": "Usar quando a gravidade e aproximadamente uniforme e ha uma referencia de altura.",
+      "notUsedWhen": "Nao descreve campos gravitacionais variaveis ou trilhos com energia elastica.",
+      "parameterIds": [
+        "massKilograms",
+        "gravityMetersPerSecondSquared",
+        "heightDropMeters"
+      ],
+      "sampleFields": ["potentialEnergyJoules", "zMeters"],
+      "relatedChartIds": ["energy-time"]
+    },
+    {
+      "id": "thermal-dissipation-track",
+      "title": "Dissipacao por atrito",
+      "expressionLatex": "E_{termica}=F_{at}\\Delta s",
+      "description": "Acumula a energia mecanica transformada em parcela termica didatica pelo atrito.",
+      "variables": [
+        {
+          "symbol": "F_{at}",
+          "label": "forca de atrito",
+          "unit": "N"
+        },
+        {
+          "symbol": "E_{termica}",
+          "label": "energia dissipada",
+          "unit": "J"
+        }
+      ],
+      "usedWhen": "Usar para ver como o atrito reduz a energia mecanica disponivel.",
+      "notUsedWhen": "Nao representa temperatura real, som ou desgaste do material.",
+      "parameterIds": ["frictionCoefficient"],
+      "sampleFields": ["thermalEnergyJoules", "frictionForceNewtons"],
+      "relatedChartIds": ["work-time", "energy-time"],
+      "relatedVectorIds": ["friction"]
+    },
+    {
+      "id": "energy-balance-track",
+      "title": "Balanco trabalho-energia",
+      "expressionLatex": "K+U_g+E_{termica}-W_{aplicado}=constante",
+      "description": "Fecha o balanco entre energia mecanica, dissipacao e trabalho externo.",
+      "variables": [
+        {
+          "symbol": "W_{aplicado}",
+          "label": "trabalho externo",
+          "unit": "J"
+        }
+      ],
+      "usedWhen": "Usar para conferir a coerencia entre graficos de energia e trabalho.",
+      "notUsedWhen": "Nao substitui um modelo com forcas variaveis ou trilho curvo real.",
+      "parameterIds": [
+        "appliedForceNewtons",
+        "frictionCoefficient",
+        "heightDropMeters"
+      ],
+      "sampleFields": [
+        "kineticEnergyJoules",
+        "potentialEnergyJoules",
+        "thermalEnergyJoules",
+        "appliedWorkJoules",
+        "totalEnergyJoules"
+      ],
+      "relatedChartIds": ["energy-time", "work-time"]
+    }
+  ]
+}

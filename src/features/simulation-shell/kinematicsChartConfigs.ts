@@ -9,8 +9,10 @@ export type KinematicsChartId =
   | 'acceleration'
   | 'angle'
   | 'energy'
+  | 'forces'
   | 'position'
   | 'velocity'
+  | 'work'
 
 export type KinematicsChartConfig = {
   id: KinematicsChartId
@@ -33,7 +35,138 @@ export function buildKinematicsChartConfigs(
   const time = samples.map((sample) => sample.timeSeconds)
   const charts: KinematicsChartConfig[] = []
 
-  if (simulationId === 'uniform-circular-motion') {
+  if (simulationId === 'atwood-machine') {
+    charts.push(
+      {
+        id: 'position',
+        title: 'Deslocamento das massas por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Deslocamento da massa 2 (m)',
+            x: time,
+            y: samples.map((sample) => sample.positionMeters),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Altura da massa 1 (m)',
+            x: time,
+            y: samples.map((sample) => sample.secondaryZMeters),
+          },
+        ],
+        yAxisTitle: 'Posicao (metros)',
+      },
+      {
+        id: 'velocity',
+        title: 'Velocidade por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Velocidade das massas (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.velocityMetersPerSecond),
+          },
+        ],
+        yAxisTitle: 'Velocidade (metros por segundo)',
+      },
+      {
+        id: 'forces',
+        title: 'Tensao e resultante por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.vector,
+            name: 'Tensao no fio (N)',
+            x: time,
+            y: samples.map((sample) => sample.tensionNewtons),
+          },
+          {
+            lineColor: themeTokens.warning,
+            name: 'Forca resultante do sistema (N)',
+            x: time,
+            y: samples.map((sample) => sample.netForceNewtons),
+          },
+        ],
+        yAxisTitle: 'Forca (newtons)',
+      },
+    )
+  } else if (simulationId === 'centripetal-force-curve') {
+    charts.push(
+      {
+        id: 'angle',
+        title: 'Angulo e arco por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Angulo na curva (rad)',
+            x: time,
+            y: samples.map((sample) => sample.angleRadians),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Arco percorrido (m)',
+            x: time,
+            y: samples.map((sample) => sample.positionMeters),
+          },
+        ],
+        yAxisTitle: 'Angulo e arco',
+      },
+      {
+        id: 'forces',
+        title: 'Forca centripeta e atrito por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.warning,
+            name: 'Forca centripeta requerida (N)',
+            x: time,
+            y: samples.map((sample) => sample.centripetalForceNewtons),
+          },
+          {
+            lineColor: themeTokens.vector,
+            name: 'Atrito estatico maximo (N)',
+            x: time,
+            y: samples.map((sample) => sample.maxStaticFrictionNewtons),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Atrito lateral usado (N)',
+            x: time,
+            y: samples.map((sample) => sample.frictionForceNewtons),
+          },
+        ],
+        yAxisTitle: 'Forca (newtons)',
+      },
+      {
+        id: 'acceleration',
+        title: 'Aceleracao centripeta por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.warning,
+            name: 'Aceleracao requerida pela curva (m/s^2)',
+            x: time,
+            y: samples.map(
+              (sample) =>
+                sample.centripetalAccelerationMetersPerSecondSquared,
+            ),
+          },
+          {
+            lineColor: themeTokens.vector,
+            name: 'Aceleracao lateral real (m/s^2)',
+            x: time,
+            y: samples.map(
+              (sample) => sample.accelerationMetersPerSecondSquared,
+            ),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Uso do atrito disponivel',
+            x: time,
+            y: samples.map((sample) => sample.gripRatio),
+          },
+        ],
+        yAxisTitle: 'Aceleracao e razao',
+      },
+    )
+  } else if (simulationId === 'uniform-circular-motion') {
     charts.push(
       {
         id: 'angle',
@@ -82,6 +215,60 @@ export function buildKinematicsChartConfigs(
           },
         ],
         yAxisTitle: 'Aceleracao centripeta (m/s^2)',
+      },
+    )
+  } else if (simulationId === 'work-energy-track') {
+    charts.push(
+      {
+        id: 'position',
+        title: 'Posicao e altura no trilho por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Posicao no trilho (m)',
+            x: time,
+            y: samples.map((sample) => sample.positionMeters),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Altura no trilho (m)',
+            x: time,
+            y: samples.map((sample) => sample.zMeters),
+          },
+        ],
+        yAxisTitle: 'Posicao (metros)',
+      },
+      {
+        id: 'velocity',
+        title: 'Velocidade por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Velocidade no trilho (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.speedMetersPerSecond),
+          },
+        ],
+        yAxisTitle: 'Velocidade (metros por segundo)',
+      },
+      {
+        id: 'work',
+        title: 'Trabalho e dissipacao por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Trabalho aplicado (J)',
+            x: time,
+            y: samples.map((sample) => sample.appliedWorkJoules),
+          },
+          {
+            lineColor: themeTokens.warning,
+            name: 'Energia dissipada por atrito (J)',
+            x: time,
+            y: samples.map((sample) => sample.thermalEnergyJoules),
+          },
+        ],
+        yAxisTitle: 'Trabalho e energia (joules)',
       },
     )
   } else {
@@ -194,7 +381,9 @@ export function buildKinematicsChartConfigs(
       id: 'energy',
       title: 'Energia por tempo',
       traces:
-        simulationId === 'projectile-motion'
+        simulationId === 'atwood-machine' ||
+        simulationId === 'projectile-motion' ||
+        simulationId === 'work-energy-track'
           ? [
               {
                 lineColor: themeTokens.vector,
@@ -208,9 +397,22 @@ export function buildKinematicsChartConfigs(
                 x: time,
                 y: samples.map((sample) => sample.potentialEnergyJoules),
               },
+              ...(simulationId === 'work-energy-track'
+                ? [
+                    {
+                      lineColor: themeTokens.danger,
+                      name: 'Energia termica acumulada (J)',
+                      x: time,
+                      y: samples.map((sample) => sample.thermalEnergyJoules),
+                    },
+                  ]
+                : []),
               {
                 lineColor: themeTokens.cyan,
-                name: 'Energia mecanica total (J)',
+                name:
+                  simulationId === 'work-energy-track'
+                    ? 'Balanco energetico total (J)'
+                    : 'Energia mecanica total (J)',
                 x: time,
                 y: samples.map((sample) => sample.totalEnergyJoules),
               },

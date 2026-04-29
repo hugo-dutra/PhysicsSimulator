@@ -169,6 +169,8 @@ type KinematicsSample = {
   displacementMeters: number;
   xMeters: number;
   zMeters: number;
+  secondaryXMeters: number;
+  secondaryZMeters: number;
   velocityMetersPerSecond: number;
   velocityXMetersPerSecond: number;
   velocityZMetersPerSecond: number;
@@ -181,6 +183,17 @@ type KinematicsSample = {
   periodSeconds: number;
   frequencyHertz: number;
   centripetalAccelerationMetersPerSecondSquared: number;
+  centripetalForceNewtons: number;
+  maxStaticFrictionNewtons: number;
+  frictionForceNewtons: number;
+  normalForceNewtons: number;
+  tensionNewtons: number;
+  netForceNewtons: number;
+  weightNewtons: number;
+  appliedForceNewtons: number;
+  appliedWorkJoules: number;
+  thermalEnergyJoules: number;
+  gripRatio: number;
   kineticEnergyJoules: number;
   potentialEnergyJoules: number;
   totalEnergyJoules: number;

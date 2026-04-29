@@ -25,8 +25,11 @@ npm run test:e2e
 - Testes unitarios para o integrador do pendulo.
 - Testes unitarios para o modelo analitico/numerico por trechos do plano inclinado com atrito.
 - Testes unitarios para o motor analitico compartilhado de Cinematica, cobrindo MRU, MUV/queda livre, lancamento obliquo e MCU.
+- Testes unitarios para os modelos analiticos compartilhados de Dinamica/Energia, cobrindo Maquina de Atwood, forca centripeta em curva e trabalho/energia em trilho.
 - Testes de invariantes fisicos dentro do modelo declarado.
 - Testes de validacao de parametros e unidades.
+- Testes de valores limite fisicamente validos, como atrito zero, forca aplicada zero e velocidades iniciais nulas quando o modelo permitir.
+- Testes de troca de regime quando uma restricao fisica falhar, como perda de aderencia em curva ou parada em fim de curso.
 - Testes de geracao de samples para graficos e tabela.
 - Testes de campos derivados de cinematica quando eles alimentarem graficos, tabela, legendas ou formulas.
 - Testes de recorte temporal para graficos/tabela quando houver janela movel configuravel.
@@ -59,6 +62,7 @@ Depois da prova do core, cada nova simulacao promovida para `available` deve ter
 - Canvas nao pode estar em branco.
 - Viewports Three.js devem renderizar cena 3D com pixels nao-background, responder a arraste horizontal mudando a visualizacao da camera e responder a Shift + scroll sobre o canvas com zoom da camera.
 - Vetores devem acompanhar o movimento.
+- Quando uma simulacao declara perda de restricao, a cena deve mostrar a trajetoria real calculada pelo motor e deixar a guia ideal apenas como referencia secundaria.
 - Vetores devem ter legenda visivel com cor, modulo atual e significado fisico.
 - Metricas instantaneas e legenda detalhada de vetores devem aparecer acima do canvas do viewport.
 - A animacao deve exibir legenda compacta dos vetores principais no canto superior direito, com traco na cor do vetor, grandeza representada e unidade abreviada quando houver.
@@ -73,7 +77,7 @@ Depois da prova do core, cada nova simulacao promovida para `available` deve ter
 - Blocos chevron de saida pesada devem iniciar fechados e testes devem cobrir abrir e fechar pelo cabecalho.
 - O modo maximizado de viewport, graficos, tabela, formulas e apendice teorico deve mostrar apenas o painel em foco dentro da janela e voltar ao layout anterior ao minimizar.
 - A sidebar deve permitir expandir areas e subareas planejadas sem confundir itens planejados com simulacoes disponiveis.
-- A sidebar deve permitir trocar entre pendulo simples, plano inclinado com atrito e as simulacoes de Cinematica disponiveis sem abandonar o shell compartilhado.
+- A sidebar deve permitir trocar entre pendulo simples, plano inclinado com atrito, as simulacoes de Cinematica disponiveis, Maquina de Atwood, forca centripeta em curva e trabalho/energia em trilho sem abandonar o shell compartilhado.
 - A tabela de amostras nao deve variar sua altura durante playback por mudar a quantidade de linhas.
 - Formulas devem permanecer legiveis e indicar quando usar cada equacao.
 - Layout nao deve quebrar em desktop comum.

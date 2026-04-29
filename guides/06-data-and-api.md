@@ -31,7 +31,7 @@ Usar JSON local para:
 - formulas e metadados de uso;
 - textos curtos de descricao.
 
-O fixture `fixtures/simulations/catalog.json` deve listar todo o catalogo curricular planejado em `09-simulation-catalog-plan.md`. A UI deriva dele a sidebar hierarquica por `area > subarea > simulacao`; apenas itens com `status: "available"` podem parecer selecionaveis como simulacoes prontas. No estado atual da Fase 3, `simple-pendulum`, `inclined-plane-friction`, `uniform-linear-motion`, `uniformly-accelerated-motion`, `projectile-motion` e `uniform-circular-motion` sao `available`; os demais permanecem `planned` ate terem motor, cena, graficos, tabela, formulas e teoria.
+O fixture `fixtures/simulations/catalog.json` deve listar todo o catalogo curricular planejado em `09-simulation-catalog-plan.md`. A UI deriva dele a sidebar hierarquica por `area > subarea > simulacao`; apenas itens com `status: "available"` podem parecer selecionaveis como simulacoes prontas. No estado atual da Fase 3, `simple-pendulum`, `inclined-plane-friction`, `uniform-linear-motion`, `uniformly-accelerated-motion`, `projectile-motion`, `uniform-circular-motion`, `atwood-machine`, `centripetal-force-curve` e `work-energy-track` sao `available`; os demais permanecem `planned` ate terem motor, cena, graficos, tabela, formulas e teoria.
 
 Usar MDX/Markdown local para:
 
@@ -40,7 +40,7 @@ Usar MDX/Markdown local para:
 - explicacao de quando usar cada formula;
 - limites do modelo.
 
-O estado fisico, samples, graficos e tabela devem ser gerados pelo motor numerico ou analitico em runtime. No pendulo simples, o sample tambem carrega velocidade linear tangencial, aceleracao angular, aceleracao tangencial, aceleracao radial e modulo total de aceleracao para manter graficos, tabela, metricas, formulas e legenda sincronizados. No plano inclinado com atrito, o sample carrega posicao no plano, velocidade, aceleracao, altura, coordenadas da cena, normal, componente paralela do peso, atrito, resultante, energia cinetica, potencial, termica e total. Nas simulacoes de Cinematica, o sample comum carrega posicao, deslocamento, coordenadas `x/z`, componentes de velocidade/aceleracao, rapidez, energia e campos especificos como angulo, periodo, frequencia e aceleracao centripeta quando aplicavel.
+O estado fisico, samples, graficos e tabela devem ser gerados pelo motor numerico ou analitico em runtime. No pendulo simples, o sample tambem carrega velocidade linear tangencial, aceleracao angular, aceleracao tangencial, aceleracao radial e modulo total de aceleracao para manter graficos, tabela, metricas, formulas e legenda sincronizados. No plano inclinado com atrito, o sample carrega posicao no plano, velocidade, aceleracao, altura, coordenadas da cena, normal, componente paralela do peso, atrito, resultante, energia cinetica, potencial, termica e total. Nas simulacoes analiticas compartilhadas, o sample comum carrega posicao, deslocamento, coordenadas `x/z`, componentes de velocidade/aceleracao, rapidez, energia e campos especificos como angulo, periodo, frequencia, aceleracao centripeta, tensao, forca centripeta, atrito maximo, trabalho aplicado e dissipacao quando aplicavel. Quando houver perda de restricao, como falta de aderencia em curva, as coordenadas `x/z` devem representar a trajetoria real calculada, enquanto campos de demanda ideal permanecem disponiveis para comparacao em graficos e formulas.
 
 ## Exemplo conceitual de catalogo
 

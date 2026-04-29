@@ -29,7 +29,7 @@ describe('simulation registry', () => {
     expect(allSimulations).toHaveLength(51)
     expect(
       allSimulations.filter((item) => item.status === 'available'),
-    ).toHaveLength(6)
+    ).toHaveLength(9)
     expect(allSimulations.some((item) => item.status === 'planned')).toBe(true)
     expect(findSimulation('inclined-plane-friction').status).toBe('available')
     expect(findSimulation('projectile-motion').status).toBe('available')
@@ -117,12 +117,15 @@ describe('simulation registry', () => {
     expect(inclinedPlaneFixture.formulas.length).toBeGreaterThan(0)
   })
 
-  it('declares the first four kinematics simulations as available', () => {
+  it('declares the shared analytic mechanics simulations as available', () => {
     const kinematicsSimulationIds = [
+      'atwood-machine',
+      'centripetal-force-curve',
       'uniform-linear-motion',
       'uniformly-accelerated-motion',
       'projectile-motion',
       'uniform-circular-motion',
+      'work-energy-track',
     ] as const
 
     kinematicsSimulationIds.forEach((simulationId) => {
@@ -131,7 +134,6 @@ describe('simulation registry', () => {
 
       expect(simulation.status).toBe('available')
       expect(simulation.topicPath[0]).toBe('Mecanica')
-      expect(simulation.topicPath[1]).toBe('Cinematica')
       expect(simulation.technologyPlan?.engine).toBe('custom-analytic')
       expect(simulation.technologyPlan?.charting).toBe('live-canvas')
       expect(fixture.simulationId).toBe(simulationId)

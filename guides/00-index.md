@@ -17,6 +17,7 @@ Leia este arquivo primeiro antes de alterar produto, arquitetura, roadmap ou imp
 - `07-quality-and-operations.md`: estrategia de validacao, smoke tests e operacao inicial.
 - `08-api-contracts.md`: contratos conceituais para simulacoes e integracao de UI.
 - `09-simulation-catalog-plan.md`: plano curricular das simulacoes de fisica basica, tecnologias e ordem de implementacao.
+- `10-simulation-fidelity-adjustment-guide.md`: guia para auditar e ajustar simulacoes que ainda parecam animacoes em vez de modelos fisicos parametrizados.
 - `issues.md`: riscos, premissas abertas, decisoes pendentes e gaps.
 
 ## Como escolher o que ler
@@ -27,6 +28,7 @@ Leia este arquivo primeiro antes de alterar produto, arquitetura, roadmap ou imp
 - Para mexer na UI, tema ou layout: leia `02-product-spec.md`, `03-architecture.md` e `04-rules-and-constraints.md`.
 - Para mexer em renderizacao, animacao ou performance visual: leia `03-architecture.md`, `04-rules-and-constraints.md` e `07-quality-and-operations.md`.
 - Para alterar dados, fixtures ou contratos: leia `06-data-and-api.md` e `08-api-contracts.md`.
+- Para revisar se uma simulacao e fisica de verdade, leia `10-simulation-fidelity-adjustment-guide.md`, alem dos guides de arquitetura, regras, dados e qualidade.
 
 ## Ambiente padrao
 

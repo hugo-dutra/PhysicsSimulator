@@ -313,33 +313,137 @@
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Dinamica", "Maquina de Atwood"],
           "title": "Maquina de Atwood",
-          "status": "planned",
+          "status": "available",
           "level": "introductory",
-          "modelKind": "numerical",
+          "modelKind": "analytic",
           "renderer": "three",
-          "description": "Massas acopladas, tensao, aceleracao e energia."
+          "fixturePath": "fixtures/simulations/mechanics-atwood-machine.json",
+          "theoryPath": "src/content/simulations/mechanics/atwood-machine/theory.md",
+          "description": "Massas acopladas, tensao, aceleracao e energia.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Equacoes ideais de Newton com samples sincronizados no shell compartilhado."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Deslocamento das massas por tempo",
+              "sampleFields": ["timeSeconds", "positionMeters", "secondaryZMeters"]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidade por tempo",
+              "sampleFields": ["timeSeconds", "velocityMetersPerSecond"]
+            },
+            {
+              "id": "forces-time",
+              "title": "Tensao e resultante por tempo",
+              "sampleFields": ["timeSeconds", "tensionNewtons", "netForceNewtons"]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "potentialEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
         },
         {
           "id": "centripetal-force-curve",
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Dinamica", "Forca centripeta em curva"],
           "title": "Forca centripeta em curva",
-          "status": "planned",
+          "status": "available",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
-          "description": "Atrito lateral, raio, velocidade critica e perda de aderencia."
+          "fixturePath": "fixtures/simulations/mechanics-centripetal-force-curve.json",
+          "theoryPath": "src/content/simulations/mechanics/centripetal-force-curve/theory.md",
+          "description": "Atrito lateral, raio, velocidade critica e perda de aderencia.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo de curva horizontal em que o atrito estatico fornece a resultante centripeta."
+          },
+          "charts": [
+            {
+              "id": "angle-time",
+              "title": "Angulo e arco por tempo",
+              "sampleFields": ["timeSeconds", "angleRadians", "positionMeters"]
+            },
+            {
+              "id": "forces-time",
+              "title": "Forca centripeta e atrito por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "centripetalForceNewtons",
+                "maxStaticFrictionNewtons",
+                "gripRatio"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
         },
         {
           "id": "work-energy-track",
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Energia e momento", "Trabalho e energia em trilho"],
           "title": "Trabalho e energia em trilho",
-          "status": "planned",
+          "status": "available",
           "level": "introductory",
-          "modelKind": "numerical",
+          "modelKind": "analytic",
           "renderer": "three",
-          "description": "Trabalho, energia cinetica, energia potencial e dissipacao em uma trajetoria."
+          "fixturePath": "fixtures/simulations/mechanics-work-energy-track.json",
+          "theoryPath": "src/content/simulations/mechanics/work-energy-track/theory.md",
+          "description": "Trabalho, energia cinetica, energia potencial e dissipacao em uma trajetoria.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo de rampa reta por trabalho-energia para validar conservacao, dissipacao e trabalho externo."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Posicao e altura no trilho por tempo",
+              "sampleFields": ["timeSeconds", "positionMeters", "zMeters"]
+            },
+            {
+              "id": "work-time",
+              "title": "Trabalho e dissipacao por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "appliedWorkJoules",
+                "thermalEnergyJoules"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "potentialEnergyJoules",
+                "thermalEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
         },
         {
           "id": "collisions-1d-2d",

@@ -9,12 +9,14 @@
 - A primeira entrega funcional deve ser `Mecanica > Pendulo simples`.
 - A segunda simulacao funcional da Fase 2 e `Mecanica > Dinamica > Plano inclinado com atrito`, usada para validar reuso antes de expandir o catalogo.
 - O primeiro lote da Fase 3 promove `Mecanica > Cinematica` com MRU, MUV/queda livre, lancamento obliquo e MCU como simulacoes `available`, todas com motor analitico compartilhado e saidas completas.
+- O segundo lote da Fase 3 promove `Mecanica > Dinamica > Maquina de Atwood`, `Mecanica > Dinamica > Forca centripeta em curva` e `Mecanica > Energia e momento > Trabalho e energia em trilho` como simulacoes `available`, todas com fixtures locais, formulas, teoria, graficos, tabela e vetores sincronizados.
 - A taxonomia principal do catalogo deve usar `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo`; fluidos basicos entram como subarea, nao como prioridade separada antes do core.
 
 ## Regras de fisica
 
 - Unidades devem ser explicitas.
 - Parametros devem ter minimo, maximo, passo e valor padrao.
+- Parametros fisicamente validos em zero, como coeficiente de atrito zero ou forca aplicada zero, nao devem ser bloqueados apenas para manter uma animacao ideal.
 - Controles de runtime, como duracao do ciclo e janela do grafico, tambem devem declarar minimo, maximo, passo e valor padrao.
 - Formulas devem declarar variaveis, unidades, significado fisico, quando usar e quando nao usar.
 - Formulas exibidas devem corresponder ao modelo numerico ou analitico implementado.
@@ -23,6 +25,7 @@
 - Cada simulacao `available` deve ter uma unica fonte de samples para cena, graficos, tabela, metricas, formulas e legenda.
 - Velocidades e aceleracoes derivadas exibidas em graficos, tabela, metricas ou formulas devem ser calculadas no motor/sample e manter unidades explicitas.
 - Quando houver aproximacao, a teoria e o guia de formulas devem explicar a aproximacao e seus limites.
+- Quando uma restricao fisica deixa de ser satisfeita, a simulacao deve trocar de regime no motor e expor esse efeito nos samples, cena, graficos e avisos. Exemplo: se a forca centripeta requerida supera o atrito disponivel, o corpo deve sair da curva ideal em vez de continuar preso nela.
 - O produto educacional nao deve sugerir precisao de simulador profissional quando o modelo for didatico.
 
 ## Regras de UX
