@@ -25,10 +25,13 @@
 - Interface dark graphite com uma cor principal cyan/teal.
 - Controles numericos usam slider e input quando precisao importar.
 - Toggles para exibir vetores, trilha, energia e overlays.
+- Blocos de saida pesada, como graficos, tabela, formulas e teoria, devem ser recolhiveis por chevron no proprio cabecalho.
+- Quando um bloco chevron estiver recolhido, a aplicacao deve desmontar o conteudo e suspender calculos/renderizacao derivados daquele bloco.
 - Icones em botoes sempre que houver comando conhecido como play, pause, reset, zoom ou download.
 - Texto dentro de paineis deve ser compacto; evitar hero, landing page e blocos promocionais.
 - UI deve evitar cards dentro de cards.
 - O canvas e os graficos devem ter dimensoes estaveis para nao causar layout shift.
+- Tabelas em playback devem manter quantidade fixa de linhas visiveis para evitar piscadas e deslocamento do layout.
 - A animacao deve parecer leve: updates de alta frequencia ficam no renderer, e a UI React recebe apenas leituras periodicas.
 - Sliders e inputs que disparam timeline, graficos ou tabela pesados devem evitar recalculo a cada pixel de arraste; confirmar no commit do controle quando necessario.
 - Graficos de series temporais longas devem usar janela temporal configuravel para evitar reescala ou crescimento indefinido de pontos visiveis.
@@ -45,6 +48,7 @@
 - Nao colocar `requestAnimationFrame` de playback no `SimulationShell` quando isso causar re-render de layout, graficos, tabela, formulas ou teoria a cada frame.
 - Nao recriar renderers, materiais, geometrias, buffers ou series Plotly no caminho quente da animacao sem justificativa medida.
 - Nao desmontar/remontar graficos ou viewport como mecanismo padrao de reset de parametro; preferir atualizar dados e refs preservando os componentes pesados montados.
+- Nao manter canvas de grafico, tabela tabular, KaTeX ou Markdown processando quando o bloco chevron correspondente estiver recolhido.
 - Renderers interativos devem limitar custo de preenchimento e densidade visual, por exemplo com `devicePixelRatio` maximo, downsampling, trilhas limitadas e toggles de saidas pesadas.
 
 ## Dados mockados

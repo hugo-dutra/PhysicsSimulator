@@ -31,6 +31,8 @@
 - O tema inicial usa `#2DD4BF` como cor primaria teal e `#38BDF8` como cor informativa/cyan.
 - O apendice teorico inicial do pendulo e renderizado como Markdown local com KaTeX abaixo do guia de formulas; o guia de formulas permanece como bloco aplicado e ligado a parametros, samples, graficos e vetores.
 - O padrao de renderizacao animada passa a ser renderer-first: `requestAnimationFrame` pertence ao renderer visual, o shell React recebe leituras periodicas e componentes pesados como Plotly, tabela, formulas e teoria ficam fora do caminho quente da animacao.
+- Graficos, tabela, formulas e teoria devem seguir o padrao de bloco chevron recolhivel: quando recolhidos, desmontam o conteudo e suspendem processamento derivado em vez de apenas esconder a UI.
+- Tabelas sincronizadas em playback devem manter quantidade fixa de linhas visiveis para evitar piscadas e deslocamento de layout; slots sem amostra podem aparecer vazios ate haver dados suficientes.
 
 ## Decisoes pendentes
 

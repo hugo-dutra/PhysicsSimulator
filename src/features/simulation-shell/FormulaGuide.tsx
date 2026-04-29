@@ -5,43 +5,54 @@ import { renderToString } from 'katex'
 import 'katex/dist/katex.min.css'
 import type { FormulaReference, SimulationParameter } from '../../simulation-registry/types'
 import { themeTokens } from '../../theme/appTheme'
+import { ChevronSection } from './ChevronSection'
 
 type FormulaGuideProps = {
+  expanded: boolean
   formulas: FormulaReference[]
+  onToggle: () => void
   parameters: SimulationParameter[]
 }
 
-export function FormulaGuide({ formulas, parameters }: FormulaGuideProps) {
+export function FormulaGuide({
+  expanded,
+  formulas,
+  onToggle,
+  parameters,
+}: FormulaGuideProps) {
   const parameterLabels = useMemo(
-    () =>
-      new Map(
+    () => {
+      if (!expanded) {
+        return new Map<string, string>()
+      }
+
+      return new Map(
         parameters.map((parameter) => [parameter.id, parameter.label]),
-      ),
-    [parameters],
+      )
+    },
+    [expanded, parameters],
   )
 
   return (
-    <Box
-      component="section"
-      sx={{
-        bgcolor: alpha(themeTokens.panel, 0.42),
-        border: `1px solid ${themeTokens.border}`,
-        borderRadius: 1,
-        p: 1.5,
-      }}
+    <ChevronSection
+      expanded={expanded}
+      onToggle={onToggle}
+      subtitle={
+        expanded
+          ? 'Equacoes ligadas aos parametros, samples, graficos e vetores.'
+          : 'Recolhido; renderizacao KaTeX suspensa.'
+      }
+      title="Guia de formulas"
     >
-      <Stack spacing={1.5}>
-        <Box>
-          <Typography variant="h2">Guia de formulas</Typography>
-          <Typography color="text.secondary" variant="body2">
-            Equacoes ligadas aos parametros, samples, graficos e vetores.
-          </Typography>
-        </Box>
+      {expanded ? (
         <Box
           sx={{
             display: 'grid',
             gap: 1.5,
-            gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, minmax(0, 1fr))' },
+            gridTemplateColumns: {
+              xs: '1fr',
+              lg: 'repeat(3, minmax(0, 1fr))',
+            },
           }}
         >
           {formulas.map((formula) => (
@@ -52,8 +63,8 @@ export function FormulaGuide({ formulas, parameters }: FormulaGuideProps) {
             />
           ))}
         </Box>
-      </Stack>
-    </Box>
+      ) : null}
+    </ChevronSection>
   )
 }
 

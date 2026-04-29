@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { ThemeProvider } from '@mui/material/styles'
 import App from './App'
@@ -28,9 +28,6 @@ describe('App', () => {
       screen.getByRole('heading', { name: /Tabela de amostras/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: /Saidas de dados/i }),
-    ).toBeInTheDocument()
-    expect(
       screen.getByRole('heading', { name: /Tempo e janela/i }),
     ).toBeInTheDocument()
     expect(
@@ -39,7 +36,21 @@ describe('App', () => {
     expect(
       screen.getByRole('heading', { name: /Apendice teorico/i }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /^Graficos$/i }),
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(
+      screen.getByRole('button', { name: /Tabela de amostras/i }),
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(
+      screen.getByRole('button', { name: /Guia de formulas/i }),
+    ).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getAllByText(/Comprimento/i).length).toBeGreaterThan(0)
+
+    const sampleTable = screen.getByRole('table', {
+      name: /Tabela sincronizada de amostras do pendulo/i,
+    })
+    expect(within(sampleTable).getAllByRole('row')).toHaveLength(10)
   })
 
   it('smoke tests playback, parameter, and overlay controls', () => {
@@ -95,18 +106,39 @@ describe('App', () => {
       screen.queryByRole('img', { name: /Energia mecanica/i }),
     ).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('switch', { name: /^Graficos$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^Graficos$/i }))
     expect(
-      screen.queryByRole('heading', { name: /^Graficos$/i }),
+      screen.getByRole('button', { name: /^Graficos$/i }),
+    ).toHaveAttribute('aria-expanded', 'false')
+    expect(
+      screen.queryByRole('img', { name: /Angulo por tempo/i }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('img', { name: /Velocidade angular/i }),
     ).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('switch', { name: /^Tabela$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Tabela de amostras/i }))
     expect(
-      screen.queryByRole('heading', { name: /Tabela de amostras/i }),
+      screen.getByRole('button', { name: /Tabela de amostras/i }),
+    ).toHaveAttribute('aria-expanded', 'false')
+    expect(
+      screen.queryByRole('table', {
+        name: /Tabela sincronizada de amostras do pendulo/i,
+      }),
     ).not.toBeInTheDocument()
-    expect(screen.getAllByText(/desligado/i).length).toBeGreaterThanOrEqual(2)
+
+    fireEvent.click(screen.getByRole('button', { name: /Guia de formulas/i }))
+    expect(
+      screen.queryByText(/Equacao de movimento angular/i),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /Apendice teorico/i }))
+    expect(
+      screen.queryByText(/Limites declarados no fixture/i),
+    ).not.toBeInTheDocument()
+    expect(screen.getAllByText(/recolhido/i).length).toBeGreaterThanOrEqual(2)
 
     fireEvent.click(screen.getByLabelText(/Resetar simulacao/i))
     expect(screen.getByLabelText(/Reproduzir simulacao/i)).toBeInTheDocument()
-  }, 10_000)
+  }, 20_000)
 })

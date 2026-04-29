@@ -515,3 +515,36 @@ Validacao:
 - Executado `npm run build`; build passou com aviso conhecido de chunks acima de 500 kB.
 - Executado `validate_guides.py`.
 - Smoke visual headless em `http://127.0.0.1:5181/`: 3 canvases de grafico vivos, sem erro de console, pixels coloridos presentes e mudanca visual detectada em 11 de 11 intervalos de 80 ms.
+
+## 2026-04-29 - Blocos chevron e tabela estavel
+
+Ajuste de UX e performance do pendulo:
+
+- Graficos, tabela de amostras, guia de formulas e apendice teorico passaram a usar blocos chevron recolhiveis.
+- Quando um bloco esta recolhido, seu conteudo pesado fica desmontado: graficos deixam de manter canvas/series ativos, tabela nao seleciona/renderiza linhas, formulas nao renderizam KaTeX e teoria nao processa Markdown/KaTeX.
+- A tabela de amostras passou a manter 9 linhas visiveis enquanto aberta, preenchendo slots vazios quando ainda nao ha amostras suficientes para evitar piscadas e mudanca de altura.
+- O padrao foi registrado como decisao de projeto para saidas pesadas de simulacao.
+
+Arquivos atualizados:
+
+- `guides/02-product-spec.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/05-roadmap.md`
+- `guides/07-quality-and-operations.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/ChevronSection.tsx`
+- `src/features/simulation-shell/FormulaGuide.tsx`
+- `src/features/simulation-shell/PendulumCharts.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+- `src/features/simulation-shell/TheoryAppendix.tsx`
+
+Validacao:
+
+- Executado `npm run test -- src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunks acima de 500 kB.
+- Executado `validate_guides.py`.

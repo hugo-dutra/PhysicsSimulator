@@ -48,10 +48,10 @@ Layout recomendado:
 - Topbar compacta com nome da area, nome da simulacao e acoes globais.
 - Area central com viewport/canvas da simulacao.
 - Painel lateral de parametros com sliders, inputs numericos, toggles e presets.
-- Secao de graficos sincronizados.
-- Secao de tabela de amostras.
-- Secao ou bloco de formulas aplicadas, conectado aos parametros e dados exibidos.
-- Aba ou painel de apendice teorico.
+- Bloco chevron de graficos sincronizados, recolhivel pelo proprio cabecalho.
+- Bloco chevron de tabela de amostras, recolhivel pelo proprio cabecalho.
+- Bloco chevron de formulas aplicadas, conectado aos parametros e dados exibidos.
+- Bloco chevron de apendice teorico.
 
 ## Controles esperados no pendulo simples
 
@@ -69,8 +69,7 @@ Layout recomendado:
 - Toggle de vetores.
 - Toggle de trilha.
 - Toggle de energia.
-- Toggle de graficos para desligar processamento e visualizacao das series quando for preciso aliviar a UI.
-- Toggle de tabela para desligar processamento e visualizacao das amostras tabulares quando for preciso aliviar a UI.
+- Blocos chevron para graficos, tabela, formulas e teoria, permitindo minimizar saidas pesadas quando for preciso aliviar a UI.
 
 ## Representacoes esperadas
 
@@ -79,7 +78,7 @@ Layout recomendado:
 - Grafico de angulo por tempo com janela movel dos ultimos N segundos.
 - Grafico de velocidade angular por tempo com a mesma janela movel.
 - Grafico de energia cinetica, potencial e total com a mesma janela movel.
-- Tabela com tempo, angulo, velocidade, posicao e energia.
+- Tabela com tempo, angulo, velocidade, posicao e energia, mantendo quantidade fixa de linhas visiveis para evitar oscilacao de layout durante o playback.
 - Formulas do processo analisado, com variaveis, unidades, condicoes de uso e exemplo curto.
 - Apendice teorico com equacoes, unidades, contexto de uso e limites da aproximacao.
 
@@ -126,6 +125,8 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 - Alterar o tempo do ciclo muda a duracao maxima antes do playback reiniciar.
 - Alterar a janela dos graficos muda quantos segundos recentes ficam visiveis.
 - Graficos e tabela refletem os mesmos samples quando suas saidas estao ligadas.
+- Graficos, tabela, formulas e teoria podem ser recolhidos por chevron; quando um bloco pesado esta recolhido, seu conteudo deve ser desmontado e seu processamento suspenso.
+- A tabela de amostras mantem uma quantidade constante de linhas enquanto esta aberta, preenchendo slots vazios quando ainda nao ha amostras suficientes.
 - Vetores podem ser ligados e desligados.
 - Formulas exibidas explicam quando usar cada equacao e quais dados da simulacao a alimentam.
 - O apendice teorico aparece ao lado ou abaixo da simulacao sem substituir a experiencia principal.

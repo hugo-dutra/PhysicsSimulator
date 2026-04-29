@@ -46,12 +46,15 @@ Tasks:
 - `[x]` Criar guia de formulas do pendulo com equacoes, variaveis, unidades, condicoes de uso e exemplos.
 - `[x]` Criar apendice teorico em MDX/Markdown com KaTeX.
 - `[x]` Adicionar controles: play/pause, reset, comprimento, massa, gravidade, angulo inicial, velocidade angular, amortecimento e toggles.
+- `[x]` Adicionar blocos chevron recolhiveis para graficos, tabela, formulas e teoria, suspendendo processamento quando fechados.
+- `[x]` Manter a tabela de amostras com quantidade fixa de linhas visiveis durante playback.
 - `[x]` Criar testes do motor numerico e smoke test da tela.
 
 Criterio de saida:
 
 - O pendulo pode ser explorado por parametros.
 - Cena, graficos, tabela, formulas e teoria usam o mesmo estado de simulacao.
+- Blocos de saida pesada podem ser recolhidos sem manter graficos, tabela, KaTeX ou Markdown processando em segundo plano.
 - O usuario entende o fenomeno sem sair da tela.
 
 ## Fase 2 - Reuso do modelo de simulacao e catalogo curricular

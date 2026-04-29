@@ -44,6 +44,7 @@ import {
   type PendulumSample,
 } from '../../lib/physics/pendulum'
 import { themeTokens } from '../../theme/appTheme'
+import { ChevronSection } from './ChevronSection'
 import { FormulaGuide } from './FormulaGuide'
 import { PendulumCharts } from './PendulumCharts'
 import { PendulumScene, type PendulumFrameStats } from './PendulumScene'
@@ -64,13 +65,26 @@ type OverlayState = {
   vectors: boolean
 }
 
-type SampleOutputState = {
+type OutputPanelState = {
   charts: boolean
+  formulas: boolean
   table: boolean
+  theory: boolean
 }
 
 const customPresetId = 'custom'
 const playbackRate = 0.6
+const sampleTableRowCount = 9
+const sampleTableColumnIds = [
+  'time',
+  'angle',
+  'velocity',
+  'x',
+  'y',
+  'kinetic',
+  'potential',
+  'total',
+] as const
 const initialFrameStats: PendulumFrameStats = {
   fps: 0,
   frameTimeMs: 0,
@@ -91,9 +105,11 @@ export function SimulationShell() {
     trace: true,
     vectors: true,
   })
-  const [sampleOutputs, setSampleOutputs] = useState<SampleOutputState>({
+  const [outputPanels, setOutputPanels] = useState<OutputPanelState>({
     charts: true,
+    formulas: true,
     table: true,
+    theory: true,
   })
   const parameters = useMemo(
     () => toPendulumParameters(parameterValues),
@@ -213,14 +229,12 @@ export function SimulationShell() {
       }))
     }
 
-  const handleSampleOutputChange =
-    (outputId: keyof SampleOutputState) =>
-    (_event: ChangeEvent<HTMLInputElement>, checked: boolean) => {
-      setSampleOutputs((current) => ({
-        ...current,
-        [outputId]: checked,
-      }))
-    }
+  const handleOutputPanelToggle = (panelId: keyof OutputPanelState) => {
+    setOutputPanels((current) => ({
+      ...current,
+      [panelId]: !current[panelId],
+    }))
+  }
 
   return (
     <Box
@@ -379,19 +393,30 @@ export function SimulationShell() {
               durationSeconds={durationSeconds}
               isPlaying={isPlaying}
               onPlaybackToggle={handlePlaybackToggle}
+              onOutputPanelToggle={handleOutputPanelToggle}
               overlays={overlays}
+              outputPanels={outputPanels}
               parameters={parameters}
               resetVersion={playbackResetVersion}
-              sampleOutputs={sampleOutputs}
               samples={timeline.samples}
             />
 
             <FormulaGuide
+              expanded={outputPanels.formulas}
               formulas={pendulumFixture.formulas}
+              onToggle={() => {
+                handleOutputPanelToggle('formulas')
+              }}
               parameters={pendulumFixture.parameters}
             />
 
-            <TheoryAppendix limits={pendulumFixture.limits} />
+            <TheoryAppendix
+              expanded={outputPanels.theory}
+              limits={pendulumFixture.limits}
+              onToggle={() => {
+                handleOutputPanelToggle('theory')
+              }}
+            />
           </Stack>
 
           <Box
@@ -546,34 +571,6 @@ export function SimulationShell() {
                 </Stack>
               </Box>
 
-              <Box>
-                <Typography sx={{ mb: 0.75 }} variant="h2">
-                  Saidas de dados
-                </Typography>
-                <Stack spacing={0.5}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={sampleOutputs.charts}
-                        onChange={handleSampleOutputChange('charts')}
-                        size="small"
-                      />
-                    }
-                    label="Graficos"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={sampleOutputs.table}
-                        onChange={handleSampleOutputChange('table')}
-                        size="small"
-                      />
-                    }
-                    label="Tabela"
-                  />
-                </Stack>
-              </Box>
-
               <Divider />
 
               <Box>
@@ -600,11 +597,19 @@ export function SimulationShell() {
                   <Metric label="render" value="Three.js rAF" />
                   <Metric
                     label="graficos"
-                    value={sampleOutputs.charts ? 'ligado' : 'desligado'}
+                    value={outputPanels.charts ? 'aberto' : 'recolhido'}
                   />
                   <Metric
                     label="tabela"
-                    value={sampleOutputs.table ? 'ligado' : 'desligado'}
+                    value={outputPanels.table ? 'aberto' : 'recolhido'}
+                  />
+                  <Metric
+                    label="formulas"
+                    value={outputPanels.formulas ? 'aberto' : 'recolhido'}
+                  />
+                  <Metric
+                    label="teoria"
+                    value={outputPanels.theory ? 'aberto' : 'recolhido'}
                   />
                   <Metric
                     label="energia final"
@@ -628,21 +633,23 @@ function PendulumRuntime({
   chartWindowSeconds,
   durationSeconds,
   isPlaying,
+  onOutputPanelToggle,
   onPlaybackToggle,
   overlays,
+  outputPanels,
   parameters,
   resetVersion,
-  sampleOutputs,
   samples,
 }: {
   chartWindowSeconds: number
   durationSeconds: number
   isPlaying: boolean
+  onOutputPanelToggle: (panelId: keyof OutputPanelState) => void
   onPlaybackToggle: () => void
   overlays: OverlayState
+  outputPanels: OutputPanelState
   parameters: PendulumParameters
   resetVersion: number
-  sampleOutputs: SampleOutputState
   samples: PendulumSample[]
 }) {
   const firstSample = useMemo(() => readFirstSample(samples), [samples])
@@ -662,54 +669,61 @@ function PendulumRuntime({
     durationSeconds,
     liveSample.timeSeconds,
   )
+  const needsSampleWindow = outputPanels.charts || outputPanels.table
   const visibleWindowSamples = useMemo(
-    () =>
-      selectRecentSamples(
+    () => {
+      if (!needsSampleWindow) {
+        return []
+      }
+
+      return selectRecentSamples(
         samples,
         currentSampleIndex,
         chartWindowSeconds,
-      ),
-    [chartWindowSeconds, currentSampleIndex, samples],
+      )
+    },
+    [chartWindowSeconds, currentSampleIndex, needsSampleWindow, samples],
   )
-  const xAxisRange = useMemo(
-    () =>
-      getMovingWindowRange(
+  const xAxisRange = useMemo<[number, number]>(
+    () => {
+      if (!outputPanels.charts) {
+        return [0, chartWindowSeconds]
+      }
+
+      return getMovingWindowRange(
         liveSample.timeSeconds,
         chartWindowSeconds,
         durationSeconds,
-      ),
-    [chartWindowSeconds, durationSeconds, liveSample.timeSeconds],
+      )
+    },
+    [
+      chartWindowSeconds,
+      durationSeconds,
+      liveSample.timeSeconds,
+      outputPanels.charts,
+    ],
   )
   const vectors = useMemo(
-    () => getPendulumVectorOverlays(liveSample, parameters),
-    [liveSample, parameters],
+    () =>
+      overlays.vectors
+        ? getPendulumVectorOverlays(liveSample, parameters)
+        : [],
+    [liveSample, overlays.vectors, parameters],
   )
   const chartSamples = useMemo(
     () =>
-      sampleOutputs.charts
+      outputPanels.charts
         ? appendLiveSample(visibleWindowSamples, liveSample)
         : [],
-    [liveSample, sampleOutputs.charts, visibleWindowSamples],
+    [liveSample, outputPanels.charts, visibleWindowSamples],
   )
-  const tableSamples = useMemo(() => {
-    if (!sampleOutputs.table) {
+  const tableRows = useMemo(() => {
+    if (!outputPanels.table) {
       return []
     }
 
-    const visibleSampleCount = visibleWindowSamples.length
-    const stride = Math.max(1, Math.floor(visibleSampleCount / 8))
-    const visibleSamples: PendulumSample[] = []
-
-    for (
-      let index = 0;
-      index < visibleWindowSamples.length && visibleSamples.length < 9;
-      index += stride
-    ) {
-      visibleSamples.push(visibleWindowSamples[index])
-    }
-
-    return visibleSamples
-  }, [sampleOutputs.table, visibleWindowSamples])
+    return selectStableTableRows(visibleWindowSamples, sampleTableRowCount)
+  }, [outputPanels.table, visibleWindowSamples])
   const angleDegrees = radiansToDegrees(liveSample.angleRadians)
 
   return (
@@ -849,46 +863,44 @@ function PendulumRuntime({
         ) : null}
       </Box>
 
-      {sampleOutputs.charts ? (
-        <PendulumCharts
-          chartWindowSeconds={chartWindowSeconds}
-          samples={chartSamples}
-          showEnergy={overlays.energy}
-          xAxisRange={xAxisRange}
-        />
-      ) : null}
+      <PendulumCharts
+        chartWindowSeconds={chartWindowSeconds}
+        expanded={outputPanels.charts}
+        onToggle={() => {
+          onOutputPanelToggle('charts')
+        }}
+        samples={chartSamples}
+        showEnergy={overlays.energy}
+        xAxisRange={xAxisRange}
+      />
 
-      {sampleOutputs.table ? (
-        <Box
-          sx={{
-            border: `1px solid ${themeTokens.border}`,
-            borderRadius: 1,
-            bgcolor: alpha(themeTokens.panel, 0.42),
-            p: 1.5,
-          }}
-        >
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={1}
-            sx={{
-              alignItems: { xs: 'flex-start', md: 'center' },
-              justifyContent: 'space-between',
-              mb: 1.5,
-            }}
-          >
-            <Box>
-              <Typography variant="h2">Tabela de amostras</Typography>
-              <Typography color="text.secondary" variant="body2">
-                {samples.length} amostras em {formatNumber(durationSeconds, 's')}{' '}
-                | janela {formatNumber(chartWindowSeconds, 's')}
-              </Typography>
-            </Box>
-            <Chip
-              label={`${pendulumFixture.sampleRateHz} Hz`}
-              size="small"
-              variant="outlined"
-            />
-          </Stack>
+      <ChevronSection
+        action={
+          <Chip
+            label={
+              outputPanels.table
+                ? `${sampleTableRowCount} linhas`
+                : 'recolhido'
+            }
+            size="small"
+            variant="outlined"
+          />
+        }
+        expanded={outputPanels.table}
+        onToggle={() => {
+          onOutputPanelToggle('table')
+        }}
+        subtitle={
+          outputPanels.table
+            ? `${samples.length} amostras em ${formatNumber(
+                durationSeconds,
+                's',
+              )} | janela ${formatNumber(chartWindowSeconds, 's')}`
+            : 'Recolhida; selecao e renderizacao de linhas suspensas.'
+        }
+        title="Tabela de amostras"
+      >
+        {outputPanels.table ? (
           <TableContainer
             sx={{
               border: `1px solid ${themeTokens.border}`,
@@ -912,32 +924,53 @@ function PendulumRuntime({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {tableSamples.map((sample) => (
-                  <TableRow key={sample.timeSeconds}>
-                    <TableCell>{formatNumber(sample.timeSeconds, 's')}</TableCell>
-                    <TableCell>
-                      {formatDegrees(radiansToDegrees(sample.angleRadians))}
-                    </TableCell>
-                    <TableCell>
-                      {formatNumber(
-                        sample.angularVelocityRadiansPerSecond,
-                        'rad/s',
-                      )}
-                    </TableCell>
-                    <TableCell>{formatNumber(sample.xMeters, 'm')}</TableCell>
-                    <TableCell>{formatNumber(sample.yMeters, 'm')}</TableCell>
-                    <TableCell>{formatEnergy(sample.kineticEnergyJoules)}</TableCell>
-                    <TableCell>
-                      {formatEnergy(sample.potentialEnergyJoules)}
-                    </TableCell>
-                    <TableCell>{formatEnergy(sample.totalEnergyJoules)}</TableCell>
+                {tableRows.map((sample, rowIndex) => (
+                  <TableRow
+                    key={
+                      sample ? `${sample.timeSeconds}-${rowIndex}` : rowIndex
+                    }
+                    sx={{ height: 34 }}
+                  >
+                    {sample ? (
+                      <>
+                        <TableCell>
+                          {formatNumber(sample.timeSeconds, 's')}
+                        </TableCell>
+                        <TableCell>
+                          {formatDegrees(radiansToDegrees(sample.angleRadians))}
+                        </TableCell>
+                        <TableCell>
+                          {formatNumber(
+                            sample.angularVelocityRadiansPerSecond,
+                            'rad/s',
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {formatNumber(sample.xMeters, 'm')}
+                        </TableCell>
+                        <TableCell>
+                          {formatNumber(sample.yMeters, 'm')}
+                        </TableCell>
+                        <TableCell>
+                          {formatEnergy(sample.kineticEnergyJoules)}
+                        </TableCell>
+                        <TableCell>
+                          {formatEnergy(sample.potentialEnergyJoules)}
+                        </TableCell>
+                        <TableCell>
+                          {formatEnergy(sample.totalEnergyJoules)}
+                        </TableCell>
+                      </>
+                    ) : (
+                      renderEmptyTableCells()
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </TableContainer>
-        </Box>
-      ) : null}
+        ) : null}
+      </ChevronSection>
     </>
   )
 }
@@ -1113,6 +1146,43 @@ function appendLiveSample(samples: PendulumSample[], liveSample: PendulumSample)
   }
 
   return [...samples, liveSample]
+}
+
+function selectStableTableRows(samples: PendulumSample[], rowCount: number) {
+  const rows: Array<PendulumSample | null> = Array.from(
+    { length: rowCount },
+    () => null,
+  )
+
+  if (samples.length === 0) {
+    return rows
+  }
+
+  if (samples.length <= rowCount) {
+    samples.forEach((sample, index) => {
+      rows[index] = sample
+    })
+
+    return rows
+  }
+
+  const lastIndex = samples.length - 1
+  const lastRowIndex = Math.max(1, rowCount - 1)
+
+  for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+    const sampleIndex = Math.round((rowIndex / lastRowIndex) * lastIndex)
+    rows[rowIndex] = samples[sampleIndex]
+  }
+
+  return rows
+}
+
+function renderEmptyTableCells() {
+  return sampleTableColumnIds.map((columnId) => (
+    <TableCell key={columnId} sx={{ color: 'text.disabled' }}>
+      --
+    </TableCell>
+  ))
 }
 
 function Metric({ label, value }: { label: string; value: string }) {

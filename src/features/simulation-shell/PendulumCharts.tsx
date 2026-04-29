@@ -1,12 +1,14 @@
 import { memo, useMemo } from 'react'
-import { Box, Stack, Typography } from '@mui/material'
-import { alpha } from '@mui/material/styles'
+import { Box } from '@mui/material'
 import type { PendulumSample } from '../../lib/physics/pendulum'
 import { themeTokens } from '../../theme/appTheme'
+import { ChevronSection } from './ChevronSection'
 import { LiveLineChart, type ChartTrace } from './LiveLineChart'
 
 type PendulumChartsProps = {
   chartWindowSeconds: number
+  expanded: boolean
+  onToggle: () => void
   samples: PendulumSample[]
   showEnergy: boolean
   xAxisRange: [number, number]
@@ -19,15 +21,25 @@ const compactSeconds = new Intl.NumberFormat('pt-BR', {
 
 export const PendulumCharts = memo(function PendulumCharts({
   chartWindowSeconds,
+  expanded,
+  onToggle,
   samples,
   showEnergy,
   xAxisRange,
 }: PendulumChartsProps) {
   const chartSamples = useMemo(
-    () => downsampleSamples(samples, maxChartSamples),
-    [samples],
+    () => (expanded ? downsampleSamples(samples, maxChartSamples) : []),
+    [expanded, samples],
   )
   const chartData = useMemo(() => {
+    if (!expanded) {
+      return {
+        angle: [],
+        energy: [],
+        velocity: [],
+      } satisfies Record<'angle' | 'energy' | 'velocity', ChartTrace[]>
+    }
+
     const time = chartSamples.map((sample) => sample.timeSeconds)
 
     return {
@@ -72,31 +84,33 @@ export const PendulumCharts = memo(function PendulumCharts({
         },
       ] satisfies ChartTrace[],
     }
-  }, [chartSamples])
+  }, [chartSamples, expanded])
 
   return (
-    <Box
-      component="section"
-      sx={{
-        bgcolor: alpha(themeTokens.panel, 0.42),
-        border: `1px solid ${themeTokens.border}`,
-        borderRadius: 1,
-        p: 1.5,
-      }}
+    <ChevronSection
+      expanded={expanded}
+      onToggle={onToggle}
+      subtitle={
+        expanded
+          ? (
+              <>
+                Janela movel de {formatSeconds(chartWindowSeconds)} com{' '}
+                {chartSamples.length} pontos visiveis.
+              </>
+            )
+          : 'Recolhido; canvas e series suspensos.'
+      }
+      title="Graficos"
     >
-      <Stack spacing={1.5}>
-        <Box>
-          <Typography variant="h2">Graficos</Typography>
-          <Typography color="text.secondary" variant="body2">
-            Janela movel de {formatSeconds(chartWindowSeconds)} com{' '}
-            {chartSamples.length} pontos visiveis.
-          </Typography>
-        </Box>
+      {expanded ? (
         <Box
           sx={{
             display: 'grid',
             gap: 1.5,
-            gridTemplateColumns: { xs: '1fr', xl: 'repeat(3, minmax(0, 1fr))' },
+            gridTemplateColumns: {
+              xs: '1fr',
+              xl: 'repeat(3, minmax(0, 1fr))',
+            },
           }}
         >
           <LiveLineChart
@@ -120,8 +134,8 @@ export const PendulumCharts = memo(function PendulumCharts({
             />
           ) : null}
         </Box>
-      </Stack>
-    </Box>
+      ) : null}
+    </ChevronSection>
   )
 })
 

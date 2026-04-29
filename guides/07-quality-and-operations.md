@@ -27,6 +27,8 @@ npm run test:e2e
 - Testes de validacao de parametros e unidades.
 - Testes de geracao de samples para graficos e tabela.
 - Testes de recorte temporal para graficos/tabela quando houver janela movel configuravel.
+- Testes de que blocos chevron recolhidos desmontam graficos, tabela, formulas e teoria em vez de apenas ocultar visualmente.
+- Testes de que a tabela de amostras mantem quantidade fixa de linhas visiveis enquanto esta aberta.
 - Testes de consistencia entre formulas documentadas, parametros e dados gerados.
 - Testes de contrato para `SimulationDefinition`.
 - Smoke test da tela principal abrindo o pendulo.
@@ -53,6 +55,8 @@ Depois da prova do core, cada nova simulacao promovida para `available` deve ter
 - Graficos com janela movel devem manter apenas os ultimos N segundos visiveis depois que o tempo atual ultrapassar a largura do plot.
 - Graficos nao devem piscar por remount/purge em mudancas normais de parametro.
 - Graficos progressivos devem parecer continuos, sem avanco em blocos grandes que sugiram travamento.
+- Blocos de graficos, tabela, formulas e teoria devem abrir/fechar por chevron sem deixar processamento pesado ativo quando recolhidos.
+- A tabela de amostras nao deve variar sua altura durante playback por mudar a quantidade de linhas.
 - Formulas devem permanecer legiveis e indicar quando usar cada equacao.
 - Layout nao deve quebrar em desktop comum.
 - Controles devem permanecer legiveis no tema dark.
