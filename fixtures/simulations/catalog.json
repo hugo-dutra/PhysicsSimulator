@@ -19,9 +19,9 @@
           "description": "Oscilador mecanico com massa pontual presa a um fio ideal.",
           "technologyPlan": {
             "engine": "custom-numerical",
-            "charting": "plotly",
+            "charting": "live-canvas",
             "content": "mdx-katex",
-            "notes": "Motor proprio deterministico para provar o core antes de engines externas."
+            "notes": "Motor proprio deterministico e graficos progressivos em canvas para provar o core antes de engines externas."
           },
           "charts": [
             {

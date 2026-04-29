@@ -16,6 +16,7 @@ type SimulationDefinition = {
   level: "introductory" | "intermediate" | "advanced";
   modelKind: "analytic" | "numerical" | "field-sampling" | "particle-demo" | "hybrid";
   defaultParameters: Record<string, number | boolean | string>;
+  runtimeParameters?: SimulationParameter[];
   parameters: SimulationParameter[];
   presets: SimulationPreset[];
   theoryPath: string;
@@ -31,7 +32,7 @@ type SimulationDefinition = {
 ```ts
 type SimulationTechnologyPlan = {
   engine: "custom-analytic" | "custom-numerical" | "rapier" | "matter" | "precomputed";
-  charting: "plotly";
+  charting: "plotly" | "live-canvas";
   content: "mdx-katex";
   optionalLibraries?: ("pixi" | "d3" | "manim" | "web-audio")[];
   notes?: string;
@@ -96,6 +97,22 @@ type SimulationResult<TState, TSample> = {
 type SimulationEngine<TParams, TState, TSample> = {
   compute(input: SimulationInput<TParams>): SimulationResult<TState, TSample>;
   step(state: TState, deltaTimeSeconds: number, parameters: TParams): TState;
+};
+```
+
+## Contrato temporario de fixture de simulacao
+
+```ts
+type SimulationFixture = {
+  simulationId: string;
+  durationSeconds: number;
+  sampleRateHz: number;
+  chartWindowSeconds: number;
+  runtimeParameters: SimulationParameter[];
+  defaultParameters: Record<string, number | boolean | string>;
+  parameters: SimulationParameter[];
+  presets: SimulationPreset[];
+  formulas: FormulaReference[];
 };
 ```
 

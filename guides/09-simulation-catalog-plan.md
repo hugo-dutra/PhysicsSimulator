@@ -28,11 +28,12 @@ Cada simulacao planejada deve virar uma `SimulationDefinition` com:
 - modelo fisico declarado, com aproximacoes e limites;
 - motor numerico ou analitico deterministico;
 - cena interativa, vetores ou overlays relevantes;
-- graficos Plotly.js derivados dos mesmos samples da cena;
+- graficos Plotly.js ou live-canvas derivados dos mesmos samples da cena;
 - tabela sincronizada;
 - guia de formulas com quando usar e quando nao usar;
 - apendice teorico em MDX/Markdown com KaTeX;
 - testes unitarios do modelo e smoke test visual quando a simulacao ficar funcional.
+- runtime visual seguindo o padrao de performance: renderer com loop proprio, UI React em cadencia reduzida, buffers reutilizados e FPS/frame time observavel quando houver animacao continua.
 
 ## Tecnologias por familia de simulacao
 
@@ -41,7 +42,7 @@ Base comum:
 - React + TypeScript + Vite para aplicacao.
 - Material UI para shell, navegacao, paineis, controles e tabelas.
 - Three.js como renderer principal para cenas 3D/2.5D, vetores, orbitas, corpos e campos.
-- Plotly.js para graficos cientificos.
+- Plotly.js para graficos cientificos declarativos e live-canvas para series temporais progressivas que precisam ser desenhadas continuamente.
 - MDX/Markdown + KaTeX para teoria e formulas.
 - JSON local para catalogo, parametros, presets e status enquanto o core nao estiver validado.
 - `physics-core` proprio para modelos analiticos, integradores simples e geracao de samples.
@@ -67,7 +68,7 @@ Implementacao preferencial:
 
 | Subarea | Simulacao planejada | Conteudo e saidas esperadas | Modelo e tecnologia |
 | --- | --- | --- | --- |
-| Oscilacoes | Pendulo simples | Angulo, velocidade angular, energia, vetores de peso/tensao/velocidade, periodo aproximado e limites de pequeno angulo. | Core da Fase 1; motor proprio deterministico, Three.js, Plotly.js, KaTeX. |
+| Oscilacoes | Pendulo simples | Angulo, velocidade angular, energia, vetores de peso/tensao/velocidade, periodo aproximado e limites de pequeno angulo. | Core da Fase 1; motor proprio deterministico, Three.js, live-canvas, KaTeX. |
 | Cinematica | Movimento retilineo uniforme | Posicao, deslocamento, velocidade constante, grafico `x(t)` e `v(t)`. | Solucao analitica em `physics-core`; cena 1D/2.5D em Three.js. |
 | Cinematica | Movimento uniformemente variado e queda livre | Aceleracao constante, lancamento vertical, queda livre, graficos `x(t)`, `v(t)` e `a(t)`. | Solucao analitica; preset com gravidade terrestre e gravidade customizada. |
 | Cinematica | Lancamento obliquo | Alcance, altura maxima, tempo de voo, decomposicao vetorial e trajetoria. | Solucao analitica sem arrasto no primeiro passo; arrasto como extensao numerica posterior. |
@@ -167,7 +168,7 @@ Implementacao preferencial:
 ## Ordem de evolucao recomendada
 
 1. Validar o pendulo simples como simulacao modelo.
-2. Extrair `SimulationDefinition`, `topicPath` e padrao de renderer/graficos/formulas.
+2. Extrair `SimulationDefinition`, `topicPath` e padrao de renderer/graficos/formulas, incluindo runtime visual desacoplado do shell React.
 3. Adicionar duas ou tres simulacoes mecanicas analiticas para testar velocidade de producao.
 4. Adicionar uma simulacao de `Oscilacoes e Ondas` que reutilize o pendulo ou massa-mola.
 5. Adicionar uma simulacao de `Termodinamica` baseada em diagramas de estado.
@@ -185,3 +186,4 @@ Uma simulacao planejada so deve aparecer como disponivel quando:
 - o apendice teorico existe e corresponde ao modelo;
 - a UI esta legivel no tema dark graphite;
 - o smoke test confirma que a simulacao abre pelo catalogo.
+- a animacao, quando existir, nao re-renderiza o shell completo em alta frequencia e possui limites de custo visual.

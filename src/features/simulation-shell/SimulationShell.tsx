@@ -1,7 +1,6 @@
 import {
-  useEffect,
+  useCallback,
   useMemo,
-  useRef,
   useState,
   type ChangeEvent,
 } from 'react'
@@ -41,12 +40,14 @@ import {
   computePendulumTimeline,
   getPendulumVectorOverlays,
   toPendulumParameters,
+  type PendulumParameters,
   type PendulumSample,
 } from '../../lib/physics/pendulum'
 import { themeTokens } from '../../theme/appTheme'
 import { FormulaGuide } from './FormulaGuide'
 import { PendulumCharts } from './PendulumCharts'
-import { PendulumScene } from './PendulumScene'
+import { PendulumScene, type PendulumFrameStats } from './PendulumScene'
+import { getMovingWindowRange, selectRecentSamples } from './sampleWindow'
 import { TheoryAppendix } from './TheoryAppendix'
 
 const compactNumber = new Intl.NumberFormat('pt-BR', {
@@ -69,17 +70,22 @@ type SampleOutputState = {
 }
 
 const customPresetId = 'custom'
-const chartUpdateStride = 8
 const playbackRate = 0.6
-const uiFrameIntervalMs = 1000 / 24
+const initialFrameStats: PendulumFrameStats = {
+  fps: 0,
+  frameTimeMs: 0,
+}
 
 export function SimulationShell() {
   const [parameterValues, setParameterValues] = useState<
     Record<string, ParameterValue>
   >(() => ({ ...pendulumFixture.defaultParameters }))
+  const [runtimeValues, setRuntimeValues] = useState<
+    Record<string, ParameterValue>
+  >(() => readDefaultRuntimeValues())
   const [selectedPresetId, setSelectedPresetId] = useState(customPresetId)
   const [isPlaying, setIsPlaying] = useState(true)
-  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [playbackResetVersion, setPlaybackResetVersion] = useState(0)
   const [overlays, setOverlays] = useState<OverlayState>({
     energy: true,
     trace: true,
@@ -89,118 +95,34 @@ export function SimulationShell() {
     charts: true,
     table: true,
   })
-  const elapsedSecondsRef = useRef(0)
-  const frameIdRef = useRef<number | null>(null)
-  const lastFrameTimeRef = useRef<number | null>(null)
-  const lastUiFrameTimeRef = useRef(0)
   const parameters = useMemo(
     () => toPendulumParameters(parameterValues),
     [parameterValues],
+  )
+  const durationSeconds = readRuntimeValue(
+    runtimeValues,
+    'durationSeconds',
+    pendulumFixture.durationSeconds,
+  )
+  const chartWindowSeconds = readRuntimeValue(
+    runtimeValues,
+    'chartWindowSeconds',
+    pendulumFixture.chartWindowSeconds,
+  )
+  const effectiveChartWindowSeconds = Math.min(
+    chartWindowSeconds,
+    durationSeconds,
   )
   const timeline = useMemo(
     () =>
       computePendulumTimeline({
         parameters,
-        durationSeconds: pendulumFixture.durationSeconds,
+        durationSeconds,
         sampleRateHz: pendulumFixture.sampleRateHz,
       }),
-    [parameters],
-  )
-  const durationSeconds = pendulumFixture.durationSeconds
-
-  useEffect(() => {
-    if (!isPlaying) {
-      lastFrameTimeRef.current = null
-      return undefined
-    }
-
-    const tick = (timestamp: number) => {
-      if (lastFrameTimeRef.current === null) {
-        lastFrameTimeRef.current = timestamp
-      }
-
-      const deltaSeconds = Math.max(
-        0,
-        (timestamp - lastFrameTimeRef.current) / 1000,
-      )
-      const nextElapsedSeconds =
-        elapsedSecondsRef.current + deltaSeconds * playbackRate
-
-      lastFrameTimeRef.current = timestamp
-      elapsedSecondsRef.current =
-        nextElapsedSeconds >= durationSeconds
-          ? nextElapsedSeconds % durationSeconds
-          : nextElapsedSeconds
-
-      if (timestamp - lastUiFrameTimeRef.current >= uiFrameIntervalMs) {
-        lastUiFrameTimeRef.current = timestamp
-        setElapsedSeconds(elapsedSecondsRef.current)
-      }
-
-      frameIdRef.current = requestAnimationFrameSafe(tick)
-    }
-
-    frameIdRef.current = requestAnimationFrameSafe(tick)
-
-    return () => {
-      if (frameIdRef.current !== null) {
-        cancelAnimationFrameSafe(frameIdRef.current)
-        frameIdRef.current = null
-      }
-
-      lastFrameTimeRef.current = null
-    }
-  }, [durationSeconds, isPlaying])
-
-  const currentSampleIndex = Math.min(
-    Math.round(pendulumFixture.sampleRateHz * elapsedSeconds),
-    timeline.samples.length - 1,
+    [durationSeconds, parameters],
   )
 
-  const progressiveSampleIndex =
-    currentSampleIndex === timeline.samples.length - 1
-      ? currentSampleIndex
-      : Math.floor(currentSampleIndex / chartUpdateStride) * chartUpdateStride
-
-  const currentSample = timeline.samples[currentSampleIndex]
-  const vectors = useMemo(
-    () => getPendulumVectorOverlays(currentSample, parameters),
-    [currentSample, parameters],
-  )
-  const traceSamples = useMemo(
-    () =>
-      overlays.trace
-        ? timeline.samples.slice(0, progressiveSampleIndex + 1)
-        : [],
-    [overlays.trace, progressiveSampleIndex, timeline.samples],
-  )
-  const chartSamples = useMemo(
-    () =>
-      sampleOutputs.charts
-        ? timeline.samples.slice(0, progressiveSampleIndex + 1)
-        : [],
-    [progressiveSampleIndex, sampleOutputs.charts, timeline.samples],
-  )
-  const tableSamples = useMemo(() => {
-    if (!sampleOutputs.table) {
-      return []
-    }
-
-    const visibleSampleCount = progressiveSampleIndex + 1
-    const stride = Math.max(1, Math.floor(visibleSampleCount / 8))
-    const samples: PendulumSample[] = []
-
-    for (
-      let index = 0;
-      index <= progressiveSampleIndex && samples.length < 9;
-      index += stride
-    ) {
-      samples.push(timeline.samples[index])
-    }
-
-    return samples
-  }, [progressiveSampleIndex, sampleOutputs.table, timeline.samples])
-  const angleDegrees = radiansToDegrees(currentSample.angleRadians)
   const initialEnergy = timeline.samples[0]?.totalEnergyJoules ?? 0
   const finalEnergy = timeline.samples.at(-1)?.totalEnergyJoules ?? 0
   const energyRatio =
@@ -215,9 +137,7 @@ export function SimulationShell() {
     )
 
     setSelectedPresetId(nextPresetId)
-    elapsedSecondsRef.current = 0
-    lastUiFrameTimeRef.current = 0
-    setElapsedSeconds(0)
+    setPlaybackResetVersion((current) => current + 1)
 
     if (!preset) {
       return
@@ -237,20 +157,46 @@ export function SimulationShell() {
       return
     }
 
+    const clampedValue = clampToParameterRange(nextValue, parameter)
+
+    if (parameterValues[parameter.id] === clampedValue) {
+      return
+    }
+
     setSelectedPresetId(customPresetId)
-    elapsedSecondsRef.current = 0
-    lastUiFrameTimeRef.current = 0
-    setElapsedSeconds(0)
+    setPlaybackResetVersion((current) => current + 1)
     setParameterValues((currentValues) => ({
       ...currentValues,
-      [parameter.id]: clampToParameterRange(nextValue, parameter),
+      [parameter.id]: clampedValue,
     }))
   }
 
+  const handleRuntimeParameterChange = (
+    parameter: SimulationParameter,
+    nextValue: number,
+  ) => {
+    if (!Number.isFinite(nextValue)) {
+      return
+    }
+
+    const clampedValue = clampToParameterRange(nextValue, parameter)
+
+    if (runtimeValues[parameter.id] === clampedValue) {
+      return
+    }
+
+    setRuntimeValues((currentValues) => ({
+      ...currentValues,
+      [parameter.id]: clampedValue,
+    }))
+
+    if (parameter.id === 'durationSeconds') {
+      setPlaybackResetVersion((current) => current + 1)
+    }
+  }
+
   const handleReset = () => {
-    elapsedSecondsRef.current = 0
-    lastUiFrameTimeRef.current = 0
-    setElapsedSeconds(0)
+    setPlaybackResetVersion((current) => current + 1)
     setIsPlaying(false)
   }
 
@@ -428,224 +374,17 @@ export function SimulationShell() {
           }}
         >
           <Stack spacing={2} sx={{ minWidth: 0 }}>
-            <Box
-              aria-label="Pendulum numerical viewport"
-              sx={{
-                border: `1px solid ${themeTokens.border}`,
-                borderRadius: 1,
-                bgcolor: alpha(themeTokens.panel, 0.58),
-                minHeight: 322,
-                overflow: 'hidden',
-                position: 'relative',
-              }}
-            >
-              <Box
-                sx={{
-                  alignItems: 'center',
-                  borderBottom: `1px solid ${themeTokens.border}`,
-                  display: 'flex',
-                  gap: 1,
-                  justifyContent: 'space-between',
-                  px: 1.5,
-                  py: 1,
-                }}
-              >
-                <Typography variant="body2">Viewport Three.js</Typography>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{ alignItems: 'center' }}
-                >
-                  <Typography color="text.secondary" variant="body2">
-                    t = {formatNumber(currentSample.timeSeconds, 's')}
-                  </Typography>
-                  <Button
-                    aria-label={
-                      isPlaying
-                        ? 'Pausar simulacao no viewport'
-                        : 'Reproduzir simulacao no viewport'
-                    }
-                    color="primary"
-                    onClick={handlePlaybackToggle}
-                    size="small"
-                    startIcon={
-                      isPlaying ? (
-                        <Pause aria-hidden size={16} />
-                      ) : (
-                        <Play aria-hidden size={16} />
-                      )
-                    }
-                    variant="outlined"
-                  >
-                    {isPlaying ? 'Pausar' : 'Reproduzir'}
-                  </Button>
-                </Stack>
-              </Box>
-
-              <PendulumScene
-                sample={currentSample}
-                samples={timeline.samples}
-                showTrace={overlays.trace}
-                showVectors={overlays.vectors}
-                traceSamples={traceSamples}
-                vectors={vectors}
-              />
-              <Box
-                sx={{
-                  borderTop: `1px solid ${themeTokens.border}`,
-                  display: 'grid',
-                  gap: 1,
-                  gridTemplateColumns: {
-                    xs: '1fr 1fr',
-                    md: 'repeat(4, minmax(0, 1fr))',
-                  },
-                  p: 1.5,
-                }}
-              >
-                <Metric label="theta" value={formatDegrees(angleDegrees)} />
-                <Metric
-                  label="omega"
-                  value={formatNumber(
-                    currentSample.angularVelocityRadiansPerSecond,
-                    'rad/s',
-                  )}
-                />
-                <Metric
-                  label="x"
-                  value={formatNumber(currentSample.xMeters, 'm')}
-                />
-                {overlays.energy ? (
-                  <Metric
-                    label="energia"
-                    value={formatNumber(currentSample.totalEnergyJoules, 'J')}
-                  />
-                ) : null}
-              </Box>
-              {overlays.vectors ? (
-                <Box
-                  sx={{
-                    borderTop: `1px solid ${themeTokens.border}`,
-                    display: 'grid',
-                    gap: 1,
-                    gridTemplateColumns: {
-                      xs: '1fr',
-                      md: 'repeat(3, minmax(0, 1fr))',
-                    },
-                    p: 1.5,
-                    pt: 1,
-                  }}
-                >
-                  {vectors.map((vector) => (
-                    <Metric
-                      key={vector.id}
-                      label={vector.label}
-                      value={formatNumber(vector.magnitude, vector.unit)}
-                    />
-                  ))}
-                </Box>
-              ) : null}
-            </Box>
-
-            {sampleOutputs.charts ? (
-              <PendulumCharts
-                durationSeconds={durationSeconds}
-                samples={chartSamples}
-                showEnergy={overlays.energy}
-              />
-            ) : null}
-
-            {sampleOutputs.table ? (
-              <Box
-                sx={{
-                  border: `1px solid ${themeTokens.border}`,
-                  borderRadius: 1,
-                  bgcolor: alpha(themeTokens.panel, 0.42),
-                  p: 1.5,
-                }}
-              >
-                <Stack
-                  direction={{ xs: 'column', md: 'row' }}
-                  spacing={1}
-                  sx={{
-                    alignItems: { xs: 'flex-start', md: 'center' },
-                    justifyContent: 'space-between',
-                    mb: 1.5,
-                  }}
-                >
-                  <Box>
-                    <Typography variant="h2">Tabela de amostras</Typography>
-                    <Typography color="text.secondary" variant="body2">
-                      {timeline.samples.length} amostras em{' '}
-                      {formatNumber(pendulumFixture.durationSeconds, 's')}
-                    </Typography>
-                  </Box>
-                  <Chip
-                    label={`${pendulumFixture.sampleRateHz} Hz`}
-                    size="small"
-                    variant="outlined"
-                  />
-                </Stack>
-                <TableContainer
-                  sx={{
-                    border: `1px solid ${themeTokens.border}`,
-                    borderRadius: 1,
-                  }}
-                >
-                  <Table
-                    aria-label="Tabela sincronizada de amostras do pendulo"
-                    size="small"
-                  >
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>t</TableCell>
-                        <TableCell>theta</TableCell>
-                        <TableCell>omega</TableCell>
-                        <TableCell>x</TableCell>
-                        <TableCell>y</TableCell>
-                        <TableCell>K</TableCell>
-                        <TableCell>U</TableCell>
-                        <TableCell>E</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {tableSamples.map((sample) => (
-                        <TableRow key={sample.timeSeconds}>
-                          <TableCell>
-                            {formatNumber(sample.timeSeconds, 's')}
-                          </TableCell>
-                          <TableCell>
-                            {formatDegrees(
-                              radiansToDegrees(sample.angleRadians),
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {formatNumber(
-                              sample.angularVelocityRadiansPerSecond,
-                              'rad/s',
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {formatNumber(sample.xMeters, 'm')}
-                          </TableCell>
-                          <TableCell>
-                            {formatNumber(sample.yMeters, 'm')}
-                          </TableCell>
-                          <TableCell>
-                            {formatEnergy(sample.kineticEnergyJoules)}
-                          </TableCell>
-                          <TableCell>
-                            {formatEnergy(sample.potentialEnergyJoules)}
-                          </TableCell>
-                          <TableCell>
-                            {formatEnergy(sample.totalEnergyJoules)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Box>
-            ) : null}
+            <PendulumRuntime
+              chartWindowSeconds={effectiveChartWindowSeconds}
+              durationSeconds={durationSeconds}
+              isPlaying={isPlaying}
+              onPlaybackToggle={handlePlaybackToggle}
+              overlays={overlays}
+              parameters={parameters}
+              resetVersion={playbackResetVersion}
+              sampleOutputs={sampleOutputs}
+              samples={timeline.samples}
+            />
 
             <FormulaGuide
               formulas={pendulumFixture.formulas}
@@ -677,8 +416,8 @@ export function SimulationShell() {
                 <Box>
                   <Typography variant="h2">Controles</Typography>
                   <Typography color="text.secondary" variant="body2">
-                    {formatNumber(currentSample.timeSeconds, 's')} de{' '}
-                    {formatNumber(durationSeconds, 's')}
+                    ciclo {formatNumber(durationSeconds, 's')} | janela{' '}
+                    {formatNumber(effectiveChartWindowSeconds, 's')}
                   </Typography>
                 </Box>
                 <Stack direction="row" spacing={0.75}>
@@ -730,17 +469,43 @@ export function SimulationShell() {
                 ))}
               </TextField>
 
+              <Box>
+                <Typography sx={{ mb: 0.75 }} variant="h2">
+                  Tempo e janela
+                </Typography>
+                <Stack spacing={1.5}>
+                  {pendulumFixture.runtimeParameters.map((parameter) => {
+                    const value = readNumericParameter(runtimeValues, parameter)
+
+                    return (
+                      <ParameterControl
+                        key={`${parameter.id}:${value}`}
+                        onChange={(nextValue) => {
+                          handleRuntimeParameterChange(parameter, nextValue)
+                        }}
+                        parameter={parameter}
+                        value={value}
+                      />
+                    )
+                  })}
+                </Stack>
+              </Box>
+
               <Stack spacing={1.5}>
-                {pendulumFixture.parameters.map((parameter) => (
-                  <ParameterControl
-                    key={parameter.id}
-                    onChange={(nextValue) => {
-                      handleParameterChange(parameter, nextValue)
-                    }}
-                    parameter={parameter}
-                    value={readNumericParameter(parameterValues, parameter)}
-                  />
-                ))}
+                {pendulumFixture.parameters.map((parameter) => {
+                  const value = readNumericParameter(parameterValues, parameter)
+
+                  return (
+                    <ParameterControl
+                      key={`${parameter.id}:${value}`}
+                      onChange={(nextValue) => {
+                        handleParameterChange(parameter, nextValue)
+                      }}
+                      parameter={parameter}
+                      value={value}
+                    />
+                  )
+                })}
               </Stack>
 
               <Box>
@@ -825,6 +590,15 @@ export function SimulationShell() {
                     value={`${compactNumber.format(playbackRate)}x`}
                   />
                   <Metric
+                    label="sample rate"
+                    value={`${pendulumFixture.sampleRateHz} Hz`}
+                  />
+                  <Metric
+                    label="janela"
+                    value={formatNumber(effectiveChartWindowSeconds, 's')}
+                  />
+                  <Metric label="render" value="Three.js rAF" />
+                  <Metric
                     label="graficos"
                     value={sampleOutputs.charts ? 'ligado' : 'desligado'}
                   />
@@ -850,6 +624,324 @@ export function SimulationShell() {
   )
 }
 
+function PendulumRuntime({
+  chartWindowSeconds,
+  durationSeconds,
+  isPlaying,
+  onPlaybackToggle,
+  overlays,
+  parameters,
+  resetVersion,
+  sampleOutputs,
+  samples,
+}: {
+  chartWindowSeconds: number
+  durationSeconds: number
+  isPlaying: boolean
+  onPlaybackToggle: () => void
+  overlays: OverlayState
+  parameters: PendulumParameters
+  resetVersion: number
+  sampleOutputs: SampleOutputState
+  samples: PendulumSample[]
+}) {
+  const firstSample = useMemo(() => readFirstSample(samples), [samples])
+  const [liveSample, setLiveSample] = useState<PendulumSample>(firstSample)
+  const [frameStats, setFrameStats] =
+    useState<PendulumFrameStats>(initialFrameStats)
+
+  const handleSampleChange = useCallback(
+    (sample: PendulumSample, stats: PendulumFrameStats) => {
+      setLiveSample(sample)
+      setFrameStats(stats)
+    },
+    [],
+  )
+  const currentSampleIndex = getSampleIndexForTime(
+    samples,
+    durationSeconds,
+    liveSample.timeSeconds,
+  )
+  const visibleWindowSamples = useMemo(
+    () =>
+      selectRecentSamples(
+        samples,
+        currentSampleIndex,
+        chartWindowSeconds,
+      ),
+    [chartWindowSeconds, currentSampleIndex, samples],
+  )
+  const xAxisRange = useMemo(
+    () =>
+      getMovingWindowRange(
+        liveSample.timeSeconds,
+        chartWindowSeconds,
+        durationSeconds,
+      ),
+    [chartWindowSeconds, durationSeconds, liveSample.timeSeconds],
+  )
+  const vectors = useMemo(
+    () => getPendulumVectorOverlays(liveSample, parameters),
+    [liveSample, parameters],
+  )
+  const chartSamples = useMemo(
+    () =>
+      sampleOutputs.charts
+        ? appendLiveSample(visibleWindowSamples, liveSample)
+        : [],
+    [liveSample, sampleOutputs.charts, visibleWindowSamples],
+  )
+  const tableSamples = useMemo(() => {
+    if (!sampleOutputs.table) {
+      return []
+    }
+
+    const visibleSampleCount = visibleWindowSamples.length
+    const stride = Math.max(1, Math.floor(visibleSampleCount / 8))
+    const visibleSamples: PendulumSample[] = []
+
+    for (
+      let index = 0;
+      index < visibleWindowSamples.length && visibleSamples.length < 9;
+      index += stride
+    ) {
+      visibleSamples.push(visibleWindowSamples[index])
+    }
+
+    return visibleSamples
+  }, [sampleOutputs.table, visibleWindowSamples])
+  const angleDegrees = radiansToDegrees(liveSample.angleRadians)
+
+  return (
+    <>
+      <Box
+        aria-label="Pendulum numerical viewport"
+        sx={{
+          border: `1px solid ${themeTokens.border}`,
+          borderRadius: 1,
+          bgcolor: alpha(themeTokens.panel, 0.58),
+          minHeight: 322,
+          overflow: 'hidden',
+          position: 'relative',
+        }}
+      >
+        <Box
+          sx={{
+            alignItems: 'center',
+            borderBottom: `1px solid ${themeTokens.border}`,
+            display: 'flex',
+            gap: 1,
+            justifyContent: 'space-between',
+            px: 1.5,
+            py: 1,
+          }}
+        >
+          <Typography variant="body2">Viewport Three.js</Typography>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <Chip
+              label={formatFps(frameStats.fps)}
+              size="small"
+              variant="outlined"
+            />
+            <Typography color="text.secondary" variant="body2">
+              t = {formatNumber(liveSample.timeSeconds, 's')}
+            </Typography>
+            <Button
+              aria-label={
+                isPlaying
+                  ? 'Pausar simulacao no viewport'
+                  : 'Reproduzir simulacao no viewport'
+              }
+              color="primary"
+              onClick={onPlaybackToggle}
+              size="small"
+              startIcon={
+                isPlaying ? (
+                  <Pause aria-hidden size={16} />
+                ) : (
+                  <Play aria-hidden size={16} />
+                )
+              }
+              variant="outlined"
+            >
+              {isPlaying ? 'Pausar' : 'Reproduzir'}
+            </Button>
+          </Stack>
+        </Box>
+
+        <PendulumScene
+          durationSeconds={durationSeconds}
+          isPlaying={isPlaying}
+          onSampleChange={handleSampleChange}
+          parameters={parameters}
+          playbackRate={playbackRate}
+          resetVersion={resetVersion}
+          samples={samples}
+          showTrace={overlays.trace}
+          showVectors={overlays.vectors}
+        />
+        <Box
+          sx={{
+            borderTop: `1px solid ${themeTokens.border}`,
+            display: 'grid',
+            gap: 1,
+            gridTemplateColumns: {
+              xs: '1fr 1fr',
+              md: 'repeat(5, minmax(0, 1fr))',
+            },
+            p: 1.5,
+          }}
+        >
+          <Metric label="theta" value={formatDegrees(angleDegrees)} />
+          <Metric
+            label="omega"
+            value={formatNumber(
+              liveSample.angularVelocityRadiansPerSecond,
+              'rad/s',
+            )}
+          />
+          <Metric label="x" value={formatNumber(liveSample.xMeters, 'm')} />
+          {overlays.energy ? (
+            <Metric
+              label="energia"
+              value={formatNumber(liveSample.totalEnergyJoules, 'J')}
+            />
+          ) : null}
+          <Metric
+            label="frame"
+            value={
+              frameStats.frameTimeMs > 0
+                ? formatNumber(frameStats.frameTimeMs, 'ms')
+                : '-- ms'
+            }
+          />
+        </Box>
+        {overlays.vectors ? (
+          <Box
+            sx={{
+              borderTop: `1px solid ${themeTokens.border}`,
+              display: 'grid',
+              gap: 1,
+              gridTemplateColumns: {
+                xs: '1fr',
+                md: 'repeat(3, minmax(0, 1fr))',
+              },
+              p: 1.5,
+              pt: 1,
+            }}
+          >
+            {vectors.map((vector) => (
+              <Metric
+                key={vector.id}
+                label={vector.label}
+                value={formatNumber(vector.magnitude, vector.unit)}
+              />
+            ))}
+          </Box>
+        ) : null}
+      </Box>
+
+      {sampleOutputs.charts ? (
+        <PendulumCharts
+          chartWindowSeconds={chartWindowSeconds}
+          samples={chartSamples}
+          showEnergy={overlays.energy}
+          xAxisRange={xAxisRange}
+        />
+      ) : null}
+
+      {sampleOutputs.table ? (
+        <Box
+          sx={{
+            border: `1px solid ${themeTokens.border}`,
+            borderRadius: 1,
+            bgcolor: alpha(themeTokens.panel, 0.42),
+            p: 1.5,
+          }}
+        >
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={1}
+            sx={{
+              alignItems: { xs: 'flex-start', md: 'center' },
+              justifyContent: 'space-between',
+              mb: 1.5,
+            }}
+          >
+            <Box>
+              <Typography variant="h2">Tabela de amostras</Typography>
+              <Typography color="text.secondary" variant="body2">
+                {samples.length} amostras em {formatNumber(durationSeconds, 's')}{' '}
+                | janela {formatNumber(chartWindowSeconds, 's')}
+              </Typography>
+            </Box>
+            <Chip
+              label={`${pendulumFixture.sampleRateHz} Hz`}
+              size="small"
+              variant="outlined"
+            />
+          </Stack>
+          <TableContainer
+            sx={{
+              border: `1px solid ${themeTokens.border}`,
+              borderRadius: 1,
+            }}
+          >
+            <Table
+              aria-label="Tabela sincronizada de amostras do pendulo"
+              size="small"
+            >
+              <TableHead>
+                <TableRow>
+                  <TableCell>t</TableCell>
+                  <TableCell>theta</TableCell>
+                  <TableCell>omega</TableCell>
+                  <TableCell>x</TableCell>
+                  <TableCell>y</TableCell>
+                  <TableCell>K</TableCell>
+                  <TableCell>U</TableCell>
+                  <TableCell>E</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {tableSamples.map((sample) => (
+                  <TableRow key={sample.timeSeconds}>
+                    <TableCell>{formatNumber(sample.timeSeconds, 's')}</TableCell>
+                    <TableCell>
+                      {formatDegrees(radiansToDegrees(sample.angleRadians))}
+                    </TableCell>
+                    <TableCell>
+                      {formatNumber(
+                        sample.angularVelocityRadiansPerSecond,
+                        'rad/s',
+                      )}
+                    </TableCell>
+                    <TableCell>{formatNumber(sample.xMeters, 'm')}</TableCell>
+                    <TableCell>{formatNumber(sample.yMeters, 'm')}</TableCell>
+                    <TableCell>{formatEnergy(sample.kineticEnergyJoules)}</TableCell>
+                    <TableCell>
+                      {formatEnergy(sample.potentialEnergyJoules)}
+                    </TableCell>
+                    <TableCell>{formatEnergy(sample.totalEnergyJoules)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      ) : null}
+    </>
+  )
+}
+
 function ParameterControl({
   onChange,
   parameter,
@@ -859,6 +951,20 @@ function ParameterControl({
   parameter: SimulationParameter
   value: number
 }) {
+  const [draftValue, setDraftValue] = useState(value)
+
+  const commitValue = (nextValue: number) => {
+    if (!Number.isFinite(nextValue)) {
+      setDraftValue(value)
+      return
+    }
+
+    const clampedValue = clampToParameterRange(nextValue, parameter)
+
+    setDraftValue(clampedValue)
+    onChange(clampedValue)
+  }
+
   return (
     <Box>
       <Stack
@@ -871,7 +977,7 @@ function ParameterControl({
       >
         <Typography variant="body2">{parameter.label}</Typography>
         <Typography color="text.secondary" variant="body2">
-          {formatNumber(value, parameter.unit)}
+          {formatNumber(draftValue, parameter.unit)}
         </Typography>
       </Stack>
       <Stack
@@ -884,12 +990,15 @@ function ParameterControl({
           max={parameter.max}
           min={parameter.min}
           onChange={(_event, nextValue) => {
-            onChange(Array.isArray(nextValue) ? nextValue[0] : nextValue)
+            setDraftValue(Array.isArray(nextValue) ? nextValue[0] : nextValue)
+          }}
+          onChangeCommitted={(_event, nextValue) => {
+            commitValue(Array.isArray(nextValue) ? nextValue[0] : nextValue)
           }}
           size="small"
           step={parameter.step}
           sx={{ flex: 1 }}
-          value={value}
+          value={draftValue}
         />
         <TextField
           label={
@@ -898,7 +1007,15 @@ function ParameterControl({
               : parameter.label
           }
           onChange={(event) => {
-            onChange(Number(event.target.value))
+            setDraftValue(Number(event.target.value))
+          }}
+          onBlur={() => {
+            commitValue(draftValue)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              commitValue(draftValue)
+            }
           }}
           size="small"
           slotProps={{
@@ -910,11 +1027,32 @@ function ParameterControl({
           }}
           sx={{ width: { xs: '100%', sm: 132 } }}
           type="number"
-          value={value}
+          value={draftValue}
         />
       </Stack>
     </Box>
   )
+}
+
+function readDefaultRuntimeValues(): Record<string, ParameterValue> {
+  return Object.fromEntries(
+    pendulumFixture.runtimeParameters.map((parameter) => [
+      parameter.id,
+      parameter.defaultValue,
+    ]),
+  )
+}
+
+function readRuntimeValue(
+  values: Record<string, ParameterValue>,
+  key: string,
+  fallback: number,
+) {
+  const value = values[key]
+
+  return typeof value === 'number' && Number.isFinite(value)
+    ? value
+    : fallback
 }
 
 function readNumericParameter(
@@ -936,23 +1074,45 @@ function clampToParameterRange(
   return Math.min(max, Math.max(min, value))
 }
 
-function requestAnimationFrameSafe(callback: FrameRequestCallback) {
-  if (typeof window.requestAnimationFrame === 'function') {
-    return window.requestAnimationFrame(callback)
+function readFirstSample(samples: PendulumSample[]) {
+  const sample = samples[0]
+
+  if (!sample) {
+    throw new Error('Pendulum timeline must contain at least one sample.')
   }
 
-  return window.setTimeout(() => {
-    callback(window.performance.now())
-  }, 16)
+  return sample
 }
 
-function cancelAnimationFrameSafe(frameId: number) {
-  if (typeof window.cancelAnimationFrame === 'function') {
-    window.cancelAnimationFrame(frameId)
-    return
+function getSampleIndexForTime(
+  samples: PendulumSample[],
+  durationSeconds: number,
+  timeSeconds: number,
+) {
+  if (samples.length <= 1 || durationSeconds <= 0) {
+    return 0
   }
 
-  window.clearTimeout(frameId)
+  const progress = Math.min(1, Math.max(0, timeSeconds / durationSeconds))
+
+  return Math.min(
+    samples.length - 1,
+    Math.floor(progress * (samples.length - 1)),
+  )
+}
+
+function appendLiveSample(samples: PendulumSample[], liveSample: PendulumSample) {
+  const lastSample = samples.at(-1)
+
+  if (!lastSample) {
+    return [liveSample]
+  }
+
+  if (liveSample.timeSeconds <= lastSample.timeSeconds + 0.0001) {
+    return samples
+  }
+
+  return [...samples, liveSample]
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
@@ -1001,6 +1161,10 @@ function formatDegrees(value: number) {
 
 function formatEnergy(value: number) {
   return `${compactEnergy.format(value)} J`
+}
+
+function formatFps(value: number) {
+  return value > 0 ? `${value} FPS` : 'medindo FPS'
 }
 
 function formatNumber(value: number, unit = '') {

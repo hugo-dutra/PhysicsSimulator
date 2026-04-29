@@ -24,6 +24,7 @@ A primeira entrega funcional deve provar `Mecanica > Pendulo simples` com mocks/
 ## Hard rules
 
 - Nao quebrar a sincronizacao entre motor numerico, cena, graficos, tabela e formulas exibidas.
+- Simulacoes animadas devem usar renderizacao desacoplada: o loop de alta frequencia pertence ao renderer visual, nao ao shell React inteiro.
 - Toda simulacao deve declarar parametros, unidades, formulas usadas, quando usa-las e limites do modelo.
 - Use dados locais enquanto o core nao estiver validado.
 - Mantenha UI compacta, cientifica e orientada a ferramenta.

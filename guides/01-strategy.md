@@ -62,7 +62,7 @@ Esse escopo deve ser tratado como roadmap planejado, nao como promessa da primei
 
 ## Hipoteses a validar
 
-- React + MUI + Three.js + Plotly.js entregam uma experiencia rica sem complexidade excessiva.
+- React + MUI + Three.js + adaptadores de grafico entregam uma experiencia rica sem complexidade excessiva; Plotly.js fica para graficos declarativos e canvas/SVG para series progressivas que precisam parecer desenhadas continuamente.
 - Um layout com sidebar, canvas central, controles laterais, graficos, tabela e teoria cabe bem em desktop e permanece usavel em telas menores.
 - A primeira simulacao pode definir um contrato reutilizavel para as proximas.
 - Conteudo teorico em MDX/Markdown com KaTeX e suficiente para explicar a fisica, as formulas e seus contextos de uso sem criar um CMS cedo demais.

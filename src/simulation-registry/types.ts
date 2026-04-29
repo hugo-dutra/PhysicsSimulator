@@ -15,7 +15,7 @@ export type ParameterValue = number | boolean | string
 
 export type SimulationTechnologyPlan = {
   engine: 'custom-analytic' | 'custom-numerical' | 'rapier' | 'matter' | 'precomputed'
-  charting: 'plotly'
+  charting: 'plotly' | 'live-canvas'
   content: 'mdx-katex'
   optionalLibraries?: ('pixi' | 'd3' | 'manim' | 'web-audio')[]
   notes?: string
@@ -96,6 +96,8 @@ export type SimulationFixture = {
   simulationId: string
   durationSeconds: number
   sampleRateHz: number
+  chartWindowSeconds: number
+  runtimeParameters: SimulationParameter[]
   defaultParameters: Record<string, ParameterValue>
   parameters: SimulationParameter[]
   presets: SimulationPreset[]

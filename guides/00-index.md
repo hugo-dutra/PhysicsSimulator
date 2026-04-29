@@ -25,6 +25,7 @@ Leia este arquivo primeiro antes de alterar produto, arquitetura, roadmap ou imp
 - Para implementar uma simulacao: leia `02-product-spec.md`, `03-architecture.md`, `06-data-and-api.md`, `08-api-contracts.md` e `07-quality-and-operations.md`.
 - Para planejar ou priorizar novas simulacoes: leia `09-simulation-catalog-plan.md`, `05-roadmap.md`, `01-strategy.md` e `issues.md`.
 - Para mexer na UI, tema ou layout: leia `02-product-spec.md`, `03-architecture.md` e `04-rules-and-constraints.md`.
+- Para mexer em renderizacao, animacao ou performance visual: leia `03-architecture.md`, `04-rules-and-constraints.md` e `07-quality-and-operations.md`.
 - Para alterar dados, fixtures ou contratos: leia `06-data-and-api.md` e `08-api-contracts.md`.
 
 ## Ambiente padrao
@@ -34,7 +35,7 @@ O repositorio ainda esta em fase documental. A recomendacao inicial e:
 - Frontend: React + TypeScript + Vite.
 - UI: Material UI com tema dark em tons de cinza grafite e acento cyan/teal.
 - Renderizacao de simulacao: Three.js como motor visual principal.
-- Graficos: Plotly.js para graficos cientificos declarativos.
+- Graficos: Plotly.js para graficos cientificos declarativos e canvas/SVG renderer-first para series progressivas de alta frequencia.
 - Conteudo teorico: MDX/Markdown com KaTeX para formulas, variaveis e orientacao de quando usa-las.
 - Fisica externa: comecar com motor proprio simples para o pendulo; considerar Rapier, Matter.js ou PixiJS apenas quando a simulacao exigir.
 

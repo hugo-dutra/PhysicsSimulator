@@ -7,6 +7,7 @@
 - `SimulationDefinition`: metadados, area, status, parametros, renderizador, graficos e teoria.
 - `SimulationTechnologyPlan`: motor, renderer, bibliotecas opcionais e estrategia de graficos/conteudo esperados.
 - `SimulationParameter`: nome, unidade, tipo, minimo, maximo, passo e valor padrao.
+- `SimulationRuntimeParameter`: controle de runtime com o mesmo formato de parametro, para duracao do ciclo, janela de grafico e outros ajustes nao fisicos.
 - `SimulationPreset`: conjunto nomeado de parametros para demonstracao.
 - `SimulationState`: estado instantaneo do sistema fisico.
 - `SimulationSample`: amostra derivada para graficos e tabela.
@@ -25,6 +26,7 @@ Usar JSON local para:
 - simulacoes planejadas;
 - status das simulacoes;
 - parametros default;
+- parametros de runtime, como duracao do ciclo e janela temporal dos graficos;
 - presets;
 - formulas e metadados de uso;
 - textos curtos de descricao.
@@ -86,8 +88,8 @@ Persistencia so deve entrar depois da Fase 1. Possiveis dados futuros:
 
 - `SidebarCatalog`: areas, subareas, simulacoes e status.
 - `SimulationViewModel`: parametros, valores atuais, playback e layout.
-- `ChartViewModel`: series prontas para Plotly.js.
-- `TableViewModel`: amostras paginadas ou recortadas.
+- `ChartViewModel`: series prontas para o adapter de grafico escolhido (Plotly.js, canvas ou SVG), com recorte movel dos ultimos N segundos quando configurado.
+- `TableViewModel`: amostras paginadas ou recortadas pela mesma janela temporal visivel.
 - `FormulaGuideViewModel`: formulas renderizaveis, variaveis, unidades, uso indicado e links para parametros/samples.
 - `TheoryViewModel`: conteudo teorico associado a simulacao.
 

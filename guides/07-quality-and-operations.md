@@ -26,9 +26,12 @@ npm run test:e2e
 - Testes de invariantes fisicos dentro do modelo declarado.
 - Testes de validacao de parametros e unidades.
 - Testes de geracao de samples para graficos e tabela.
+- Testes de recorte temporal para graficos/tabela quando houver janela movel configuravel.
 - Testes de consistencia entre formulas documentadas, parametros e dados gerados.
 - Testes de contrato para `SimulationDefinition`.
 - Smoke test da tela principal abrindo o pendulo.
+- Checagem de que o loop de animacao nao força re-render do shell completo, graficos, tabela, formulas ou teoria a cada frame.
+- Checagem de que alteracoes de parametros nao desmontam graficos ou viewport pesados sem necessidade.
 
 ## Criterio de qualidade para novas simulacoes
 
@@ -40,20 +43,26 @@ Depois da prova do core, cada nova simulacao promovida para `available` deve ter
 - smoke test de abertura pelo catalogo;
 - revisao do apendice teorico e do guia de formulas;
 - checagem visual proporcional ao renderer usado.
+- revisao de performance do renderer, incluindo ownership do `requestAnimationFrame`, reutilizacao de buffers e limite de densidade visual.
 
 ## Validacoes visuais
 
 - Canvas nao pode estar em branco.
 - Vetores devem acompanhar o movimento.
 - Graficos devem atualizar quando parametros mudam.
+- Graficos com janela movel devem manter apenas os ultimos N segundos visiveis depois que o tempo atual ultrapassar a largura do plot.
+- Graficos nao devem piscar por remount/purge em mudancas normais de parametro.
+- Graficos progressivos devem parecer continuos, sem avanco em blocos grandes que sugiram travamento.
 - Formulas devem permanecer legiveis e indicar quando usar cada equacao.
 - Layout nao deve quebrar em desktop comum.
 - Controles devem permanecer legiveis no tema dark.
+- Indicadores de FPS ou frame time devem ficar disponiveis durante desenvolvimento quando houver animacao continua.
+- A animacao nao deve depender de re-render React em alta frequencia para parecer fluida.
 
 ## Riscos operacionais
 
 - Dependencias graficas podem aumentar bundle.
-- Three.js + Plotly.js + MUI podem exigir cuidado de performance.
+- Three.js + Plotly.js/live-canvas + MUI podem exigir cuidado de performance.
 - WebGPU nao deve ser requisito inicial.
 - Conteudo teorico e formulas podem ficar desatualizados se nao forem versionados junto da simulacao.
 
@@ -64,7 +73,7 @@ Na fase local:
 - erros de parametro visiveis na UI;
 - logs de erro no console durante desenvolvimento;
 - mensagens claras quando uma simulacao estiver planejada;
-- medicao simples de FPS ou frame time se a cena ficar pesada.
+- medicao simples de FPS ou frame time para simulacoes com loop continuo ou quando a cena ficar pesada.
 
 ## Criterio de pronto por fase
 
@@ -74,4 +83,5 @@ Fase 1 esta pronta quando:
 - tests do motor numerico passam;
 - build passa;
 - smoke visual confirma canvas, controles, graficos, tabela e formulas;
+- a animacao segue o padrao de renderer desacoplado do shell React;
 - teoria explica o modelo implementado e quando usar cada formula.

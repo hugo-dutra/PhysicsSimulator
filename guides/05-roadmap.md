@@ -41,7 +41,7 @@ Tasks:
 - `[x]` Gerar samples de tempo, angulo, velocidade, posicao e energia.
 - `[x]` Renderizar cena do pendulo em Three.js.
 - `[x]` Exibir vetores de peso, tensao e velocidade.
-- `[x]` Integrar Plotly.js para graficos de angulo, velocidade e energia.
+- `[x]` Integrar graficos de angulo, velocidade e energia com adapter live-canvas progressivo.
 - `[x]` Exibir tabela sincronizada de amostras.
 - `[x]` Criar guia de formulas do pendulo com equacoes, variaveis, unidades, condicoes de uso e exemplos.
 - `[x]` Criar apendice teorico em MDX/Markdown com KaTeX.
@@ -67,6 +67,7 @@ Tasks:
 - `[ ]` Registrar todas as simulacoes planejadas como itens indisponiveis ate terem motor, cena, graficos, tabela, formulas e teoria.
 - `[ ]` Adicionar segunda simulacao de Mecanica, preferencialmente `Mecanica > Dinamica > Plano inclinado com atrito` ou `Oscilacoes e Ondas > Oscilacoes > Massa-mola`.
 - `[ ]` Reusar shell, controles, graficos, tabela e guia de formulas.
+- `[ ]` Extrair o padrao reutilizavel de runtime visual: renderer com loop proprio, UI React em cadencia reduzida, buffers reutilizados e metricas de FPS/frame time.
 - `[ ]` Ajustar docs com aprendizados da primeira simulacao.
 
 Criterio de saida:

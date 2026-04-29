@@ -64,6 +64,8 @@ Layout recomendado:
 - Angulo inicial.
 - Velocidade angular inicial.
 - Amortecimento.
+- Tempo maximo do ciclo de simulacao.
+- Janela temporal dos graficos em segundos, exibindo as amostras recentes.
 - Toggle de vetores.
 - Toggle de trilha.
 - Toggle de energia.
@@ -74,9 +76,9 @@ Layout recomendado:
 
 - Cena animada do pendulo.
 - Vetores de peso, tensao e velocidade.
-- Grafico de angulo por tempo.
-- Grafico de velocidade angular por tempo.
-- Grafico de energia cinetica, potencial e total.
+- Grafico de angulo por tempo com janela movel dos ultimos N segundos.
+- Grafico de velocidade angular por tempo com a mesma janela movel.
+- Grafico de energia cinetica, potencial e total com a mesma janela movel.
 - Tabela com tempo, angulo, velocidade, posicao e energia.
 - Formulas do processo analisado, com variaveis, unidades, condicoes de uso e exemplo curto.
 - Apendice teorico com equacoes, unidades, contexto de uso e limites da aproximacao.
@@ -121,6 +123,8 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 - O usuario consegue abrir `Mecanica > Pendulo simples` pela sidebar.
 - O canvas mostra a animacao do pendulo.
 - Alterar controles muda a simulacao e regenera dados derivados.
+- Alterar o tempo do ciclo muda a duracao maxima antes do playback reiniciar.
+- Alterar a janela dos graficos muda quantos segundos recentes ficam visiveis.
 - Graficos e tabela refletem os mesmos samples quando suas saidas estao ligadas.
 - Vetores podem ser ligados e desligados.
 - Formulas exibidas explicam quando usar cada equacao e quais dados da simulacao a alimentam.

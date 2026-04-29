@@ -16,7 +16,7 @@
 - Usuarios preferem uma experiencia integrada a ferramentas separadas.
 - MUI entrega densidade e polish suficientes para uma interface cientifica.
 - Three.js e suficiente como renderizador principal para as primeiras simulacoes.
-- Plotly.js cobre a maior parte dos graficos cientificos necessarios.
+- Plotly.js cobre a maior parte dos graficos cientificos declarativos; series progressivas em tempo real podem exigir canvas/SVG com `requestAnimationFrame`.
 - MDX/Markdown com KaTeX e suficiente para o apendice teorico inicial.
 - Um guia de formulas por simulacao ajuda o usuario a saber como e quando aplicar as equacoes.
 - A taxonomia `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo` cobre bem a fisica basica inicial.
@@ -30,6 +30,7 @@
 - Eletricidade e magnetismo ficam agrupados em `Eletromagnetismo`.
 - O tema inicial usa `#2DD4BF` como cor primaria teal e `#38BDF8` como cor informativa/cyan.
 - O apendice teorico inicial do pendulo e renderizado como Markdown local com KaTeX abaixo do guia de formulas; o guia de formulas permanece como bloco aplicado e ligado a parametros, samples, graficos e vetores.
+- O padrao de renderizacao animada passa a ser renderer-first: `requestAnimationFrame` pertence ao renderer visual, o shell React recebe leituras periodicas e componentes pesados como Plotly, tabela, formulas e teoria ficam fora do caminho quente da animacao.
 
 ## Decisoes pendentes
 
@@ -52,6 +53,7 @@
 - Toda nova simulacao deve declarar limites do modelo fisico.
 - Toda nova simulacao deve declarar formulas envolvidas, quando usa-las e quais parametros/dados as alimentam.
 - Toda simulacao deve compartilhar dados entre graficos, tabela e cena.
+- Toda simulacao animada deve seguir o padrao de renderer desacoplado do shell React e revisar FPS/frame time quando houver risco de peso visual.
 - O catalogo deve separar simulacoes disponiveis de simulacoes planejadas.
 - O catalogo deve manter area, subarea e `topicPath` consistentes com `09-simulation-catalog-plan.md`.
 - A documentacao deve ser atualizada quando a stack ou o core mudar.

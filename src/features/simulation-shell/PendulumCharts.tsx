@@ -1,30 +1,31 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { Box, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import type { PendulumSample } from '../../lib/physics/pendulum'
 import { themeTokens } from '../../theme/appTheme'
-import { PlotlyChart, type PlotlyTrace } from './PlotlyChart'
+import { LiveLineChart, type ChartTrace } from './LiveLineChart'
 
 type PendulumChartsProps = {
-  durationSeconds: number
+  chartWindowSeconds: number
   samples: PendulumSample[]
   showEnergy: boolean
+  xAxisRange: [number, number]
 }
 
-const maxChartSamples = 160
+const maxChartSamples = 480
+const compactSeconds = new Intl.NumberFormat('pt-BR', {
+  maximumFractionDigits: 1,
+})
 
-export function PendulumCharts({
-  durationSeconds,
+export const PendulumCharts = memo(function PendulumCharts({
+  chartWindowSeconds,
   samples,
   showEnergy,
+  xAxisRange,
 }: PendulumChartsProps) {
   const chartSamples = useMemo(
     () => downsampleSamples(samples, maxChartSamples),
     [samples],
-  )
-  const xAxisRange = useMemo<[number, number]>(
-    () => [0, durationSeconds],
-    [durationSeconds],
   )
   const chartData = useMemo(() => {
     const time = chartSamples.map((sample) => sample.timeSeconds)
@@ -39,7 +40,7 @@ export function PendulumCharts({
           name: 'theta',
           lineColor: themeTokens.teal,
         },
-      ] satisfies PlotlyTrace[],
+      ] satisfies ChartTrace[],
       velocity: [
         {
           x: time,
@@ -49,7 +50,7 @@ export function PendulumCharts({
           name: 'omega',
           lineColor: themeTokens.cyan,
         },
-      ] satisfies PlotlyTrace[],
+      ] satisfies ChartTrace[],
       energy: [
         {
           x: time,
@@ -69,7 +70,7 @@ export function PendulumCharts({
           name: 'total',
           lineColor: themeTokens.cyan,
         },
-      ] satisfies PlotlyTrace[],
+      ] satisfies ChartTrace[],
     }
   }, [chartSamples])
 
@@ -87,7 +88,8 @@ export function PendulumCharts({
         <Box>
           <Typography variant="h2">Graficos</Typography>
           <Typography color="text.secondary" variant="body2">
-            Series Plotly escritas com as amostras ja percorridas.
+            Janela movel de {formatSeconds(chartWindowSeconds)} com{' '}
+            {chartSamples.length} pontos visiveis.
           </Typography>
         </Box>
         <Box
@@ -97,20 +99,20 @@ export function PendulumCharts({
             gridTemplateColumns: { xs: '1fr', xl: 'repeat(3, minmax(0, 1fr))' },
           }}
         >
-          <PlotlyChart
+          <LiveLineChart
             title="Angulo por tempo"
             traces={chartData.angle}
             xAxisRange={xAxisRange}
             yAxisTitle="theta (deg)"
           />
-          <PlotlyChart
+          <LiveLineChart
             title="Velocidade angular"
             traces={chartData.velocity}
             xAxisRange={xAxisRange}
             yAxisTitle="omega (rad/s)"
           />
           {showEnergy ? (
-            <PlotlyChart
+            <LiveLineChart
               title="Energia mecanica"
               traces={chartData.energy}
               xAxisRange={xAxisRange}
@@ -121,10 +123,14 @@ export function PendulumCharts({
       </Stack>
     </Box>
   )
-}
+})
 
 function radiansToDegrees(value: number) {
   return (value * 180) / Math.PI
+}
+
+function formatSeconds(value: number) {
+  return `${compactSeconds.format(value)} s`
 }
 
 function downsampleSamples(samples: PendulumSample[], maxSampleCount: number) {

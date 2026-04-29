@@ -32,6 +32,14 @@ describe('simulation registry', () => {
   })
 
   it('declares pendulum parameters, presets, limits, and formulas', () => {
+    expect(pendulumFixture.runtimeParameters.map((parameter) => parameter.id)).toEqual([
+      'durationSeconds',
+      'chartWindowSeconds',
+    ])
+    expect(pendulumFixture.durationSeconds).toBe(30)
+    expect(pendulumFixture.sampleRateHz).toBe(120)
+    expect(pendulumFixture.chartWindowSeconds).toBe(12)
+    expect(activeSimulation.technologyPlan?.charting).toBe('live-canvas')
     expect(pendulumFixture.parameters.map((parameter) => parameter.id)).toEqual([
       'lengthMeters',
       'massKilograms',

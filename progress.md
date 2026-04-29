@@ -260,6 +260,7 @@ Validacao:
 - Executado `npm run lint`.
 - Executado `npm run build`; build passou com aviso existente de chunks acima de 500 kB.
 - Executado `validate_guides.py`.
+- Executado `validate_guides.py`.
 - Smoke visual com Edge headless em `1440x1100`: canvas presente, pixels coloridos detectados na regiao da cena e DOM com 15 elementos Plotly, `301 amostras`, `30 Hz` e `0,6x` confirmados.
 - Executado `validate_guides.py`.
 - Executado `validate_guides.py`.
@@ -353,3 +354,164 @@ Validacao:
 - Executado `npm run lint`.
 - Executado `npm run build`; build passou com aviso existente de chunks acima de 500 kB.
 - Executado `validate_guides.py`.
+
+## 2026-04-28 - Loop visual desacoplado do shell React
+
+Correcao de performance da animacao:
+
+- O `requestAnimationFrame` principal foi movido para `PendulumScene`, mantendo a atualizacao visual do Three.js fora do re-render completo do `SimulationShell`.
+- A cena passou a ler a mesma timeline de samples por refs e renderizar o pendulo, vetores e trilha de forma imperativa a cada frame.
+- O shell React agora recebe apenas leituras periodicas do sample atual, reduzindo trabalho de MUI, tabela, graficos, formulas e teoria durante o playback.
+- A trilha do pendulo deixou de recriar `BufferGeometry` a cada atualizacao e passou a reutilizar um buffer dinamico com `setDrawRange`.
+- O renderer WebGL passou de `low-power` para `high-performance`, com `devicePixelRatio` limitado a `1.25` para reduzir custo de preenchimento.
+- O viewport ganhou indicadores visiveis de FPS e tempo de frame para acompanhar a fluidez local.
+- `PendulumCharts` e `PlotlyChart` foram memoizados para evitar renders quando os recortes de dados ainda nao mudaram.
+- O smoke test de UI teve timeout ampliado para 10 s porque o teste completo do shell com MUI, KaTeX e queries acessiveis estava ultrapassando o limite padrao por pequena margem.
+
+Arquivos atualizados:
+
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/PendulumCharts.tsx`
+- `src/features/simulation-shell/PendulumScene.tsx`
+- `src/features/simulation-shell/PlotlyChart.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+
+Validacao:
+
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso existente de chunks acima de 500 kB.
+- Executado `validate_guides.py`.
+- Capturadas screenshots desktop e mobile em `artifacts/pendulum-desktop.png` e `artifacts/pendulum-mobile.png`; canvas confirmado como nao branco por amostragem de pixels.
+
+## 2026-04-28 - Padrao de renderizacao performatica
+
+Decisao documentada:
+
+- O ajuste de performance do pendulo foi promovido a padrao do projeto.
+- Simulacoes animadas devem usar renderer-first: o `requestAnimationFrame` pertence ao renderer visual, enquanto o shell React orquestra parametros, graficos, tabela, formulas e teoria sem re-renderizar tudo a cada frame.
+- O padrao exige fonte fisica unica, snapshots periodicos para UI, buffers/geometrias reutilizados, limites de custo visual e medicao simples de FPS/frame time quando houver animacao continua.
+- O roadmap agora inclui extrair esse runtime visual como parte do reuso da Fase 2.
+
+Arquivos atualizados:
+
+- `guides/00-index.md`
+- `AGENTS.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/05-roadmap.md`
+- `guides/07-quality-and-operations.md`
+- `guides/09-simulation-catalog-plan.md`
+- `guides/issues.md`
+- `progress.md`
+
+Validacao:
+
+- Executado `validate_guides.py`.
+
+## 2026-04-29 - Ciclo ajustavel e janela movel dos graficos
+
+Ajuste de UX e fluidez do pendulo:
+
+- O tempo do ciclo da simulacao passou a ser um controle de runtime, com default de 30 s e limite local de 10 s a 120 s.
+- A taxa de amostragem do pendulo passou de 30 Hz para 120 Hz para reduzir saltos visuais e melhorar a qualidade das series.
+- Os graficos agora usam janela movel configuravel, com default de 12 s, mostrando os ultimos N segundos depois que o plot enche.
+- A tabela segue o mesmo recorte temporal dos graficos para manter as amostras sincronizadas.
+- A cena Three.js interpola entre samples da timeline durante o `requestAnimationFrame`, preservando a fonte fisica unica e suavizando o playback.
+
+Arquivos atualizados:
+
+- `fixtures/simulations/mechanics-pendulum.json`
+- `guides/02-product-spec.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/06-data-and-api.md`
+- `guides/07-quality-and-operations.md`
+- `guides/08-api-contracts.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/PendulumCharts.tsx`
+- `src/features/simulation-shell/PendulumScene.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+- `src/features/simulation-shell/sampleWindow.ts`
+- `src/features/simulation-shell/sampleWindow.test.ts`
+- `src/simulation-registry/catalog.test.ts`
+- `src/simulation-registry/types.ts`
+
+Validacao:
+
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunks acima de 500 kB.
+- Executado `validate_guides.py`.
+- Smoke visual headless com Chrome/Playwright em desktop `1440x1100` e mobile `390x900`: canvas nao branco, pixels coloridos detectados, movimento detectado por diff de frames e sem overflow horizontal.
+- Capturas geradas em `artifacts/pendulum-window-desktop.png`, `artifacts/pendulum-window-mobile.png`, `artifacts/pendulum-window-desktop-canvas.png` e `artifacts/pendulum-window-mobile-canvas.png`.
+
+## 2026-04-29 - Controles sem remount dos graficos
+
+Correcao de acoplamento e peso nos controles:
+
+- `PendulumRuntime` deixou de usar `key` baseada no reset de playback, evitando desmontar viewport, tabela e graficos a cada alteracao de parametro.
+- O reset agora atualiza o sample vivo e os stats via callback do renderer, preservando os componentes Plotly montados.
+- Os controles numericos passaram a manter valor local durante edicao; sliders confirmam recalculo ao soltar, e inputs confirmam com Enter ou ao perder foco.
+- Commits com o mesmo valor atual nao disparam novo reset nem recomputam a timeline.
+- O smoke test da UI passou a verificar que o grafico de energia permanece o mesmo node DOM apos alterar um parametro fisico.
+
+Arquivos atualizados:
+
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/07-quality-and-operations.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+
+Validacao:
+
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunks acima de 500 kB.
+- Executado `validate_guides.py`.
+- Smoke visual headless em `http://127.0.0.1:5181/`: alterar `Comprimento` manteve o mesmo node do grafico de energia e o mesmo node `.js-plotly-plot`, com `0` remocoes de graficos/Plotly observadas.
+- Smoke de arraste do slider `Comprimento`: durante o drag e apos o commit, os 3 graficos Plotly permaneceram montados e nenhum node Plotly foi removido.
+
+## 2026-04-29 - Graficos progressivos mais suaves
+
+Correcao de cadencia visual dos graficos:
+
+- O recorte progressivo dos graficos deixou de avancar em blocos de 8 samples e agora acompanha o sample atual sem stride adicional.
+- O renderer passa leituras para a UI a cada 33 ms, em vez de 100 ms, reduzindo o tamanho visual de cada trecho novo do grafico.
+- A decimacao visual dos graficos passou de 160 para 480 pontos maximos por serie visivel, mantendo mais detalhe na janela temporal.
+- O grafico progressivo deixou de depender de redraw completo via `Plotly.react`; agora usa `LiveLineChart` em canvas com `requestAnimationFrame`, cursor de tempo e ponta interpolada.
+- A amostra viva interpolada entra como ponto final da serie para que o desenho acompanhe o playback, sem parecer sequencia de screenshots.
+- O contrato `SimulationTechnologyPlan.charting` passou a aceitar `live-canvas` para graficos temporais que precisam ser desenhados continuamente.
+
+Arquivos atualizados:
+
+- `fixtures/simulations/catalog.json`
+- `guides/00-index.md`
+- `guides/01-strategy.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/05-roadmap.md`
+- `guides/06-data-and-api.md`
+- `guides/07-quality-and-operations.md`
+- `guides/08-api-contracts.md`
+- `guides/09-simulation-catalog-plan.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/features/simulation-shell/LiveLineChart.tsx`
+- `src/features/simulation-shell/PendulumCharts.tsx`
+- `src/features/simulation-shell/PendulumScene.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+- `src/simulation-registry/catalog.test.ts`
+- `src/simulation-registry/types.ts`
+
+Validacao:
+
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunks acima de 500 kB.
+- Executado `validate_guides.py`.
+- Smoke visual headless em `http://127.0.0.1:5181/`: 3 canvases de grafico vivos, sem erro de console, pixels coloridos presentes e mudanca visual detectada em 11 de 11 intervalos de 80 ms.

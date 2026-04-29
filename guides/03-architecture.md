@@ -5,7 +5,7 @@
 - React + TypeScript + Vite para o app.
 - Material UI para layout, controles, tabelas e tema dark moderno.
 - Three.js para viewport 3D/2.5D, objetos, vetores, camera, helpers e animacao.
-- Plotly.js para graficos cientificos interativos.
+- Plotly.js para graficos cientificos interativos e canvas/SVG renderer-first para graficos progressivos de alta frequencia.
 - MDX/Markdown + KaTeX para apendice teorico, formulas e orientacao de uso das equacoes.
 - `react-markdown`, `remark-math` e `rehype-katex` para renderizar Markdown local com formulas KaTeX no core.
 - `lucide-react` para icones compactos de comandos conhecidos como play, pause e reset.
@@ -27,6 +27,7 @@ Dependencias opcionais por fase:
 - Usar fixtures locais ate haver evidencia de que a experiencia central funciona.
 - Evitar backend ate existir necessidade real de persistencia ou colaboracao.
 - Declarar limites fisicos do modelo dentro da propria simulacao.
+- Separar loop visual de alta frequencia do shell React; animacao em `requestAnimationFrame` deve pertencer ao renderer, nao ao layout completo da UI.
 
 ## Modulos principais
 
@@ -34,7 +35,7 @@ Dependencias opcionais por fase:
 - `simulation-registry`: lista areas, simulacoes, status e metadados.
 - `physics-core`: funcoes numericas puras, integradores e calculos derivados.
 - `rendering`: adaptadores Three.js/PixiJS para desenhar o estado fisico.
-- `charts`: adaptadores Plotly.js para series de dados.
+- `charts`: adaptadores Plotly.js, canvas ou SVG para series de dados, escolhidos pela cadencia visual necessaria.
 - `theme`: tokens MUI, dark mode, paleta, componentes e densidade.
 - `content`: MDX/Markdown, formulas, exemplos e metadados teoricos das simulacoes.
 - `formula-guide`: metadados que conectam formulas a parametros, samples, vetores, graficos e limites de uso.
@@ -53,12 +54,29 @@ Dependencias opcionais por fase:
 Usuario altera parametro
   -> SimulationShell valida e normaliza unidades
   -> physics-core recalcula estado inicial e/ou timeline
-  -> renderer recebe frame atual
-  -> charts recebem series derivadas quando a saida de graficos esta ligada
-  -> table recebe samples quando a saida de tabela esta ligada
+  -> renderer recebe timeline/samples e controla o playback visual em loop proprio
+  -> SimulationShell recebe leituras periodicas do sample atual para UI
+  -> charts recebem a janela movel dos ultimos N segundos quando a saida esta ligada
+  -> table recebe o mesmo recorte temporal quando a saida de tabela esta ligada
   -> formula-guide destaca equacoes aplicaveis e variaveis usadas
   -> theory recebe parametros, equacoes, exemplos e notas do modelo
 ```
+
+## Padrao de renderizacao e performance
+
+Toda simulacao animada deve seguir o padrao adotado no pendulo:
+
+- O renderer visual (`Three.js`, `PixiJS` ou equivalente) deve possuir o loop de `requestAnimationFrame` e atualizar objetos de cena de forma imperativa.
+- O shell React deve orquestrar parametros, toggles, layout, graficos, tabela, formulas e teoria, mas nao deve re-renderizar a arvore inteira a cada frame.
+- A fonte fisica continua unica: motor numerico, cena, graficos, tabela e formulas derivam dos mesmos parametros e samples.
+- O renderer pode manter refs para timeline, parametros e flags visuais; a UI recebe snapshots periodicos do sample atual apenas na cadencia necessaria para leitura humana.
+- Buffers e geometrias dinamicas devem ser reutilizados quando possivel; evitar recriar `BufferGeometry`, materiais, renderers ou series pesadas dentro do frame loop.
+- `devicePixelRatio`, quantidade de pontos de trilha, densidade de particulas e amostragem visual devem ter limites explicitos para proteger maquinas boas e medianas.
+- Graficos Plotly, tabelas e conteudo KaTeX/Markdown nao entram no caminho quente da animacao; atualizar por recorte, decimacao, memoizacao ou toggle quando necessario.
+- Graficos progressivos em tempo real nao devem depender de redraw completo em blocos. Use adapter imperativo com `requestAnimationFrame` (canvas/SVG), ponta/cursor interpolado, densidade suficiente de pontos e recorte movel suave.
+- Controles numericos podem manter valor local de edicao e confirmar recalculos caros apenas ao soltar o slider, pressionar Enter ou sair do input.
+- Simulacoes com timeline longa devem separar duracao do ciclo, taxa de amostragem e janela visivel de graficos para preservar fluidez sem perder contexto historico.
+- Viewports devem expor medicao simples de FPS ou frame time durante desenvolvimento ou quando houver risco de peso visual.
 
 ## Fronteiras entre core e acessorios
 

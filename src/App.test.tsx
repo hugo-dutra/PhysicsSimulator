@@ -19,7 +19,7 @@ describe('App', () => {
       screen.getByRole('heading', { name: /Pendulo simples/i }),
     ).toBeInTheDocument()
     expect(screen.getByText(/Catalogo local/i)).toBeInTheDocument()
-    expect(screen.getByText(/301 amostras/i)).toBeInTheDocument()
+    expect(screen.getByText(/3601 amostras/i)).toBeInTheDocument()
     expect(screen.getByText(/Viewport Three\.js/i)).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: /Graficos/i }),
@@ -29,6 +29,9 @@ describe('App', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: /Saidas de dados/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: /Tempo e janela/i }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: /Guia de formulas/i }),
@@ -46,9 +49,9 @@ describe('App', () => {
       </ThemeProvider>,
     )
 
-    expect(
-      screen.getByRole('img', { name: /Energia mecanica/i }),
-    ).toBeInTheDocument()
+    const energyChart = screen.getByRole('img', { name: /Energia mecanica/i })
+
+    expect(energyChart).toBeInTheDocument()
 
     expect(
       screen.getByRole('button', { name: /Pausar animacao/i }),
@@ -65,6 +68,27 @@ describe('App', () => {
       target: { value: '2' },
     })
     expect(lengthInput).toHaveValue(2)
+    fireEvent.blur(lengthInput)
+    expect(screen.getByRole('img', { name: /Energia mecanica/i })).toBe(
+      energyChart,
+    )
+
+    const durationInput = screen.getByLabelText(/Tempo do ciclo \(s\)/i)
+    const chartWindowInput = screen.getByLabelText(/Janela do grafico \(s\)/i)
+
+    fireEvent.change(durationInput, {
+      target: { value: '45' },
+    })
+    expect(durationInput).toHaveValue(45)
+    fireEvent.blur(durationInput)
+    expect(screen.getByText(/5401 amostras/i)).toBeInTheDocument()
+
+    fireEvent.change(chartWindowInput, {
+      target: { value: '8' },
+    })
+    expect(chartWindowInput).toHaveValue(8)
+    fireEvent.blur(chartWindowInput)
+    expect(screen.getAllByText(/janela 8 s/i).length).toBeGreaterThan(0)
 
     fireEvent.click(screen.getByRole('switch', { name: /^Energia$/i }))
     expect(
@@ -84,5 +108,5 @@ describe('App', () => {
 
     fireEvent.click(screen.getByLabelText(/Resetar simulacao/i))
     expect(screen.getByLabelText(/Reproduzir simulacao/i)).toBeInTheDocument()
-  })
+  }, 10_000)
 })
