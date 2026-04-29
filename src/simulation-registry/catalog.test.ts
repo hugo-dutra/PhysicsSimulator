@@ -4,6 +4,7 @@ import {
   findSimulation,
   getAreaForSimulation,
   inclinedPlaneFixture,
+  kinematicsFixtures,
   pendulumFixture,
   simulationCatalog,
 } from './catalog'
@@ -28,10 +29,10 @@ describe('simulation registry', () => {
     expect(allSimulations).toHaveLength(51)
     expect(
       allSimulations.filter((item) => item.status === 'available'),
-    ).toHaveLength(2)
+    ).toHaveLength(6)
     expect(allSimulations.some((item) => item.status === 'planned')).toBe(true)
     expect(findSimulation('inclined-plane-friction').status).toBe('available')
-    expect(findSimulation('projectile-motion').status).toBe('planned')
+    expect(findSimulation('projectile-motion').status).toBe('available')
   })
 
   it('exposes the planned curriculum by area and subarea', () => {
@@ -114,5 +115,34 @@ describe('simulation registry', () => {
     expect(inclinedPlaneFixture.presets.length).toBeGreaterThan(0)
     expect(inclinedPlaneFixture.limits.length).toBeGreaterThan(0)
     expect(inclinedPlaneFixture.formulas.length).toBeGreaterThan(0)
+  })
+
+  it('declares the first four kinematics simulations as available', () => {
+    const kinematicsSimulationIds = [
+      'uniform-linear-motion',
+      'uniformly-accelerated-motion',
+      'projectile-motion',
+      'uniform-circular-motion',
+    ] as const
+
+    kinematicsSimulationIds.forEach((simulationId) => {
+      const simulation = findSimulation(simulationId)
+      const fixture = kinematicsFixtures[simulationId]
+
+      expect(simulation.status).toBe('available')
+      expect(simulation.topicPath[0]).toBe('Mecanica')
+      expect(simulation.topicPath[1]).toBe('Cinematica')
+      expect(simulation.technologyPlan?.engine).toBe('custom-analytic')
+      expect(simulation.technologyPlan?.charting).toBe('live-canvas')
+      expect(fixture.simulationId).toBe(simulationId)
+      expect(fixture.runtimeParameters.map((parameter) => parameter.id)).toEqual([
+        'durationSeconds',
+        'chartWindowSeconds',
+      ])
+      expect(fixture.parameters.length).toBeGreaterThan(0)
+      expect(fixture.presets.length).toBeGreaterThan(0)
+      expect(fixture.limits.length).toBeGreaterThan(0)
+      expect(fixture.formulas.length).toBeGreaterThan(0)
+    })
   })
 })

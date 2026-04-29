@@ -1,0 +1,231 @@
+{
+  "simulationId": "uniform-circular-motion",
+  "durationSeconds": 12,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 8,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Tempo do ciclo",
+      "unit": "s",
+      "kind": "number",
+      "min": 4,
+      "max": 40,
+      "step": 1,
+      "defaultValue": 12
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "unit": "s",
+      "kind": "number",
+      "min": 2,
+      "max": 20,
+      "step": 1,
+      "defaultValue": 8
+    }
+  ],
+  "defaultParameters": {
+    "radiusMeters": 1.4,
+    "angularVelocityRadiansPerSecond": 1.8,
+    "initialAngleDegrees": 0,
+    "massKilograms": 0.5
+  },
+  "parameters": [
+    {
+      "id": "radiusMeters",
+      "label": "Raio",
+      "unit": "m",
+      "kind": "number",
+      "min": 0.2,
+      "max": 5,
+      "step": 0.05,
+      "defaultValue": 1.4
+    },
+    {
+      "id": "angularVelocityRadiansPerSecond",
+      "label": "Velocidade angular",
+      "unit": "rad/s",
+      "kind": "number",
+      "min": 0.1,
+      "max": 8,
+      "step": 0.05,
+      "defaultValue": 1.8
+    },
+    {
+      "id": "initialAngleDegrees",
+      "label": "Angulo inicial",
+      "unit": "deg",
+      "kind": "number",
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "defaultValue": 0
+    },
+    {
+      "id": "massKilograms",
+      "label": "Massa",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.05,
+      "max": 10,
+      "step": 0.05,
+      "defaultValue": 0.5
+    }
+  ],
+  "presets": [
+    {
+      "id": "steady-circle",
+      "label": "MCU padrao",
+      "parameters": {
+        "radiusMeters": 1.4,
+        "angularVelocityRadiansPerSecond": 1.8,
+        "initialAngleDegrees": 0,
+        "massKilograms": 0.5
+      }
+    },
+    {
+      "id": "large-radius",
+      "label": "Raio maior",
+      "parameters": {
+        "radiusMeters": 2.8,
+        "angularVelocityRadiansPerSecond": 1.1,
+        "initialAngleDegrees": 35,
+        "massKilograms": 0.8
+      }
+    },
+    {
+      "id": "fast-spin",
+      "label": "Giro rapido",
+      "parameters": {
+        "radiusMeters": 0.9,
+        "angularVelocityRadiansPerSecond": 3.6,
+        "initialAngleDegrees": -45,
+        "massKilograms": 0.4
+      }
+    }
+  ],
+  "limits": [
+    "O corpo e tratado como ponto material preso a uma trajetoria circular ideal.",
+    "O modulo da velocidade angular e constante durante todo o ciclo.",
+    "Nao ha atrito, deformacao, torque variavel ou mudanca de raio.",
+    "A forca centripeta nao e modelada como objeto fisico separado; a aceleracao radial e derivada da cinamatica."
+  ],
+  "formulas": [
+    {
+      "id": "mcu-angle",
+      "title": "Posicao angular",
+      "expressionLatex": "\\theta(t)=\\theta_0+\\omega t",
+      "description": "Atualiza o angulo do corpo em movimento circular uniforme.",
+      "variables": [
+        {
+          "symbol": "\\theta",
+          "label": "angulo",
+          "unit": "rad"
+        },
+        {
+          "symbol": "\\omega",
+          "label": "velocidade angular",
+          "unit": "rad/s"
+        }
+      ],
+      "usedWhen": "Usar quando a velocidade angular permanece constante.",
+      "notUsedWhen": "Nao usar para rotacao acelerada ou raio variavel.",
+      "parameterIds": ["initialAngleDegrees", "angularVelocityRadiansPerSecond"],
+      "sampleFields": ["angleRadians", "positionMeters"],
+      "relatedChartIds": ["angle-time"],
+      "relatedVectorIds": ["displacement"]
+    },
+    {
+      "id": "mcu-speed",
+      "title": "Velocidade tangencial",
+      "expressionLatex": "v=\\omega r",
+      "description": "Liga a velocidade angular ao modulo da velocidade linear.",
+      "variables": [
+        {
+          "symbol": "v",
+          "label": "velocidade tangencial",
+          "unit": "m/s"
+        },
+        {
+          "symbol": "r",
+          "label": "raio",
+          "unit": "m"
+        }
+      ],
+      "usedWhen": "Usar em trajetorias circulares com raio constante.",
+      "notUsedWhen": "Nao usar para curvas de raio variavel ou movimento nao circular.",
+      "parameterIds": ["radiusMeters", "angularVelocityRadiansPerSecond"],
+      "sampleFields": ["speedMetersPerSecond", "velocityMetersPerSecond"],
+      "relatedChartIds": ["velocity-time"],
+      "relatedVectorIds": ["velocity"]
+    },
+    {
+      "id": "mcu-period-frequency",
+      "title": "Periodo e frequencia",
+      "expressionLatex": "T=\\frac{2\\pi}{\\omega},\\quad f=\\frac{1}{T}",
+      "description": "Converte velocidade angular em tempo por volta e voltas por segundo.",
+      "variables": [
+        {
+          "symbol": "T",
+          "label": "periodo",
+          "unit": "s"
+        },
+        {
+          "symbol": "f",
+          "label": "frequencia",
+          "unit": "Hz"
+        }
+      ],
+      "usedWhen": "Usar para comparar cadencia angular com tempo de ciclo.",
+      "notUsedWhen": "Nao representa frequencia variavel.",
+      "parameterIds": ["angularVelocityRadiansPerSecond"],
+      "sampleFields": ["periodSeconds", "frequencyHertz"],
+      "relatedChartIds": ["angle-time"]
+    },
+    {
+      "id": "mcu-centripetal",
+      "title": "Aceleracao centripeta",
+      "expressionLatex": "a_c=\\omega^2 r = \\frac{v^2}{r}",
+      "description": "Aceleracao radial apontando para o centro da trajetoria.",
+      "variables": [
+        {
+          "symbol": "a_c",
+          "label": "aceleracao centripeta",
+          "unit": "m/s^2"
+        }
+      ],
+      "usedWhen": "Usar para interpretar o vetor radial e o grafico de aceleracao.",
+      "notUsedWhen": "Nao inclui componente tangencial, pois no MCU o modulo da velocidade nao muda.",
+      "parameterIds": ["radiusMeters", "angularVelocityRadiansPerSecond"],
+      "sampleFields": [
+        "centripetalAccelerationMetersPerSecondSquared",
+        "accelerationMetersPerSecondSquared"
+      ],
+      "relatedChartIds": ["acceleration-time"],
+      "relatedVectorIds": ["centripetal"]
+    },
+    {
+      "id": "mcu-kinetic-energy",
+      "title": "Energia cinetica no MCU",
+      "expressionLatex": "K=\\frac{1}{2}mv^2",
+      "description": "Energia cinetica constante quando massa, raio e velocidade angular nao mudam.",
+      "variables": [
+        {
+          "symbol": "K",
+          "label": "energia cinetica",
+          "unit": "J"
+        }
+      ],
+      "usedWhen": "Usar para comparar efeitos de massa, raio e velocidade angular.",
+      "notUsedWhen": "Nao inclui energia rotacional do corpo extenso.",
+      "parameterIds": [
+        "massKilograms",
+        "radiusMeters",
+        "angularVelocityRadiansPerSecond"
+      ],
+      "sampleFields": ["kineticEnergyJoules", "totalEnergyJoules"],
+      "relatedChartIds": ["energy-time"]
+    }
+  ]
+}

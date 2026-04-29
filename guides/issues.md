@@ -35,7 +35,7 @@
 - Graficos, tabela, formulas e teoria devem seguir o padrao de bloco chevron recolhivel: quando recolhidos, desmontam o conteudo e suspendem processamento derivado em vez de apenas esconder a UI.
 - Blocos chevron de saida pesada iniciam fechados por padrao e precisam alternar aberto/fechado ao clique no cabecalho.
 - Viewport, graficos, tabela, formulas e apendice teorico seguem o padrao de painel maximizavel: apenas um fica em foco na janela, os demais paineis ficam invisiveis, e minimizar restaura o shell anterior sem perder sincronizacao.
-- `fixtures/simulations/catalog.json` deve listar todas as simulacoes planejadas do catalogo curricular, mas apenas `Mecanica > Oscilacoes > Pendulo simples` fica como `available` ate novas simulacoes terem core completo.
+- `fixtures/simulations/catalog.json` deve listar todas as simulacoes planejadas do catalogo curricular; apenas simulacoes com motor, cena, graficos, tabela, formulas, teoria e validacao ficam como `available`.
 - Tabelas sincronizadas em playback devem manter quantidade fixa de linhas visiveis para evitar piscadas e deslocamento de layout; slots sem amostra podem aparecer vazios ate haver dados suficientes.
 - O pendulo simples deve expor, alem da velocidade angular, velocidade linear tangencial e aceleracoes tangencial/radial/total em graficos e tabela, calculadas no sample do motor.
 - Vetores exibidos na cena devem ter legenda visivel com cor, modulo atual e significado fisico.
@@ -45,13 +45,14 @@
 - Graficos temporais devem oferecer acao de olho para mover um unico grafico para um slot lateral direito dentro do viewport, preservando a mesma janela de samples e retornando ao bloco original quando a acao for desligada.
 - `Mecanica > Dinamica > Plano inclinado com atrito` e a segunda simulacao `available`, com fixture local, motor deterministico por regimes, cena Three.js, graficos live-canvas, tabela, formulas e teoria no mesmo shell.
 - O runtime visual reutilizavel fica em `src/lib/rendering/visualRuntime.ts` e centraliza agendamento de frames, interpolacao de timeline e metricas simples, mantendo cada renderer dono dos seus objetos e buffers.
+- `Mecanica > Cinematica` iniciou a Fase 3 com quatro simulacoes `available`: `Movimento retilineo uniforme`, `Movimento uniformemente variado e queda livre`, `Lancamento obliquo` e `Movimento circular uniforme`, todas com motor analitico compartilhado, cena Three.js 2.5D, live-canvas, tabela, formulas, teoria e fixtures locais.
 
 ## Decisoes pendentes
 
 - Definir se a aplicacao deve ser apenas web ou tambem empacotavel como desktop no futuro.
 - Definir estrategia final de testes e2e apos inicializar o frontend.
 - Definir criterios objetivos para quando PixiJS, Rapier, Matter.js, D3.js ou Manim deixam de ser opcionais e entram no bundle.
-- Definir qual sera a terceira simulacao funcional apos validar a Fase 2 completa.
+- Definir qual sera o proximo bloco funcional apos o primeiro lote de Cinematica da Fase 3.
 
 ## Gaps deixados para depois
 

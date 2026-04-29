@@ -1003,3 +1003,57 @@ Validacao:
 - Executado `npm run lint`.
 - Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`.
 - Executado `npm run build`; build passou com o aviso conhecido de chunk acima de 500 kB.
+
+## 2026-04-29 - Fase 3: primeiro lote de Cinematica
+
+Executadas as proximas 4 tasks da Fase 3:
+
+- Implementar `Mecanica > Cinematica > Movimento retilineo uniforme`.
+- Implementar `Mecanica > Cinematica > Movimento uniformemente variado e queda livre`.
+- Implementar `Mecanica > Cinematica > Lancamento obliquo`.
+- Implementar `Mecanica > Cinematica > Movimento circular uniforme`.
+
+Arquivos e estruturas criadas/atualizadas:
+
+- `fixtures/simulations/catalog.json`
+- `fixtures/simulations/mechanics-uniform-linear-motion.json`
+- `fixtures/simulations/mechanics-uniformly-accelerated-motion.json`
+- `fixtures/simulations/mechanics-projectile-motion.json`
+- `fixtures/simulations/mechanics-uniform-circular-motion.json`
+- `guides/01-strategy.md`
+- `guides/02-product-spec.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/05-roadmap.md`
+- `guides/06-data-and-api.md`
+- `guides/07-quality-and-operations.md`
+- `guides/08-api-contracts.md`
+- `guides/09-simulation-catalog-plan.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/content/simulations/mechanics/uniform-linear-motion/theory.md`
+- `src/content/simulations/mechanics/uniformly-accelerated-motion/theory.md`
+- `src/content/simulations/mechanics/projectile-motion/theory.md`
+- `src/content/simulations/mechanics/uniform-circular-motion/theory.md`
+- `src/features/simulation-shell/KinematicsCharts.tsx`
+- `src/features/simulation-shell/KinematicsScene.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+- `src/features/simulation-shell/kinematicsChartConfigs.ts`
+- `src/lib/physics/kinematics.test.ts`
+- `src/lib/physics/kinematics.ts`
+- `src/simulation-registry/catalog.test.ts`
+- `src/simulation-registry/catalog.ts`
+
+Decisoes:
+
+- As quatro simulacoes de Cinematica usam um motor analitico compartilhado e deterministico, com samples que alimentam cena, vetores, graficos, tabela, formulas e teoria.
+- A cena `KinematicsScene` reutiliza o padrao renderer-first com Three.js 2.5D, eixo Z vertical, camera orbitavel, zoom por scroll, trilha e vetores.
+- Cada simulacao ganhou fixture local com parametros, runtime, presets, limites e guia de formulas; o catalogo promoveu os quatro itens para `available`.
+
+Validacao:
+
+- Executado `npm run test`.
+- Executado `npm run build`; build passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`.
+- Executado `validate_guides.py`; resultado `[OK] guides pack looks core-first and complete.`

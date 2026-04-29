@@ -54,11 +54,40 @@
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Cinematica", "Movimento retilineo uniforme"],
           "title": "Movimento retilineo uniforme",
-          "status": "planned",
+          "status": "available",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
-          "description": "Posicao, deslocamento e velocidade constante em movimento 1D."
+          "fixturePath": "fixtures/simulations/mechanics-uniform-linear-motion.json",
+          "theoryPath": "src/content/simulations/mechanics/uniform-linear-motion/theory.md",
+          "description": "Posicao, deslocamento e velocidade constante em movimento 1D.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo analitico compartilhado de Cinematica com cena Three.js 2.5D e samples unificados."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Posicao por tempo",
+              "sampleFields": ["timeSeconds", "positionMeters", "displacementMeters"]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidade por tempo",
+              "sampleFields": ["timeSeconds", "velocityMetersPerSecond"]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
         },
         {
           "id": "uniformly-accelerated-motion",
@@ -69,33 +98,154 @@
             "Movimento uniformemente variado e queda livre"
           ],
           "title": "Movimento uniformemente variado e queda livre",
-          "status": "planned",
+          "status": "available",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
-          "description": "Aceleracao constante, lancamento vertical, queda livre e graficos cinematicos."
+          "fixturePath": "fixtures/simulations/mechanics-uniformly-accelerated-motion.json",
+          "theoryPath": "src/content/simulations/mechanics/uniformly-accelerated-motion/theory.md",
+          "description": "Aceleracao constante, lancamento vertical, queda livre e graficos cinematicos.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Solucao analitica de aceleracao constante sobre o runtime visual reutilizavel."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Posicao por tempo",
+              "sampleFields": ["timeSeconds", "positionMeters", "displacementMeters"]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidade por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "velocityMetersPerSecond",
+                "speedMetersPerSecond"
+              ]
+            },
+            {
+              "id": "acceleration-time",
+              "title": "Aceleracao por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "accelerationMetersPerSecondSquared"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
         },
         {
           "id": "projectile-motion",
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Cinematica", "Lancamento obliquo"],
           "title": "Lancamento obliquo",
-          "status": "planned",
+          "status": "available",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
-          "description": "Trajetoria balistica sem resistencia do ar no primeiro modelo."
+          "fixturePath": "fixtures/simulations/mechanics-projectile-motion.json",
+          "theoryPath": "src/content/simulations/mechanics/projectile-motion/theory.md",
+          "description": "Trajetoria balistica sem resistencia do ar no primeiro modelo.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo balistico analitico sem arrasto, com corpo fixado no solo apos o impacto visual."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Posicao e altura por tempo",
+              "sampleFields": ["timeSeconds", "xMeters", "zMeters"]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidades por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "velocityXMetersPerSecond",
+                "velocityZMetersPerSecond",
+                "speedMetersPerSecond"
+              ]
+            },
+            {
+              "id": "acceleration-time",
+              "title": "Aceleracao por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "accelerationMetersPerSecondSquared"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "potentialEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
         },
         {
           "id": "uniform-circular-motion",
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Cinematica", "Movimento circular uniforme"],
           "title": "Movimento circular uniforme",
-          "status": "planned",
+          "status": "available",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
-          "description": "Periodo, frequencia, velocidade angular e aceleracao centripeta."
+          "fixturePath": "fixtures/simulations/mechanics-uniform-circular-motion.json",
+          "theoryPath": "src/content/simulations/mechanics/uniform-circular-motion/theory.md",
+          "description": "Periodo, frequencia, velocidade angular e aceleracao centripeta.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Solucao analitica de MCU com cena circular, vetores tangencial e centripeto e graficos sincronizados."
+          },
+          "charts": [
+            {
+              "id": "angle-time",
+              "title": "Angulo por tempo",
+              "sampleFields": ["timeSeconds", "angleRadians", "positionMeters"]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidade por tempo",
+              "sampleFields": ["timeSeconds", "speedMetersPerSecond"]
+            },
+            {
+              "id": "acceleration-time",
+              "title": "Aceleracao centripeta por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "centripetalAccelerationMetersPerSecondSquared"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
         },
         {
           "id": "inclined-plane-friction",

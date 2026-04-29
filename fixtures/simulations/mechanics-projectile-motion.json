@@ -1,0 +1,242 @@
+{
+  "simulationId": "projectile-motion",
+  "durationSeconds": 4,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 4,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Tempo do ciclo",
+      "unit": "s",
+      "kind": "number",
+      "min": 2,
+      "max": 20,
+      "step": 1,
+      "defaultValue": 4
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "unit": "s",
+      "kind": "number",
+      "min": 1,
+      "max": 12,
+      "step": 1,
+      "defaultValue": 4
+    }
+  ],
+  "defaultParameters": {
+    "launchSpeedMetersPerSecond": 16,
+    "launchAngleDegrees": 38,
+    "initialHeightMeters": 0.4,
+    "gravityMetersPerSecondSquared": 9.81,
+    "massKilograms": 0.5
+  },
+  "parameters": [
+    {
+      "id": "launchSpeedMetersPerSecond",
+      "label": "Velocidade inicial",
+      "unit": "m/s",
+      "kind": "number",
+      "min": 1,
+      "max": 40,
+      "step": 0.1,
+      "defaultValue": 16
+    },
+    {
+      "id": "launchAngleDegrees",
+      "label": "Angulo de lancamento",
+      "unit": "deg",
+      "kind": "number",
+      "min": 0,
+      "max": 85,
+      "step": 1,
+      "defaultValue": 38
+    },
+    {
+      "id": "initialHeightMeters",
+      "label": "Altura inicial",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 20,
+      "step": 0.1,
+      "defaultValue": 0.4
+    },
+    {
+      "id": "gravityMetersPerSecondSquared",
+      "label": "Gravidade",
+      "unit": "m/s^2",
+      "kind": "number",
+      "min": 1,
+      "max": 25,
+      "step": 0.01,
+      "defaultValue": 9.81
+    },
+    {
+      "id": "massKilograms",
+      "label": "Massa",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.05,
+      "max": 10,
+      "step": 0.05,
+      "defaultValue": 0.5
+    }
+  ],
+  "presets": [
+    {
+      "id": "balanced-arc",
+      "label": "Arco didatico",
+      "parameters": {
+        "launchSpeedMetersPerSecond": 16,
+        "launchAngleDegrees": 38,
+        "initialHeightMeters": 0.4,
+        "gravityMetersPerSecondSquared": 9.81,
+        "massKilograms": 0.5
+      }
+    },
+    {
+      "id": "high-arc",
+      "label": "Altura maxima",
+      "parameters": {
+        "launchSpeedMetersPerSecond": 18,
+        "launchAngleDegrees": 62,
+        "initialHeightMeters": 0.2,
+        "gravityMetersPerSecondSquared": 9.81,
+        "massKilograms": 0.5
+      }
+    },
+    {
+      "id": "lunar-arc",
+      "label": "Gravidade lunar",
+      "parameters": {
+        "launchSpeedMetersPerSecond": 12,
+        "launchAngleDegrees": 45,
+        "initialHeightMeters": 0.4,
+        "gravityMetersPerSecondSquared": 1.62,
+        "massKilograms": 0.5
+      }
+    }
+  ],
+  "limits": [
+    "O primeiro modelo despreza resistencia do ar e vento.",
+    "A gravidade e uniforme e aponta verticalmente para baixo.",
+    "O projetil e tratado como ponto material; rotacao e formato nao entram no calculo.",
+    "Depois que a trajetoria atinge z = 0, a visualizacao mantem o corpo no solo para fechar o ciclo."
+  ],
+  "formulas": [
+    {
+      "id": "projectile-components",
+      "title": "Decomposicao da velocidade inicial",
+      "expressionLatex": "v_{0x}=v_0\\cos(\\theta),\\quad v_{0y}=v_0\\sin(\\theta)",
+      "description": "Separa o lancamento em componente horizontal constante e componente vertical acelerada.",
+      "variables": [
+        {
+          "symbol": "v_0",
+          "label": "velocidade inicial",
+          "unit": "m/s"
+        },
+        {
+          "symbol": "\\theta",
+          "label": "angulo de lancamento",
+          "unit": "deg"
+        }
+      ],
+      "usedWhen": "Usar para iniciar o modelo balistico sem arrasto.",
+      "notUsedWhen": "Nao usar se houver resistencia do ar ou propulsao depois do lancamento.",
+      "parameterIds": ["launchSpeedMetersPerSecond", "launchAngleDegrees"],
+      "sampleFields": [
+        "velocityXMetersPerSecond",
+        "velocityZMetersPerSecond",
+        "speedMetersPerSecond"
+      ],
+      "relatedChartIds": ["velocity-time"],
+      "relatedVectorIds": ["velocity"],
+      "example": "Em 45 deg, as componentes inicial horizontal e vertical tem o mesmo modulo."
+    },
+    {
+      "id": "projectile-position",
+      "title": "Trajetoria sem arrasto",
+      "expressionLatex": "x(t)=v_{0x}t,\\quad y(t)=y_0+v_{0y}t-\\frac{1}{2}gt^2",
+      "description": "Gera a posicao horizontal e vertical exibida pela cena e pelos graficos.",
+      "variables": [
+        {
+          "symbol": "x",
+          "label": "posicao horizontal",
+          "unit": "m"
+        },
+        {
+          "symbol": "y",
+          "label": "altura",
+          "unit": "m"
+        },
+        {
+          "symbol": "g",
+          "label": "gravidade",
+          "unit": "m/s^2"
+        }
+      ],
+      "usedWhen": "Usar enquanto o projetil esta acima do solo no modelo ideal.",
+      "notUsedWhen": "Nao descreve ricochete, colisao, sustentacao ou arrasto.",
+      "parameterIds": [
+        "launchSpeedMetersPerSecond",
+        "launchAngleDegrees",
+        "initialHeightMeters",
+        "gravityMetersPerSecondSquared"
+      ],
+      "sampleFields": ["xMeters", "zMeters", "positionMeters"],
+      "relatedChartIds": ["position-time"],
+      "relatedVectorIds": ["displacement"]
+    },
+    {
+      "id": "projectile-acceleration",
+      "title": "Aceleracao gravitacional",
+      "expressionLatex": "a_x=0,\\quad a_y=-g",
+      "description": "No modelo sem arrasto, apenas a componente vertical da velocidade muda.",
+      "variables": [
+        {
+          "symbol": "a_y",
+          "label": "aceleracao vertical",
+          "unit": "m/s^2"
+        }
+      ],
+      "usedWhen": "Usar para interpretar a parabola e a reta decrescente de velocidade vertical.",
+      "notUsedWhen": "Nao vale quando a resistencia do ar e relevante.",
+      "parameterIds": ["gravityMetersPerSecondSquared"],
+      "sampleFields": [
+        "accelerationMetersPerSecondSquared",
+        "accelerationZMetersPerSecondSquared"
+      ],
+      "relatedChartIds": ["acceleration-time"],
+      "relatedVectorIds": ["gravity"]
+    },
+    {
+      "id": "projectile-energy",
+      "title": "Energia mecanica em voo",
+      "expressionLatex": "E=\\frac{1}{2}mv^2+mgy",
+      "description": "Soma energia cinetica e potencial enquanto o projetil esta em voo.",
+      "variables": [
+        {
+          "symbol": "E",
+          "label": "energia mecanica",
+          "unit": "J"
+        },
+        {
+          "symbol": "y",
+          "label": "altura",
+          "unit": "m"
+        }
+      ],
+      "usedWhen": "Usar antes do contato com o solo para observar a troca entre cinetica e potencial.",
+      "notUsedWhen": "Nao conserva energia depois que a visualizacao fixa o corpo no solo.",
+      "parameterIds": ["massKilograms", "gravityMetersPerSecondSquared"],
+      "sampleFields": [
+        "kineticEnergyJoules",
+        "potentialEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "relatedChartIds": ["energy-time"]
+    }
+  ]
+}

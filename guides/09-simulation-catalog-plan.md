@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Este guia define o catalogo planejado de simulacoes de fisica basica. Ele nao muda a regra core-first: a primeira entrega funcional continua sendo `Mecanica > Pendulo simples`, com dados locais, motor proprio e sincronizacao completa entre cena, graficos, tabela, formulas e teoria. No catalogo expandido, essa simulacao tambem pode receber o caminho de topico `Mecanica > Oscilacoes > Pendulo simples`. A Fase 2 ja promove `Mecanica > Dinamica > Plano inclinado com atrito` como segunda simulacao `available` para validar reuso.
+Este guia define o catalogo planejado de simulacoes de fisica basica. Ele nao muda a regra core-first: a primeira entrega funcional continua sendo `Mecanica > Pendulo simples`, com dados locais, motor proprio e sincronizacao completa entre cena, graficos, tabela, formulas e teoria. No catalogo expandido, essa simulacao tambem pode receber o caminho de topico `Mecanica > Oscilacoes > Pendulo simples`. A Fase 2 ja promoveu `Mecanica > Dinamica > Plano inclinado com atrito` como segunda simulacao `available` para validar reuso. A Fase 3 iniciou a expansao de Mecanica promovendo quatro simulacoes de Cinematica para `available`: MRU, MUV/queda livre, lancamento obliquo e MCU.
 
 O catalogo amplo deve nascer como backlog planejado e virar produto funcional em fatias pequenas, sempre reaproveitando o contrato comum de simulacao.
 
@@ -69,10 +69,10 @@ Implementacao preferencial:
 | Subarea | Simulacao planejada | Conteudo e saidas esperadas | Modelo e tecnologia |
 | --- | --- | --- | --- |
 | Oscilacoes | Pendulo simples | Angulo, velocidade angular, energia, vetores de peso/tensao/velocidade, periodo aproximado e limites de pequeno angulo. | Core da Fase 1; motor proprio deterministico, Three.js, live-canvas, KaTeX. |
-| Cinematica | Movimento retilineo uniforme | Posicao, deslocamento, velocidade constante, grafico `x(t)` e `v(t)`. | Solucao analitica em `physics-core`; cena 1D/2.5D em Three.js. |
-| Cinematica | Movimento uniformemente variado e queda livre | Aceleracao constante, lancamento vertical, queda livre, graficos `x(t)`, `v(t)` e `a(t)`. | Solucao analitica; preset com gravidade terrestre e gravidade customizada. |
-| Cinematica | Lancamento obliquo | Alcance, altura maxima, tempo de voo, decomposicao vetorial e trajetoria. | Solucao analitica sem arrasto no primeiro passo; arrasto como extensao numerica posterior. |
-| Cinematica | Movimento circular uniforme | Velocidade angular, periodo, frequencia, aceleracao centripeta e vetores tangencial/radial. | Solucao analitica; cena circular com vetores em Three.js. |
+| Cinematica | Movimento retilineo uniforme | Posicao, deslocamento, velocidade constante, grafico `x(t)` e `v(t)`. | Fase 3 `available`; solucao analitica em `physics-core`; cena 1D/2.5D em Three.js. |
+| Cinematica | Movimento uniformemente variado e queda livre | Aceleracao constante, lancamento vertical, queda livre, graficos `x(t)`, `v(t)` e `a(t)`. | Fase 3 `available`; solucao analitica; preset com gravidade terrestre e gravidade customizada. |
+| Cinematica | Lancamento obliquo | Alcance, altura maxima, tempo de voo, decomposicao vetorial e trajetoria. | Fase 3 `available`; solucao analitica sem arrasto no primeiro passo; arrasto como extensao numerica posterior. |
+| Cinematica | Movimento circular uniforme | Velocidade angular, periodo, frequencia, aceleracao centripeta e vetores tangencial/radial. | Fase 3 `available`; solucao analitica; cena circular com vetores em Three.js. |
 | Dinamica | Plano inclinado com atrito | Forcas normal, peso, atrito, aceleracao, energia e condicoes de repouso/deslizamento. | Fase 2 `available`; modelo analitico por regimes, Three.js, live-canvas e KaTeX. |
 | Dinamica | Maquina de Atwood | Tensao, aceleracao, massas acopladas, energia e comparacao de massas. | Equacoes de Newton; integracao deterministica simples para playback. |
 | Dinamica | Forca centripeta em curva | Atrito lateral, raio, velocidade critica e perda de aderencia. | Modelo analitico com alertas de limite; cena em Three.js. |
@@ -169,7 +169,7 @@ Implementacao preferencial:
 
 1. Validar o pendulo simples como simulacao modelo.
 2. Extrair `SimulationDefinition`, `topicPath` e padrao de renderer/graficos/formulas, incluindo runtime visual desacoplado do shell React.
-3. Adicionar duas ou tres simulacoes mecanicas analiticas para testar velocidade de producao.
+3. Adicionar duas ou tres simulacoes mecanicas analiticas para testar velocidade de producao. Concluido inicialmente com quatro simulacoes de Cinematica.
 4. Adicionar uma simulacao de `Oscilacoes e Ondas` que reutilize o pendulo ou massa-mola.
 5. Adicionar uma simulacao de `Termodinamica` baseada em diagramas de estado.
 6. Adicionar uma simulacao de `Eletromagnetismo` baseada em campo eletrico ou circuito RC.

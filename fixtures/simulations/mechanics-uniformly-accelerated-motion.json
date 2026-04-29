@@ -1,0 +1,222 @@
+{
+  "simulationId": "uniformly-accelerated-motion",
+  "durationSeconds": 12,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 8,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Tempo do ciclo",
+      "unit": "s",
+      "kind": "number",
+      "min": 4,
+      "max": 40,
+      "step": 1,
+      "defaultValue": 12
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "unit": "s",
+      "kind": "number",
+      "min": 2,
+      "max": 20,
+      "step": 1,
+      "defaultValue": 8
+    }
+  ],
+  "defaultParameters": {
+    "initialPositionMeters": 16,
+    "initialVelocityMetersPerSecond": 0,
+    "accelerationMetersPerSecondSquared": -9.81,
+    "massKilograms": 1
+  },
+  "parameters": [
+    {
+      "id": "initialPositionMeters",
+      "label": "Posicao inicial",
+      "unit": "m",
+      "kind": "number",
+      "min": -20,
+      "max": 40,
+      "step": 0.1,
+      "defaultValue": 16
+    },
+    {
+      "id": "initialVelocityMetersPerSecond",
+      "label": "Velocidade inicial",
+      "unit": "m/s",
+      "kind": "number",
+      "min": -25,
+      "max": 25,
+      "step": 0.1,
+      "defaultValue": 0
+    },
+    {
+      "id": "accelerationMetersPerSecondSquared",
+      "label": "Aceleracao",
+      "unit": "m/s^2",
+      "kind": "number",
+      "min": -20,
+      "max": 20,
+      "step": 0.01,
+      "defaultValue": -9.81
+    },
+    {
+      "id": "massKilograms",
+      "label": "Massa",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.1,
+      "max": 10,
+      "step": 0.1,
+      "defaultValue": 1
+    }
+  ],
+  "presets": [
+    {
+      "id": "free-fall",
+      "label": "Queda livre",
+      "parameters": {
+        "initialPositionMeters": 16,
+        "initialVelocityMetersPerSecond": 0,
+        "accelerationMetersPerSecondSquared": -9.81,
+        "massKilograms": 1
+      }
+    },
+    {
+      "id": "vertical-launch",
+      "label": "Lancamento vertical",
+      "parameters": {
+        "initialPositionMeters": 1,
+        "initialVelocityMetersPerSecond": 14,
+        "accelerationMetersPerSecondSquared": -9.81,
+        "massKilograms": 0.6
+      }
+    },
+    {
+      "id": "positive-acceleration",
+      "label": "Aceleracao positiva",
+      "parameters": {
+        "initialPositionMeters": -8,
+        "initialVelocityMetersPerSecond": 1,
+        "accelerationMetersPerSecondSquared": 2.5,
+        "massKilograms": 1.2
+      }
+    }
+  ],
+  "limits": [
+    "O movimento e unidimensional e a aceleracao permanece constante durante todo o ciclo.",
+    "A queda livre nao inclui resistencia do ar, colisao com solo ou empuxo.",
+    "O eixo vertical usa valores positivos para cima e negativos para baixo.",
+    "A energia exibida e cinetica; energia potencial gravitacional fica fora deste primeiro modelo de MUV."
+  ],
+  "formulas": [
+    {
+      "id": "muv-position",
+      "title": "Funcao horaria do MUV",
+      "expressionLatex": "x(t)=x_0+v_0t+\\frac{1}{2}at^2",
+      "description": "Calcula a posicao quando a aceleracao e constante.",
+      "variables": [
+        {
+          "symbol": "x",
+          "label": "posicao",
+          "unit": "m"
+        },
+        {
+          "symbol": "v_0",
+          "label": "velocidade inicial",
+          "unit": "m/s"
+        },
+        {
+          "symbol": "a",
+          "label": "aceleracao",
+          "unit": "m/s^2"
+        }
+      ],
+      "usedWhen": "Usar em movimentos retilineos com aceleracao constante, incluindo queda livre ideal.",
+      "notUsedWhen": "Nao usar quando a aceleracao varia com velocidade, posicao ou tempo.",
+      "parameterIds": [
+        "initialPositionMeters",
+        "initialVelocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared"
+      ],
+      "sampleFields": ["positionMeters", "zMeters"],
+      "relatedChartIds": ["position-time"],
+      "relatedVectorIds": ["displacement"],
+      "example": "Na queda livre com v0 = 0 e a = -9,81 m/s^2, a posicao diminui quadraticamente."
+    },
+    {
+      "id": "muv-velocity",
+      "title": "Velocidade no MUV",
+      "expressionLatex": "v(t)=v_0+at",
+      "description": "Atualiza a velocidade por uma reta no grafico v(t).",
+      "variables": [
+        {
+          "symbol": "v",
+          "label": "velocidade",
+          "unit": "m/s"
+        },
+        {
+          "symbol": "t",
+          "label": "tempo",
+          "unit": "s"
+        }
+      ],
+      "usedWhen": "Usar para ler mudancas lineares de velocidade com aceleracao constante.",
+      "notUsedWhen": "Nao representa arrasto nem aceleracoes dependentes do estado.",
+      "parameterIds": [
+        "initialVelocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared"
+      ],
+      "sampleFields": ["velocityMetersPerSecond", "speedMetersPerSecond"],
+      "relatedChartIds": ["velocity-time"],
+      "relatedVectorIds": ["velocity"]
+    },
+    {
+      "id": "muv-acceleration",
+      "title": "Aceleracao constante",
+      "expressionLatex": "a=\\frac{\\Delta v}{\\Delta t}",
+      "description": "Mostra que a inclinacao da reta v(t) e constante.",
+      "variables": [
+        {
+          "symbol": "a",
+          "label": "aceleracao",
+          "unit": "m/s^2"
+        }
+      ],
+      "usedWhen": "Usar para comparar a inclinacao do grafico de velocidade e a curvatura da posicao.",
+      "notUsedWhen": "Nao usar para trajetorias curvas ou forcas variaveis.",
+      "parameterIds": ["accelerationMetersPerSecondSquared"],
+      "sampleFields": [
+        "accelerationMetersPerSecondSquared",
+        "accelerationZMetersPerSecondSquared"
+      ],
+      "relatedChartIds": ["acceleration-time"],
+      "relatedVectorIds": ["acceleration"]
+    },
+    {
+      "id": "muv-kinetic-energy",
+      "title": "Energia cinetica",
+      "expressionLatex": "K=\\frac{1}{2}mv^2",
+      "description": "Conecta a velocidade do sample a energia cinetica instantanea.",
+      "variables": [
+        {
+          "symbol": "K",
+          "label": "energia cinetica",
+          "unit": "J"
+        },
+        {
+          "symbol": "m",
+          "label": "massa",
+          "unit": "kg"
+        }
+      ],
+      "usedWhen": "Usar para observar como a energia cinetica cresce com o modulo da velocidade.",
+      "notUsedWhen": "Nao inclui perdas, potencial gravitacional ou colisao com solo.",
+      "parameterIds": ["massKilograms"],
+      "sampleFields": ["kineticEnergyJoules", "totalEnergyJoules"],
+      "relatedChartIds": ["energy-time"]
+    }
+  ]
+}

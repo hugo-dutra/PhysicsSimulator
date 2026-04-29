@@ -1,0 +1,204 @@
+{
+  "simulationId": "uniform-linear-motion",
+  "durationSeconds": 20,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 10,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Tempo do ciclo",
+      "unit": "s",
+      "kind": "number",
+      "min": 6,
+      "max": 60,
+      "step": 1,
+      "defaultValue": 20
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 30,
+      "step": 1,
+      "defaultValue": 10
+    }
+  ],
+  "defaultParameters": {
+    "initialPositionMeters": 0,
+    "velocityMetersPerSecond": 1.2,
+    "massKilograms": 1
+  },
+  "parameters": [
+    {
+      "id": "initialPositionMeters",
+      "label": "Posicao inicial",
+      "unit": "m",
+      "kind": "number",
+      "min": -10,
+      "max": 10,
+      "step": 0.1,
+      "defaultValue": 0
+    },
+    {
+      "id": "velocityMetersPerSecond",
+      "label": "Velocidade",
+      "unit": "m/s",
+      "kind": "number",
+      "min": -5,
+      "max": 5,
+      "step": 0.05,
+      "defaultValue": 1.2
+    },
+    {
+      "id": "massKilograms",
+      "label": "Massa",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.1,
+      "max": 10,
+      "step": 0.1,
+      "defaultValue": 1
+    }
+  ],
+  "presets": [
+    {
+      "id": "forward-constant",
+      "label": "Avanco constante",
+      "parameters": {
+        "initialPositionMeters": 0,
+        "velocityMetersPerSecond": 1.2,
+        "massKilograms": 1
+      }
+    },
+    {
+      "id": "reverse",
+      "label": "Sentido negativo",
+      "parameters": {
+        "initialPositionMeters": 6,
+        "velocityMetersPerSecond": -0.9,
+        "massKilograms": 1
+      }
+    },
+    {
+      "id": "fast-cart",
+      "label": "Carrinho rapido",
+      "parameters": {
+        "initialPositionMeters": -4,
+        "velocityMetersPerSecond": 2.4,
+        "massKilograms": 0.8
+      }
+    }
+  ],
+  "limits": [
+    "O corpo e tratado como ponto material em uma linha reta.",
+    "A velocidade e constante; forcas externas resultantes ficam fora do modelo.",
+    "Atrito, resistencia do ar e colisao com limites visuais nao sao simulados.",
+    "A energia exibida e apenas a energia cinetica translacional."
+  ],
+  "formulas": [
+    {
+      "id": "mru-position",
+      "title": "Funcao horaria da posicao",
+      "expressionLatex": "x(t)=x_0+v t",
+      "description": "Calcula a posicao em uma trajetoria retilinea com velocidade constante.",
+      "variables": [
+        {
+          "symbol": "x",
+          "label": "posicao",
+          "unit": "m"
+        },
+        {
+          "symbol": "x_0",
+          "label": "posicao inicial",
+          "unit": "m"
+        },
+        {
+          "symbol": "v",
+          "label": "velocidade constante",
+          "unit": "m/s"
+        },
+        {
+          "symbol": "t",
+          "label": "tempo",
+          "unit": "s"
+        }
+      ],
+      "usedWhen": "Usar quando a velocidade permanece constante e a aceleracao resultante e nula.",
+      "notUsedWhen": "Nao usar se houver aceleracao, mudanca de sentido por forca resultante ou movimento curvo.",
+      "parameterIds": ["initialPositionMeters", "velocityMetersPerSecond"],
+      "sampleFields": ["xMeters", "positionMeters"],
+      "relatedChartIds": ["position-time"],
+      "relatedVectorIds": ["displacement", "velocity"],
+      "example": "Com x0 = 0 m e v = 2 m/s, depois de 3 s o corpo esta em x = 6 m."
+    },
+    {
+      "id": "mru-displacement",
+      "title": "Deslocamento",
+      "expressionLatex": "\\Delta x = x-x_0 = v t",
+      "description": "Mede a variacao de posicao em relacao ao ponto inicial.",
+      "variables": [
+        {
+          "symbol": "\\Delta x",
+          "label": "deslocamento",
+          "unit": "m"
+        },
+        {
+          "symbol": "v",
+          "label": "velocidade",
+          "unit": "m/s"
+        }
+      ],
+      "usedWhen": "Usar para comparar distancia orientada e sentido do movimento em uma linha.",
+      "notUsedWhen": "Nao confundir com distancia percorrida total quando o movimento muda de sentido.",
+      "parameterIds": ["initialPositionMeters", "velocityMetersPerSecond"],
+      "sampleFields": ["displacementMeters"],
+      "relatedChartIds": ["position-time"],
+      "relatedVectorIds": ["displacement"]
+    },
+    {
+      "id": "mru-velocity",
+      "title": "Velocidade constante",
+      "expressionLatex": "v=\\frac{\\Delta x}{\\Delta t}",
+      "description": "Relaciona deslocamento e intervalo de tempo no MRU.",
+      "variables": [
+        {
+          "symbol": "v",
+          "label": "velocidade",
+          "unit": "m/s"
+        }
+      ],
+      "usedWhen": "Usar em qualquer trecho do MRU, pois a velocidade instantanea e a media coincidem.",
+      "notUsedWhen": "Nao usar como velocidade instantanea em movimentos acelerados.",
+      "parameterIds": ["velocityMetersPerSecond"],
+      "sampleFields": ["velocityMetersPerSecond", "speedMetersPerSecond"],
+      "relatedChartIds": ["velocity-time"],
+      "relatedVectorIds": ["velocity"],
+      "example": "Uma reta horizontal em v(t) indica aceleracao nula."
+    },
+    {
+      "id": "mru-kinetic-energy",
+      "title": "Energia cinetica translacional",
+      "expressionLatex": "K=\\frac{1}{2}mv^2",
+      "description": "Energia associada ao movimento do corpo no modelo pontual.",
+      "variables": [
+        {
+          "symbol": "K",
+          "label": "energia cinetica",
+          "unit": "J"
+        },
+        {
+          "symbol": "m",
+          "label": "massa",
+          "unit": "kg"
+        }
+      ],
+      "usedWhen": "Usar para comparar como massa e velocidade alteram a energia cinetica.",
+      "notUsedWhen": "Nao inclui energia potencial, rotacao, atrito ou deformacao.",
+      "parameterIds": ["massKilograms", "velocityMetersPerSecond"],
+      "sampleFields": ["kineticEnergyJoules", "totalEnergyJoules"],
+      "relatedChartIds": ["energy-time"]
+    }
+  ]
+}

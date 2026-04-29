@@ -40,6 +40,7 @@ import {
   activeSimulationId,
   findSimulation,
   inclinedPlaneFixture,
+  kinematicsFixtures,
   pendulumFixture,
   simulationCatalog,
 } from '../../simulation-registry/catalog'
@@ -58,6 +59,15 @@ import {
   type InclinedPlaneVectorOverlay,
 } from '../../lib/physics/inclinedPlane'
 import {
+  computeKinematicsTimeline,
+  getKinematicsVectorOverlays,
+  isKinematicsSimulationId,
+  toKinematicsParameters,
+  type KinematicsSample,
+  type KinematicsSimulationId,
+  type KinematicsVectorOverlay,
+} from '../../lib/physics/kinematics'
+import {
   computePendulumTimeline,
   getPendulumVectorOverlays,
   toPendulumParameters,
@@ -67,11 +77,17 @@ import {
 } from '../../lib/physics/pendulum'
 import inclinedPlaneTheory from '../../content/simulations/mechanics/inclined-plane-friction/theory.md?raw'
 import pendulumTheory from '../../content/simulations/mechanics/pendulum/theory.md?raw'
+import projectileMotionTheory from '../../content/simulations/mechanics/projectile-motion/theory.md?raw'
+import uniformCircularMotionTheory from '../../content/simulations/mechanics/uniform-circular-motion/theory.md?raw'
+import uniformLinearMotionTheory from '../../content/simulations/mechanics/uniform-linear-motion/theory.md?raw'
+import uniformlyAcceleratedMotionTheory from '../../content/simulations/mechanics/uniformly-accelerated-motion/theory.md?raw'
 import { themeTokens } from '../../theme/appTheme'
 import { ChevronSection } from './ChevronSection'
 import { FormulaGuide } from './FormulaGuide'
 import { InclinedPlaneCharts } from './InclinedPlaneCharts'
 import { InclinedPlaneScene, type InclinedPlaneFrameStats } from './InclinedPlaneScene'
+import { KinematicsCharts } from './KinematicsCharts'
+import { KinematicsScene, type KinematicsFrameStats } from './KinematicsScene'
 import { LiveLineChart } from './LiveLineChart'
 import { ChartFocusButton, PendulumCharts } from './PendulumCharts'
 import {
@@ -79,6 +95,11 @@ import {
   prepareInclinedPlaneChartSamples,
   type InclinedPlaneChartId,
 } from './inclinedPlaneChartConfigs'
+import {
+  buildKinematicsChartConfigs,
+  prepareKinematicsChartSamples,
+  type KinematicsChartId,
+} from './kinematicsChartConfigs'
 import {
   buildPendulumChartConfigs,
   preparePendulumChartSamples,
@@ -111,7 +132,10 @@ type OutputPanelState = {
 
 type MaximizedPanelId = 'charts' | 'formulas' | 'simulation' | 'table' | 'theory'
 
-type AvailableSimulationId = 'inclined-plane-friction' | 'simple-pendulum'
+type AvailableSimulationId =
+  | 'inclined-plane-friction'
+  | 'simple-pendulum'
+  | KinematicsSimulationId
 
 type AnimationVectorLegendItem = {
   color: string
@@ -123,6 +147,20 @@ type AnimationVector = {
   id: string
   unit?: string
 }
+
+type KinematicsVectorLegendItem = {
+  color: string
+  description: string
+  id: KinematicsVectorOverlay['id']
+  label: string
+}
+
+const kinematicsTheoryById = {
+  'projectile-motion': projectileMotionTheory,
+  'uniform-circular-motion': uniformCircularMotionTheory,
+  'uniform-linear-motion': uniformLinearMotionTheory,
+  'uniformly-accelerated-motion': uniformlyAcceleratedMotionTheory,
+} satisfies Record<KinematicsSimulationId, string>
 
 const customPresetId = 'custom'
 const playbackRate = 0.6
@@ -212,11 +250,110 @@ const inclinedPlaneVectorLegendItems = [
   id: InclinedPlaneVectorOverlay['id']
   label: string
 }>
+const kinematicsSampleTableColumnIds = [
+  'time',
+  'position',
+  'displacement',
+  'x',
+  'z',
+  'velocity',
+  'speed',
+  'acceleration',
+  'kinetic',
+  'potential',
+  'total',
+] as const
+const kinematicsVectorLegendItemsById = {
+  'projectile-motion': [
+    {
+      id: 'displacement',
+      label: 'Deslocamento',
+      color: themeTokens.vector,
+      description: 'vetor entre a origem do lancamento e a posicao atual',
+    },
+    {
+      id: 'velocity',
+      label: 'Velocidade',
+      color: themeTokens.cyan,
+      description: 'velocidade resultante tangente a trajetoria balistica',
+    },
+    {
+      id: 'gravity',
+      label: 'Gravidade',
+      color: themeTokens.danger,
+      description: 'aceleracao vertical constante para baixo',
+    },
+  ],
+  'uniform-circular-motion': [
+    {
+      id: 'displacement',
+      label: 'Raio',
+      color: themeTokens.vector,
+      description: 'vetor radial do centro ate o corpo',
+    },
+    {
+      id: 'velocity',
+      label: 'Velocidade tangencial',
+      color: themeTokens.cyan,
+      description: 'vetor perpendicular ao raio, tangente a trajetoria',
+    },
+    {
+      id: 'centripetal',
+      label: 'Aceleracao centripeta',
+      color: themeTokens.warning,
+      description: 'aceleracao radial apontando para o centro',
+    },
+  ],
+  'uniform-linear-motion': [
+    {
+      id: 'displacement',
+      label: 'Deslocamento',
+      color: themeTokens.vector,
+      description: 'variacao orientada de posicao no eixo retilineo',
+    },
+    {
+      id: 'velocity',
+      label: 'Velocidade',
+      color: themeTokens.cyan,
+      description: 'vetor constante que define sentido e rapidez',
+    },
+    {
+      id: 'acceleration',
+      label: 'Aceleracao',
+      color: themeTokens.warning,
+      description: 'nula no modelo de movimento retilineo uniforme',
+    },
+  ],
+  'uniformly-accelerated-motion': [
+    {
+      id: 'displacement',
+      label: 'Deslocamento',
+      color: themeTokens.vector,
+      description: 'variacao orientada de posicao no eixo vertical',
+    },
+    {
+      id: 'velocity',
+      label: 'Velocidade',
+      color: themeTokens.cyan,
+      description: 'vetor que muda linearmente com a aceleracao',
+    },
+    {
+      id: 'acceleration',
+      label: 'Aceleracao',
+      color: themeTokens.warning,
+      description: 'vetor constante que curva x(t) no MUV',
+    },
+  ],
+} satisfies Record<KinematicsSimulationId, KinematicsVectorLegendItem[]>
 const initialFrameStats: PendulumFrameStats = {
   fps: 0,
   frameTimeMs: 0,
 }
 const initialInclinedPlaneFrameStats: InclinedPlaneFrameStats = {
+  fps: 0,
+  frameTimeMs: 0,
+}
+const initialKinematicsFrameStats: KinematicsFrameStats = {
   fps: 0,
   frameTimeMs: 0,
 }
@@ -230,6 +367,10 @@ export function SimulationShell() {
   )
   const isInclinedPlaneSelected =
     selectedSimulationId === 'inclined-plane-friction'
+  const isKinematicsSelected = isKinematicsSimulationId(selectedSimulationId)
+  const selectedKinematicsSimulationId = isKinematicsSelected
+    ? selectedSimulationId
+    : 'uniform-linear-motion'
   const [pendulumParameterValues, setPendulumParameterValues] = useState<
     Record<string, ParameterValue>
   >(() => ({ ...pendulumFixture.defaultParameters }))
@@ -247,6 +388,41 @@ export function SimulationShell() {
   >(() => readDefaultRuntimeValues(inclinedPlaneFixture))
   const [inclinedPlaneSelectedPresetId, setInclinedPlaneSelectedPresetId] =
     useState(customPresetId)
+  const [kinematicsParameterValuesById, setKinematicsParameterValuesById] =
+    useState<Record<KinematicsSimulationId, Record<string, ParameterValue>>>(
+      () =>
+        Object.fromEntries(
+          Object.entries(kinematicsFixtures).map(([simulationId, fixture]) => [
+            simulationId,
+            { ...fixture.defaultParameters },
+          ]),
+        ) as Record<
+          KinematicsSimulationId,
+          Record<string, ParameterValue>
+        >,
+    )
+  const [kinematicsRuntimeValuesById, setKinematicsRuntimeValuesById] =
+    useState<Record<KinematicsSimulationId, Record<string, ParameterValue>>>(
+      () =>
+        Object.fromEntries(
+          Object.entries(kinematicsFixtures).map(([simulationId, fixture]) => [
+            simulationId,
+            readDefaultRuntimeValues(fixture),
+          ]),
+        ) as Record<
+          KinematicsSimulationId,
+          Record<string, ParameterValue>
+        >,
+    )
+  const [kinematicsSelectedPresetIdsById, setKinematicsSelectedPresetIdsById] =
+    useState<Record<KinematicsSimulationId, string>>(() =>
+      Object.fromEntries(
+        Object.keys(kinematicsFixtures).map((simulationId) => [
+          simulationId,
+          customPresetId,
+        ]),
+      ) as Record<KinematicsSimulationId, string>,
+    )
   const [isPlaying, setIsPlaying] = useState(true)
   const [playbackResetVersion, setPlaybackResetVersion] = useState(0)
   const [overlays, setOverlays] = useState<OverlayState>({
@@ -316,28 +492,87 @@ export function SimulationShell() {
       }),
     [inclinedPlaneDurationSeconds, inclinedPlaneParameters],
   )
+  const selectedKinematicsFixture =
+    kinematicsFixtures[selectedKinematicsSimulationId]
+  const selectedKinematicsParameterValues =
+    kinematicsParameterValuesById[selectedKinematicsSimulationId]
+  const selectedKinematicsRuntimeValues =
+    kinematicsRuntimeValuesById[selectedKinematicsSimulationId]
+  const selectedKinematicsPresetId =
+    kinematicsSelectedPresetIdsById[selectedKinematicsSimulationId]
+  const selectedKinematicsParameters = useMemo(
+    () =>
+      toKinematicsParameters(
+        selectedKinematicsSimulationId,
+        selectedKinematicsParameterValues,
+      ),
+    [selectedKinematicsParameterValues, selectedKinematicsSimulationId],
+  )
+  const selectedKinematicsDurationSeconds = readRuntimeValue(
+    selectedKinematicsRuntimeValues,
+    'durationSeconds',
+    selectedKinematicsFixture.durationSeconds,
+  )
+  const selectedKinematicsChartWindowSeconds = readRuntimeValue(
+    selectedKinematicsRuntimeValues,
+    'chartWindowSeconds',
+    selectedKinematicsFixture.chartWindowSeconds,
+  )
+  const selectedKinematicsEffectiveChartWindowSeconds = Math.min(
+    selectedKinematicsChartWindowSeconds,
+    selectedKinematicsDurationSeconds,
+  )
+  const selectedKinematicsTimeline = useMemo(
+    () =>
+      computeKinematicsTimeline({
+        durationSeconds: selectedKinematicsDurationSeconds,
+        parameters: selectedKinematicsParameters,
+        sampleRateHz: selectedKinematicsFixture.sampleRateHz,
+        simulationId: selectedKinematicsSimulationId,
+      }),
+    [
+      selectedKinematicsDurationSeconds,
+      selectedKinematicsFixture.sampleRateHz,
+      selectedKinematicsParameters,
+      selectedKinematicsSimulationId,
+    ],
+  )
 
-  const selectedFixture = isInclinedPlaneSelected
-    ? inclinedPlaneFixture
-    : pendulumFixture
+  const selectedFixture = isKinematicsSelected
+    ? selectedKinematicsFixture
+    : isInclinedPlaneSelected
+      ? inclinedPlaneFixture
+      : pendulumFixture
   const selectedRuntimeValues = isInclinedPlaneSelected
     ? inclinedPlaneRuntimeValues
-    : pendulumRuntimeValues
+    : isKinematicsSelected
+      ? selectedKinematicsRuntimeValues
+      : pendulumRuntimeValues
   const selectedParameterValues = isInclinedPlaneSelected
     ? inclinedPlaneParameterValues
-    : pendulumParameterValues
+    : isKinematicsSelected
+      ? selectedKinematicsParameterValues
+      : pendulumParameterValues
   const selectedPresetId = isInclinedPlaneSelected
     ? inclinedPlaneSelectedPresetId
-    : pendulumSelectedPresetId
+    : isKinematicsSelected
+      ? selectedKinematicsPresetId
+      : pendulumSelectedPresetId
   const selectedDurationSeconds = isInclinedPlaneSelected
     ? inclinedPlaneDurationSeconds
-    : pendulumDurationSeconds
+    : isKinematicsSelected
+      ? selectedKinematicsDurationSeconds
+      : pendulumDurationSeconds
   const selectedEffectiveChartWindowSeconds = isInclinedPlaneSelected
     ? inclinedPlaneEffectiveChartWindowSeconds
-    : pendulumEffectiveChartWindowSeconds
+    : isKinematicsSelected
+      ? selectedKinematicsEffectiveChartWindowSeconds
+      : pendulumEffectiveChartWindowSeconds
   const selectedTimeline = isInclinedPlaneSelected
     ? inclinedPlaneTimeline
-    : pendulumTimeline
+    : isKinematicsSelected
+      ? selectedKinematicsTimeline
+      : pendulumTimeline
   const energyRatio = readEnergyRatio(selectedTimeline.samples)
 
   const handleSimulationSelect = (simulationId: AvailableSimulationId) => {
@@ -353,6 +588,11 @@ export function SimulationShell() {
 
     if (isInclinedPlaneSelected) {
       setInclinedPlaneSelectedPresetId(nextPresetId)
+    } else if (isKinematicsSelected) {
+      setKinematicsSelectedPresetIdsById((currentValues) => ({
+        ...currentValues,
+        [selectedKinematicsSimulationId]: nextPresetId,
+      }))
     } else {
       setPendulumSelectedPresetId(nextPresetId)
     }
@@ -367,6 +607,14 @@ export function SimulationShell() {
         ...inclinedPlaneFixture.defaultParameters,
         ...preset.parameters,
       })
+    } else if (isKinematicsSelected) {
+      setKinematicsParameterValuesById((currentValues) => ({
+        ...currentValues,
+        [selectedKinematicsSimulationId]: {
+          ...selectedKinematicsFixture.defaultParameters,
+          ...preset.parameters,
+        },
+      }))
     } else {
       setPendulumParameterValues({
         ...pendulumFixture.defaultParameters,
@@ -397,6 +645,18 @@ export function SimulationShell() {
       setInclinedPlaneParameterValues((currentValues) => ({
         ...currentValues,
         [parameter.id]: clampedValue,
+      }))
+    } else if (isKinematicsSelected) {
+      setKinematicsSelectedPresetIdsById((currentValues) => ({
+        ...currentValues,
+        [selectedKinematicsSimulationId]: customPresetId,
+      }))
+      setKinematicsParameterValuesById((currentValues) => ({
+        ...currentValues,
+        [selectedKinematicsSimulationId]: {
+          ...currentValues[selectedKinematicsSimulationId],
+          [parameter.id]: clampedValue,
+        },
       }))
     } else {
       setPendulumSelectedPresetId(customPresetId)
@@ -429,6 +689,14 @@ export function SimulationShell() {
       setInclinedPlaneRuntimeValues((currentValues) => ({
         ...currentValues,
         [parameter.id]: clampedValue,
+      }))
+    } else if (isKinematicsSelected) {
+      setKinematicsRuntimeValuesById((currentValues) => ({
+        ...currentValues,
+        [selectedKinematicsSimulationId]: {
+          ...currentValues[selectedKinematicsSimulationId],
+          [parameter.id]: clampedValue,
+        },
       }))
     } else {
       setPendulumRuntimeValues((currentValues) => ({
@@ -601,6 +869,23 @@ export function SimulationShell() {
                 resetVersion={playbackResetVersion}
                 samples={inclinedPlaneTimeline.samples}
               />
+            ) : isKinematicsSelected ? (
+              <KinematicsRuntime
+                chartWindowSeconds={
+                  selectedKinematicsEffectiveChartWindowSeconds
+                }
+                durationSeconds={selectedKinematicsDurationSeconds}
+                isPlaying={isPlaying}
+                maximizedPanel={maximizedPanel}
+                onMaximizedPanelToggle={handleMaximizedPanelToggle}
+                onOutputPanelToggle={handleOutputPanelToggle}
+                onPlaybackToggle={handlePlaybackToggle}
+                outputPanels={outputPanels}
+                overlays={overlays}
+                resetVersion={playbackResetVersion}
+                samples={selectedKinematicsTimeline.samples}
+                simulationId={selectedKinematicsSimulationId}
+              />
             ) : (
               <PendulumRuntime
                 chartWindowSeconds={pendulumEffectiveChartWindowSeconds}
@@ -640,7 +925,9 @@ export function SimulationShell() {
                     content={
                       isInclinedPlaneSelected
                         ? inclinedPlaneTheory
-                        : pendulumTheory
+                        : isKinematicsSelected
+                          ? kinematicsTheoryById[selectedKinematicsSimulationId]
+                          : pendulumTheory
                     }
                     expanded={theoryExpanded}
                     limits={selectedFixture.limits}
@@ -2266,6 +2553,520 @@ function InclinedPlaneRuntime({
   )
 }
 
+function KinematicsRuntime({
+  chartWindowSeconds,
+  durationSeconds,
+  isPlaying,
+  maximizedPanel,
+  onMaximizedPanelToggle,
+  onOutputPanelToggle,
+  onPlaybackToggle,
+  outputPanels,
+  overlays,
+  resetVersion,
+  samples,
+  simulationId,
+}: {
+  chartWindowSeconds: number
+  durationSeconds: number
+  isPlaying: boolean
+  maximizedPanel: MaximizedPanelId | null
+  onMaximizedPanelToggle: (panelId: MaximizedPanelId) => void
+  onOutputPanelToggle: (panelId: keyof OutputPanelState) => void
+  onPlaybackToggle: () => void
+  outputPanels: OutputPanelState
+  overlays: OverlayState
+  resetVersion: number
+  samples: KinematicsSample[]
+  simulationId: KinematicsSimulationId
+}) {
+  const firstSample = useMemo(() => readFirstKinematicsSample(samples), [samples])
+  const [liveSample, setLiveSample] =
+    useState<KinematicsSample>(firstSample)
+  const [frameStats, setFrameStats] =
+    useState<KinematicsFrameStats>(initialKinematicsFrameStats)
+  const [focusedChartId, setFocusedChartId] =
+    useState<KinematicsChartId | null>(null)
+
+  const handleSampleChange = useCallback(
+    (sample: KinematicsSample, stats: KinematicsFrameStats) => {
+      setLiveSample(sample)
+      setFrameStats(stats)
+    },
+    [],
+  )
+  const handleFocusedChartToggle = useCallback(
+    (chartId: KinematicsChartId) => {
+      setFocusedChartId((currentChartId) =>
+        currentChartId === chartId ? null : chartId,
+      )
+    },
+    [],
+  )
+
+  const isSimulationMaximized = maximizedPanel === 'simulation'
+  const isChartsMaximized = maximizedPanel === 'charts'
+  const isTableMaximized = maximizedPanel === 'table'
+  const hasMaximizedPanel = maximizedPanel !== null
+  const chartsExpanded = outputPanels.charts || isChartsMaximized
+  const tableExpanded = outputPanels.table || isTableMaximized
+  const tableRowCount = isTableMaximized
+    ? maximizedSampleTableRowCount
+    : sampleTableRowCount
+  const shouldShowCharts = !hasMaximizedPanel || isChartsMaximized
+  const shouldShowTable = !hasMaximizedPanel || isTableMaximized
+  const shouldHideSimulationCard = hasMaximizedPanel && !isSimulationMaximized
+  const canFocusChartInSimulation = !shouldHideSimulationCard
+  const currentSampleIndex = getKinematicsSampleIndexForTime(
+    samples,
+    durationSeconds,
+    liveSample.timeSeconds,
+  )
+  const activeFocusedChartId =
+    focusedChartId === 'energy' && !overlays.energy ? null : focusedChartId
+  const hasFocusedChart = activeFocusedChartId !== null
+  const needsChartRange = chartsExpanded || hasFocusedChart
+  const needsSampleWindow = needsChartRange || tableExpanded
+  const visibleWindowSamples = useMemo(
+    () => {
+      if (!needsSampleWindow) {
+        return []
+      }
+
+      return selectRecentSamples(
+        samples,
+        currentSampleIndex,
+        chartWindowSeconds,
+      )
+    },
+    [chartWindowSeconds, currentSampleIndex, needsSampleWindow, samples],
+  )
+  const xAxisRange = useMemo<[number, number]>(
+    () => {
+      if (!needsChartRange) {
+        return [0, chartWindowSeconds]
+      }
+
+      return getMovingWindowRange(
+        liveSample.timeSeconds,
+        chartWindowSeconds,
+        durationSeconds,
+      )
+    },
+    [
+      chartWindowSeconds,
+      durationSeconds,
+      liveSample.timeSeconds,
+      needsChartRange,
+    ],
+  )
+  const vectors = useMemo(
+    () =>
+      overlays.vectors
+        ? getKinematicsVectorOverlays(liveSample, simulationId)
+        : [],
+    [liveSample, overlays.vectors, simulationId],
+  )
+  const chartSamples = useMemo(
+    () =>
+      needsChartRange
+        ? appendKinematicsLiveSample(visibleWindowSamples, liveSample)
+        : [],
+    [liveSample, needsChartRange, visibleWindowSamples],
+  )
+  const focusedChart = useMemo(
+    () => {
+      if (!activeFocusedChartId) {
+        return null
+      }
+
+      const focusedChartSamples = prepareKinematicsChartSamples(chartSamples)
+
+      return (
+        buildKinematicsChartConfigs(
+          focusedChartSamples,
+          simulationId,
+          overlays.energy,
+        ).find((chart) => chart.id === activeFocusedChartId) ?? null
+      )
+    },
+    [activeFocusedChartId, chartSamples, overlays.energy, simulationId],
+  )
+  const tableRows = useMemo(() => {
+    if (!tableExpanded) {
+      return []
+    }
+
+    return selectStableKinematicsTableRows(visibleWindowSamples, tableRowCount)
+  }, [tableExpanded, tableRowCount, visibleWindowSamples])
+  const vectorLegendItems = kinematicsVectorLegendItemsById[simulationId]
+
+  return (
+    <>
+      <Box
+        aria-hidden={shouldHideSimulationCard ? true : undefined}
+        aria-label="Kinematics numerical viewport"
+        sx={[
+          {
+            border: `1px solid ${themeTokens.border}`,
+            borderRadius: 1,
+            bgcolor: alpha(themeTokens.panel, 0.58),
+            minHeight: 322,
+            overflow: 'hidden',
+            position: 'relative',
+          },
+          isSimulationMaximized
+            ? {
+                minHeight: 'calc(100svh - 24px)',
+              }
+            : null,
+          shouldHideSimulationCard
+            ? {
+                border: 0,
+                height: 1,
+                left: -10000,
+                minHeight: 1,
+                opacity: 0,
+                overflow: 'hidden',
+                pointerEvents: 'none',
+                position: 'fixed',
+                top: 0,
+                visibility: 'hidden',
+                width: 1,
+              }
+            : null,
+        ]}
+      >
+        <Box
+          sx={{
+            alignItems: 'center',
+            borderBottom: `1px solid ${themeTokens.border}`,
+            display: 'flex',
+            gap: 1,
+            justifyContent: 'space-between',
+            px: 1.5,
+            py: 1,
+          }}
+        >
+          <Typography variant="body2">Viewport Three.js</Typography>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <Chip
+              label={formatFps(frameStats.fps)}
+              size="small"
+              variant="outlined"
+            />
+            <Typography color="text.secondary" variant="body2">
+              t = {formatNumber(liveSample.timeSeconds, 's')}
+            </Typography>
+            <Button
+              aria-label={
+                isPlaying
+                  ? 'Pausar simulacao no viewport'
+                  : 'Reproduzir simulacao no viewport'
+              }
+              color="primary"
+              onClick={onPlaybackToggle}
+              size="small"
+              startIcon={
+                isPlaying ? (
+                  <Pause aria-hidden size={16} />
+                ) : (
+                  <Play aria-hidden size={16} />
+                )
+              }
+              variant="outlined"
+            >
+              {isPlaying ? 'Pausar' : 'Reproduzir'}
+            </Button>
+            <Tooltip
+              title={isSimulationMaximized ? 'Minimizar' : 'Maximizar'}
+            >
+              <IconButton
+                aria-label={
+                  isSimulationMaximized
+                    ? 'Minimizar simulacao'
+                    : 'Maximizar simulacao'
+                }
+                aria-pressed={isSimulationMaximized}
+                color={isSimulationMaximized ? 'primary' : 'default'}
+                onClick={() => {
+                  onMaximizedPanelToggle('simulation')
+                }}
+                size="small"
+              >
+                {isSimulationMaximized ? (
+                  <Minimize2 aria-hidden size={17} />
+                ) : (
+                  <Maximize2 aria-hidden size={17} />
+                )}
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        </Box>
+
+        <Box
+          sx={{
+            borderBottom: `1px solid ${themeTokens.border}`,
+            display: 'grid',
+            gap: 1,
+            gridTemplateColumns: {
+              xs: '1fr 1fr',
+              md: 'repeat(7, minmax(0, 1fr))',
+            },
+            p: 1.5,
+          }}
+        >
+          <Metric
+            label="Posicao"
+            value={formatNumber(liveSample.positionMeters, 'm')}
+          />
+          <Metric
+            label="Deslocamento"
+            value={formatNumber(liveSample.displacementMeters, 'm')}
+          />
+          <Metric
+            label="Velocidade"
+            value={formatNumber(liveSample.velocityMetersPerSecond, 'm/s')}
+          />
+          <Metric
+            label="Rapidez"
+            value={formatNumber(liveSample.speedMetersPerSecond, 'm/s')}
+          />
+          <Metric
+            label="Aceleracao"
+            value={formatNumber(
+              liveSample.accelerationMetersPerSecondSquared,
+              'm/s^2',
+            )}
+          />
+          {overlays.energy ? (
+            <Metric
+              label="Energia total"
+              value={formatNumber(liveSample.totalEnergyJoules, 'J')}
+            />
+          ) : null}
+          <Metric
+            label="Tempo do frame"
+            value={
+              frameStats.frameTimeMs > 0
+                ? formatNumber(frameStats.frameTimeMs, 'ms')
+                : '-- ms'
+            }
+          />
+        </Box>
+        {overlays.vectors ? (
+          <KinematicsVectorLegend
+            items={vectorLegendItems}
+            vectors={vectors}
+          />
+        ) : null}
+        <Box
+          sx={{
+            display: 'grid',
+            gap: focusedChart ? 1.5 : 0,
+            gridTemplateColumns: {
+              xs: '1fr',
+              lg: focusedChart
+                ? 'minmax(0, 2fr) minmax(280px, 1fr)'
+                : '1fr',
+            },
+            p: focusedChart ? 1.5 : 0,
+          }}
+        >
+          <Box sx={{ minWidth: 0, position: 'relative' }}>
+            <KinematicsScene
+              durationSeconds={durationSeconds}
+              isPlaying={isPlaying}
+              maximized={isSimulationMaximized}
+              onSampleChange={handleSampleChange}
+              playbackRate={playbackRate}
+              resetVersion={resetVersion}
+              samples={samples}
+              showTrace={overlays.trace}
+              showVectors={overlays.vectors}
+              simulationId={simulationId}
+            />
+            {overlays.vectors ? (
+              <AnimationVectorLegend
+                items={vectorLegendItems}
+                vectors={vectors}
+              />
+            ) : null}
+          </Box>
+          {focusedChart ? (
+            <Box
+              aria-label="Slot de grafico em foco da simulacao"
+              sx={{ minWidth: 0 }}
+            >
+              <LiveLineChart
+                action={
+                  <ChartFocusButton
+                    chart={focusedChart}
+                    focused
+                    onToggle={handleFocusedChartToggle}
+                  />
+                }
+                title={focusedChart.title}
+                traces={focusedChart.traces}
+                xAxisRange={xAxisRange}
+                yAxisTitle={focusedChart.yAxisTitle}
+              />
+            </Box>
+          ) : null}
+        </Box>
+      </Box>
+
+      {shouldShowCharts ? (
+        <KinematicsCharts
+          chartWindowSeconds={chartWindowSeconds}
+          expanded={chartsExpanded}
+          focusedChartId={
+            canFocusChartInSimulation ? activeFocusedChartId : null
+          }
+          maximized={isChartsMaximized}
+          onFocusedChartToggle={
+            canFocusChartInSimulation ? handleFocusedChartToggle : undefined
+          }
+          onMaximizeToggle={() => {
+            onMaximizedPanelToggle('charts')
+          }}
+          onToggle={() => {
+            onOutputPanelToggle('charts')
+          }}
+          samples={chartSamples}
+          showEnergy={overlays.energy}
+          simulationId={simulationId}
+          xAxisRange={xAxisRange}
+        />
+      ) : null}
+
+      {shouldShowTable ? (
+        <ChevronSection
+          action={
+            <Chip
+              label={tableExpanded ? `${tableRowCount} linhas` : 'recolhido'}
+              size="small"
+              variant="outlined"
+            />
+          }
+          expanded={tableExpanded}
+          maximized={isTableMaximized}
+          onMaximizeToggle={() => {
+            onMaximizedPanelToggle('table')
+          }}
+          onToggle={() => {
+            onOutputPanelToggle('table')
+          }}
+          subtitle={
+            tableExpanded
+              ? `${samples.length} amostras em ${formatNumber(
+                  durationSeconds,
+                  's',
+                )} | janela ${formatNumber(chartWindowSeconds, 's')}`
+              : 'Recolhida; selecao e renderizacao de linhas suspensas.'
+          }
+          title="Tabela de amostras"
+        >
+          {tableExpanded ? (
+            <TableContainer
+              sx={{
+                border: `1px solid ${themeTokens.border}`,
+                borderRadius: 1,
+                maxHeight: isTableMaximized ? 'calc(100svh - 128px)' : 'none',
+              }}
+            >
+              <Table
+                aria-label="Tabela sincronizada de amostras de Cinematica"
+                size="small"
+              >
+                <TableHead>
+                  <TableRow>
+                    <TableCell>t</TableCell>
+                    <TableCell>s</TableCell>
+                    <TableCell>Delta s</TableCell>
+                    <TableCell>x</TableCell>
+                    <TableCell>z</TableCell>
+                    <TableCell>v</TableCell>
+                    <TableCell>|v|</TableCell>
+                    <TableCell>a</TableCell>
+                    <TableCell>K</TableCell>
+                    <TableCell>U</TableCell>
+                    <TableCell>E</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {tableRows.map((sample, rowIndex) => (
+                    <TableRow
+                      key={
+                        sample ? `${sample.timeSeconds}-${rowIndex}` : rowIndex
+                      }
+                      sx={{ height: 34 }}
+                    >
+                      {sample ? (
+                        <>
+                          <TableCell>
+                            {formatNumber(sample.timeSeconds, 's')}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(sample.positionMeters, 'm')}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(sample.displacementMeters, 'm')}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(sample.xMeters, 'm')}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(sample.zMeters, 'm')}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(
+                              sample.velocityMetersPerSecond,
+                              'm/s',
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(sample.speedMetersPerSecond, 'm/s')}
+                          </TableCell>
+                          <TableCell>
+                            {formatNumber(
+                              sample.accelerationMetersPerSecondSquared,
+                              'm/s^2',
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {formatEnergy(sample.kineticEnergyJoules)}
+                          </TableCell>
+                          <TableCell>
+                            {formatEnergy(sample.potentialEnergyJoules)}
+                          </TableCell>
+                          <TableCell>
+                            {formatEnergy(sample.totalEnergyJoules)}
+                          </TableCell>
+                        </>
+                      ) : (
+                        renderEmptyKinematicsTableCells()
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : null}
+        </ChevronSection>
+      ) : null}
+    </>
+  )
+}
+
 function ParameterControl({
   onChange,
   parameter,
@@ -2417,6 +3218,16 @@ function readFirstInclinedPlaneSample(samples: InclinedPlaneSample[]) {
   return sample
 }
 
+function readFirstKinematicsSample(samples: KinematicsSample[]) {
+  const sample = samples[0]
+
+  if (!sample) {
+    throw new Error('Kinematics timeline must contain at least one sample.')
+  }
+
+  return sample
+}
+
 function getSampleIndexForTime(
   samples: PendulumSample[],
   durationSeconds: number,
@@ -2451,6 +3262,23 @@ function getInclinedPlaneSampleIndexForTime(
   )
 }
 
+function getKinematicsSampleIndexForTime(
+  samples: KinematicsSample[],
+  durationSeconds: number,
+  timeSeconds: number,
+) {
+  if (samples.length <= 1 || durationSeconds <= 0) {
+    return 0
+  }
+
+  const progress = Math.min(1, Math.max(0, timeSeconds / durationSeconds))
+
+  return Math.min(
+    samples.length - 1,
+    Math.floor(progress * (samples.length - 1)),
+  )
+}
+
 function appendLiveSample(samples: PendulumSample[], liveSample: PendulumSample) {
   const lastSample = samples.at(-1)
 
@@ -2468,6 +3296,23 @@ function appendLiveSample(samples: PendulumSample[], liveSample: PendulumSample)
 function appendInclinedPlaneLiveSample(
   samples: InclinedPlaneSample[],
   liveSample: InclinedPlaneSample,
+) {
+  const lastSample = samples.at(-1)
+
+  if (!lastSample) {
+    return [liveSample]
+  }
+
+  if (liveSample.timeSeconds <= lastSample.timeSeconds + 0.0001) {
+    return samples
+  }
+
+  return [...samples, liveSample]
+}
+
+function appendKinematicsLiveSample(
+  samples: KinematicsSample[],
+  liveSample: KinematicsSample,
 ) {
   const lastSample = samples.at(-1)
 
@@ -2516,6 +3361,38 @@ function selectStableInclinedPlaneTableRows(
   rowCount: number,
 ) {
   const rows: Array<InclinedPlaneSample | null> = Array.from(
+    { length: rowCount },
+    () => null,
+  )
+
+  if (samples.length === 0) {
+    return rows
+  }
+
+  if (samples.length <= rowCount) {
+    samples.forEach((sample, index) => {
+      rows[index] = sample
+    })
+
+    return rows
+  }
+
+  const lastIndex = samples.length - 1
+  const lastRowIndex = Math.max(1, rowCount - 1)
+
+  for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+    const sampleIndex = Math.round((rowIndex / lastRowIndex) * lastIndex)
+    rows[rowIndex] = samples[sampleIndex]
+  }
+
+  return rows
+}
+
+function selectStableKinematicsTableRows(
+  samples: KinematicsSample[],
+  rowCount: number,
+) {
+  const rows: Array<KinematicsSample | null> = Array.from(
     { length: rowCount },
     () => null,
   )
@@ -2757,6 +3634,83 @@ function InclinedPlaneVectorLegend({
   )
 }
 
+function KinematicsVectorLegend({
+  items,
+  vectors,
+}: {
+  items: readonly KinematicsVectorLegendItem[]
+  vectors: KinematicsVectorOverlay[]
+}) {
+  const vectorsById = new Map(vectors.map((vector) => [vector.id, vector]))
+
+  return (
+    <Box
+      aria-label="Legenda dos vetores"
+      sx={{
+        borderBottom: `1px solid ${themeTokens.border}`,
+        display: 'grid',
+        gap: 1,
+        gridTemplateColumns: {
+          xs: '1fr',
+          md: `repeat(${items.length}, minmax(0, 1fr))`,
+        },
+        p: 1.5,
+        pt: 1,
+      }}
+    >
+      {items.map((item) => {
+        const vector = vectorsById.get(item.id)
+
+        return (
+          <Box
+            key={item.id}
+            sx={{
+              bgcolor: alpha(themeTokens.background, 0.7),
+              border: `1px solid ${themeTokens.border}`,
+              borderRadius: 1,
+              minWidth: 0,
+              p: 1,
+            }}
+          >
+            <Stack
+              direction="row"
+              spacing={0.75}
+              sx={{ alignItems: 'center', minWidth: 0 }}
+            >
+              <Box
+                aria-hidden
+                sx={{
+                  bgcolor: item.color,
+                  borderRadius: '50%',
+                  flex: '0 0 auto',
+                  height: 9,
+                  width: 9,
+                }}
+              />
+              <Typography
+                sx={{ fontWeight: 700, overflowWrap: 'anywhere' }}
+                variant="body2"
+              >
+                {item.label}
+              </Typography>
+              <Typography
+                color="text.secondary"
+                sx={{ ml: 'auto', overflowWrap: 'anywhere' }}
+                variant="body2"
+              >
+                {vector ? formatNumber(vector.magnitude, vector.unit) : '--'}
+              </Typography>
+            </Stack>
+            <Typography color="text.secondary" variant="body2">
+              {item.description}
+            </Typography>
+          </Box>
+        )
+      })}
+    </Box>
+  )
+}
+
 function renderEmptyTableCells() {
   return sampleTableColumnIds.map((columnId) => (
     <TableCell key={columnId} sx={{ color: 'text.disabled' }}>
@@ -2767,6 +3721,14 @@ function renderEmptyTableCells() {
 
 function renderEmptyInclinedPlaneTableCells() {
   return inclinedPlaneSampleTableColumnIds.map((columnId) => (
+    <TableCell key={columnId} sx={{ color: 'text.disabled' }}>
+      --
+    </TableCell>
+  ))
+}
+
+function renderEmptyKinematicsTableCells() {
+  return kinematicsSampleTableColumnIds.map((columnId) => (
     <TableCell key={columnId} sx={{ color: 'text.disabled' }}>
       --
     </TableCell>

@@ -24,6 +24,7 @@ npm run test:e2e
 
 - Testes unitarios para o integrador do pendulo.
 - Testes unitarios para o modelo analitico/numerico por trechos do plano inclinado com atrito.
+- Testes unitarios para o motor analitico compartilhado de Cinematica, cobrindo MRU, MUV/queda livre, lancamento obliquo e MCU.
 - Testes de invariantes fisicos dentro do modelo declarado.
 - Testes de validacao de parametros e unidades.
 - Testes de geracao de samples para graficos e tabela.
@@ -72,7 +73,7 @@ Depois da prova do core, cada nova simulacao promovida para `available` deve ter
 - Blocos chevron de saida pesada devem iniciar fechados e testes devem cobrir abrir e fechar pelo cabecalho.
 - O modo maximizado de viewport, graficos, tabela, formulas e apendice teorico deve mostrar apenas o painel em foco dentro da janela e voltar ao layout anterior ao minimizar.
 - A sidebar deve permitir expandir areas e subareas planejadas sem confundir itens planejados com simulacoes disponiveis.
-- A sidebar deve permitir trocar entre pendulo simples e plano inclinado com atrito sem abandonar o shell compartilhado.
+- A sidebar deve permitir trocar entre pendulo simples, plano inclinado com atrito e as simulacoes de Cinematica disponiveis sem abandonar o shell compartilhado.
 - A tabela de amostras nao deve variar sua altura durante playback por mudar a quantidade de linhas.
 - Formulas devem permanecer legiveis e indicar quando usar cada equacao.
 - Layout nao deve quebrar em desktop comum.

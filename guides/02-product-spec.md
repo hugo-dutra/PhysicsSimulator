@@ -26,7 +26,7 @@ A aplicacao deve agrupar simulacoes por area do conhecimento em uma sidebar:
 - Oscilacoes e Ondas, com Oscilacoes, Ondas mecanicas, Som e Optica basica.
 - Eletromagnetismo, com Eletrostatica, Circuitos, Magnetismo, Inducao e Ondas eletromagneticas.
 
-No core inicial, `Mecanica > Pendulo simples` provou a experiencia completa. Na Fase 2, `Mecanica > Dinamica > Plano inclinado com atrito` tambem fica funcional para validar reuso do shell, controles, graficos, tabela, formulas e teoria. As demais areas podem aparecer como itens planejados, desde que nao confundam com simulacoes prontas.
+No core inicial, `Mecanica > Pendulo simples` provou a experiencia completa. Na Fase 2, `Mecanica > Dinamica > Plano inclinado com atrito` tambem ficou funcional para validar reuso do shell, controles, graficos, tabela, formulas e teoria. Na Fase 3, as primeiras simulacoes de Cinematica (`Movimento retilineo uniforme`, `Movimento uniformemente variado e queda livre`, `Lancamento obliquo` e `Movimento circular uniforme`) foram promovidas para `available` usando o mesmo shell e um motor analitico compartilhado. As demais areas podem aparecer como itens planejados, desde que nao confundam com simulacoes prontas.
 Mesmo quando ainda estiverem planejadas, as simulacoes do catalogo curricular devem aparecer na sidebar em menus navegaveis de area e subarea, com status claro de `planejado`.
 
 ## Catalogo curricular planejado
@@ -40,7 +40,7 @@ O catalogo detalhado de simulacoes fica em `09-simulation-catalog-plan.md`. A ex
 - filtros ou agrupamentos por area, nivel e tipo de modelo quando o catalogo crescer.
 
 Itens planejados podem aparecer na sidebar como bloqueados, desabilitados ou marcados como `planejado`. Eles nao devem parecer clicaveis como simulacoes completas enquanto nao tiverem motor, visualizacao, graficos, tabela, formulas e teoria.
-A sidebar deve ser organizada como arvore compacta: area principal expansivel, subarea expansivel e simulacoes como folhas marcadas por status. O fixture local de catalogo deve conter todas as simulacoes planejadas em `09-simulation-catalog-plan.md`; no estado atual, pendulo simples e plano inclinado com atrito aparecem como `available`.
+A sidebar deve ser organizada como arvore compacta: area principal expansivel, subarea expansivel e simulacoes como folhas marcadas por status. O fixture local de catalogo deve conter todas as simulacoes planejadas em `09-simulation-catalog-plan.md`; no estado atual, pendulo simples, plano inclinado com atrito e as quatro primeiras simulacoes de Cinematica aparecem como `available`.
 
 ## Tela da simulacao
 
@@ -98,6 +98,20 @@ Layout recomendado:
 - Toggles de vetores, trilha e energia.
 - Blocos chevron e maximizacao com o mesmo comportamento do pendulo.
 
+## Controles esperados nas simulacoes de Cinematica
+
+- Play/pause.
+- Reset.
+- Presets de demonstracao.
+- Tempo maximo do ciclo de simulacao.
+- Janela temporal dos graficos.
+- Toggles de vetores, trilha e energia.
+- MRU: posicao inicial, velocidade e massa.
+- MUV/queda livre: posicao inicial, velocidade inicial, aceleracao e massa.
+- Lancamento obliquo: velocidade inicial, angulo de lancamento, altura inicial, gravidade e massa.
+- MCU: raio, velocidade angular, angulo inicial e massa.
+- Blocos chevron, grafico em foco e maximizacao com o mesmo comportamento do pendulo.
+
 ## Representacoes esperadas
 
 - Cena 3D animada do pendulo, com massa renderizada como cubo didatico em vez de circulo plano.
@@ -111,6 +125,7 @@ Layout recomendado:
 - Um grafico por vez pode ser destacado no slot direito do viewport para comparar a curva com o evento visual da simulacao, sempre usando a mesma janela temporal e a mesma fonte de samples do bloco de graficos.
 - Tabela com tempo, angulo, velocidade angular, velocidade linear, aceleracoes, posicao e energia, mantendo quantidade fixa de linhas visiveis para evitar oscilacao de layout durante o playback.
 - No plano inclinado, graficos e tabela devem expor posicao no plano, altura, velocidade, aceleracao, normal, atrito, resultante, energia cinetica, potencial, termica e total.
+- Nas simulacoes de Cinematica, a cena Three.js reutilizavel deve expor corpo, trajetoria, vetores principais e tabela/graficos derivados do mesmo sample analitico. MRU mostra posicao/deslocamento/velocidade; MUV mostra posicao/velocidade/aceleracao; lancamento obliquo mostra posicao horizontal, altura, componentes de velocidade, gravidade e energia em voo; MCU mostra angulo, arco, velocidade tangencial, aceleracao centripeta, periodo, frequencia e energia cinetica.
 - Formulas do processo analisado, com variaveis, unidades, condicoes de uso e exemplo curto.
 - Apendice teorico com equacoes, unidades, contexto de uso e limites da aproximacao.
 
@@ -145,6 +160,13 @@ No plano inclinado com atrito, o guia deve cobrir pelo menos:
 - aceleracao ao longo do plano quando ha deslizamento;
 - energia mecanica e energia termica acumulada pelo atrito.
 
+Nas simulacoes de Cinematica, o guia deve cobrir pelo menos:
+
+- MRU: funcao horaria da posicao, deslocamento, velocidade constante e energia cinetica;
+- MUV/queda livre: posicao, velocidade, aceleracao constante e energia cinetica;
+- Lancamento obliquo: decomposicao da velocidade inicial, trajetoria, aceleracao gravitacional e energia mecanica em voo;
+- MCU: posicao angular, velocidade tangencial, periodo/frequencia, aceleracao centripeta e energia cinetica.
+
 ## Estados de tela
 
 - Inicial: carrega preset padrao do pendulo ja em modo rodando, com acao visivel para pausar/reproduzir.
@@ -162,6 +184,7 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 
 - O usuario consegue abrir `Mecanica > Pendulo simples` pela sidebar.
 - O usuario consegue abrir `Mecanica > Dinamica > Plano inclinado com atrito` pela sidebar quando quiser validar a segunda simulacao disponivel.
+- O usuario consegue abrir as quatro primeiras simulacoes de `Mecanica > Cinematica` pela sidebar e ver cena, vetores, graficos, tabela, formulas e teoria sincronizados.
 - O canvas mostra a animacao do pendulo.
 - As metricas instantaneas e a legenda detalhada dos vetores ficam acima do canvas da simulacao; a legenda compacta dos vetores aparece no canto superior direito da animacao.
 - O canvas do pendulo e uma cena 3D; arrastar horizontalmente gira a visualizacao ao redor do eixo Z e usar scroll sobre o canvas controla o zoom da camera sem alterar a fonte numerica da simulacao.
@@ -186,5 +209,5 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 - Nao precisa salvar simulacoes do usuario.
 - Nao precisa compartilhar links configurados.
 - Nao precisa autenticar usuarios.
-- O core inicial nao precisava ter mais de uma simulacao funcional; a Fase 2 passa a manter duas simulacoes funcionais para validar reuso.
+- O core inicial nao precisava ter mais de uma simulacao funcional; apos a Fase 3, o shell mantem pendulo, plano inclinado e quatro simulacoes analiticas de Cinematica como funcionais.
 - Nao precisa de simulacao fisica de alta fidelidade alem do modelo declarado.

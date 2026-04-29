@@ -160,6 +160,34 @@ type InclinedPlaneSample = {
 };
 ```
 
+## Exemplo de sample de Cinematica
+
+```ts
+type KinematicsSample = {
+  timeSeconds: number;
+  positionMeters: number;
+  displacementMeters: number;
+  xMeters: number;
+  zMeters: number;
+  velocityMetersPerSecond: number;
+  velocityXMetersPerSecond: number;
+  velocityZMetersPerSecond: number;
+  speedMetersPerSecond: number;
+  accelerationMetersPerSecondSquared: number;
+  accelerationXMetersPerSecondSquared: number;
+  accelerationZMetersPerSecondSquared: number;
+  angleRadians: number;
+  angularVelocityRadiansPerSecond: number;
+  periodSeconds: number;
+  frequencyHertz: number;
+  centripetalAccelerationMetersPerSecondSquared: number;
+  kineticEnergyJoules: number;
+  potentialEnergyJoules: number;
+  totalEnergyJoules: number;
+  isGrounded: boolean;
+};
+```
+
 ## Erros esperados
 
 - `INVALID_PARAMETER_RANGE`: parametro fora de minimo/maximo.

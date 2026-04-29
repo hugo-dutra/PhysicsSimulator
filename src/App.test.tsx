@@ -549,4 +549,54 @@ describe('App', () => {
     expect(screen.getAllByText(/Atrito estatico/i).length)
       .toBeGreaterThan(0)
   }, 20_000)
+
+  it('opens the first kinematics simulations through the shared shell', () => {
+    render(
+      <ThemeProvider theme={appTheme}>
+        <App />
+      </ThemeProvider>,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
+    )
+
+    const kinematicsCases = [
+      {
+        title: /Movimento retilineo uniforme/i,
+        chart: /Posicao por tempo/i,
+        control: /Velocidade \(m\/s\)/i,
+      },
+      {
+        title: /Movimento uniformemente variado e queda livre/i,
+        chart: /Aceleracao por tempo/i,
+        control: /Aceleracao \(m\/s\^2\)/i,
+      },
+      {
+        title: /Lancamento obliquo/i,
+        chart: /Velocidades por tempo/i,
+        control: /Angulo de lancamento \(deg\)/i,
+      },
+      {
+        title: /Movimento circular uniforme/i,
+        chart: /Aceleracao centripeta por tempo/i,
+        control: /Raio \(m\)/i,
+      },
+    ]
+
+    kinematicsCases.forEach(({ title, chart, control }) => {
+      fireEvent.click(screen.getByRole('button', { name: title }))
+
+      expect(screen.getByRole('heading', { name: title })).toBeInTheDocument()
+      expect(screen.getByLabelText(/Kinematics numerical viewport/i))
+        .toBeInTheDocument()
+      expect(screen.getByLabelText(/Cena 3D de Cinematica/i))
+        .toHaveAccessibleName(/scroll para zoom/i)
+      expect(screen.getByLabelText(control)).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
+      expect(screen.getByRole('img', { name: chart })).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /Recolher Graficos/i }))
+    })
+  }, 20_000)
 })

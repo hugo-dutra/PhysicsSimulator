@@ -85,10 +85,10 @@ Objetivo: cobrir o bloco principal de Mecanica basica com modelos analiticos e n
 
 Tasks:
 
-- `[ ]` Implementar `Mecanica > Cinematica > Movimento retilineo uniforme`.
-- `[ ]` Implementar `Mecanica > Cinematica > Movimento uniformemente variado e queda livre`.
-- `[ ]` Implementar `Mecanica > Cinematica > Lancamento obliquo`.
-- `[ ]` Implementar `Mecanica > Cinematica > Movimento circular uniforme`.
+- `[x]` Implementar `Mecanica > Cinematica > Movimento retilineo uniforme`.
+- `[x]` Implementar `Mecanica > Cinematica > Movimento uniformemente variado e queda livre`.
+- `[x]` Implementar `Mecanica > Cinematica > Lancamento obliquo`.
+- `[x]` Implementar `Mecanica > Cinematica > Movimento circular uniforme`.
 - `[ ]` Implementar `Mecanica > Dinamica > Plano inclinado com atrito`.
 - `[ ]` Implementar `Mecanica > Dinamica > Maquina de Atwood`.
 - `[ ]` Implementar `Mecanica > Dinamica > Forca centripeta em curva`.

@@ -8,6 +8,7 @@
 - A sidebar deve ser hierarquica e navegavel por area e subarea; simulacoes planejadas podem aparecer como folhas marcadas, sem parecerem disponiveis.
 - A primeira entrega funcional deve ser `Mecanica > Pendulo simples`.
 - A segunda simulacao funcional da Fase 2 e `Mecanica > Dinamica > Plano inclinado com atrito`, usada para validar reuso antes de expandir o catalogo.
+- O primeiro lote da Fase 3 promove `Mecanica > Cinematica` com MRU, MUV/queda livre, lancamento obliquo e MCU como simulacoes `available`, todas com motor analitico compartilhado e saidas completas.
 - A taxonomia principal do catalogo deve usar `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo`; fluidos basicos entram como subarea, nao como prioridade separada antes do core.
 
 ## Regras de fisica
@@ -16,8 +17,8 @@
 - Parametros devem ter minimo, maximo, passo e valor padrao.
 - Controles de runtime, como duracao do ciclo e janela do grafico, tambem devem declarar minimo, maximo, passo e valor padrao.
 - Formulas devem declarar variaveis, unidades, significado fisico, quando usar e quando nao usar.
-- Formulas exibidas devem corresponder ao modelo numerico implementado.
-- O modelo numerico deve ser deterministico para os mesmos parametros.
+- Formulas exibidas devem corresponder ao modelo numerico ou analitico implementado.
+- O modelo numerico ou analitico deve ser deterministico para os mesmos parametros.
 - Tabela, graficos e animacao devem ser derivados da mesma fonte de dados.
 - Cada simulacao `available` deve ter uma unica fonte de samples para cena, graficos, tabela, metricas, formulas e legenda.
 - Velocidades e aceleracoes derivadas exibidas em graficos, tabela, metricas ou formulas devem ser calculadas no motor/sample e manter unidades explicitas.
