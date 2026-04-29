@@ -1,28 +1,28 @@
 import { memo, useMemo } from 'react'
-import { Box } from '@mui/material'
+import { Box, IconButton, Tooltip } from '@mui/material'
+import { Eye, EyeOff } from 'lucide-react'
 import type { PendulumSample } from '../../lib/physics/pendulum'
-import { themeTokens } from '../../theme/appTheme'
 import { ChevronSection } from './ChevronSection'
-import { LiveLineChart, type ChartTrace } from './LiveLineChart'
+import { LiveLineChart } from './LiveLineChart'
+import {
+  buildPendulumChartConfigs,
+  preparePendulumChartSamples,
+  type PendulumChartConfig,
+  type PendulumChartId,
+} from './pendulumChartConfigs'
 
 type PendulumChartsProps = {
   chartWindowSeconds: number
   expanded: boolean
+  focusedChartId?: PendulumChartId | null
   maximized?: boolean
   onMaximizeToggle?: () => void
+  onFocusedChartToggle?: (chartId: PendulumChartId) => void
   onToggle: () => void
   samples: PendulumSample[]
   showEnergy: boolean
   xAxisRange: [number, number]
 }
-
-const maxChartSamples = 480
-type ChartDataKey =
-  | 'acceleration'
-  | 'angle'
-  | 'energy'
-  | 'linearVelocity'
-  | 'velocity'
 
 const compactSeconds = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
@@ -31,109 +31,28 @@ const compactSeconds = new Intl.NumberFormat('pt-BR', {
 export const PendulumCharts = memo(function PendulumCharts({
   chartWindowSeconds,
   expanded,
+  focusedChartId = null,
   maximized = false,
   onMaximizeToggle,
+  onFocusedChartToggle,
   onToggle,
   samples,
   showEnergy,
   xAxisRange,
 }: PendulumChartsProps) {
   const chartSamples = useMemo(
-    () => (expanded ? downsampleSamples(samples, maxChartSamples) : []),
+    () => (expanded ? preparePendulumChartSamples(samples) : []),
     [expanded, samples],
   )
-  const chartData = useMemo(() => {
-    if (!expanded) {
-      return {
-        acceleration: [],
-        angle: [],
-        energy: [],
-        linearVelocity: [],
-        velocity: [],
-      } satisfies Record<ChartDataKey, ChartTrace[]>
-    }
-
-    const time = chartSamples.map((sample) => sample.timeSeconds)
-
-    return {
-      angle: [
-        {
-          x: time,
-          y: chartSamples.map((sample) =>
-            radiansToDegrees(sample.angleRadians),
-          ),
-          name: 'theta',
-          lineColor: themeTokens.teal,
-        },
-      ] satisfies ChartTrace[],
-      velocity: [
-        {
-          x: time,
-          y: chartSamples.map(
-            (sample) => sample.angularVelocityRadiansPerSecond,
-          ),
-          name: 'omega',
-          lineColor: themeTokens.cyan,
-        },
-      ] satisfies ChartTrace[],
-      linearVelocity: [
-        {
-          x: time,
-          y: chartSamples.map(
-            (sample) => sample.linearVelocityMetersPerSecond,
-          ),
-          name: 'v',
-          lineColor: themeTokens.vector,
-        },
-      ] satisfies ChartTrace[],
-      acceleration: [
-        {
-          x: time,
-          y: chartSamples.map(
-            (sample) => sample.tangentialAccelerationMetersPerSecondSquared,
-          ),
-          name: 'a_t',
-          lineColor: themeTokens.warning,
-        },
-        {
-          x: time,
-          y: chartSamples.map(
-            (sample) => sample.radialAccelerationMetersPerSecondSquared,
-          ),
-          name: 'a_r',
-          lineColor: themeTokens.vector,
-        },
-        {
-          x: time,
-          y: chartSamples.map(
-            (sample) => sample.totalAccelerationMetersPerSecondSquared,
-          ),
-          name: '|a|',
-          lineColor: themeTokens.cyan,
-        },
-      ] satisfies ChartTrace[],
-      energy: [
-        {
-          x: time,
-          y: chartSamples.map((sample) => sample.kineticEnergyJoules),
-          name: 'cinetica',
-          lineColor: themeTokens.vector,
-        },
-        {
-          x: time,
-          y: chartSamples.map((sample) => sample.potentialEnergyJoules),
-          name: 'potencial',
-          lineColor: themeTokens.warning,
-        },
-        {
-          x: time,
-          y: chartSamples.map((sample) => sample.totalEnergyJoules),
-          name: 'total',
-          lineColor: themeTokens.cyan,
-        },
-      ] satisfies ChartTrace[],
-    }
-  }, [chartSamples, expanded])
+  const chartConfigs = useMemo(
+    () =>
+      expanded ? buildPendulumChartConfigs(chartSamples, showEnergy) : [],
+    [chartSamples, expanded, showEnergy],
+  )
+  const visibleChartConfigs = useMemo(
+    () => chartConfigs.filter((chart) => chart.id !== focusedChartId),
+    [chartConfigs, focusedChartId],
+  )
 
   return (
     <ChevronSection
@@ -167,64 +86,70 @@ export const PendulumCharts = memo(function PendulumCharts({
             },
           }}
         >
-          <LiveLineChart
-            title="Angulo por tempo"
-            traces={chartData.angle}
-            xAxisRange={xAxisRange}
-            yAxisTitle="theta (deg)"
-          />
-          <LiveLineChart
-            title="Velocidade angular"
-            traces={chartData.velocity}
-            xAxisRange={xAxisRange}
-            yAxisTitle="omega (rad/s)"
-          />
-          <LiveLineChart
-            title="Velocidade linear"
-            traces={chartData.linearVelocity}
-            xAxisRange={xAxisRange}
-            yAxisTitle="v (m/s)"
-          />
-          <LiveLineChart
-            title="Aceleracao"
-            traces={chartData.acceleration}
-            xAxisRange={xAxisRange}
-            yAxisTitle="a (m/s^2)"
-          />
-          {showEnergy ? (
+          {visibleChartConfigs.map((chart) => (
             <LiveLineChart
-              title="Energia mecanica"
-              traces={chartData.energy}
+              action={
+                onFocusedChartToggle ? (
+                  <ChartFocusButton
+                    chart={chart}
+                    focused={focusedChartId === chart.id}
+                    onToggle={onFocusedChartToggle}
+                  />
+                ) : undefined
+              }
+              key={chart.id}
+              title={chart.title}
+              traces={chart.traces}
               xAxisRange={xAxisRange}
-              yAxisTitle="energia (J)"
+              yAxisTitle={chart.yAxisTitle}
             />
-          ) : null}
+          ))}
         </Box>
       ) : null}
     </ChevronSection>
   )
 })
 
-function radiansToDegrees(value: number) {
-  return (value * 180) / Math.PI
+export function ChartFocusButton({
+  chart,
+  focused,
+  onToggle,
+}: {
+  chart: PendulumChartConfig
+  focused: boolean
+  onToggle: (chartId: PendulumChartId) => void
+}) {
+  return (
+    <Tooltip
+      title={
+        focused
+          ? 'Remover grafico do lado da simulacao'
+          : 'Mostrar grafico ao lado da simulacao'
+      }
+    >
+      <IconButton
+        aria-label={
+          focused
+            ? `Remover ${chart.title} do lado da simulacao`
+            : `Mostrar ${chart.title} ao lado da simulacao`
+        }
+        aria-pressed={focused}
+        color={focused ? 'primary' : 'default'}
+        onClick={() => {
+          onToggle(chart.id)
+        }}
+        size="small"
+      >
+        {focused ? (
+          <EyeOff aria-hidden size={17} />
+        ) : (
+          <Eye aria-hidden size={17} />
+        )}
+      </IconButton>
+    </Tooltip>
+  )
 }
 
 function formatSeconds(value: number) {
   return `${compactSeconds.format(value)} s`
-}
-
-function downsampleSamples(samples: PendulumSample[], maxSampleCount: number) {
-  if (samples.length <= maxSampleCount) {
-    return samples
-  }
-
-  const stride = Math.ceil(samples.length / maxSampleCount)
-  const decimatedSamples = samples.filter((_, index) => index % stride === 0)
-  const lastSample = samples.at(-1)
-
-  if (lastSample && decimatedSamples.at(-1) !== lastSample) {
-    decimatedSamples.push(lastSample)
-  }
-
-  return decimatedSamples
 }

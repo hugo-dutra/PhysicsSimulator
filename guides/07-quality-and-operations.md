@@ -53,10 +53,14 @@ Depois da prova do core, cada nova simulacao promovida para `available` deve ter
 ## Validacoes visuais
 
 - Canvas nao pode estar em branco.
+- Viewports Three.js devem renderizar cena 3D com pixels nao-background, responder a arraste horizontal mudando a visualizacao da camera e responder a scroll sobre o canvas com zoom da camera.
 - Vetores devem acompanhar o movimento.
 - Vetores devem ter legenda visivel com cor, modulo atual e significado fisico.
+- Metricas instantaneas e legenda de vetores devem aparecer acima do canvas do viewport.
 - Graficos devem atualizar quando parametros mudam.
+- Graficos devem exibir valores numericos do eixo Y e legendas de series com grandezas por extenso; unidades podem usar simbolos fisicos abreviados.
 - Graficos derivados de velocidade linear e aceleracao devem seguir a mesma janela temporal e a mesma fonte de samples dos demais graficos.
+- O olho de cada grafico deve mover o grafico para o slot lateral do viewport, manter a curva sincronizada com a simulacao e remover o slot ao acionar novamente.
 - Graficos com janela movel devem manter apenas os ultimos N segundos visiveis depois que o tempo atual ultrapassar a largura do plot.
 - Graficos nao devem piscar por remount/purge em mudancas normais de parametro.
 - Graficos progressivos devem parecer continuos, sem avanco em blocos grandes que sugiram travamento.

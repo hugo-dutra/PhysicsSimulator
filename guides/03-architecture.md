@@ -68,6 +68,8 @@ Usuario altera parametro
 Toda simulacao animada deve seguir o padrao adotado no pendulo:
 
 - O renderer visual (`Three.js`, `PixiJS` ou equivalente) deve possuir o loop de `requestAnimationFrame` e atualizar objetos de cena de forma imperativa.
+- Cenas Three.js devem usar espaco 3D com eixo Z vertical quando houver viewport espacial; o movimento fisico pode continuar planar, mas deve ser projetado para objetos 3D e camera orbitavel.
+- O padrao de camera inicial e orbitavel por drag horizontal ao redor do eixo Z, com scroll sobre o canvas fazendo zoom em direcao a cena. Esses controles pertencem ao renderer e devem atualizar camera/refs imperativamente, sem re-renderizar o shell React.
 - O shell React deve orquestrar parametros, toggles, layout, graficos, tabela, formulas e teoria, mas nao deve re-renderizar a arvore inteira a cada frame.
 - A fonte fisica continua unica: motor numerico, cena, graficos, tabela e formulas derivam dos mesmos parametros e samples.
 - Campos derivados como velocidade linear tangencial, aceleracao angular, aceleracao tangencial, aceleracao radial e modulo total de aceleracao pertencem ao sample do motor, nao a calculos soltos de UI.
@@ -79,11 +81,13 @@ Toda simulacao animada deve seguir o padrao adotado no pendulo:
 - Esses blocos de saida pesada devem iniciar fechados por padrao; o clique no cabecalho precisa alternar montagem e desmontagem do conteudo.
 - Viewport, graficos, tabela, formulas e apendice teorico devem seguir o padrao de painel maximizavel: um unico painel pode ocupar a area util da janela, os demais paineis ficam invisiveis, e a acao de minimizar restaura o layout e o estado aberto/fechado anterior.
 - Quando graficos ou tabela estiverem maximizados, a fonte de tempo e samples da simulacao deve continuar ativa para preservar sincronizacao. No pendulo, enquanto o runtime visual ainda e a fonte do sample vivo, o viewport pode ficar visualmente oculto, mas nao deve ser desmontado durante esse foco.
+- Graficos podem ser movidos para um slot lateral dentro do viewport por acao de olho. O slot usa a mesma configuracao de series, janela temporal e samples ja calculados para graficos; selecionar um grafico nao cria uma segunda fonte numerica nem altera o loop Three.js.
 - Graficos progressivos em tempo real nao devem depender de redraw completo em blocos. Use adapter imperativo com `requestAnimationFrame` (canvas/SVG), ponta/cursor interpolado, densidade suficiente de pontos e recorte movel suave.
 - Controles numericos podem manter valor local de edicao e confirmar recalculos caros apenas ao soltar o slider, pressionar Enter ou sair do input.
 - Simulacoes com timeline longa devem separar duracao do ciclo, taxa de amostragem e janela visivel de graficos para preservar fluidez sem perder contexto historico.
 - Tabelas sincronizadas devem manter quantidade estavel de linhas visiveis durante playback, preenchendo slots vazios ou decimando amostras sem mudar a altura do bloco.
 - Viewports devem expor medicao simples de FPS ou frame time durante desenvolvimento ou quando houver risco de peso visual.
+- Objetos principais de cena devem usar volume 3D quando isso ajuda a leitura espacial. No pendulo simples, a massa e um cubo 3D e nao um circulo 2D.
 
 ## Fronteiras entre core e acessorios
 

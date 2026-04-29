@@ -57,7 +57,13 @@ import {
 import { themeTokens } from '../../theme/appTheme'
 import { ChevronSection } from './ChevronSection'
 import { FormulaGuide } from './FormulaGuide'
-import { PendulumCharts } from './PendulumCharts'
+import { LiveLineChart } from './LiveLineChart'
+import { ChartFocusButton, PendulumCharts } from './PendulumCharts'
+import {
+  buildPendulumChartConfigs,
+  preparePendulumChartSamples,
+  type PendulumChartId,
+} from './pendulumChartConfigs'
 import { PendulumScene, type PendulumFrameStats } from './PendulumScene'
 import { getMovingWindowRange, selectRecentSamples } from './sampleWindow'
 import { TheoryAppendix } from './TheoryAppendix'
@@ -973,6 +979,8 @@ function PendulumRuntime({
   const [liveSample, setLiveSample] = useState<PendulumSample>(firstSample)
   const [frameStats, setFrameStats] =
     useState<PendulumFrameStats>(initialFrameStats)
+  const [focusedChartId, setFocusedChartId] =
+    useState<PendulumChartId | null>(null)
 
   const handleSampleChange = useCallback(
     (sample: PendulumSample, stats: PendulumFrameStats) => {
@@ -981,6 +989,12 @@ function PendulumRuntime({
     },
     [],
   )
+  const handleFocusedChartToggle = useCallback((chartId: PendulumChartId) => {
+    setFocusedChartId((currentChartId) =>
+      currentChartId === chartId ? null : chartId,
+    )
+  }, [])
+
   const isSimulationMaximized = maximizedPanel === 'simulation'
   const isChartsMaximized = maximizedPanel === 'charts'
   const isTableMaximized = maximizedPanel === 'table'
@@ -993,12 +1007,17 @@ function PendulumRuntime({
   const shouldShowCharts = !hasMaximizedPanel || isChartsMaximized
   const shouldShowTable = !hasMaximizedPanel || isTableMaximized
   const shouldHideSimulationCard = hasMaximizedPanel && !isSimulationMaximized
+  const canFocusChartInSimulation = !shouldHideSimulationCard
   const currentSampleIndex = getSampleIndexForTime(
     samples,
     durationSeconds,
     liveSample.timeSeconds,
   )
-  const needsSampleWindow = chartsExpanded || tableExpanded
+  const activeFocusedChartId =
+    focusedChartId === 'energy' && !overlays.energy ? null : focusedChartId
+  const hasFocusedChart = activeFocusedChartId !== null
+  const needsChartRange = chartsExpanded || hasFocusedChart
+  const needsSampleWindow = needsChartRange || tableExpanded
   const visibleWindowSamples = useMemo(
     () => {
       if (!needsSampleWindow) {
@@ -1015,7 +1034,7 @@ function PendulumRuntime({
   )
   const xAxisRange = useMemo<[number, number]>(
     () => {
-      if (!chartsExpanded) {
+      if (!needsChartRange) {
         return [0, chartWindowSeconds]
       }
 
@@ -1027,9 +1046,9 @@ function PendulumRuntime({
     },
     [
       chartWindowSeconds,
-      chartsExpanded,
       durationSeconds,
       liveSample.timeSeconds,
+      needsChartRange,
     ],
   )
   const vectors = useMemo(
@@ -1041,10 +1060,26 @@ function PendulumRuntime({
   )
   const chartSamples = useMemo(
     () =>
-      chartsExpanded
+      needsChartRange
         ? appendLiveSample(visibleWindowSamples, liveSample)
         : [],
-    [chartsExpanded, liveSample, visibleWindowSamples],
+    [liveSample, needsChartRange, visibleWindowSamples],
+  )
+  const focusedChart = useMemo(
+    () => {
+      if (!activeFocusedChartId) {
+        return null
+      }
+
+      const focusedChartSamples = preparePendulumChartSamples(chartSamples)
+
+      return (
+        buildPendulumChartConfigs(focusedChartSamples, overlays.energy).find(
+          (chart) => chart.id === activeFocusedChartId,
+        ) ?? null
+      )
+    },
+    [activeFocusedChartId, chartSamples, overlays.energy],
   )
   const tableRows = useMemo(() => {
     if (!tableExpanded) {
@@ -1166,21 +1201,9 @@ function PendulumRuntime({
           </Stack>
         </Box>
 
-        <PendulumScene
-          durationSeconds={durationSeconds}
-          isPlaying={isPlaying}
-          maximized={isSimulationMaximized}
-          onSampleChange={handleSampleChange}
-          parameters={parameters}
-          playbackRate={playbackRate}
-          resetVersion={resetVersion}
-          samples={samples}
-          showTrace={overlays.trace}
-          showVectors={overlays.vectors}
-        />
         <Box
           sx={{
-            borderTop: `1px solid ${themeTokens.border}`,
+            borderBottom: `1px solid ${themeTokens.border}`,
             display: 'grid',
             gap: 1,
             gridTemplateColumns: {
@@ -1190,34 +1213,37 @@ function PendulumRuntime({
             p: 1.5,
           }}
         >
-          <Metric label="theta" value={formatDegrees(angleDegrees)} />
+          <Metric label="Angulo do pendulo" value={formatDegrees(angleDegrees)} />
           <Metric
-            label="omega"
+            label="Velocidade angular"
             value={formatNumber(
               liveSample.angularVelocityRadiansPerSecond,
               'rad/s',
             )}
           />
           <Metric
-            label="v"
+            label="Velocidade linear"
             value={formatNumber(liveSample.linearVelocityMetersPerSecond, 'm/s')}
           />
           <Metric
-            label="|a|"
+            label="Aceleracao total"
             value={formatNumber(
               liveSample.totalAccelerationMetersPerSecondSquared,
               'm/s^2',
             )}
           />
-          <Metric label="x" value={formatNumber(liveSample.xMeters, 'm')} />
+          <Metric
+            label="Posicao horizontal"
+            value={formatNumber(liveSample.xMeters, 'm')}
+          />
           {overlays.energy ? (
             <Metric
-              label="energia"
+              label="Energia mecanica"
               value={formatNumber(liveSample.totalEnergyJoules, 'J')}
             />
           ) : null}
           <Metric
-            label="frame"
+            label="Tempo do frame"
             value={
               frameStats.frameTimeMs > 0
                 ? formatNumber(frameStats.frameTimeMs, 'ms')
@@ -1226,13 +1252,67 @@ function PendulumRuntime({
           />
         </Box>
         {overlays.vectors ? <VectorLegend vectors={vectors} /> : null}
+        <Box
+          sx={{
+            display: 'grid',
+            gap: focusedChart ? 1.5 : 0,
+            gridTemplateColumns: {
+              xs: '1fr',
+              lg: focusedChart
+                ? 'minmax(0, 2fr) minmax(280px, 1fr)'
+                : '1fr',
+            },
+            p: focusedChart ? 1.5 : 0,
+          }}
+        >
+          <Box sx={{ minWidth: 0 }}>
+            <PendulumScene
+              durationSeconds={durationSeconds}
+              isPlaying={isPlaying}
+              maximized={isSimulationMaximized}
+              onSampleChange={handleSampleChange}
+              parameters={parameters}
+              playbackRate={playbackRate}
+              resetVersion={resetVersion}
+              samples={samples}
+              showTrace={overlays.trace}
+              showVectors={overlays.vectors}
+            />
+          </Box>
+          {focusedChart ? (
+            <Box
+              aria-label="Slot de grafico em foco da simulacao"
+              sx={{ minWidth: 0 }}
+            >
+              <LiveLineChart
+                action={
+                  <ChartFocusButton
+                    chart={focusedChart}
+                    focused
+                    onToggle={handleFocusedChartToggle}
+                  />
+                }
+                title={focusedChart.title}
+                traces={focusedChart.traces}
+                xAxisRange={xAxisRange}
+                yAxisTitle={focusedChart.yAxisTitle}
+              />
+            </Box>
+          ) : null}
+        </Box>
       </Box>
 
       {shouldShowCharts ? (
         <PendulumCharts
           chartWindowSeconds={chartWindowSeconds}
           expanded={chartsExpanded}
+          focusedChartId={
+            canFocusChartInSimulation ? activeFocusedChartId : null
+          }
           maximized={isChartsMaximized}
+          onFocusedChartToggle={
+            canFocusChartInSimulation ? handleFocusedChartToggle : undefined
+          }
           onMaximizeToggle={() => {
             onMaximizedPanelToggle('charts')
           }}
@@ -1583,7 +1663,7 @@ function VectorLegend({ vectors }: { vectors: PendulumVectorOverlay[] }) {
     <Box
       aria-label="Legenda dos vetores"
       sx={{
-        borderTop: `1px solid ${themeTokens.border}`,
+        borderBottom: `1px solid ${themeTokens.border}`,
         display: 'grid',
         gap: 1,
         gridTemplateColumns: {

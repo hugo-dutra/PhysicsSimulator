@@ -366,6 +366,7 @@ Arquivos atualizados:
 Validacao:
 
 - Executado `npm run test -- src/App.test.tsx`.
+- Executado `npm run test`.
 - Executado `npm run lint`.
 - Executado `npm run build`.
 - Executado `validate_guides.py`.
@@ -691,6 +692,38 @@ Validacao:
 - Executado `npm run lint`.
 - Executado `npm run build`; build passou com aviso conhecido de chunk acima de 500 kB.
 - Executado `validate_guides.py`.
+
+## 2026-04-29 - Grafico em foco no viewport
+
+Novo padrao de interface para comparar grafico e evento visual:
+
+- Cada grafico temporal ganhou botao de olho no cabecalho.
+- Clicar no olho move o grafico para um slot lateral direito dentro do container do viewport, ocupando 1/3 do espaco em desktop.
+- Enquanto esta no slot, o grafico sai do bloco original; clicar novamente no olho remove o slot e devolve o grafico ao bloco de graficos.
+- O grafico em foco usa a mesma configuracao de series, a mesma janela temporal e a mesma fonte de samples dos demais graficos.
+- O padrao foi registrado nos guides para proximas simulacoes.
+
+Arquivos atualizados:
+
+- `guides/02-product-spec.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/07-quality-and-operations.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/LiveLineChart.tsx`
+- `src/features/simulation-shell/PendulumCharts.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+- `src/features/simulation-shell/pendulumChartConfigs.ts`
+
+Validacao:
+
+- Executado `npm run test -- src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `validate_guides.py`.
 - Smoke visual headless em `http://127.0.0.1:5184/`: modo maximizado da simulacao em desktop/mobile sem overflow horizontal, canvas com pixels nao-background/coloridos, graficos maximizados com 5 charts visiveis e tabela maximizada com 18 linhas fixas.
 - Capturas geradas em `artifacts/pendulum-max-simulation-desktop.png`, `artifacts/pendulum-max-charts-desktop.png`, `artifacts/pendulum-max-table-desktop.png` e `artifacts/pendulum-max-simulation-mobile.png`.
 
@@ -730,3 +763,153 @@ Validacao:
 - Executado `validate_guides.py`.
 - Smoke visual headless em `http://127.0.0.1:5184/`: menus de Cinematica, Gases e Circuitos AC abrem itens planejados; formulas e apendice teorico maximizados escondem controles e exibem conteudo.
 - Capturas geradas em `artifacts/physic-sidebar-catalog-desktop.png`, `artifacts/pendulum-max-formulas-desktop.png` e `artifacts/pendulum-max-theory-desktop.png`.
+
+## 2026-04-29 - Viewport 3D orbitavel
+
+Ajuste de cena e padrao visual:
+
+- O viewport do pendulo passou de composicao planar para cena Three.js 3D com eixo Z vertical.
+- A massa do pendulo deixou de ser uma esfera/circulo visual e passou a ser um cubo 3D com arestas.
+- Arrastar horizontalmente no canvas orbita a camera ao redor do eixo Z sem alterar parametros, samples, graficos ou tabela.
+- A interacao de camera fica em refs do renderer e nao re-renderiza o shell React em alta frequencia.
+- O padrao foi registrado nos guides para proximas simulacoes com viewport espacial.
+
+Arquivos atualizados:
+
+- `guides/02-product-spec.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/07-quality-and-operations.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/PendulumScene.tsx`
+
+Validacao:
+
+- Executado `npm run test -- src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `validate_guides.py`.
+- Smoke visual headless em `http://127.0.0.1:5184/`: cena 3D renderizada em desktop `1440x1100` e mobile `390x900`, cubo/objetos coloridos detectados, arraste horizontal alterando a perspectiva da camera e sem overflow horizontal.
+- Capturas geradas em `artifacts/pendulum-3d-desktop-before.png`, `artifacts/pendulum-3d-desktop-after-drag.png`, `artifacts/pendulum-3d-mobile-before.png` e `artifacts/pendulum-3d-mobile-after-drag.png`.
+
+## 2026-04-29 - Leituras acima da simulacao
+
+Ajuste de layout do viewport:
+
+- As metricas instantaneas do pendulo foram movidas para cima do canvas da simulacao.
+- A legenda dos vetores tambem passou a ficar acima da cena 3D, logo antes do canvas.
+- O canvas Three.js permanece abaixo dessas leituras, preservando o loop renderer-first e a mesma fonte de samples.
+- A decisao foi registrada nos guides como regra de UX para viewports de simulacao.
+
+Arquivos atualizados:
+
+- `guides/02-product-spec.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/07-quality-and-operations.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+
+Validacao:
+
+- Executado `npm run test -- src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `validate_guides.py`.
+- Smoke visual headless em `http://127.0.0.1:5184/`: metricas e legenda confirmadas acima do canvas em desktop `1440x1100` e mobile `390x900`, canvas 3D ainda nao vazio/colorido e sem overflow horizontal.
+- Capturas geradas em `artifacts/pendulum-readouts-above-desktop.png` e `artifacts/pendulum-readouts-above-mobile.png`.
+
+## 2026-04-29 - Zoom por scroll no viewport
+
+Ajuste de interacao da cena 3D:
+
+- O canvas do pendulo agora captura o scroll do mouse quando o cursor esta sobre a cena.
+- Scroll para cima aproxima a camera em direcao a simulacao; scroll para baixo afasta.
+- O zoom usa raio de camera com limites minimo e maximo, atualizado em refs/objetos Three.js sem estado React de alta frequencia.
+- O scroll sobre o canvas nao rola a pagina, preservando o foco de inspecao da simulacao.
+- O padrao foi registrado nos guides para proximas cenas Three.js.
+
+Arquivos atualizados:
+
+- `guides/02-product-spec.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/07-quality-and-operations.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/PendulumScene.tsx`
+
+Validacao:
+
+- Executado `npm run test -- src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `validate_guides.py`.
+- Smoke visual headless em `http://127.0.0.1:5184/`: wheel sobre o canvas alterou a visualizacao por zoom, `scrollY` permaneceu `0`, canvas continuou nao vazio/colorido e sem overflow horizontal.
+- Capturas geradas em `artifacts/pendulum-wheel-zoom-before.png` e `artifacts/pendulum-wheel-zoom-after.png`.
+
+## 2026-04-29 - Escala Y e legendas claras nos graficos
+
+Correcao de leitura dos graficos:
+
+- Os valores numericos do eixo Y voltaram a aparecer nos graficos live-canvas.
+- O desenho de grid/escala saiu da regiao recortada do canvas; apenas linhas e cursor continuam clipados ao plot.
+- As legendas das series passaram para texto DOM com nomes fisicos completos, como `Velocidade linear tangencial`, `Aceleracao radial` e `Energia mecanica total`.
+- Labels abreviados como `theta`, `omega`, `a_t`, `a_r`, `|a|` e `v` deixaram de ser a leitura principal dos graficos.
+- As metricas instantaneas do viewport tambem trocaram abreviacoes por nomes claros.
+- O padrao foi registrado nos guides para graficos cientificos futuros.
+
+Arquivos atualizados:
+
+- `guides/02-product-spec.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/07-quality-and-operations.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/LiveLineChart.tsx`
+- `src/features/simulation-shell/PendulumCharts.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+
+Validacao:
+
+- Executado `npm run test -- src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `validate_guides.py`.
+- Smoke visual headless em `http://127.0.0.1:5184/`: 5 graficos visiveis, legendas completas presentes, abreviacoes `theta`, `omega` e `a_t` ausentes do texto visivel, eixo Y com pixels de escala detectados e sem overflow horizontal.
+- Captura gerada em `artifacts/pendulum-charts-y-axis-legends.png`.
+
+## 2026-04-29 - Unidades abreviadas nas legendas
+
+Refinamento das legendas dos graficos:
+
+- As legendas de series dos graficos mantem a grandeza fisica por extenso e passam a abreviar apenas a unidade.
+- Exemplos: `Velocidade angular (rad/s)`, `Aceleracao radial (m/s^2)` e `Energia mecanica total (J)`.
+- O padrao documental foi ajustado para permitir simbolos fisicos nas unidades sem voltar a abreviar grandezas como `theta`, `omega`, `a_t`, `a_r`, `|a|` ou `v`.
+
+Arquivos atualizados:
+
+- `guides/02-product-spec.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/07-quality-and-operations.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/pendulumChartConfigs.ts`
+
+Validacao:
+
+- Executado `npm run test -- src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `validate_guides.py`.

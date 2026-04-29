@@ -57,6 +57,9 @@ Layout recomendado:
 - Blocos chevron de saida pesada devem iniciar recolhidos por padrao, para o usuario abrir apenas o que quer observar.
 - Viewport de simulacao, graficos, tabela, formulas e apendice teorico devem expor acao compacta de maximizar/minimizar no proprio card ou cabecalho chevron.
 - Ao maximizar um desses paineis, os demais paineis do shell ficam invisiveis dentro da janela; ao minimizar, o layout e os estados anteriores voltam ao normal.
+- Viewports Three.js devem ser 3D por padrao quando a simulacao tiver cena espacial. Arrastar horizontalmente no canvas deve orbitar a camera ao redor do eixo Z, e usar scroll sobre o canvas deve aproximar ou afastar a camera na direcao da simulacao.
+- Leituras instantaneas e legenda de vetores pertencem ao topo do viewport, acima do canvas, para o usuario interpretar os valores antes de observar a cena.
+- O viewport pode abrir um slot lateral direito para grafico em foco, ocupando 1/3 do container em desktop. Esse slot aparece ao clicar no icone de olho de um grafico e desaparece ao clicar novamente, devolvendo o grafico ao bloco de graficos.
 
 ## Controles esperados no pendulo simples
 
@@ -76,16 +79,19 @@ Layout recomendado:
 - Toggle de energia.
 - Blocos chevron para graficos, tabela, formulas e teoria, iniciando fechados e permitindo abrir/minimizar saidas pesadas quando for preciso aliviar a UI.
 - Botao de maximizar/minimizar no viewport da simulacao, graficos, tabela, formulas e apendice teorico para inspecao ampliada durante aula ou demonstracao.
+- Botao com icone de olho em cada grafico para mover temporariamente uma unica serie de graficos para o slot lateral do viewport.
 
 ## Representacoes esperadas
 
-- Cena animada do pendulo.
-- Vetores de peso, tensao e velocidade linear com legenda visivel de cor, modulo e significado.
+- Cena 3D animada do pendulo, com massa renderizada como cubo didatico em vez de circulo plano.
+- Vetores de peso, tensao e velocidade linear com legenda visivel de cor, modulo e significado acima da cena.
 - Grafico de angulo por tempo com janela movel dos ultimos N segundos.
 - Grafico de velocidade angular por tempo com a mesma janela movel.
 - Grafico de velocidade linear tangencial por tempo com a mesma janela movel.
 - Grafico de aceleracao por tempo, exibindo componentes tangencial, radial e modulo total.
 - Grafico de energia cinetica, potencial e total com a mesma janela movel.
+- Graficos devem mostrar valores numericos na escala do eixo Y e legendas de series com nomes fisicos claros. A grandeza fisica nao deve ser abreviada, mas a unidade pode usar simbolo padrao entre parenteses, como `rad/s`, `m/s`, `m/s^2` ou `J`.
+- Um grafico por vez pode ser destacado no slot direito do viewport para comparar a curva com o evento visual da simulacao, sempre usando a mesma janela temporal e a mesma fonte de samples do bloco de graficos.
 - Tabela com tempo, angulo, velocidade angular, velocidade linear, aceleracoes, posicao e energia, mantendo quantidade fixa de linhas visiveis para evitar oscilacao de layout durante o playback.
 - Formulas do processo analisado, com variaveis, unidades, condicoes de uso e exemplo curto.
 - Apendice teorico com equacoes, unidades, contexto de uso e limites da aproximacao.
@@ -130,10 +136,14 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 
 - O usuario consegue abrir `Mecanica > Pendulo simples` pela sidebar.
 - O canvas mostra a animacao do pendulo.
+- As metricas instantaneas e a legenda dos vetores ficam acima do canvas da simulacao.
+- O canvas do pendulo e uma cena 3D; arrastar horizontalmente gira a visualizacao ao redor do eixo Z e usar scroll sobre o canvas controla o zoom da camera sem alterar a fonte numerica da simulacao.
 - Alterar controles muda a simulacao e regenera dados derivados.
 - Alterar o tempo do ciclo muda a duracao maxima antes do playback reiniciar.
 - Alterar a janela dos graficos muda quantos segundos recentes ficam visiveis.
 - Graficos e tabela refletem os mesmos samples quando suas saidas estao ligadas.
+- Graficos exibem escala numerica no eixo Y e legendas textuais completas para a grandeza de cada serie; apenas as unidades podem aparecer abreviadas por simbolo fisico padrao.
+- O clique no olho de um grafico move esse grafico para um slot lateral no viewport; clicar novamente no olho do grafico em foco remove o slot e restaura o grafico no bloco original.
 - Graficos, tabela, formulas e teoria podem ser recolhidos por chevron; quando um bloco pesado esta recolhido, seu conteudo deve ser desmontado e seu processamento suspenso.
 - Esses blocos chevron iniciam fechados por padrao e precisam alternar aberto/fechado ao clicar no cabecalho.
 - Viewport, graficos, tabela, formulas e apendice teorico podem ser maximizados dentro da janela. Apenas um painel fica maximizado por vez, os demais ficam invisiveis, e minimizar restaura o shell anterior sem perder o playback nem a sincronizacao de samples.

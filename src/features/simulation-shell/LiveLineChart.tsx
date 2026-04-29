@@ -1,5 +1,5 @@
-import { memo, useEffect, useId, useRef } from 'react'
-import { Box, Typography } from '@mui/material'
+import { memo, useEffect, useId, useRef, type ReactNode } from 'react'
+import { Box, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { themeTokens } from '../../theme/appTheme'
 
@@ -11,6 +11,7 @@ export type ChartTrace = {
 }
 
 type LiveLineChartProps = {
+  action?: ReactNode
   title: string
   xAxisRange?: [number, number]
   yAxisTitle: string
@@ -37,15 +38,16 @@ type Point = {
 const chartHeight = 228
 const plotPadding = {
   bottom: 34,
-  left: 54,
-  right: 16,
-  top: 24,
+  left: 72,
+  right: 18,
+  top: 20,
 }
 const chartNumber = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 2,
 })
 
 export const LiveLineChart = memo(function LiveLineChart({
+  action,
   title,
   traces,
   xAxisRange,
@@ -157,8 +159,6 @@ export const LiveLineChart = memo(function LiveLineChart({
 
   return (
     <Box
-      aria-labelledby={chartId}
-      role="img"
       sx={{
         bgcolor: alpha(themeTokens.panel, 0.62),
         border: `1px solid ${themeTokens.border}`,
@@ -167,26 +167,34 @@ export const LiveLineChart = memo(function LiveLineChart({
         overflow: 'hidden',
       }}
     >
-      <Typography
-        id={chartId}
+      <Stack
+        direction="row"
         sx={{
+          alignItems: 'center',
           borderBottom: `1px solid ${themeTokens.border}`,
+          gap: 1,
+          justifyContent: 'space-between',
           px: 1.25,
           py: 0.875,
         }}
-        variant="body2"
       >
-        {title}
-      </Typography>
-      <Box sx={{ height: chartHeight, minWidth: 0 }}>
-        <canvas
-          ref={canvasRef}
-          style={{
-            display: 'block',
-            height: '100%',
-            width: '100%',
-          }}
-        />
+        <Typography id={chartId} sx={{ minWidth: 0 }} variant="body2">
+          {title}
+        </Typography>
+        {action}
+      </Stack>
+      <Box aria-labelledby={chartId} role="img">
+        {traces.length > 0 ? <ChartLegend traces={traces} /> : null}
+        <Box sx={{ height: chartHeight, minWidth: 0 }}>
+          <canvas
+            ref={canvasRef}
+            style={{
+              display: 'block',
+              height: '100%',
+              width: '100%',
+            }}
+          />
+        </Box>
       </Box>
     </Box>
   )
@@ -211,19 +219,19 @@ function drawChart(
   const yRange = deriveYRange(input.traces, input.xAxisRange)
   const scale = createScale(plot, input.xAxisRange, yRange)
 
+  context.fillStyle = themeTokens.background
+  context.fillRect(plot.x, plot.y, plot.width, plot.height)
+  drawGrid(context, plot, input.xAxisRange, yRange)
+
   context.save()
   context.beginPath()
   context.rect(plot.x, plot.y, plot.width, plot.height)
   context.clip()
-  context.fillStyle = themeTokens.background
-  context.fillRect(plot.x, plot.y, plot.width, plot.height)
-  drawGrid(context, plot, input.xAxisRange, yRange)
   drawTimeCursor(context, plot, input.headTime, scale.x)
   drawTraces(context, input.traces, input.xAxisRange, input.headTime, scale)
   context.restore()
 
   drawAxes(context, plot, input.yAxisTitle)
-  drawLegend(context, plot, input.traces)
   context.setTransform(1, 0, 0, 1, 0, 0)
 }
 
@@ -357,35 +365,6 @@ function drawTraces(
       context.fill()
     }
   })
-}
-
-function drawLegend(
-  context: CanvasRenderingContext2D,
-  plot: { width: number; x: number; y: number },
-  traces: ChartTrace[],
-) {
-  context.font = '10px Inter, Segoe UI, Arial, sans-serif'
-  context.textBaseline = 'middle'
-
-  let cursorX = plot.x + plot.width
-
-  traces
-    .slice()
-    .reverse()
-    .forEach((trace) => {
-      const labelWidth = context.measureText(trace.name).width + 28
-
-      cursorX -= labelWidth
-      context.strokeStyle = trace.lineColor
-      context.lineWidth = 2
-      context.beginPath()
-      context.moveTo(cursorX, plot.y - 10)
-      context.lineTo(cursorX + 16, plot.y - 10)
-      context.stroke()
-      context.fillStyle = themeTokens.text
-      context.textAlign = 'left'
-      context.fillText(trace.name, cursorX + 20, plot.y - 10)
-    })
 }
 
 function createScale(
@@ -548,4 +527,49 @@ function interpolateAtX(
   const ratio = (targetX - startX) / (endX - startX)
 
   return startY + (endY - startY) * ratio
+}
+
+function ChartLegend({ traces }: { traces: ChartTrace[] }) {
+  return (
+    <Box
+      sx={{
+        borderBottom: `1px solid ${themeTokens.border}`,
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 0.75,
+        px: 1.25,
+        py: 0.875,
+      }}
+    >
+      {traces.map((trace) => (
+        <Box
+          key={trace.name}
+          sx={{
+            alignItems: 'center',
+            display: 'inline-flex',
+            gap: 0.75,
+            minWidth: 0,
+          }}
+        >
+          <Box
+            aria-hidden
+            sx={{
+              bgcolor: trace.lineColor,
+              borderRadius: 999,
+              flex: '0 0 auto',
+              height: 3,
+              width: 18,
+            }}
+          />
+          <Typography
+            color="text.secondary"
+            sx={{ overflowWrap: 'anywhere' }}
+            variant="caption"
+          >
+            {trace.name}
+          </Typography>
+        </Box>
+      ))}
+    </Box>
+  )
 }

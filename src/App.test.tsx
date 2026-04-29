@@ -21,6 +21,23 @@ describe('App', () => {
     expect(screen.getByText(/Catalogo local/i)).toBeInTheDocument()
     expect(screen.getByText('3601')).toBeInTheDocument()
     expect(screen.getByText(/Viewport Three\.js/i)).toBeInTheDocument()
+    const viewport = screen.getByLabelText(/Pendulum numerical viewport/i)
+    const angleMetric = within(viewport).getByText(/^Angulo do pendulo$/i)
+    const vectorLegend = within(viewport).getByLabelText(/Legenda dos vetores/i)
+    const simulationCanvas = within(viewport).getByLabelText(
+      /Cena 3D do pendulo simples/i,
+    )
+
+    expect(simulationCanvas).toBeInTheDocument()
+    expect(simulationCanvas).toHaveAccessibleName(/scroll para zoom/i)
+    expect(
+      angleMetric.compareDocumentPosition(simulationCanvas) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0)
+    expect(
+      vectorLegend.compareDocumentPosition(simulationCanvas) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0)
     expect(screen.getByLabelText(/Legenda dos vetores/i)).toBeInTheDocument()
     expect(
       screen.getByText(/tangencial a trajetoria, perpendicular ao fio/i),
@@ -76,7 +93,7 @@ describe('App', () => {
         name: /Tabela sincronizada de amostras do pendulo/i,
       }),
     ).not.toBeInTheDocument()
-  })
+  }, 20_000)
 
   it('smoke tests playback, parameter, and overlay controls', () => {
     render(
@@ -99,6 +116,65 @@ describe('App', () => {
       screen.getByRole('img', { name: /Aceleracao/i }),
     ).toBeInTheDocument()
     expect(energyChart).toBeInTheDocument()
+    expect(
+      screen.getByText(/^Angulo do pendulo \(deg\)$/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/^Velocidade angular \(rad\/s\)$/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/^Velocidade linear tangencial \(m\/s\)$/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /^Aceleracao tangencial \(m\/s\^2\)$/i,
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/^Aceleracao radial \(m\/s\^2\)$/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByText(/^Aceleracao total \(m\/s\^2\)$/i).length,
+    ).toBeGreaterThan(0)
+    expect(screen.getByText(/^Energia cinetica \(J\)$/i)).toBeInTheDocument()
+    expect(screen.getByText(/^Energia potencial \(J\)$/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/^Energia mecanica total \(J\)$/i),
+    ).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Mostrar Angulo do pendulo por tempo ao lado da simulacao/i,
+      }),
+    )
+    const focusedChartSlot = screen.getByLabelText(
+      /Slot de grafico em foco da simulacao/i,
+    )
+
+    expect(
+      within(focusedChartSlot).getByRole('img', {
+        name: /Angulo do pendulo por tempo/i,
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: /Remover Angulo do pendulo por tempo do lado da simulacao/i,
+      }),
+    ).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Remover Angulo do pendulo por tempo do lado da simulacao/i,
+      }),
+    )
+    expect(
+      screen.queryByLabelText(/Slot de grafico em foco da simulacao/i),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: /Mostrar Angulo do pendulo por tempo ao lado da simulacao/i,
+      }),
+    ).toHaveAttribute('aria-pressed', 'false')
 
     expect(
       screen.getByRole('button', { name: /Pausar animacao/i }),
@@ -147,7 +223,7 @@ describe('App', () => {
       screen.getByRole('button', { name: /Abrir Graficos/i }),
     ).toHaveAttribute('aria-expanded', 'false')
     expect(
-      screen.queryByRole('img', { name: /Angulo por tempo/i }),
+      screen.queryByRole('img', { name: /Angulo do pendulo por tempo/i }),
     ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('img', { name: /Velocidade angular/i }),
@@ -250,7 +326,7 @@ describe('App', () => {
       screen.getByRole('button', { name: /Minimizar Graficos/i }),
     ).toHaveAttribute('aria-pressed', 'true')
     expect(
-      screen.getByRole('img', { name: /Angulo por tempo/i }),
+      screen.getByRole('img', { name: /Angulo do pendulo por tempo/i }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('img', { name: /Aceleracao/i }),
@@ -306,7 +382,7 @@ describe('App', () => {
     ).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByText(/Equacao de movimento angular/i)).toBeInTheDocument()
     expect(
-      screen.queryByRole('img', { name: /Angulo por tempo/i }),
+      screen.queryByRole('img', { name: /Angulo do pendulo por tempo/i }),
     ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('table', {

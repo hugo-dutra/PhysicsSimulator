@@ -28,11 +28,15 @@
 - Controles numericos usam slider e input quando precisao importar.
 - Toggles para exibir vetores, trilha, energia e overlays.
 - Vetores exibidos precisam de legenda visivel com cor, modulo atual e significado fisico, especialmente quando a direcao nao e obvia no movimento.
+- Leituras instantaneas e legenda de vetores devem ficar acima do canvas da simulacao, nao abaixo, para preservar a leitura antes da observacao visual.
+- Viewports Three.js devem ser cenas 3D orbitaveis: arraste horizontal no canvas gira a visualizacao ao redor do eixo Z, e scroll sobre o canvas aproxima ou afasta a camera em direcao a simulacao, sem alterar parametros fisicos ou samples.
+- O eixo Z deve ser tratado como vertical nas cenas Three.js padrao, para manter consistencia entre simulacoes.
 - Blocos de saida pesada, como graficos, tabela, formulas e teoria, devem ser recolhiveis por chevron no proprio cabecalho.
 - Blocos chevron de saida pesada iniciam fechados por padrao e devem abrir/fechar ao clique no cabecalho.
 - Quando um bloco chevron estiver recolhido, a aplicacao deve desmontar o conteudo e suspender calculos/renderizacao derivados daquele bloco.
 - Viewport, graficos, tabela, formulas e apendice teorico devem oferecer botao com icone para maximizar/minimizar o painel dentro da janela.
 - Enquanto um painel estiver maximizado, os demais paineis do shell devem ficar invisiveis; minimizar deve restaurar o layout anterior e manter a fonte unica de samples.
+- Cada grafico temporal deve oferecer acao de olho para entrar no slot lateral direito do viewport, com apenas um grafico em foco por vez. Acionar novamente deve remover o slot e recolocar o grafico no bloco original.
 - Icones em botoes sempre que houver comando conhecido como play, pause, reset, zoom ou download.
 - Texto dentro de paineis deve ser compacto; evitar hero, landing page e blocos promocionais.
 - UI deve evitar cards dentro de cards.
@@ -42,6 +46,7 @@
 - Sliders e inputs que disparam timeline, graficos ou tabela pesados devem evitar recalculo a cada pixel de arraste; confirmar no commit do controle quando necessario.
 - Graficos de series temporais longas devem usar janela temporal configuravel para evitar reescala ou crescimento indefinido de pontos visiveis.
 - Graficos progressivos devem declarar cadencia de update, stride maximo, densidade minima de pontos visiveis e estrategia de desenho continuo para evitar redraw em blocos grandes.
+- Graficos cientificos devem mostrar valores numericos legiveis na escala do eixo Y e nomes completos das grandezas nas legendas das series. Unidades fisicas podem ser abreviadas por simbolo padrao, mas a grandeza nao deve depender de abreviacoes tecnicas como leitura primaria.
 
 ## Restricoes tecnicas
 
@@ -53,6 +58,7 @@
 - Nao travar contratos de API remota cedo demais.
 - Nao colocar `requestAnimationFrame` de playback no `SimulationShell` quando isso causar re-render de layout, graficos, tabela, formulas ou teoria a cada frame.
 - Nao recriar renderers, materiais, geometrias, buffers ou series Plotly no caminho quente da animacao sem justificativa medida.
+- Nao implementar orbitacao ou zoom da camera via estado React de alta frequencia; interacao de camera deve ficar em refs e atualizar o renderer diretamente.
 - Nao desmontar/remontar graficos ou viewport como mecanismo padrao de reset de parametro; preferir atualizar dados e refs preservando os componentes pesados montados.
 - Nao manter canvas de grafico, tabela tabular, KaTeX ou Markdown processando quando o bloco chevron correspondente estiver recolhido.
 - Nao congelar graficos ou tabela ao maximizar um painel: se a cena for a fonte atual do sample vivo, ela pode ficar invisivel, mas precisa continuar alimentando o runtime ate esse relogio ser extraido.

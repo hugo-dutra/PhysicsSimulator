@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
+} from 'react'
 import { Box } from '@mui/material'
 import * as THREE from 'three'
 import {
@@ -30,7 +36,11 @@ type PendulumSceneProps = {
 type SceneObjects = {
   renderer: THREE.WebGLRenderer
   scene: THREE.Scene
-  camera: THREE.OrthographicCamera
+  camera: THREE.PerspectiveCamera
+  cameraRadius: number
+  cameraMinRadius: number
+  cameraMaxRadius: number
+  cameraTarget: THREE.Vector3
   rod: THREE.Line
   rodPositions: Float32Array
   bob: THREE.Mesh
@@ -52,6 +62,11 @@ type RuntimeProps = {
   showVectors: boolean
 }
 
+type DragState = {
+  lastClientX: number
+  pointerId: number
+}
+
 const vectorColors: Record<PendulumVectorOverlay['id'], number> = {
   weight: 0xf43f5e,
   tension: 0xa3e635,
@@ -70,6 +85,11 @@ const traceColor = {
 }
 const readoutIntervalMs = 33
 const maxFrameDeltaSeconds = 0.12
+const initialCameraYawRadians = -0.48
+const dragYawRadiansPerPixel = 0.008
+const wheelZoomSensitivity = 0.0014
+const minCameraRadiusScale = 0.38
+const maxCameraRadiusScale = 2.25
 
 export function PendulumScene({
   durationSeconds,
@@ -98,6 +118,8 @@ export function PendulumScene({
   const frameIdRef = useRef<number | null>(null)
   const lastFrameTimeRef = useRef<number | null>(null)
   const lastReadoutTimeRef = useRef(0)
+  const cameraYawRadiansRef = useRef(initialCameraYawRadians)
+  const dragStateRef = useRef<DragState | null>(null)
   const fpsWindowStartRef = useRef(0)
   const fpsFrameCountRef = useRef(0)
   const statsRef = useRef<PendulumFrameStats>({
@@ -162,6 +184,89 @@ export function PendulumScene({
     [],
   )
 
+  const handlePointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLCanvasElement>) => {
+      dragStateRef.current = {
+        lastClientX: event.clientX,
+        pointerId: event.pointerId,
+      }
+      event.currentTarget.setPointerCapture(event.pointerId)
+    },
+    [],
+  )
+
+  const handlePointerMove = useCallback(
+    (event: ReactPointerEvent<HTMLCanvasElement>) => {
+      const dragState = dragStateRef.current
+
+      if (!dragState || dragState.pointerId !== event.pointerId) {
+        return
+      }
+
+      const deltaX = event.clientX - dragState.lastClientX
+
+      if (deltaX === 0) {
+        return
+      }
+
+      dragState.lastClientX = event.clientX
+      cameraYawRadiansRef.current += deltaX * dragYawRadiansPerPixel
+
+      const objects = objectsRef.current
+
+      if (objects) {
+        updateOrbitCamera(objects, cameraYawRadiansRef.current)
+        renderCurrentFrame()
+      }
+    },
+    [renderCurrentFrame],
+  )
+
+  const handlePointerEnd = useCallback(
+    (event: ReactPointerEvent<HTMLCanvasElement>) => {
+      const dragState = dragStateRef.current
+
+      if (dragState?.pointerId === event.pointerId) {
+        dragStateRef.current = null
+      }
+
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId)
+      }
+    },
+    [],
+  )
+
+  const handleWheel = useCallback(
+    (event: ReactWheelEvent<HTMLCanvasElement>) => {
+      const objects = objectsRef.current
+
+      if (!objects) {
+        return
+      }
+
+      event.preventDefault()
+
+      const zoomFactor = Math.exp(
+        normalizeWheelDeltaY(event) * wheelZoomSensitivity,
+      )
+      const nextCameraRadius = clamp(
+        objects.cameraRadius * zoomFactor,
+        objects.cameraMinRadius,
+        objects.cameraMaxRadius,
+      )
+
+      if (Math.abs(nextCameraRadius - objects.cameraRadius) < 0.001) {
+        return
+      }
+
+      objects.cameraRadius = nextCameraRadius
+      updateOrbitCamera(objects, cameraYawRadiansRef.current)
+      renderCurrentFrame()
+    },
+    [renderCurrentFrame],
+  )
+
   useEffect(() => {
     runtimeRef.current = {
       durationSeconds,
@@ -213,18 +318,25 @@ export function PendulumScene({
       1,
       ...samples.map((item) => Math.hypot(item.xMeters, item.yMeters)),
     )
-    const camera = new THREE.OrthographicCamera(-2, 2, 2, -2, 0.1, 20)
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100)
     const scene = new THREE.Scene()
-    const centerY = -maxLength * 0.52
+    const cameraTarget = new THREE.Vector3(0, 0, -maxLength * 0.54)
+    const cameraRadius = Math.max(3.7, maxLength * 3.15)
+    const cameraMinRadius = Math.max(1.15, cameraRadius * minCameraRadiusScale)
+    const cameraMaxRadius = cameraRadius * maxCameraRadiusScale
 
-    camera.position.set(0, centerY, 6)
-    camera.lookAt(0, centerY, 0)
+    camera.up.set(0, 0, 1)
     scene.background = new THREE.Color(themeTokens.background)
+    scene.add(new THREE.AmbientLight(0xffffff, 0.64))
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.1)
+
+    keyLight.position.set(-2.5, -3.5, 4)
+    scene.add(keyLight)
 
     const grid = new THREE.GridHelper(maxLength * 2.6, 8, 0x2a2f3a, 0x20242d)
 
     grid.rotation.x = Math.PI / 2
-    grid.position.y = centerY
+    grid.position.z = -maxLength * 1.08
     grid.material.transparent = true
     grid.material.opacity = 0.42
     scene.add(grid)
@@ -249,9 +361,23 @@ export function PendulumScene({
     scene.add(rod)
 
     const bob = new THREE.Mesh(
-      new THREE.SphereGeometry(0.12, 24, 16),
-      new THREE.MeshBasicMaterial({ color: 0x2dd4bf }),
+      new THREE.BoxGeometry(0.24, 0.24, 0.24),
+      new THREE.MeshStandardMaterial({
+        color: 0x2dd4bf,
+        metalness: 0.08,
+        roughness: 0.44,
+      }),
     )
+    const bobEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(bob.geometry),
+      new THREE.LineBasicMaterial({
+        color: 0xe6e8ec,
+        transparent: true,
+        opacity: 0.46,
+      }),
+    )
+
+    bob.add(bobEdges)
     scene.add(bob)
 
     const tracePositions = new Float32Array(maxTracePoints * 3)
@@ -299,15 +425,11 @@ export function PendulumScene({
     const resizeRenderer = () => {
       const width = parent.clientWidth
       const height = parent.clientHeight
-      const viewHeight = Math.max(3, maxLength * 2.35)
-      const viewWidth = viewHeight * (width / Math.max(1, height))
 
-      camera.left = -viewWidth / 2
-      camera.right = viewWidth / 2
-      camera.top = viewHeight / 2
-      camera.bottom = -viewHeight / 2
+      camera.aspect = width / Math.max(1, height)
       camera.updateProjectionMatrix()
       renderer.setSize(width, height, false)
+      updateOrbitCamera(objectsRef.current, cameraYawRadiansRef.current)
       renderCurrentFrame()
     }
     const observer = new ResizeObserver(resizeRenderer)
@@ -316,6 +438,10 @@ export function PendulumScene({
       renderer,
       scene,
       camera,
+      cameraRadius,
+      cameraMinRadius,
+      cameraMaxRadius,
+      cameraTarget,
       rod,
       rodPositions,
       bob,
@@ -328,6 +454,7 @@ export function PendulumScene({
     }
 
     observer.observe(parent)
+    updateOrbitCamera(objectsRef.current, cameraYawRadiansRef.current)
     resizeRenderer()
 
     return () => {
@@ -423,11 +550,22 @@ export function PendulumScene({
     >
       <Box
         component="canvas"
+        aria-label="Cena 3D do pendulo simples com arraste horizontal para orbitar o eixo Z e scroll para zoom"
+        onPointerCancel={handlePointerEnd}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onWheel={handleWheel}
         ref={canvasRef}
         sx={{
+          cursor: 'grab',
           display: 'block',
           height: '100%',
+          touchAction: 'none',
           width: '100%',
+          '&:active': {
+            cursor: 'grabbing',
+          },
         }}
       />
     </Box>
@@ -451,7 +589,7 @@ function updatePendulumObjects({
   showTrace: boolean
   showVectors: boolean
 }) {
-  const bobPosition = new THREE.Vector3(sample.xMeters, sample.yMeters, 0)
+  const bobPosition = toScenePosition(sample)
   const rodPositionAttribute = objects.rod.geometry.getAttribute(
     'position',
   ) as THREE.BufferAttribute
@@ -469,8 +607,8 @@ function updatePendulumObjects({
     const arrow = objects.arrows[vector.id]
     const direction = new THREE.Vector3(
       vector.direction.x,
-      vector.direction.y,
       0,
+      vector.direction.y,
     )
 
     if (!showVectors || direction.lengthSq() === 0 || vector.magnitude === 0) {
@@ -578,8 +716,8 @@ function writeTracePoint(
     (1 - fadeProgress) * (traceMaxOpacity - traceMinOpacity)
 
   objects.tracePositions[positionIndex] = sample.xMeters
-  objects.tracePositions[positionIndex + 1] = sample.yMeters
-  objects.tracePositions[positionIndex + 2] = -0.04
+  objects.tracePositions[positionIndex + 1] = 0
+  objects.tracePositions[positionIndex + 2] = sample.yMeters - 0.04
   objects.traceColors[colorIndex] = traceColor.red
   objects.traceColors[colorIndex + 1] = traceColor.green
   objects.traceColors[colorIndex + 2] = traceColor.blue
@@ -676,6 +814,44 @@ function getVectorDisplayLength(vector: PendulumVectorOverlay) {
   const scale = vector.id === 'velocity' ? 0.34 : 0.11
 
   return Math.min(0.82, Math.max(0.16, vector.magnitude * scale))
+}
+
+function toScenePosition(sample: Pick<PendulumSample, 'xMeters' | 'yMeters'>) {
+  return new THREE.Vector3(sample.xMeters, 0, sample.yMeters)
+}
+
+function updateOrbitCamera(
+  objects: Pick<SceneObjects, 'camera' | 'cameraRadius' | 'cameraTarget'> | null,
+  yawRadians: number,
+) {
+  if (!objects) {
+    return
+  }
+
+  const { camera, cameraRadius, cameraTarget } = objects
+
+  camera.position.set(
+    cameraTarget.x + Math.sin(yawRadians) * cameraRadius,
+    cameraTarget.y - Math.cos(yawRadians) * cameraRadius,
+    cameraTarget.z + cameraRadius * 0.34,
+  )
+  camera.lookAt(cameraTarget)
+}
+
+function normalizeWheelDeltaY(event: ReactWheelEvent<HTMLCanvasElement>) {
+  if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
+    return event.deltaY * 16
+  }
+
+  if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+    return event.deltaY * 120
+  }
+
+  return event.deltaY
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
 }
 
 function requestAnimationFrameSafe(callback: FrameRequestCallback) {
