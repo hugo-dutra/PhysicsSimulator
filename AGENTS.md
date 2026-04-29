@@ -7,6 +7,7 @@ PhysicSimulator e uma aplicacao educacional para simulacoes de fisica. O objetiv
 ## Antes de agir
 
 Leia `guides/00-index.md` primeiro. Para qualquer mudanca de produto, arquitetura, dados, roadmap ou validacao, leia tambem os guides relacionados.
+Para qualquer task que implemente, ajuste, revise ou promova uma simulacao, leia e aplique tambem `guides/10-simulation-fidelity-adjustment-guide.md`.
 
 ## Regra core-first
 
@@ -26,6 +27,7 @@ A primeira entrega funcional deve provar `Mecanica > Pendulo simples` com mocks/
 - Nao quebrar a sincronizacao entre motor numerico, cena, graficos, tabela e formulas exibidas.
 - Simulacoes animadas devem usar renderizacao desacoplada: o loop de alta frequencia pertence ao renderer visual, nao ao shell React inteiro.
 - Toda simulacao deve declarar parametros, unidades, formulas usadas, quando usa-las e limites do modelo.
+- Toda task de simulacao deve passar pelo `Simulation Fidelity Adjustment Guide`: parametros fisicamente validos em zero, regimes, samples, cena, graficos, tabela, formulas, teoria, warnings e testes devem concordar antes de promover ou manter uma simulacao como `available`.
 - Use dados locais enquanto o core nao estiver validado.
 - Mantenha UI compacta, cientifica e orientada a ferramenta.
 - Atualize os guides quando decisoes estruturais mudarem.

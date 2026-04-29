@@ -9,6 +9,7 @@
 - `SimulationParameter`: nome, unidade, tipo, minimo, maximo, passo e valor padrao.
 - `SimulationRuntimeParameter`: controle de runtime com o mesmo formato de parametro, para duracao do ciclo, janela de grafico e outros ajustes nao fisicos.
 - `SimulationPreset`: conjunto nomeado de parametros para demonstracao.
+- `SimulationRegime`: regime fisico declarado, com condicao de validade, limite de transicao, campos de sample afetados e warning associado quando houver troca de regime.
 - `SimulationState`: estado instantaneo do sistema fisico.
 - `SimulationSample`: amostra derivada para graficos e tabela, incluindo cinematicas calculadas pelo motor quando forem exibidas.
 - `VectorOverlay`: vetor exibido na cena, como peso, tensao ou velocidade, acompanhado por cor, rotulo, modulo atual, unidade abreviada quando houver e metadados suficientes para legenda.
@@ -41,6 +42,8 @@ Usar MDX/Markdown local para:
 - limites do modelo.
 
 O estado fisico, samples, graficos e tabela devem ser gerados pelo motor numerico ou analitico em runtime. No pendulo simples, o sample tambem carrega velocidade linear tangencial, aceleracao angular, aceleracao tangencial, aceleracao radial e modulo total de aceleracao para manter graficos, tabela, metricas, formulas e legenda sincronizados. No plano inclinado com atrito, o sample carrega posicao no plano, velocidade, aceleracao, altura, coordenadas da cena, normal, componente paralela do peso, atrito, resultante, energia cinetica, potencial, termica e total. Nas simulacoes analiticas compartilhadas, o sample comum carrega posicao, deslocamento, coordenadas `x/z`, componentes de velocidade/aceleracao, rapidez, energia e campos especificos como angulo, periodo, frequencia, aceleracao centripeta, tensao, forca centripeta, atrito maximo, trabalho aplicado e dissipacao quando aplicavel. Quando houver perda de restricao, como falta de aderencia em curva, as coordenadas `x/z` devem representar a trajetoria real calculada, enquanto campos de demanda ideal permanecem disponiveis para comparacao em graficos e formulas.
+
+Toda simulacao nova ou alterada deve passar pelo `Simulation Fidelity Adjustment Guide` antes de mudar status para `available`. Se o modelo tiver regimes, o contrato local precisa declarar como reconhecer o regime nominal, os limites de transicao, quais campos do `SimulationSample` mudam, quais graficos comparam demanda/limite/valor real e qual `SimulationWarning` explica o regime aplicado. Se o modelo for ideal e sem troca de regime, essa ausencia tambem deve aparecer nos limites do fixture e no apendice teorico.
 
 ## Exemplo conceitual de catalogo
 

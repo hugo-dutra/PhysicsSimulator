@@ -4,6 +4,7 @@
 
 - Toda simulacao funcional deve ter visualizacao, parametros, graficos/tabela, formulas aplicadas e teoria.
 - Toda simulacao deve declarar area do conhecimento, subarea, caminho de topico, nivel, objetivos didaticos, formulas usadas e limites do modelo.
+- Toda task que cria, ajusta, revisa ou promove uma simulacao deve aplicar o `Simulation Fidelity Adjustment Guide` e registrar a verificacao junto da validacao da task.
 - Itens planejados podem aparecer na sidebar, mas devem ser claramente marcados como indisponiveis ou planejados.
 - A sidebar deve ser hierarquica e navegavel por area e subarea; simulacoes planejadas podem aparecer como folhas marcadas, sem parecerem disponiveis.
 - A primeira entrega funcional deve ser `Mecanica > Pendulo simples`.
@@ -23,9 +24,11 @@
 - O modelo numerico ou analitico deve ser deterministico para os mesmos parametros.
 - Tabela, graficos e animacao devem ser derivados da mesma fonte de dados.
 - Cada simulacao `available` deve ter uma unica fonte de samples para cena, graficos, tabela, metricas, formulas e legenda.
+- Toda simulacao `available` deve declarar seus regimes fisicos, mesmo quando houver apenas o regime ideal declarado. Se houver transicao de regime, o sample deve carregar os campos necessarios para cena, graficos, tabela, formulas e warnings descreverem o estado real.
 - Velocidades e aceleracoes derivadas exibidas em graficos, tabela, metricas ou formulas devem ser calculadas no motor/sample e manter unidades explicitas.
 - Quando houver aproximacao, a teoria e o guia de formulas devem explicar a aproximacao e seus limites.
 - Quando uma restricao fisica deixa de ser satisfeita, a simulacao deve trocar de regime no motor e expor esse efeito nos samples, cena, graficos e avisos. Exemplo: se a forca centripeta requerida supera o atrito disponivel, o corpo deve sair da curva ideal em vez de continuar preso nela.
+- Renderers, graficos e formulas nao podem inventar fisica, recalcular grandezas divergentes ou esconder uma saturacao fisica apenas com decoracao visual; eles devem representar os samples do motor.
 - O produto educacional nao deve sugerir precisao de simulador profissional quando o modelo for didatico.
 
 ## Regras de UX

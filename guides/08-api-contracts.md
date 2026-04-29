@@ -79,6 +79,29 @@ type FormulaVariable = {
 };
 ```
 
+## Contrato `SimulationRegime`
+
+```ts
+type SimulationRegime = {
+  id: string;
+  label: string;
+  condition: string;
+  transitionLimit?: string;
+  sampleFields: string[];
+  warningCode?: string;
+  idealReferenceFields?: string[];
+};
+
+type SimulationWarning = {
+  code: string;
+  message: string;
+  regimeId?: string;
+  sampleFields?: string[];
+};
+```
+
+Simulacoes sem troca de regime ainda devem declarar, no fixture, na teoria ou no guia de formulas, que operam em um regime ideal unico e quais limites ficam fora do modelo.
+
 ## Contrato do motor numerico
 
 ```ts
@@ -112,9 +135,12 @@ type SimulationFixture = {
   defaultParameters: Record<string, number | boolean | string>;
   parameters: SimulationParameter[];
   presets: SimulationPreset[];
+  regimes?: SimulationRegime[];
   formulas: FormulaReference[];
 };
 ```
+
+Quando `regimes` existir, o resultado do motor deve usar warnings e campos de sample suficientes para que cena, graficos, tabela, formulas e teoria descrevam o mesmo regime aplicado. Uma mudanca de regime nao pode existir apenas como texto de UI.
 
 ## Exemplo de sample do pendulo
 

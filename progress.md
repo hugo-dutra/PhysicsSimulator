@@ -1207,3 +1207,39 @@ Validacao:
 - Dev server aberto em `http://127.0.0.1:5192/`.
 - Smoke visual headless com Chrome/CDP: Atwood renderizou canvas nao vazio com 12176 pixels nao-background e 3960 pixels diferentes entre frames; curva com `mu = 0` exibiu status `saiu da curva`, canvas nao vazio com 78893 pixels nao-background e 1006 pixels diferentes entre frames.
 - Capturas geradas em `artifacts/atwood-format-fixed-canvas-a.png`, `artifacts/atwood-format-fixed-canvas-b.png`, `artifacts/centripetal-zero-friction-visible-canvas-a.png` e `artifacts/centripetal-zero-friction-visible-canvas-b.png`.
+
+## 2026-04-29 - Revisao documental do gate de fidelidade
+
+Pedido reportado:
+
+- Revisar as tasks ja feitas com base no `Simulation Fidelity Adjustment Guide`.
+- Atualizar as docs necessarias para exigir esse gate em todos os casos futuros.
+
+Revisao das tasks concluidas:
+
+- Fase 1, pendulo simples: ja segue fonte unica de samples para cena, vetores, graficos, tabela e formulas; declara pequeno angulo e amortecimento como limites/avisos. Como nao ha perda de restricao implementada, o regime fisico relevante e o modelo numerico declarado.
+- Fase 2, plano inclinado com atrito: ja registra regimes de repouso por atrito estatico, deslizamento, atrito zero valido e parada no fim do plano; motor, samples, vetores, graficos, tabela, formulas e teoria usam os mesmos campos.
+- Fase 3, primeiro lote de Cinematica: MRU, MUV/queda livre e MCU sao modelos ideais declarados; lancamento obliquo tem regime de voo e aterrissagem visual com warning. A revisao reforcou que futuras mudancas nesses modelos precisam declarar qualquer novo regime em vez de tratar como decoracao visual.
+- Fase 3, segundo lote de Mecanica: Atwood, forca centripeta em curva e trabalho-energia ja tinham limites e warnings; o ajuste seguinte aplicou diretamente o guia em Atwood e curva centripeta, corrigindo formato fisico da cena, atrito zero e perda de aderencia com samples reais.
+- Conclusao da revisao: as tasks recentes ja apontavam para o padrao correto, mas o guia ainda estava descrito como auditoria/revisita. A documentacao agora transforma o guia em gate obrigatorio para qualquer task futura de simulacao.
+
+Documentacao atualizada:
+
+- `AGENTS.md`
+- `guides/00-index.md`
+- `guides/02-product-spec.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/05-roadmap.md`
+- `guides/06-data-and-api.md`
+- `guides/07-quality-and-operations.md`
+- `guides/08-api-contracts.md`
+- `guides/09-simulation-catalog-plan.md`
+- `guides/10-simulation-fidelity-adjustment-guide.md`
+- `guides/issues.md`
+
+Validacao:
+
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+- Executado `git diff --check`; sem erros de whitespace, apenas avisos esperados de normalizacao LF/CRLF no Windows.
+- Busca de consistencia em `AGENTS.md`, `guides/` e `progress.md` confirmou que o guia aparece como gate obrigatorio para implementacao, alteracao, revisao, promocao e manutencao de simulacoes `available`.

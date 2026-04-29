@@ -41,6 +41,7 @@ O catalogo detalhado de simulacoes fica em `09-simulation-catalog-plan.md`. A ex
 
 Itens planejados podem aparecer na sidebar como bloqueados, desabilitados ou marcados como `planejado`. Eles nao devem parecer clicaveis como simulacoes completas enquanto nao tiverem motor, visualizacao, graficos, tabela, formulas e teoria.
 A sidebar deve ser organizada como arvore compacta: area principal expansivel, subarea expansivel e simulacoes como folhas marcadas por status. Subareas que contenham ao menos uma simulacao `available` iniciam abertas para que o usuario veja imediatamente o que ja pode executar; subareas apenas planejadas podem iniciar recolhidas. O fixture local de catalogo deve conter todas as simulacoes planejadas em `09-simulation-catalog-plan.md`; no estado atual, pendulo simples, plano inclinado com atrito, as quatro primeiras simulacoes de Cinematica, Maquina de Atwood, Forca centripeta em curva e Trabalho e energia em trilho aparecem como `available`.
+Antes de uma simulacao aparecer ou continuar como `available` depois de uma mudanca, ela precisa passar pelo `Simulation Fidelity Adjustment Guide`: o modelo declarado deve gerar os samples, os regimes fisicos precisam mudar o estado real quando um limite for atingido, e cena, graficos, tabela, formulas, teoria e warnings devem refletir essa mesma fonte.
 
 ## Tela da simulacao
 
@@ -206,6 +207,7 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 - O usuario consegue abrir `Mecanica > Dinamica > Plano inclinado com atrito` pela sidebar quando quiser validar a segunda simulacao disponivel.
 - O usuario consegue abrir as quatro primeiras simulacoes de `Mecanica > Cinematica` pela sidebar e ver cena, vetores, graficos, tabela, formulas e teoria sincronizados.
 - O usuario consegue abrir `Mecanica > Dinamica > Maquina de Atwood`, `Mecanica > Dinamica > Forca centripeta em curva` e `Mecanica > Energia e momento > Trabalho e energia em trilho` pela sidebar com a mesma sincronizacao.
+- Toda simulacao `available` ou alterada em uma task futura tem a auditoria do `Simulation Fidelity Adjustment Guide` satisfeita e registrada: parametros fisicos validos, regimes, samples, renderer, graficos, tabela, formulas, teoria, warnings e testes proporcionais concordam.
 - O canvas mostra a animacao do pendulo.
 - As metricas instantaneas e a legenda detalhada dos vetores ficam acima do canvas da simulacao; a legenda compacta dos vetores aparece no canto superior direito da animacao.
 - O canvas do pendulo e uma cena 3D; arrastar horizontalmente gira a visualizacao ao redor do eixo Z e usar Shift + scroll sobre o canvas controla o zoom da camera sem alterar a fonte numerica da simulacao.

@@ -47,7 +47,7 @@
 - O runtime visual reutilizavel fica em `src/lib/rendering/visualRuntime.ts` e centraliza agendamento de frames, interpolacao de timeline e metricas simples, mantendo cada renderer dono dos seus objetos e buffers.
 - `Mecanica > Cinematica` iniciou a Fase 3 com quatro simulacoes `available`: `Movimento retilineo uniforme`, `Movimento uniformemente variado e queda livre`, `Lancamento obliquo` e `Movimento circular uniforme`, todas com motor analitico compartilhado, cena Three.js 2.5D, live-canvas, tabela, formulas, teoria e fixtures locais.
 - O segundo lote da Fase 3 promoveu `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho` para `available`, reutilizando o motor analitico compartilhado com campos extras de forca, tensao, atrito, trabalho, dissipacao e limites de modelo.
-- Simulacoes `available` devem ser auditadas pelo guia `10-simulation-fidelity-adjustment-guide.md`: parametros fisicamente validos em zero nao devem ser bloqueados por conveniencia visual, e falhas de restricao devem trocar o regime no motor.
+- Simulacoes `available` devem ser auditadas pelo guia `10-simulation-fidelity-adjustment-guide.md`: parametros fisicamente validos em zero nao devem ser bloqueados por conveniencia visual, falhas de restricao devem trocar o regime no motor, e toda task futura de simulacao deve registrar essa auditoria antes de ser considerada pronta.
 - Em `Forca centripeta em curva`, atrito zero e valido. Quando `v^2/r > mu g`, o corpo deixa a curva ideal; com `mu = 0`, sai pela tangente em linha reta.
 - Em `Maquina de Atwood`, a representacao visual deve seguir o formato didatico de suporte fixo, polia fixa, fio passando pelo arco superior e massas em blocos alinhadas aos trechos verticais.
 
@@ -73,7 +73,8 @@
 - Toda nova simulacao deve declarar limites do modelo fisico.
 - Toda nova simulacao deve declarar formulas envolvidas, quando usa-las e quais parametros/dados as alimentam.
 - Toda simulacao deve compartilhar dados entre graficos, tabela e cena.
-- Toda simulacao deve ser revisada para garantir que limites fisicos mudam samples e trajetoria, nao apenas avisos ou decoracao visual.
+- Toda simulacao deve ser revisada pelo `Simulation Fidelity Adjustment Guide` para garantir que limites fisicos mudam samples e trajetoria, nao apenas avisos ou decoracao visual.
+- Toda task futura de simulacao deve registrar parametros-limite, regimes, warnings e testes proporcionais antes de promover ou manter status `available`.
 - Toda simulacao animada deve seguir o padrao de renderer desacoplado do shell React e revisar FPS/frame time quando houver risco de peso visual.
 - O catalogo deve separar simulacoes disponiveis de simulacoes planejadas.
 - O catalogo deve manter area, subarea e `topicPath` consistentes com `09-simulation-catalog-plan.md`.

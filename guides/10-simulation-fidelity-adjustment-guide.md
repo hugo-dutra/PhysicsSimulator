@@ -8,6 +8,18 @@ Este guia define como ajustar simulacoes que parecam apenas animacoes parametriz
 
 O renderer nunca inventa a fisica. Ele recebe `SimulationSample` e desenha o estado calculado pelo motor. Se um parametro altera o regime fisico, como atrito zero, fim de curso, perda de contato, colisao, saturacao de forca ou limite geometricamente impossivel, o motor deve mudar o sample e a cena deve mostrar essa mudanca.
 
+## Escopo obrigatorio
+
+Este guia e gate de pronto para qualquer task que crie, altere, revise ou promova uma simulacao. A task so pode ser considerada concluida quando registrar que o checklist abaixo foi aplicado ou quando justificar explicitamente que um item nao se aplica ao modelo declarado.
+
+Isso vale para:
+
+- simulacoes novas;
+- simulacoes `available` alteradas por parametro, fixture, motor, renderer, graficos, tabela, formulas, teoria ou warnings;
+- promocao de status `planned` ou `scaffolded` para `available`;
+- refactors de motor ou renderer que possam mudar samples, trajetorias, vetores ou leituras exibidas;
+- revisoes retroativas de simulacoes ja entregues.
+
 ## Checklist de auditoria
 
 Para cada simulacao funcional, conferir:
@@ -56,6 +68,7 @@ Ao revisar uma simulacao existente, seguir esta ordem:
 4. Ajustar renderer para desenhar o sample real e uma referencia ideal apenas quando for didatico.
 5. Atualizar formulas, teoria, limites e warnings.
 6. Adicionar testes unitarios para o regime nominal e para pelo menos um limite.
-7. Rodar build, testes, lint e smoke visual quando houver cena.
+7. Registrar no `progress.md` ou na trilha da task quais regimes/limites foram conferidos.
+8. Rodar build, testes, lint e smoke visual quando houver cena.
 
-As simulacoes ja `available` devem ser revisitadas com este guia antes de novas promocoes amplas do catalogo.
+Nenhuma nova simulacao deve ser promovida para `available`, nem permanecer como `available` apos mudanca relevante, sem passar por este guia. As simulacoes ja `available` devem ser revisitadas com este guia antes de novas promocoes amplas do catalogo.

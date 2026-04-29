@@ -4,6 +4,8 @@
 
 Testar primeiro o core fisico e a sincronizacao entre dados, formulas e visualizacao. UI polish, auth, dashboard e operacao avancada devem vir depois que a simulacao central for confiavel.
 
+O `Simulation Fidelity Adjustment Guide` e gate obrigatorio para toda task de simulacao. A validacao de uma task nao deve considerar apenas que a tela abre: ela precisa demonstrar que parametros, regimes, samples, renderer, graficos, tabela, formulas, teoria e warnings continuam contando a mesma fisica.
+
 ## Checks esperados
 
 O repositorio tem projeto frontend inicializado. Comandos esperados:
@@ -49,9 +51,13 @@ npm run test:e2e
 
 Depois da prova do core, cada nova simulacao promovida para `available` deve ter:
 
+- auditoria do `Simulation Fidelity Adjustment Guide` registrada na task;
 - testes unitarios do modelo fisico ou solucao analitica;
 - teste de parametros, unidades e limites do modelo;
+- teste de regime nominal e de pelo menos um limite/transicao quando o modelo tiver regimes;
+- teste de zeros fisicamente validos, como atrito zero, forca aplicada zero ou velocidade inicial zero quando o modelo permitir;
 - verificacao de que graficos, tabela, cena e formulas usam os mesmos samples;
+- warnings que expliquem o regime fisico aplicado quando houver saturacao, perda de restricao, parada em limite visual ou fim de curso;
 - smoke test de abertura pelo catalogo;
 - revisao do apendice teorico e do guia de formulas;
 - checagem visual proporcional ao renderer usado.
@@ -63,6 +69,7 @@ Depois da prova do core, cada nova simulacao promovida para `available` deve ter
 - Viewports Three.js devem renderizar cena 3D com pixels nao-background, responder a arraste horizontal mudando a visualizacao da camera e responder a Shift + scroll sobre o canvas com zoom da camera.
 - Vetores devem acompanhar o movimento.
 - Quando uma simulacao declara perda de restricao, a cena deve mostrar a trajetoria real calculada pelo motor e deixar a guia ideal apenas como referencia secundaria.
+- Quando a simulacao tiver parametros-limite relevantes, o smoke visual ou teste proporcional deve cobrir pelo menos um caso-limite didatico, nao apenas o preset nominal.
 - Vetores devem ter legenda visivel com cor, modulo atual e significado fisico.
 - Metricas instantaneas e legenda detalhada de vetores devem aparecer acima do canvas do viewport.
 - A animacao deve exibir legenda compacta dos vetores principais no canto superior direito, com traco na cor do vetor, grandeza representada e unidade abreviada quando houver.

@@ -4,7 +4,7 @@
 
 Este guia define o catalogo planejado de simulacoes de fisica basica. Ele nao muda a regra core-first: a primeira entrega funcional continua sendo `Mecanica > Pendulo simples`, com dados locais, motor proprio e sincronizacao completa entre cena, graficos, tabela, formulas e teoria. No catalogo expandido, essa simulacao tambem pode receber o caminho de topico `Mecanica > Oscilacoes > Pendulo simples`. A Fase 2 ja promoveu `Mecanica > Dinamica > Plano inclinado com atrito` como segunda simulacao `available` para validar reuso. A Fase 3 iniciou a expansao de Mecanica promovendo quatro simulacoes de Cinematica para `available`: MRU, MUV/queda livre, lancamento obliquo e MCU. O segundo lote da Fase 3 promoveu `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho`.
 
-O catalogo amplo deve nascer como backlog planejado e virar produto funcional em fatias pequenas, sempre reaproveitando o contrato comum de simulacao.
+O catalogo amplo deve nascer como backlog planejado e virar produto funcional em fatias pequenas, sempre reaproveitando o contrato comum de simulacao. Toda promocao futura para `available` precisa aplicar o `Simulation Fidelity Adjustment Guide`, inclusive quando a simulacao parecer simples ou puramente analitica.
 
 ## Areas principais
 
@@ -26,6 +26,7 @@ Cada simulacao planejada deve virar uma `SimulationDefinition` com:
 - parametros com unidades, minimo, maximo, passo e default;
 - presets didaticos;
 - modelo fisico declarado, com aproximacoes e limites;
+- regimes fisicos declarados, mesmo quando o regime for ideal unico;
 - motor numerico ou analitico deterministico;
 - cena interativa, vetores ou overlays relevantes;
 - graficos Plotly.js ou live-canvas derivados dos mesmos samples da cena;
@@ -34,6 +35,7 @@ Cada simulacao planejada deve virar uma `SimulationDefinition` com:
 - apendice teorico em MDX/Markdown com KaTeX;
 - testes unitarios do modelo e smoke test visual quando a simulacao ficar funcional.
 - runtime visual seguindo o padrao de performance: renderer com loop proprio, UI React em cadencia reduzida, buffers reutilizados e FPS/frame time observavel quando houver animacao continua.
+- auditoria do `Simulation Fidelity Adjustment Guide`, cobrindo parametros, zeros fisicamente validos, limites, troca de regime, samples, warnings e fidelidade visual.
 
 ## Tecnologias por familia de simulacao
 
@@ -179,9 +181,13 @@ Implementacao preferencial:
 
 Uma simulacao planejada so deve aparecer como disponivel quando:
 
+- passar pelo `Simulation Fidelity Adjustment Guide` e registrar essa auditoria na task;
 - o motor fisico passa nos testes definidos;
 - parametros invalidos sao tratados sem quebrar a tela;
+- parametros fisicamente validos em zero nao sao bloqueados por conveniencia visual;
+- regimes e limites de transicao sao declarados; se o modelo for ideal unico, a teoria explica essa restricao;
 - cena, graficos, tabela e formulas usam a mesma fonte de dados;
+- warnings explicam saturacao, perda de restricao, parada em limite visual ou fim de curso quando esses eventos existirem;
 - formulas declaram variaveis, unidades, quando usar e limites;
 - o apendice teorico existe e corresponde ao modelo;
 - a UI esta legivel no tema dark graphite;

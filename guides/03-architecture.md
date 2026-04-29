@@ -27,6 +27,7 @@ Dependencias opcionais por fase:
 - Usar fixtures locais ate haver evidencia de que a experiencia central funciona.
 - Evitar backend ate existir necessidade real de persistencia ou colaboracao.
 - Declarar limites fisicos do modelo dentro da propria simulacao.
+- Tratar o `Simulation Fidelity Adjustment Guide` como gate arquitetural para qualquer simulacao nova ou alterada: o motor decide regimes e samples; renderers, graficos, tabela e formulas apenas consomem esse estado.
 - Separar loop visual de alta frequencia do shell React; animacao em `requestAnimationFrame` deve pertencer ao renderer, nao ao layout completo da UI.
 
 ## Modulos principais
@@ -55,7 +56,7 @@ Dependencias opcionais por fase:
 ```text
 Usuario altera parametro
   -> SimulationShell valida e normaliza unidades
-  -> physics-core recalcula estado inicial, timeline e campos derivados de cinematica
+  -> physics-core recalcula estado inicial, regimes, timeline e campos derivados
   -> renderer recebe timeline/samples e controla o playback visual em loop proprio
   -> SimulationShell recebe leituras periodicas do sample atual para UI
   -> charts recebem a janela movel dos ultimos N segundos quando o bloco chevron esta aberto
@@ -155,7 +156,7 @@ Na Fase 1, usar:
 4. Adicionar segunda simulacao mecanica para testar reuso.
 5. Adicionar o primeiro lote de Cinematica analitica para testar velocidade de producao.
 6. Adicionar Atwood, forca centripeta em curva e trabalho/energia em trilho para validar reuso em Dinamica e Energia.
-7. Expandir por `Mecanica`, `Oscilacoes e Ondas`, `Termodinamica` e `Eletromagnetismo` em fatias pequenas.
+7. Expandir por `Mecanica`, `Oscilacoes e Ondas`, `Termodinamica` e `Eletromagnetismo` em fatias pequenas, sempre aplicando o gate de fidelidade antes de promover ou manter simulacoes como `available`.
 8. Avaliar engines especializadas somente quando a simulacao exigir.
 9. Persistencia, usuarios e backend entram depois do core comprovado.
 

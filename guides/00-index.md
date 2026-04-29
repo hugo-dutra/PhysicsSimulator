@@ -17,18 +17,18 @@ Leia este arquivo primeiro antes de alterar produto, arquitetura, roadmap ou imp
 - `07-quality-and-operations.md`: estrategia de validacao, smoke tests e operacao inicial.
 - `08-api-contracts.md`: contratos conceituais para simulacoes e integracao de UI.
 - `09-simulation-catalog-plan.md`: plano curricular das simulacoes de fisica basica, tecnologias e ordem de implementacao.
-- `10-simulation-fidelity-adjustment-guide.md`: guia para auditar e ajustar simulacoes que ainda parecam animacoes em vez de modelos fisicos parametrizados.
+- `10-simulation-fidelity-adjustment-guide.md`: guia obrigatorio para auditar e ajustar simulacoes, evitando que uma simulacao `available` vire apenas animacao parametrizada.
 - `issues.md`: riscos, premissas abertas, decisoes pendentes e gaps.
 
 ## Como escolher o que ler
 
 - Para decidir prioridade: leia `01-strategy.md`, `05-roadmap.md` e `issues.md`.
-- Para implementar uma simulacao: leia `02-product-spec.md`, `03-architecture.md`, `06-data-and-api.md`, `08-api-contracts.md` e `07-quality-and-operations.md`.
+- Para implementar, alterar ou promover uma simulacao: leia `02-product-spec.md`, `03-architecture.md`, `06-data-and-api.md`, `08-api-contracts.md`, `07-quality-and-operations.md` e `10-simulation-fidelity-adjustment-guide.md`.
 - Para planejar ou priorizar novas simulacoes: leia `09-simulation-catalog-plan.md`, `05-roadmap.md`, `01-strategy.md` e `issues.md`.
 - Para mexer na UI, tema ou layout: leia `02-product-spec.md`, `03-architecture.md` e `04-rules-and-constraints.md`.
 - Para mexer em renderizacao, animacao ou performance visual: leia `03-architecture.md`, `04-rules-and-constraints.md` e `07-quality-and-operations.md`.
 - Para alterar dados, fixtures ou contratos: leia `06-data-and-api.md` e `08-api-contracts.md`.
-- Para revisar se uma simulacao e fisica de verdade, leia `10-simulation-fidelity-adjustment-guide.md`, alem dos guides de arquitetura, regras, dados e qualidade.
+- Para revisar se uma simulacao e fisica de verdade, ou se uma task pode ser marcada como pronta, leia `10-simulation-fidelity-adjustment-guide.md`, alem dos guides de arquitetura, regras, dados e qualidade.
 
 ## Ambiente padrao
 
@@ -71,3 +71,5 @@ tests/
 ## Regra de documentacao
 
 O projeto deve evoluir core-first. Antes de adicionar catalogo amplo, login, cadastros, dashboard administrativo, backend completo ou polish avancado, a primeira simulacao precisa provar que parametros, animacao, graficos, tabela, vetores, formulas aplicadas e teoria permanecem sincronizados em uma experiencia educacional convincente.
+
+Toda task futura que envolva simulacao deve registrar, no proprio ciclo de trabalho, que passou pelo gate do `Simulation Fidelity Adjustment Guide`. Isso vale para novas simulacoes, ajustes em simulacoes `available`, revisoes de renderer, mudancas de parametros, formulas, teoria, graficos, tabela, warnings ou promocao de status no catalogo.

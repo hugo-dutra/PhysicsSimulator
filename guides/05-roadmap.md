@@ -10,6 +10,12 @@
 
 A primeira entrega de produto deve provar o core de viabilidade com mocks, fixtures JSON e uma simulacao local. Essa prova inclui formulas aplicadas com quando e como usa-las. Cadastros, login, auth, dashboard administrativo, billing e hardening entram apenas depois que esse fluxo demonstrar viabilidade.
 
+## Gate permanente de fidelidade
+
+Toda task futura que implemente, altere, revise ou promova uma simulacao deve aplicar `10-simulation-fidelity-adjustment-guide.md` antes de ser marcada como concluida. O gate exige parametros fisicamente validos, regimes e limites declarados, samples como fonte unica, renderer fiel ao sample, graficos/tabela/formulas/teoria sincronizados, warnings explicando o regime aplicado e testes proporcionais para o regime nominal e pelo menos um limite quando o modelo tiver transicao.
+
+Esse gate vale para todas as fases abaixo. Uma simulacao nao deve ser promovida para `available`, nem permanecer como `available` apos alteracao relevante, sem registro de que essa auditoria passou.
+
 ## Fase 0 - Fundacao documental e operacional
 
 Objetivo: alinhar tese, arquitetura, escopo e validacao antes de implementar.
@@ -102,13 +108,14 @@ Tasks:
 - `[ ]` Implementar `Mecanica > Fluidos basicos > Hidrostatica e empuxo`.
 - `[ ]` Implementar `Mecanica > Fluidos basicos > Continuidade e Bernoulli`.
 - `[ ]` Criar presets didaticos por subarea mecanica.
-- `[ ]` Validar que todos os modelos mecanicos declaram limites e aproximacoes.
+- `[ ]` Validar que todos os modelos mecanicos declaram limites, aproximacoes e regimes conforme o gate de fidelidade.
 
 Criterio de saida:
 
 - O catalogo de Mecanica tem cobertura didatica ampla.
 - Simulacoes analiticas e numericas reutilizam o mesmo shell.
 - Todas as simulacoes mecanicas funcionais possuem formulas, teoria e testes proporcionais.
+- Toda simulacao mecanica nova ou alterada passa pelo `Simulation Fidelity Adjustment Guide` antes de ficar `available`.
 
 ## Fase 4 - Oscilacoes e Ondas
 
@@ -135,6 +142,7 @@ Criterio de saida:
 
 - O produto cobre os fenomenos basicos de oscilacao, onda mecanica, som e optica.
 - PixiJS e Web Audio API so entram se houver ganho didatico claro.
+- Toda simulacao promovida nesta fase passa pelo gate de fidelidade, incluindo regimes como amortecimento, ressonancia, acoplamento, reflexao, refracao ou limites de modelo.
 
 ## Fase 5 - Termodinamica
 
@@ -159,6 +167,7 @@ Criterio de saida:
 
 - As simulacoes termodinamicas conectam formulas, diagramas e limites de modelo.
 - Processos termodinamicos mostram trabalho, calor e energia de forma sincronizada.
+- Toda simulacao promovida nesta fase passa pelo gate de fidelidade, incluindo regimes de equilibrio, mudanca de fase, reversibilidade ou validade do gas ideal quando aplicavel.
 
 ## Fase 6 - Eletromagnetismo
 
@@ -185,6 +194,7 @@ Criterio de saida:
 
 - O produto cobre cargas, campos, circuitos, magnetismo e inducao em nivel introdutorio.
 - Visualizacoes de campo nao prometem precisao de simulador profissional.
+- Toda simulacao promovida nesta fase passa pelo gate de fidelidade, incluindo saturacoes, regimes estacionarios/transientes, limites de modelo e warnings fisicos quando aplicavel.
 
 ## Fase 7 - Visualizacoes avancadas e motores opcionais
 
