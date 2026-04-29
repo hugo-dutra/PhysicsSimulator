@@ -2,7 +2,7 @@
 
 ## Objetivo do repositorio
 
-PhysicSimulator e uma aplicacao educacional para simulacoes de fisica. O objetivo e unir simulacao interativa, graficos, tabelas, vetores e apendice teorico em uma interface moderna.
+PhysicSimulator e uma aplicacao educacional para simulacoes de fisica. O objetivo e unir simulacao interativa, graficos, tabelas, vetores, formulas aplicadas e apendice teorico em uma interface moderna.
 
 ## Antes de agir
 
@@ -23,8 +23,8 @@ A primeira entrega funcional deve provar `Mecanica > Pendulo simples` com mocks/
 
 ## Hard rules
 
-- Nao quebrar a sincronizacao entre motor numerico, cena, graficos e tabela.
-- Toda simulacao deve declarar parametros, unidades e limites do modelo.
+- Nao quebrar a sincronizacao entre motor numerico, cena, graficos, tabela e formulas exibidas.
+- Toda simulacao deve declarar parametros, unidades, formulas usadas, quando usa-las e limites do modelo.
 - Use dados locais enquanto o core nao estiver validado.
 - Mantenha UI compacta, cientifica e orientada a ferramenta.
 - Atualize os guides quando decisoes estruturais mudarem.

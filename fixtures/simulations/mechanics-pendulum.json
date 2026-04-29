@@ -1,0 +1,293 @@
+{
+  "simulationId": "simple-pendulum",
+  "durationSeconds": 10,
+  "sampleRateHz": 30,
+  "defaultParameters": {
+    "lengthMeters": 1.6,
+    "massKilograms": 0.35,
+    "gravityMetersPerSecondSquared": 9.81,
+    "initialAngleRadians": 0.2617993877991494,
+    "initialAngularVelocityRadiansPerSecond": 0,
+    "dampingPerSecond": 0.015
+  },
+  "parameters": [
+    {
+      "id": "lengthMeters",
+      "label": "Comprimento",
+      "unit": "m",
+      "kind": "number",
+      "min": 0.2,
+      "max": 3,
+      "step": 0.02,
+      "defaultValue": 1.6
+    },
+    {
+      "id": "massKilograms",
+      "label": "Massa",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.05,
+      "max": 3,
+      "step": 0.05,
+      "defaultValue": 0.35
+    },
+    {
+      "id": "gravityMetersPerSecondSquared",
+      "label": "Gravidade",
+      "unit": "m/s^2",
+      "kind": "number",
+      "min": 1,
+      "max": 25,
+      "step": 0.01,
+      "defaultValue": 9.81
+    },
+    {
+      "id": "initialAngleRadians",
+      "label": "Angulo inicial",
+      "unit": "rad",
+      "kind": "number",
+      "min": -1.2217304763960306,
+      "max": 1.2217304763960306,
+      "step": 0.008726646259971648,
+      "defaultValue": 0.2617993877991494
+    },
+    {
+      "id": "initialAngularVelocityRadiansPerSecond",
+      "label": "Velocidade angular inicial",
+      "unit": "rad/s",
+      "kind": "number",
+      "min": -4,
+      "max": 4,
+      "step": 0.02,
+      "defaultValue": 0
+    },
+    {
+      "id": "dampingPerSecond",
+      "label": "Amortecimento",
+      "unit": "s^-1",
+      "kind": "number",
+      "min": 0,
+      "max": 0.8,
+      "step": 0.005,
+      "defaultValue": 0.015
+    }
+  ],
+  "presets": [
+    {
+      "id": "small-angle",
+      "label": "Pequeno angulo",
+      "parameters": {
+        "lengthMeters": 1,
+        "massKilograms": 0.3,
+        "gravityMetersPerSecondSquared": 9.81,
+        "initialAngleRadians": 0.17453292519943295,
+        "initialAngularVelocityRadiansPerSecond": 0,
+        "dampingPerSecond": 0
+      }
+    },
+    {
+      "id": "large-angle-damped",
+      "label": "Angulo grande amortecido",
+      "parameters": {
+        "lengthMeters": 1.5,
+        "massKilograms": 0.45,
+        "gravityMetersPerSecondSquared": 9.81,
+        "initialAngleRadians": 0.7853981633974483,
+        "initialAngularVelocityRadiansPerSecond": 0,
+        "dampingPerSecond": 0.08
+      }
+    }
+  ],
+  "limits": [
+    "Massa pontual presa a fio ideal e inextensivel.",
+    "Movimento em um plano sem resistencia do ar explicita.",
+    "Aproximacao de pequeno angulo so e valida para angulos baixos.",
+    "Amortecimento e representado por termo linear proporcional a velocidade angular."
+  ],
+  "formulas": [
+    {
+      "id": "angular-motion",
+      "title": "Equacao de movimento angular",
+      "expressionLatex": "\\ddot{\\theta} = -\\frac{g}{L}\\sin(\\theta) - b\\dot{\\theta}",
+      "description": "Modelo numerico usado para atualizar angulo e velocidade angular.",
+      "variables": [
+        {
+          "symbol": "\\theta",
+          "label": "angulo",
+          "unit": "rad"
+        },
+        {
+          "symbol": "\\dot{\\theta}",
+          "label": "velocidade angular",
+          "unit": "rad/s"
+        },
+        {
+          "symbol": "g",
+          "label": "gravidade",
+          "unit": "m/s^2"
+        },
+        {
+          "symbol": "L",
+          "label": "comprimento",
+          "unit": "m"
+        },
+        {
+          "symbol": "b",
+          "label": "amortecimento",
+          "unit": "s^-1"
+        }
+      ],
+      "usedWhen": "Usar para simular o pendulo com seno completo e amortecimento linear.",
+      "notUsedWhen": "Nao representa atrito turbulento, fio elastico, pivô com massa ou movimento 3D.",
+      "parameterIds": [
+        "lengthMeters",
+        "gravityMetersPerSecondSquared",
+        "initialAngleRadians",
+        "initialAngularVelocityRadiansPerSecond",
+        "dampingPerSecond"
+      ],
+      "sampleFields": ["angleRadians", "angularVelocityRadiansPerSecond"],
+      "relatedChartIds": ["angle-time", "angular-velocity-time"],
+      "relatedVectorIds": ["velocity", "tension"],
+      "example": "Com L = 1,2 m e g = 9,81 m/s^2, a aceleracao angular inicial e calculada a partir de -g/L sen(theta)."
+    },
+    {
+      "id": "small-angle-period",
+      "title": "Pequeno angulo e periodo aproximado",
+      "expressionLatex": "\\sin(\\theta) \\approx \\theta,\\quad T \\approx 2\\pi\\sqrt{\\frac{L}{g}}",
+      "description": "Aproximacao harmonica para estimar o periodo quando a amplitude e pequena.",
+      "variables": [
+        {
+          "symbol": "T",
+          "label": "periodo",
+          "unit": "s"
+        },
+        {
+          "symbol": "L",
+          "label": "comprimento",
+          "unit": "m"
+        },
+        {
+          "symbol": "g",
+          "label": "gravidade",
+          "unit": "m/s^2"
+        }
+      ],
+      "usedWhen": "Usar como estimativa rapida para amplitudes pequenas, idealmente abaixo de 10 a 15 graus e sem amortecimento relevante.",
+      "notUsedWhen": "Nao usar para angulos grandes, amortecimento forte ou quando a simulacao numerica com seno completo for a referencia.",
+      "parameterIds": [
+        "lengthMeters",
+        "gravityMetersPerSecondSquared",
+        "initialAngleRadians",
+        "dampingPerSecond"
+      ],
+      "sampleFields": ["angleRadians"],
+      "relatedChartIds": ["angle-time"],
+      "example": "Para L = 1,2 m na Terra, T fica perto de 2,2 s na aproximacao de pequeno angulo."
+    },
+    {
+      "id": "cartesian-position",
+      "title": "Posicao cartesiana",
+      "expressionLatex": "x = L\\sin(\\theta),\\quad y = -L\\cos(\\theta)",
+      "description": "Converte o estado angular em posicao da massa no plano.",
+      "variables": [
+        {
+          "symbol": "x",
+          "label": "posicao horizontal",
+          "unit": "m"
+        },
+        {
+          "symbol": "y",
+          "label": "posicao vertical",
+          "unit": "m"
+        },
+        {
+          "symbol": "L",
+          "label": "comprimento",
+          "unit": "m"
+        },
+        {
+          "symbol": "\\theta",
+          "label": "angulo",
+          "unit": "rad"
+        }
+      ],
+      "usedWhen": "Usar para desenhar a massa e preencher a tabela de posicao.",
+      "parameterIds": ["lengthMeters"],
+      "sampleFields": ["xMeters", "yMeters"],
+      "example": "Com L = 1 m e theta = 30 graus, x = 0,5 m e y fica abaixo do pivo."
+    },
+    {
+      "id": "vector-overlays",
+      "title": "Vetores principais",
+      "expressionLatex": "\\vec{P}=m\\vec{g},\\quad T\\approx m(g\\cos\\theta + L\\dot{\\theta}^{2}),\\quad v=L\\dot{\\theta}",
+      "description": "Relaciona peso, tensao aproximada e velocidade tangencial exibidos na cena.",
+      "variables": [
+        {
+          "symbol": "\\vec{P}",
+          "label": "peso",
+          "unit": "N"
+        },
+        {
+          "symbol": "T",
+          "label": "tensao radial aproximada",
+          "unit": "N"
+        },
+        {
+          "symbol": "v",
+          "label": "velocidade tangencial",
+          "unit": "m/s"
+        }
+      ],
+      "usedWhen": "Usar para interpretar os vetores renderizados a partir do sample atual da simulacao.",
+      "notUsedWhen": "A tensao e uma aproximacao radial do fio ideal; nao modela massa do fio, folga, ruptura ou movimento fora do plano.",
+      "parameterIds": [
+        "massKilograms",
+        "lengthMeters",
+        "gravityMetersPerSecondSquared"
+      ],
+      "sampleFields": [
+        "angleRadians",
+        "angularVelocityRadiansPerSecond",
+        "xMeters",
+        "yMeters"
+      ],
+      "relatedVectorIds": ["weight", "tension", "velocity"],
+      "example": "Se omega dobra, o modulo da velocidade tangencial dobra porque v = L omega."
+    },
+    {
+      "id": "mechanical-energy",
+      "title": "Energia mecanica",
+      "expressionLatex": "K = \\frac{1}{2}m(L\\dot{\\theta})^2,\\quad U = mgL(1 - \\cos\\theta),\\quad E = K + U",
+      "description": "Soma energia cinetica e potencial gravitacional.",
+      "variables": [
+        {
+          "symbol": "m",
+          "label": "massa",
+          "unit": "kg"
+        },
+        {
+          "symbol": "E",
+          "label": "energia total",
+          "unit": "J"
+        }
+      ],
+      "usedWhen": "Usar para comparar dissipacao e conservacao dentro do modelo declarado.",
+      "notUsedWhen": "Com amortecimento diferente de zero, a energia total nao deve permanecer constante.",
+      "parameterIds": [
+        "massKilograms",
+        "lengthMeters",
+        "gravityMetersPerSecondSquared",
+        "dampingPerSecond"
+      ],
+      "sampleFields": [
+        "kineticEnergyJoules",
+        "potentialEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "relatedChartIds": ["energy-time"]
+      ,
+      "example": "Sem amortecimento, o grafico de energia total deve ficar quase constante; com b > 0 ele decai."
+    }
+  ]
+}

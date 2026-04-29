@@ -8,7 +8,7 @@
 
 ## Diretriz core-first
 
-A primeira entrega de produto deve provar o core de viabilidade com mocks, fixtures JSON e uma simulacao local. Cadastros, login, auth, dashboard administrativo, billing e hardening entram apenas depois que esse fluxo demonstrar viabilidade.
+A primeira entrega de produto deve provar o core de viabilidade com mocks, fixtures JSON e uma simulacao local. Essa prova inclui formulas aplicadas com quando e como usa-las. Cadastros, login, auth, dashboard administrativo, billing e hardening entram apenas depois que esse fluxo demonstrar viabilidade.
 
 ## Fase 0 - Fundacao documental e operacional
 
@@ -20,8 +20,8 @@ Tasks:
 - `[x]` Definir core como `Mecanica > Pendulo simples`.
 - `[x]` Registrar stack recomendada e alternativas.
 - `[x]` Registrar riscos e premissas abertas.
-- `[ ]` Inicializar projeto frontend com React + TypeScript + Vite.
-- `[ ]` Configurar Material UI e tema dark graphite.
+- `[x]` Inicializar projeto frontend com React + TypeScript + Vite.
+- `[x]` Configurar Material UI e tema dark graphite.
 
 Criterio de saida:
 
@@ -30,76 +30,176 @@ Criterio de saida:
 
 ## Fase 1 - Prova do core: pendulo simples
 
-Objetivo: entregar uma simulacao completa local que sincronize parametros, animacao, vetores, graficos, tabela e teoria.
+Objetivo: entregar uma simulacao completa local que sincronize parametros, animacao, vetores, graficos, tabela, formulas aplicadas e teoria.
 
 Tasks:
 
-- `[ ]` Criar shell da aplicacao com sidebar, topbar, area central e painel de controles.
-- `[ ]` Criar registry local de areas e simulacoes via JSON.
-- `[ ]` Implementar `Mecanica > Pendulo simples` no registry.
-- `[ ]` Implementar modelo numerico do pendulo com integrador deterministico.
-- `[ ]` Gerar samples de tempo, angulo, velocidade, posicao e energia.
-- `[ ]` Renderizar cena do pendulo em Three.js.
-- `[ ]` Exibir vetores de peso, tensao e velocidade.
-- `[ ]` Integrar Plotly.js para graficos de angulo, velocidade e energia.
-- `[ ]` Exibir tabela sincronizada de amostras.
-- `[ ]` Criar apendice teorico em MDX/Markdown com KaTeX.
-- `[ ]` Adicionar controles: play/pause, reset, comprimento, massa, gravidade, angulo inicial, velocidade angular, amortecimento e toggles.
-- `[ ]` Criar testes do motor numerico e smoke test da tela.
+- `[x]` Criar shell da aplicacao com sidebar, topbar, area central e painel de controles.
+- `[x]` Criar registry local de areas e simulacoes via JSON.
+- `[x]` Implementar `Mecanica > Pendulo simples` no registry.
+- `[x]` Implementar modelo numerico do pendulo com integrador deterministico.
+- `[x]` Gerar samples de tempo, angulo, velocidade, posicao e energia.
+- `[x]` Renderizar cena do pendulo em Three.js.
+- `[x]` Exibir vetores de peso, tensao e velocidade.
+- `[x]` Integrar Plotly.js para graficos de angulo, velocidade e energia.
+- `[x]` Exibir tabela sincronizada de amostras.
+- `[x]` Criar guia de formulas do pendulo com equacoes, variaveis, unidades, condicoes de uso e exemplos.
+- `[x]` Criar apendice teorico em MDX/Markdown com KaTeX.
+- `[x]` Adicionar controles: play/pause, reset, comprimento, massa, gravidade, angulo inicial, velocidade angular, amortecimento e toggles.
+- `[x]` Criar testes do motor numerico e smoke test da tela.
 
 Criterio de saida:
 
 - O pendulo pode ser explorado por parametros.
-- Cena, graficos, tabela e teoria usam o mesmo estado de simulacao.
+- Cena, graficos, tabela, formulas e teoria usam o mesmo estado de simulacao.
 - O usuario entende o fenomeno sem sair da tela.
 
-## Fase 2 - Reuso do modelo de simulacao
+## Fase 2 - Reuso do modelo de simulacao e catalogo curricular
 
-Objetivo: provar que a arquitetura suporta mais de uma simulacao sem duplicar a estrutura principal.
+Objetivo: provar que a arquitetura suporta mais de uma simulacao sem duplicar a estrutura principal e preparar o catalogo planejado de fisica basica sem marcar conteudo como pronto antes da hora.
 
 Tasks:
 
 - `[ ]` Extrair contrato comum `SimulationDefinition`.
-- `[ ]` Adicionar segunda simulacao de Mecanica, preferencialmente massa-mola ou plano inclinado.
-- `[ ]` Reusar shell, controles, graficos e tabela.
+- `[ ]` Adicionar `topicPath` para representar caminhos como `Mecanica > Cinematica > MRU`.
+- `[ ]` Criar status de catalogo `planned`, `scaffolded` e `available`.
+- `[ ]` Criar fixtures locais para as quatro areas principais: `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo`.
+- `[ ]` Registrar todas as simulacoes planejadas como itens indisponiveis ate terem motor, cena, graficos, tabela, formulas e teoria.
+- `[ ]` Adicionar segunda simulacao de Mecanica, preferencialmente `Mecanica > Dinamica > Plano inclinado com atrito` ou `Oscilacoes e Ondas > Oscilacoes > Massa-mola`.
+- `[ ]` Reusar shell, controles, graficos, tabela e guia de formulas.
 - `[ ]` Ajustar docs com aprendizados da primeira simulacao.
 
 Criterio de saida:
 
 - Duas simulacoes usam o mesmo shell.
 - O custo de adicionar uma nova simulacao fica claro.
+- O catalogo planejado aparece separado de simulacoes disponiveis.
 
-## Fase 3 - Primeiras areas alem de Mecanica
+## Fase 3 - Expansao de Mecanica
 
-Objetivo: validar a navegacao por areas do conhecimento com simulacoes simples.
+Objetivo: cobrir o bloco principal de Mecanica basica com modelos analiticos e numericos leves, mantendo o pendulo como simulacao modelo.
 
 Tasks:
 
-- `[ ]` Adicionar uma simulacao introdutoria de Termodinamica, como gas ideal.
-- `[ ]` Adicionar uma simulacao introdutoria de Eletricidade, como circuito RC/RLC ou campo eletrico simples.
-- `[ ]` Refinar padrao de apendice teorico por area.
-- `[ ]` Validar responsividade e usabilidade em sala de aula.
+- `[ ]` Implementar `Mecanica > Cinematica > Movimento retilineo uniforme`.
+- `[ ]` Implementar `Mecanica > Cinematica > Movimento uniformemente variado e queda livre`.
+- `[ ]` Implementar `Mecanica > Cinematica > Lancamento obliquo`.
+- `[ ]` Implementar `Mecanica > Cinematica > Movimento circular uniforme`.
+- `[ ]` Implementar `Mecanica > Dinamica > Plano inclinado com atrito`.
+- `[ ]` Implementar `Mecanica > Dinamica > Maquina de Atwood`.
+- `[ ]` Implementar `Mecanica > Dinamica > Forca centripeta em curva`.
+- `[ ]` Implementar `Mecanica > Energia e momento > Trabalho e energia em trilho`.
+- `[ ]` Implementar `Mecanica > Energia e momento > Colisoes 1D e 2D`.
+- `[ ]` Implementar `Mecanica > Estatica > Equilibrio de particula`.
+- `[ ]` Implementar `Mecanica > Estatica > Torque, alavancas e centro de massa`.
+- `[ ]` Implementar `Mecanica > Rotacao > Rotacao de corpo rigido`.
+- `[ ]` Implementar `Mecanica > Rotacao > Rolamento sem escorregamento`.
+- `[ ]` Implementar `Mecanica > Gravitacao > Campo gravitacional e orbitas`.
+- `[ ]` Implementar `Mecanica > Fluidos basicos > Hidrostatica e empuxo`.
+- `[ ]` Implementar `Mecanica > Fluidos basicos > Continuidade e Bernoulli`.
+- `[ ]` Criar presets didaticos por subarea mecanica.
+- `[ ]` Validar que todos os modelos mecanicos declaram limites e aproximacoes.
 
 Criterio de saida:
 
-- O produto parece uma plataforma, nao uma demo isolada.
+- O catalogo de Mecanica tem cobertura didatica ampla.
+- Simulacoes analiticas e numericas reutilizam o mesmo shell.
+- Todas as simulacoes mecanicas funcionais possuem formulas, teoria e testes proporcionais.
 
-## Fase 4 - Visualizacoes avancadas
+## Fase 4 - Oscilacoes e Ondas
 
-Objetivo: introduzir bibliotecas especializadas quando houver necessidade real.
+Objetivo: validar sistemas periodicos, propagacao de ondas, som e optica basica com modelos visuais leves.
 
 Tasks:
 
-- `[ ]` Avaliar PixiJS para particulas, fluidos didaticos e cenas 2D densas.
-- `[ ]` Avaliar Rapier para colisoes e corpos rigidos.
+- `[ ]` Implementar `Oscilacoes e Ondas > Oscilacoes > Massa-mola`.
+- `[ ]` Implementar `Oscilacoes e Ondas > Oscilacoes > Oscilador amortecido`.
+- `[ ]` Implementar `Oscilacoes e Ondas > Oscilacoes > Oscilador forcado e ressonancia`.
+- `[ ]` Implementar `Oscilacoes e Ondas > Oscilacoes > Osciladores acoplados`.
+- `[ ]` Implementar `Oscilacoes e Ondas > Ondas mecanicas > Onda em corda`.
+- `[ ]` Implementar `Oscilacoes e Ondas > Ondas mecanicas > Superposicao e interferencia`.
+- `[ ]` Implementar `Oscilacoes e Ondas > Ondas mecanicas > Ondas estacionarias`.
+- `[ ]` Implementar `Oscilacoes e Ondas > Som > Batimentos`.
+- `[ ]` Implementar `Oscilacoes e Ondas > Som > Efeito Doppler`.
+- `[ ]` Implementar `Oscilacoes e Ondas > Optica > Reflexao e refracao`.
+- `[ ]` Implementar `Oscilacoes e Ondas > Optica > Lentes e espelhos`.
+- `[ ]` Implementar `Oscilacoes e Ondas > Optica > Difracao e interferencia da luz`.
+- `[ ]` Avaliar PixiJS para ondas 2D densas e padroes de interferencia.
+- `[ ]` Avaliar Web Audio API para simulacoes sonoras opcionais.
+
+Criterio de saida:
+
+- O produto cobre os fenomenos basicos de oscilacao, onda mecanica, som e optica.
+- PixiJS e Web Audio API so entram se houver ganho didatico claro.
+
+## Fase 5 - Termodinamica
+
+Objetivo: cobrir temperatura, calor, gases, primeira lei, segunda lei e transferencia de calor com diagramas de estado e modelos de equilibrio.
+
+Tasks:
+
+- `[ ]` Implementar `Termodinamica > Temperatura > Escalas termometricas e equilibrio`.
+- `[ ]` Implementar `Termodinamica > Temperatura > Dilatacao termica`.
+- `[ ]` Implementar `Termodinamica > Calorimetria > Mistura termica`.
+- `[ ]` Implementar `Termodinamica > Calorimetria > Mudancas de fase`.
+- `[ ]` Implementar `Termodinamica > Gases > Gas ideal`.
+- `[ ]` Implementar `Termodinamica > Gases > Transformacoes gasosas`.
+- `[ ]` Implementar `Termodinamica > Primeira lei > Trabalho, calor e energia interna`.
+- `[ ]` Implementar `Termodinamica > Maquinas termicas > Ciclos termicos e rendimento`.
+- `[ ]` Implementar `Termodinamica > Segunda lei > Ciclo de Carnot`.
+- `[ ]` Implementar `Termodinamica > Transferencia de calor > Conducao, conveccao e radiacao basicas`.
+- `[ ]` Criar padrao de diagramas `P-V`, `T-V`, curvas de aquecimento e fluxos de energia.
+- `[ ]` Validar avisos de modelo para gas ideal, equilibrio termico e processos reversiveis.
+
+Criterio de saida:
+
+- As simulacoes termodinamicas conectam formulas, diagramas e limites de modelo.
+- Processos termodinamicos mostram trabalho, calor e energia de forma sincronizada.
+
+## Fase 6 - Eletromagnetismo
+
+Objetivo: cobrir eletrostatica, circuitos, magnetismo, inducao e ondas eletromagneticas com superposicao, circuitos simples e visualizacao de campos.
+
+Tasks:
+
+- `[ ]` Implementar `Eletromagnetismo > Eletrostatica > Lei de Coulomb e campo eletrico`.
+- `[ ]` Implementar `Eletromagnetismo > Eletrostatica > Potencial eletrico e equipotenciais`.
+- `[ ]` Implementar `Eletromagnetismo > Eletrostatica > Capacitor de placas paralelas`.
+- `[ ]` Implementar `Eletromagnetismo > Circuitos DC > Lei de Ohm e associacao de resistores`.
+- `[ ]` Implementar `Eletromagnetismo > Circuitos DC > Circuito RC transiente`.
+- `[ ]` Implementar `Eletromagnetismo > Circuitos AC > Circuito RLC`.
+- `[ ]` Implementar `Eletromagnetismo > Magnetismo > Campo magnetico por corrente`.
+- `[ ]` Implementar `Eletromagnetismo > Magnetismo > Forca magnetica`.
+- `[ ]` Implementar `Eletromagnetismo > Inducao > Lei de Faraday-Lenz`.
+- `[ ]` Implementar `Eletromagnetismo > Inducao > Motor e gerador didatico`.
+- `[ ]` Implementar `Eletromagnetismo > Ondas EM > Onda eletromagnetica plana`.
+- `[ ]` Implementar `Eletromagnetismo > Circuitos AC > Fasores e potencia AC`.
+- `[ ]` Validar renderizacao de campos e equipotenciais com Three.js ou PixiJS.
+- `[ ]` Validar curvas de tensao, corrente, carga, energia e resposta em frequencia com Plotly.js.
+
+Criterio de saida:
+
+- O produto cobre cargas, campos, circuitos, magnetismo e inducao em nivel introdutorio.
+- Visualizacoes de campo nao prometem precisao de simulador profissional.
+
+## Fase 7 - Visualizacoes avancadas e motores opcionais
+
+Objetivo: introduzir bibliotecas especializadas quando houver necessidade real comprovada pelas simulacoes.
+
+Tasks:
+
+- `[ ]` Avaliar PixiJS para particulas, fluidos didaticos, ondas 2D e mapas de campo densos.
+- `[ ]` Avaliar Rapier para colisoes, juntas e corpos rigidos.
+- `[ ]` Avaliar Matter.js para mecanica 2D simples quando Rapier for pesado.
 - `[ ]` Avaliar Manim para assets ou videos explicativos pre-renderizados.
 - `[ ]` Avaliar D3.js para visualizacoes customizadas que Plotly nao resolva bem.
+- `[ ]` Documentar fronteira de uso de cada biblioteca aprovada.
 
 Criterio de saida:
 
 - Cada nova biblioteca tem um motivo claro e uma fronteira de uso.
 
-## Fase 5 - Produto ampliado
+## Fase 8 - Produto ampliado
 
 Objetivo: adicionar funcoes acessorias somente depois da prova da experiencia central.
 

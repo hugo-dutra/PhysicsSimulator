@@ -2,7 +2,7 @@
 
 ## Postura inicial
 
-Nao ha API remota no MVP. Os contratos iniciais sao funcoes TypeScript, JSON local e objetos de dados entre shell, motor numerico, renderizador, graficos e tabela.
+Nao ha API remota no MVP. Os contratos iniciais sao funcoes TypeScript, JSON local e objetos de dados entre shell, motor numerico, renderizador, graficos, tabela, formulas e teoria.
 
 ## Contrato `SimulationDefinition`
 
@@ -10,15 +10,31 @@ Nao ha API remota no MVP. Os contratos iniciais sao funcoes TypeScript, JSON loc
 type SimulationDefinition = {
   id: string;
   areaId: string;
+  topicPath: string[];
   title: string;
-  status: "available" | "planned";
+  status: "available" | "scaffolded" | "planned";
   level: "introductory" | "intermediate" | "advanced";
+  modelKind: "analytic" | "numerical" | "field-sampling" | "particle-demo" | "hybrid";
   defaultParameters: Record<string, number | boolean | string>;
   parameters: SimulationParameter[];
   presets: SimulationPreset[];
   theoryPath: string;
+  formulas: FormulaReference[];
   renderer: "three" | "pixi" | "dom";
+  technologyPlan: SimulationTechnologyPlan;
   charts: ChartDefinition[];
+};
+```
+
+## Contrato `SimulationTechnologyPlan`
+
+```ts
+type SimulationTechnologyPlan = {
+  engine: "custom-analytic" | "custom-numerical" | "rapier" | "matter" | "precomputed";
+  charting: "plotly";
+  content: "mdx-katex";
+  optionalLibraries?: ("pixi" | "d3" | "manim" | "web-audio")[];
+  notes?: string;
 };
 ```
 
@@ -34,6 +50,31 @@ type SimulationParameter = {
   max?: number;
   step?: number;
   defaultValue: number | boolean | string;
+};
+```
+
+## Contrato `FormulaReference`
+
+```ts
+type FormulaReference = {
+  id: string;
+  title: string;
+  expressionLatex: string;
+  description: string;
+  variables: FormulaVariable[];
+  usedWhen: string;
+  notUsedWhen?: string;
+  parameterIds: string[];
+  sampleFields: string[];
+  relatedChartIds?: string[];
+  relatedVectorIds?: string[];
+  example?: string;
+};
+
+type FormulaVariable = {
+  symbol: string;
+  label: string;
+  unit?: string;
 };
 ```
 
@@ -85,6 +126,7 @@ type PendulumSample = {
 
 - Catalogo em `fixtures/simulations/catalog.json`.
 - Presets em JSON por simulacao.
+- Formulas e metadados de uso em JSON ou frontmatter MDX por simulacao.
 - Conteudo teorico em MDX/Markdown local.
 
 ## Evolucao prevista

@@ -2,18 +2,21 @@
 
 ## Regras de produto
 
-- Toda simulacao funcional deve ter visualizacao, parametros, graficos/tabela e teoria.
-- Toda simulacao deve declarar area do conhecimento, nivel, objetivos didaticos e limites do modelo.
+- Toda simulacao funcional deve ter visualizacao, parametros, graficos/tabela, formulas aplicadas e teoria.
+- Toda simulacao deve declarar area do conhecimento, subarea, caminho de topico, nivel, objetivos didaticos, formulas usadas e limites do modelo.
 - Itens planejados podem aparecer na sidebar, mas devem ser claramente marcados como indisponiveis ou planejados.
 - A primeira entrega funcional deve ser `Mecanica > Pendulo simples`.
+- A taxonomia principal do catalogo deve usar `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo`; fluidos basicos entram como subarea, nao como prioridade separada antes do core.
 
 ## Regras de fisica
 
 - Unidades devem ser explicitas.
 - Parametros devem ter minimo, maximo, passo e valor padrao.
+- Formulas devem declarar variaveis, unidades, significado fisico, quando usar e quando nao usar.
+- Formulas exibidas devem corresponder ao modelo numerico implementado.
 - O modelo numerico deve ser deterministico para os mesmos parametros.
 - Tabela, graficos e animacao devem ser derivados da mesma fonte de dados.
-- Quando houver aproximacao, a teoria deve explicar a aproximacao e seus limites.
+- Quando houver aproximacao, a teoria e o guia de formulas devem explicar a aproximacao e seus limites.
 - O produto educacional nao deve sugerir precisao de simulador profissional quando o modelo for didatico.
 
 ## Regras de UX
@@ -31,12 +34,13 @@
 - Nao depender de backend na Fase 1.
 - Nao introduzir auth, cadastro ou persistencia antes da prova core.
 - Nao misturar muitos motores visuais no MVP.
+- Nao introduzir Rapier, Matter.js, PixiJS, D3.js ou Manim sem uma simulacao concreta que justifique a dependencia.
 - Nao usar WebGPU como requisito de producao inicial; WebGL deve ser o baseline.
 - Nao travar contratos de API remota cedo demais.
 
 ## Dados mockados
 
-Na fase core, catalogo, presets, parametros e conteudo teorico podem ser mockados com JSON/MDX locais. Isso e permitido e desejado para reduzir atrito.
+Na fase core, catalogo, presets, parametros, formulas e conteudo teorico podem ser mockados com JSON/MDX locais. Isso e permitido e desejado para reduzir atrito.
 
 ## Fora de escopo inicial
 

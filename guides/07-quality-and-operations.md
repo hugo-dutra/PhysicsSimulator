@@ -2,11 +2,11 @@
 
 ## Filosofia de qualidade
 
-Testar primeiro o core fisico e a sincronizacao entre dados e visualizacao. UI polish, auth, dashboard e operacao avancada devem vir depois que a simulacao central for confiavel.
+Testar primeiro o core fisico e a sincronizacao entre dados, formulas e visualizacao. UI polish, auth, dashboard e operacao avancada devem vir depois que a simulacao central for confiavel.
 
 ## Checks esperados
 
-O repositorio ainda nao tem projeto frontend inicializado. Quando existir, comandos esperados:
+O repositorio tem projeto frontend inicializado. Comandos esperados:
 
 ```bash
 npm run build
@@ -26,14 +26,27 @@ npm run test:e2e
 - Testes de invariantes fisicos dentro do modelo declarado.
 - Testes de validacao de parametros e unidades.
 - Testes de geracao de samples para graficos e tabela.
+- Testes de consistencia entre formulas documentadas, parametros e dados gerados.
 - Testes de contrato para `SimulationDefinition`.
 - Smoke test da tela principal abrindo o pendulo.
+
+## Criterio de qualidade para novas simulacoes
+
+Depois da prova do core, cada nova simulacao promovida para `available` deve ter:
+
+- testes unitarios do modelo fisico ou solucao analitica;
+- teste de parametros, unidades e limites do modelo;
+- verificacao de que graficos, tabela, cena e formulas usam os mesmos samples;
+- smoke test de abertura pelo catalogo;
+- revisao do apendice teorico e do guia de formulas;
+- checagem visual proporcional ao renderer usado.
 
 ## Validacoes visuais
 
 - Canvas nao pode estar em branco.
 - Vetores devem acompanhar o movimento.
 - Graficos devem atualizar quando parametros mudam.
+- Formulas devem permanecer legiveis e indicar quando usar cada equacao.
 - Layout nao deve quebrar em desktop comum.
 - Controles devem permanecer legiveis no tema dark.
 
@@ -42,7 +55,7 @@ npm run test:e2e
 - Dependencias graficas podem aumentar bundle.
 - Three.js + Plotly.js + MUI podem exigir cuidado de performance.
 - WebGPU nao deve ser requisito inicial.
-- Conteudo teorico pode ficar desatualizado se nao for versionado junto da simulacao.
+- Conteudo teorico e formulas podem ficar desatualizados se nao forem versionados junto da simulacao.
 
 ## Observabilidade minima
 
@@ -60,5 +73,5 @@ Fase 1 esta pronta quando:
 - o pendulo roda localmente;
 - tests do motor numerico passam;
 - build passa;
-- smoke visual confirma canvas, controles, graficos e tabela;
-- teoria explica o modelo implementado.
+- smoke visual confirma canvas, controles, graficos, tabela e formulas;
+- teoria explica o modelo implementado e quando usar cada formula.

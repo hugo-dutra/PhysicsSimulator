@@ -1,0 +1,124 @@
+{
+  "areas": [
+    {
+      "id": "mechanics",
+      "label": "Mecanica",
+      "description": "Modelos de movimento, forcas, energia, rotacao e fluidos.",
+      "simulations": [
+        {
+          "id": "simple-pendulum",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Oscilacoes", "Pendulo simples"],
+          "title": "Pendulo simples",
+          "status": "available",
+          "level": "introductory",
+          "modelKind": "numerical",
+          "renderer": "three",
+          "fixturePath": "fixtures/simulations/mechanics-pendulum.json",
+          "theoryPath": "src/content/simulations/mechanics/pendulum/theory.md",
+          "description": "Oscilador mecanico com massa pontual presa a um fio ideal.",
+          "technologyPlan": {
+            "engine": "custom-numerical",
+            "charting": "plotly",
+            "content": "mdx-katex",
+            "notes": "Motor proprio deterministico para provar o core antes de engines externas."
+          },
+          "charts": [
+            {
+              "id": "angle-time",
+              "title": "Angulo por tempo",
+              "sampleFields": ["timeSeconds", "angleRadians"]
+            },
+            {
+              "id": "angular-velocity-time",
+              "title": "Velocidade angular por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "angularVelocityRadiansPerSecond"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "potentialEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "projectile-motion",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Cinematica", "Lancamento obliquo"],
+          "title": "Lancamento obliquo",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Trajetoria balistica sem resistencia do ar."
+        }
+      ]
+    },
+    {
+      "id": "thermodynamics",
+      "label": "Termodinamica",
+      "description": "Calor, temperatura, gases e transformacoes de energia.",
+      "simulations": [
+        {
+          "id": "ideal-gas",
+          "areaId": "thermodynamics",
+          "topicPath": ["Termodinamica", "Gases", "Gas ideal"],
+          "title": "Gas ideal",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "dom",
+          "description": "Relacao entre pressao, volume, temperatura e quantidade de materia."
+        }
+      ]
+    },
+    {
+      "id": "waves",
+      "label": "Oscilacoes e Ondas",
+      "description": "Sistemas periodicos, ondas mecanicas, som e optica basica.",
+      "simulations": [
+        {
+          "id": "mass-spring",
+          "areaId": "waves",
+          "topicPath": ["Oscilacoes e Ondas", "Oscilacoes", "Massa-mola"],
+          "title": "Massa-mola",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "numerical",
+          "renderer": "three",
+          "description": "Oscilador harmonico linear com massa e constante elastica."
+        }
+      ]
+    },
+    {
+      "id": "electromagnetism",
+      "label": "Eletromagnetismo",
+      "description": "Cargas, campos, circuitos, magnetismo e inducao.",
+      "simulations": [
+        {
+          "id": "coulomb-law",
+          "areaId": "electromagnetism",
+          "topicPath": [
+            "Eletromagnetismo",
+            "Eletrostatica",
+            "Lei de Coulomb"
+          ],
+          "title": "Lei de Coulomb",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "field-sampling",
+          "renderer": "three",
+          "description": "Forca e campo eletrico gerados por cargas pontuais."
+        }
+      ]
+    }
+  ]
+}

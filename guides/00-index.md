@@ -16,12 +16,14 @@ Leia este arquivo primeiro antes de alterar produto, arquitetura, roadmap ou imp
 - `06-data-and-api.md`: entidades, fixtures, read models e contratos de dados.
 - `07-quality-and-operations.md`: estrategia de validacao, smoke tests e operacao inicial.
 - `08-api-contracts.md`: contratos conceituais para simulacoes e integracao de UI.
+- `09-simulation-catalog-plan.md`: plano curricular das simulacoes de fisica basica, tecnologias e ordem de implementacao.
 - `issues.md`: riscos, premissas abertas, decisoes pendentes e gaps.
 
 ## Como escolher o que ler
 
 - Para decidir prioridade: leia `01-strategy.md`, `05-roadmap.md` e `issues.md`.
 - Para implementar uma simulacao: leia `02-product-spec.md`, `03-architecture.md`, `06-data-and-api.md`, `08-api-contracts.md` e `07-quality-and-operations.md`.
+- Para planejar ou priorizar novas simulacoes: leia `09-simulation-catalog-plan.md`, `05-roadmap.md`, `01-strategy.md` e `issues.md`.
 - Para mexer na UI, tema ou layout: leia `02-product-spec.md`, `03-architecture.md` e `04-rules-and-constraints.md`.
 - Para alterar dados, fixtures ou contratos: leia `06-data-and-api.md` e `08-api-contracts.md`.
 
@@ -33,7 +35,7 @@ O repositorio ainda esta em fase documental. A recomendacao inicial e:
 - UI: Material UI com tema dark em tons de cinza grafite e acento cyan/teal.
 - Renderizacao de simulacao: Three.js como motor visual principal.
 - Graficos: Plotly.js para graficos cientificos declarativos.
-- Conteudo teorico: MDX/Markdown com KaTeX para formulas.
+- Conteudo teorico: MDX/Markdown com KaTeX para formulas, variaveis e orientacao de quando usa-las.
 - Fisica externa: comecar com motor proprio simples para o pendulo; considerar Rapier, Matter.js ou PixiJS apenas quando a simulacao exigir.
 
 ## Estrutura sugerida
@@ -65,4 +67,4 @@ tests/
 
 ## Regra de documentacao
 
-O projeto deve evoluir core-first. Antes de adicionar catalogo amplo, login, cadastros, dashboard administrativo, backend completo ou polish avancado, a primeira simulacao precisa provar que parametros, animacao, graficos, tabela, vetores e teoria permanecem sincronizados em uma experiencia educacional convincente.
+O projeto deve evoluir core-first. Antes de adicionar catalogo amplo, login, cadastros, dashboard administrativo, backend completo ou polish avancado, a primeira simulacao precisa provar que parametros, animacao, graficos, tabela, vetores, formulas aplicadas e teoria permanecem sincronizados em uma experiencia educacional convincente.
