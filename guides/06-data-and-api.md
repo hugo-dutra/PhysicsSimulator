@@ -10,8 +10,8 @@
 - `SimulationRuntimeParameter`: controle de runtime com o mesmo formato de parametro, para duracao do ciclo, janela de grafico e outros ajustes nao fisicos.
 - `SimulationPreset`: conjunto nomeado de parametros para demonstracao.
 - `SimulationState`: estado instantaneo do sistema fisico.
-- `SimulationSample`: amostra derivada para graficos e tabela.
-- `VectorOverlay`: vetor exibido na cena, como peso, tensao ou velocidade.
+- `SimulationSample`: amostra derivada para graficos e tabela, incluindo cinematicas calculadas pelo motor quando forem exibidas.
+- `VectorOverlay`: vetor exibido na cena, como peso, tensao ou velocidade, acompanhado por metadados suficientes para legenda.
 - `ChartSeries`: serie derivada dos samples.
 - `FormulaReference`: formula usada pela simulacao, com variaveis, unidades, condicoes de uso e relacao com parametros/samples.
 - `TheoryAppendix`: conteudo teorico em MDX/Markdown.
@@ -38,7 +38,7 @@ Usar MDX/Markdown local para:
 - explicacao de quando usar cada formula;
 - limites do modelo.
 
-O estado fisico, samples, graficos e tabela devem ser gerados pelo motor numerico em runtime.
+O estado fisico, samples, graficos e tabela devem ser gerados pelo motor numerico em runtime. No pendulo simples, o sample tambem carrega velocidade linear tangencial, aceleracao angular, aceleracao tangencial, aceleracao radial e modulo total de aceleracao para manter graficos, tabela, metricas, formulas e legenda sincronizados.
 
 ## Exemplo conceitual de catalogo
 
@@ -90,6 +90,7 @@ Persistencia so deve entrar depois da Fase 1. Possiveis dados futuros:
 - `SimulationViewModel`: parametros, valores atuais, playback e layout.
 - `ChartViewModel`: series prontas para o adapter de grafico escolhido (Plotly.js, canvas ou SVG), com recorte movel dos ultimos N segundos quando configurado.
 - `TableViewModel`: amostras paginadas ou recortadas pela mesma janela temporal visivel.
+- `VectorLegendViewModel`: cor, rotulo, modulo atual e leitura fisica dos vetores ativos na cena.
 - `FormulaGuideViewModel`: formulas renderizaveis, variaveis, unidades, uso indicado e links para parametros/samples.
 - `TheoryViewModel`: conteudo teorico associado a simulacao.
 

@@ -14,6 +14,11 @@ export type PendulumState = {
 }
 
 export type PendulumSample = PendulumState & {
+  angularAccelerationRadiansPerSecondSquared: number
+  linearVelocityMetersPerSecond: number
+  tangentialAccelerationMetersPerSecondSquared: number
+  radialAccelerationMetersPerSecondSquared: number
+  totalAccelerationMetersPerSecondSquared: number
   xMeters: number
   yMeters: number
   kineticEnergyJoules: number
@@ -183,13 +188,27 @@ export function toPendulumSample(
 ): PendulumSample {
   const xMeters = parameters.lengthMeters * Math.sin(state.angleRadians)
   const yMeters = -parameters.lengthMeters * Math.cos(state.angleRadians)
-  const tangentialVelocityMetersPerSecond =
+  const angularAccelerationRadiansPerSecondSquared = getAngularAcceleration(
+    state,
+    parameters,
+  )
+  const linearVelocityMetersPerSecond =
     parameters.lengthMeters * state.angularVelocityRadiansPerSecond
+  const tangentialAccelerationMetersPerSecondSquared =
+    parameters.lengthMeters * angularAccelerationRadiansPerSecondSquared
+  const radialAccelerationMetersPerSecondSquared =
+    parameters.lengthMeters *
+    state.angularVelocityRadiansPerSecond *
+    state.angularVelocityRadiansPerSecond
+  const totalAccelerationMetersPerSecondSquared = Math.hypot(
+    tangentialAccelerationMetersPerSecondSquared,
+    radialAccelerationMetersPerSecondSquared,
+  )
   const kineticEnergyJoules =
     0.5 *
     parameters.massKilograms *
-    tangentialVelocityMetersPerSecond *
-    tangentialVelocityMetersPerSecond
+    linearVelocityMetersPerSecond *
+    linearVelocityMetersPerSecond
   const potentialEnergyJoules =
     parameters.massKilograms *
     parameters.gravityMetersPerSecondSquared *
@@ -198,6 +217,11 @@ export function toPendulumSample(
 
   return {
     ...state,
+    angularAccelerationRadiansPerSecondSquared,
+    linearVelocityMetersPerSecond,
+    tangentialAccelerationMetersPerSecondSquared,
+    radialAccelerationMetersPerSecondSquared,
+    totalAccelerationMetersPerSecondSquared,
     xMeters,
     yMeters,
     kineticEnergyJoules,
@@ -256,7 +280,7 @@ export function getPendulumVectorOverlays(
       id: 'velocity',
       label: 'Velocidade',
       unit: 'm/s',
-      magnitude: Math.hypot(velocityX, velocityY),
+      magnitude: Math.abs(sample.linearVelocityMetersPerSecond),
       direction: normalizeVector({
         x: velocityX,
         y: velocityY,
@@ -271,11 +295,22 @@ function pendulumDerivative(
 ): Derivative {
   return {
     angleRadians: state.angularVelocityRadiansPerSecond,
-    angularVelocityRadiansPerSecond:
-      -(parameters.gravityMetersPerSecondSquared / parameters.lengthMeters) *
-        Math.sin(state.angleRadians) -
-      parameters.dampingPerSecond * state.angularVelocityRadiansPerSecond,
+    angularVelocityRadiansPerSecond: getAngularAcceleration(state, parameters),
   }
+}
+
+function getAngularAcceleration(
+  state: Pick<
+    PendulumState,
+    'angleRadians' | 'angularVelocityRadiansPerSecond'
+  >,
+  parameters: PendulumParameters,
+) {
+  return (
+    -(parameters.gravityMetersPerSecondSquared / parameters.lengthMeters) *
+      Math.sin(state.angleRadians) -
+    parameters.dampingPerSecond * state.angularVelocityRadiansPerSecond
+  )
 }
 
 function applyDerivative(

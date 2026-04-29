@@ -15,6 +15,13 @@ type PendulumChartsProps = {
 }
 
 const maxChartSamples = 480
+type ChartDataKey =
+  | 'acceleration'
+  | 'angle'
+  | 'energy'
+  | 'linearVelocity'
+  | 'velocity'
+
 const compactSeconds = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
 })
@@ -34,10 +41,12 @@ export const PendulumCharts = memo(function PendulumCharts({
   const chartData = useMemo(() => {
     if (!expanded) {
       return {
+        acceleration: [],
         angle: [],
         energy: [],
+        linearVelocity: [],
         velocity: [],
-      } satisfies Record<'angle' | 'energy' | 'velocity', ChartTrace[]>
+      } satisfies Record<ChartDataKey, ChartTrace[]>
     }
 
     const time = chartSamples.map((sample) => sample.timeSeconds)
@@ -60,6 +69,42 @@ export const PendulumCharts = memo(function PendulumCharts({
             (sample) => sample.angularVelocityRadiansPerSecond,
           ),
           name: 'omega',
+          lineColor: themeTokens.cyan,
+        },
+      ] satisfies ChartTrace[],
+      linearVelocity: [
+        {
+          x: time,
+          y: chartSamples.map(
+            (sample) => sample.linearVelocityMetersPerSecond,
+          ),
+          name: 'v',
+          lineColor: themeTokens.vector,
+        },
+      ] satisfies ChartTrace[],
+      acceleration: [
+        {
+          x: time,
+          y: chartSamples.map(
+            (sample) => sample.tangentialAccelerationMetersPerSecondSquared,
+          ),
+          name: 'a_t',
+          lineColor: themeTokens.warning,
+        },
+        {
+          x: time,
+          y: chartSamples.map(
+            (sample) => sample.radialAccelerationMetersPerSecondSquared,
+          ),
+          name: 'a_r',
+          lineColor: themeTokens.vector,
+        },
+        {
+          x: time,
+          y: chartSamples.map(
+            (sample) => sample.totalAccelerationMetersPerSecondSquared,
+          ),
+          name: '|a|',
           lineColor: themeTokens.cyan,
         },
       ] satisfies ChartTrace[],
@@ -109,7 +154,7 @@ export const PendulumCharts = memo(function PendulumCharts({
             gap: 1.5,
             gridTemplateColumns: {
               xs: '1fr',
-              xl: 'repeat(3, minmax(0, 1fr))',
+              xl: 'repeat(2, minmax(0, 1fr))',
             },
           }}
         >
@@ -124,6 +169,18 @@ export const PendulumCharts = memo(function PendulumCharts({
             traces={chartData.velocity}
             xAxisRange={xAxisRange}
             yAxisTitle="omega (rad/s)"
+          />
+          <LiveLineChart
+            title="Velocidade linear"
+            traces={chartData.linearVelocity}
+            xAxisRange={xAxisRange}
+            yAxisTitle="v (m/s)"
+          />
+          <LiveLineChart
+            title="Aceleracao"
+            traces={chartData.acceleration}
+            xAxisRange={xAxisRange}
+            yAxisTitle="a (m/s^2)"
           />
           {showEnergy ? (
             <LiveLineChart

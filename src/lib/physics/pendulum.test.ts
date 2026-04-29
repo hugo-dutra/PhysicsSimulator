@@ -42,6 +42,13 @@ describe('pendulum physics engine', () => {
         (sample) =>
           Number.isFinite(sample.xMeters) &&
           Number.isFinite(sample.yMeters) &&
+          Number.isFinite(sample.angularAccelerationRadiansPerSecondSquared) &&
+          Number.isFinite(sample.linearVelocityMetersPerSecond) &&
+          Number.isFinite(
+            sample.tangentialAccelerationMetersPerSecondSquared,
+          ) &&
+          Number.isFinite(sample.radialAccelerationMetersPerSecondSquared) &&
+          Number.isFinite(sample.totalAccelerationMetersPerSecondSquared) &&
           Number.isFinite(sample.kineticEnergyJoules) &&
           Number.isFinite(sample.potentialEnergyJoules) &&
           Number.isFinite(sample.totalEnergyJoules),
@@ -82,6 +89,47 @@ describe('pendulum physics engine', () => {
     ])
     expect(result.samples.at(-1)?.totalEnergyJoules).toBeLessThan(
       result.samples[0].totalEnergyJoules,
+    )
+  })
+
+  it('derives linear velocity and acceleration fields from angular motion', () => {
+    const parameters: PendulumParameters = {
+      ...baseParameters,
+      dampingPerSecond: 0.05,
+      initialAngleRadians: 0.3,
+      initialAngularVelocityRadiansPerSecond: 0.4,
+    }
+    const sample = computePendulumTimeline({
+      parameters,
+      durationSeconds: 1,
+      sampleRateHz: 60,
+    }).samples[0]
+    const expectedAngularAcceleration =
+      -(parameters.gravityMetersPerSecondSquared / parameters.lengthMeters) *
+        Math.sin(parameters.initialAngleRadians) -
+      parameters.dampingPerSecond *
+        parameters.initialAngularVelocityRadiansPerSecond
+
+    expect(sample.linearVelocityMetersPerSecond).toBeCloseTo(
+      parameters.lengthMeters *
+        parameters.initialAngularVelocityRadiansPerSecond,
+    )
+    expect(
+      sample.angularAccelerationRadiansPerSecondSquared,
+    ).toBeCloseTo(expectedAngularAcceleration)
+    expect(
+      sample.tangentialAccelerationMetersPerSecondSquared,
+    ).toBeCloseTo(parameters.lengthMeters * expectedAngularAcceleration)
+    expect(sample.radialAccelerationMetersPerSecondSquared).toBeCloseTo(
+      parameters.lengthMeters *
+        parameters.initialAngularVelocityRadiansPerSecond *
+        parameters.initialAngularVelocityRadiansPerSecond,
+    )
+    expect(sample.totalAccelerationMetersPerSecondSquared).toBeCloseTo(
+      Math.hypot(
+        sample.tangentialAccelerationMetersPerSecondSquared,
+        sample.radialAccelerationMetersPerSecondSquared,
+      ),
     )
   })
 
@@ -157,5 +205,7 @@ describe('pendulum physics engine', () => {
         y: -1,
       },
     })
+    expect(overlays.find((overlay) => overlay.id === 'velocity')?.magnitude)
+      .toBeCloseTo(Math.abs(sample.linearVelocityMetersPerSecond))
   })
 })

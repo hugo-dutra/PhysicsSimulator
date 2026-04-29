@@ -42,6 +42,7 @@ import {
   toPendulumParameters,
   type PendulumParameters,
   type PendulumSample,
+  type PendulumVectorOverlay,
 } from '../../lib/physics/pendulum'
 import { themeTokens } from '../../theme/appTheme'
 import { ChevronSection } from './ChevronSection'
@@ -79,12 +80,41 @@ const sampleTableColumnIds = [
   'time',
   'angle',
   'velocity',
+  'linearVelocity',
+  'tangentialAcceleration',
+  'radialAcceleration',
+  'totalAcceleration',
   'x',
   'y',
   'kinetic',
   'potential',
   'total',
 ] as const
+const vectorLegendItems = [
+  {
+    id: 'weight',
+    label: 'Peso',
+    color: themeTokens.danger,
+    description: 'forca gravitacional vertical para baixo',
+  },
+  {
+    id: 'tension',
+    label: 'Tensao',
+    color: themeTokens.vector,
+    description: 'forca radial apontando para o pivo',
+  },
+  {
+    id: 'velocity',
+    label: 'Velocidade linear',
+    color: themeTokens.cyan,
+    description: 'tangencial a trajetoria, perpendicular ao fio',
+  },
+] satisfies Array<{
+  color: string
+  description: string
+  id: PendulumVectorOverlay['id']
+  label: string
+}>
 const initialFrameStats: PendulumFrameStats = {
   fps: 0,
   frameTimeMs: 0,
@@ -106,10 +136,10 @@ export function SimulationShell() {
     vectors: true,
   })
   const [outputPanels, setOutputPanels] = useState<OutputPanelState>({
-    charts: true,
-    formulas: true,
-    table: true,
-    theory: true,
+    charts: false,
+    formulas: false,
+    table: false,
+    theory: false,
   })
   const parameters = useMemo(
     () => toPendulumParameters(parameterValues),
@@ -809,7 +839,7 @@ function PendulumRuntime({
             gap: 1,
             gridTemplateColumns: {
               xs: '1fr 1fr',
-              md: 'repeat(5, minmax(0, 1fr))',
+              md: 'repeat(7, minmax(0, 1fr))',
             },
             p: 1.5,
           }}
@@ -820,6 +850,17 @@ function PendulumRuntime({
             value={formatNumber(
               liveSample.angularVelocityRadiansPerSecond,
               'rad/s',
+            )}
+          />
+          <Metric
+            label="v"
+            value={formatNumber(liveSample.linearVelocityMetersPerSecond, 'm/s')}
+          />
+          <Metric
+            label="|a|"
+            value={formatNumber(
+              liveSample.totalAccelerationMetersPerSecondSquared,
+              'm/s^2',
             )}
           />
           <Metric label="x" value={formatNumber(liveSample.xMeters, 'm')} />
@@ -838,29 +879,7 @@ function PendulumRuntime({
             }
           />
         </Box>
-        {overlays.vectors ? (
-          <Box
-            sx={{
-              borderTop: `1px solid ${themeTokens.border}`,
-              display: 'grid',
-              gap: 1,
-              gridTemplateColumns: {
-                xs: '1fr',
-                md: 'repeat(3, minmax(0, 1fr))',
-              },
-              p: 1.5,
-              pt: 1,
-            }}
-          >
-            {vectors.map((vector) => (
-              <Metric
-                key={vector.id}
-                label={vector.label}
-                value={formatNumber(vector.magnitude, vector.unit)}
-              />
-            ))}
-          </Box>
-        ) : null}
+        {overlays.vectors ? <VectorLegend vectors={vectors} /> : null}
       </Box>
 
       <PendulumCharts
@@ -916,6 +935,10 @@ function PendulumRuntime({
                   <TableCell>t</TableCell>
                   <TableCell>theta</TableCell>
                   <TableCell>omega</TableCell>
+                  <TableCell>v</TableCell>
+                  <TableCell>a_t</TableCell>
+                  <TableCell>a_r</TableCell>
+                  <TableCell>|a|</TableCell>
                   <TableCell>x</TableCell>
                   <TableCell>y</TableCell>
                   <TableCell>K</TableCell>
@@ -943,6 +966,30 @@ function PendulumRuntime({
                           {formatNumber(
                             sample.angularVelocityRadiansPerSecond,
                             'rad/s',
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {formatNumber(
+                            sample.linearVelocityMetersPerSecond,
+                            'm/s',
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {formatNumber(
+                            sample.tangentialAccelerationMetersPerSecondSquared,
+                            'm/s^2',
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {formatNumber(
+                            sample.radialAccelerationMetersPerSecondSquared,
+                            'm/s^2',
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {formatNumber(
+                            sample.totalAccelerationMetersPerSecondSquared,
+                            'm/s^2',
                           )}
                         </TableCell>
                         <TableCell>
@@ -1005,13 +1052,10 @@ function ParameterControl({
         spacing={1}
         sx={{
           alignItems: 'center',
-          justifyContent: 'space-between',
+          mb: 0.5,
         }}
       >
         <Typography variant="body2">{parameter.label}</Typography>
-        <Typography color="text.secondary" variant="body2">
-          {formatNumber(draftValue, parameter.unit)}
-        </Typography>
       </Stack>
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
@@ -1175,6 +1219,77 @@ function selectStableTableRows(samples: PendulumSample[], rowCount: number) {
   }
 
   return rows
+}
+
+function VectorLegend({ vectors }: { vectors: PendulumVectorOverlay[] }) {
+  const vectorsById = new Map(vectors.map((vector) => [vector.id, vector]))
+
+  return (
+    <Box
+      aria-label="Legenda dos vetores"
+      sx={{
+        borderTop: `1px solid ${themeTokens.border}`,
+        display: 'grid',
+        gap: 1,
+        gridTemplateColumns: {
+          xs: '1fr',
+          md: 'repeat(3, minmax(0, 1fr))',
+        },
+        p: 1.5,
+        pt: 1,
+      }}
+    >
+      {vectorLegendItems.map((item) => {
+        const vector = vectorsById.get(item.id)
+
+        return (
+          <Box
+            key={item.id}
+            sx={{
+              bgcolor: alpha(themeTokens.background, 0.7),
+              border: `1px solid ${themeTokens.border}`,
+              borderRadius: 1,
+              minWidth: 0,
+              p: 1,
+            }}
+          >
+            <Stack
+              direction="row"
+              spacing={0.75}
+              sx={{ alignItems: 'center', minWidth: 0 }}
+            >
+              <Box
+                aria-hidden
+                sx={{
+                  bgcolor: item.color,
+                  borderRadius: '50%',
+                  flex: '0 0 auto',
+                  height: 9,
+                  width: 9,
+                }}
+              />
+              <Typography
+                sx={{ fontWeight: 700, overflowWrap: 'anywhere' }}
+                variant="body2"
+              >
+                {item.label}
+              </Typography>
+              <Typography
+                color="text.secondary"
+                sx={{ ml: 'auto', overflowWrap: 'anywhere' }}
+                variant="body2"
+              >
+                {vector ? formatNumber(vector.magnitude, vector.unit) : '--'}
+              </Typography>
+            </Stack>
+            <Typography color="text.secondary" variant="body2">
+              {item.description}
+            </Typography>
+          </Box>
+        )
+      })}
+    </Box>
+  )
 }
 
 function renderEmptyTableCells() {

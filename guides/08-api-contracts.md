@@ -123,6 +123,11 @@ type PendulumSample = {
   timeSeconds: number;
   angleRadians: number;
   angularVelocityRadiansPerSecond: number;
+  angularAccelerationRadiansPerSecondSquared: number;
+  linearVelocityMetersPerSecond: number;
+  tangentialAccelerationMetersPerSecondSquared: number;
+  radialAccelerationMetersPerSecondSquared: number;
+  totalAccelerationMetersPerSecondSquared: number;
   xMeters: number;
   yMeters: number;
   kineticEnergyJoules: number;

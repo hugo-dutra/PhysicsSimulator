@@ -283,6 +283,91 @@ Arquivos atualizados:
 Validacao:
 
 - Executado `npm run test -- src/App.test.tsx`.
+
+## 2026-04-29 - Fade da trilha do pendulo
+
+Correcao visual do viewport Three.js do pendulo:
+
+- A trilha deixou de desenhar uma linha reamostrada desde o inicio do ciclo.
+- O renderer agora mostra apenas uma cauda temporal curta com opacidade por vertice, fazendo os pontos antigos sumirem por fade.
+- O sample atual passou a fechar a ponta da trilha para acompanhar a massa sem depender de re-render React.
+- O fixture de teste de janela de samples foi completado com os campos derivados atuais de `PendulumSample`, removendo o bloqueio de build TypeScript.
+
+Arquivos atualizados:
+
+- `progress.md`
+- `src/features/simulation-shell/PendulumScene.tsx`
+- `src/features/simulation-shell/sampleWindow.test.ts`
+
+Validacao:
+
+- Executado `npm run test -- src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunks acima de 500 kB.
+- Smoke visual headless em `http://127.0.0.1:5182/` com screenshots desktop e mobile. Regiao do canvas com pixels nao-background e pixels cyan/teal presentes nos dois tamanhos.
+
+## 2026-04-29 - Velocidade linear, aceleracao e legenda de vetores
+
+Ajuste didatico do pendulo:
+
+- O sample do motor passou a incluir velocidade linear tangencial, aceleracao angular, aceleracao tangencial, aceleracao radial e modulo total da aceleracao.
+- O bloco de graficos agora inclui velocidade linear e aceleracao, alem de angulo, velocidade angular e energia quando ligada.
+- A tabela de amostras exibe as novas colunas derivadas mantendo a quantidade fixa de linhas.
+- O viewport ganhou legenda dos vetores com cor, modulo atual e leitura fisica.
+- A decisao foi registrada nos guides como padrao: cinematicas derivadas ficam no sample do motor, e vetores visiveis precisam de legenda.
+
+Arquivos atualizados:
+
+- `fixtures/simulations/mechanics-pendulum.json`
+- `guides/02-product-spec.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/06-data-and-api.md`
+- `guides/07-quality-and-operations.md`
+- `guides/08-api-contracts.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/PendulumCharts.tsx`
+- `src/features/simulation-shell/PendulumScene.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+- `src/lib/physics/pendulum.test.ts`
+- `src/lib/physics/pendulum.ts`
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/pendulum.test.ts src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunks acima de 500 kB.
+- Executado `validate_guides.py`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunks acima de 500 kB.
+- Executado `validate_guides.py`.
+
+## 2026-04-29 - Controles sem valor duplicado
+
+Correcao de UI no painel de controles do pendulo:
+
+- Os controles numericos deixaram de mostrar o valor formatado fora do campo.
+- O valor permanece apenas dentro do input numerico, evitando duplicacao visual como `30 s` fora do componente e `30` dentro do campo.
+- O smoke test da tela passou a verificar que esses valores externos nao aparecem no estado inicial.
+
+Arquivos atualizados:
+
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+
+Validacao:
+
+- Executado `npm run test -- src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunks acima de 500 kB.
+- Executado `validate_guides.py`.
 - Executado `npm run lint`.
 - Executado `validate_guides.py`.
 
@@ -548,3 +633,27 @@ Validacao:
 - Executado `npm run lint`.
 - Executado `npm run build`; build passou com aviso conhecido de chunks acima de 500 kB.
 - Executado `validate_guides.py`.
+
+## 2026-04-29 - Chevron clicavel e default fechado
+
+Correcao de UX apos validacao manual:
+
+- Os blocos chevron de graficos, tabela, formulas e teoria agora iniciam fechados por padrao.
+- O cabecalho chevron passou a usar um botao nativo explicito, com `aria-expanded` e label de abrir/recolher, para garantir alternancia por clique no titulo ou no icone.
+- O smoke test da tela passou a validar o ciclo completo: default fechado, abrir pelo cabecalho, montar conteudo, fechar pelo cabecalho e desmontar conteudo.
+
+Arquivos atualizados:
+
+- `guides/02-product-spec.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/07-quality-and-operations.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/ChevronSection.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+
+Validacao:
+
+- Executado `npm run test -- src/App.test.tsx`.

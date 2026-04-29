@@ -36,6 +36,8 @@ type SceneObjects = {
   trace: THREE.Line
   tracePositions: Float32Array
   tracePositionAttribute: THREE.BufferAttribute
+  traceColors: Float32Array
+  traceColorAttribute: THREE.BufferAttribute
   arrows: Record<PendulumVectorOverlay['id'], THREE.ArrowHelper>
 }
 
@@ -57,6 +59,14 @@ const vectorColors: Record<PendulumVectorOverlay['id'], number> = {
 
 const vectorIds = ['weight', 'tension', 'velocity'] as const
 const maxTracePoints = 96
+const traceFadeSeconds = 1.35
+const traceMinOpacity = 0.03
+const traceMaxOpacity = 0.5
+const traceColor = {
+  blue: 0xf8 / 255,
+  green: 0xbd / 255,
+  red: 0x38 / 255,
+}
 const readoutIntervalMs = 33
 const maxFrameDeltaSeconds = 0.12
 
@@ -243,19 +253,23 @@ export function PendulumScene({
     scene.add(bob)
 
     const tracePositions = new Float32Array(maxTracePoints * 3)
+    const traceColors = new Float32Array(maxTracePoints * 4)
     const traceGeometry = new THREE.BufferGeometry()
     const tracePositionAttribute = new THREE.BufferAttribute(tracePositions, 3)
+    const traceColorAttribute = new THREE.BufferAttribute(traceColors, 4)
 
     tracePositionAttribute.setUsage(THREE.DynamicDrawUsage)
+    traceColorAttribute.setUsage(THREE.DynamicDrawUsage)
     traceGeometry.setAttribute('position', tracePositionAttribute)
+    traceGeometry.setAttribute('color', traceColorAttribute)
     traceGeometry.setDrawRange(0, 0)
 
     const trace = new THREE.Line(
       traceGeometry,
       new THREE.LineBasicMaterial({
-        color: 0x38bdf8,
-        opacity: 0.35,
+        depthWrite: false,
         transparent: true,
+        vertexColors: true,
       }),
     )
     scene.add(trace)
@@ -306,6 +320,8 @@ export function PendulumScene({
       trace,
       tracePositions,
       tracePositionAttribute,
+      traceColors,
+      traceColorAttribute,
       arrows,
     }
 
@@ -460,13 +476,14 @@ function updatePendulumObjects({
     arrow.setLength(getVectorDisplayLength(vector), 0.08, 0.045)
   })
 
-  updateTrace(objects, samples, sampleIndex, showTrace)
+  updateTrace(objects, samples, sampleIndex, sample, showTrace)
 }
 
 function updateTrace(
   objects: SceneObjects,
   samples: PendulumSample[],
   sampleIndex: number,
+  currentSample: PendulumSample,
   showTrace: boolean,
 ) {
   if (!showTrace || sampleIndex < 1) {
@@ -475,30 +492,90 @@ function updateTrace(
     return
   }
 
-  const traceSampleCount = sampleIndex + 1
-  const stride = Math.max(1, Math.ceil(traceSampleCount / maxTracePoints))
-  const pointCount = Math.min(
-    maxTracePoints,
-    Math.ceil(traceSampleCount / stride),
+  const newestTimeSeconds = currentSample.timeSeconds
+  const oldestVisibleTimeSeconds = Math.max(
+    0,
+    newestTimeSeconds - traceFadeSeconds,
   )
-  let positionIndex = 0
+  const firstTraceSampleIndex = findTraceStartIndex(
+    samples,
+    sampleIndex,
+    oldestVisibleTimeSeconds,
+  )
+  const traceSampleCount = sampleIndex - firstTraceSampleIndex + 1
+  const stride = Math.max(1, Math.ceil(traceSampleCount / maxTracePoints))
+  let pointIndex = 0
+  let lastWrittenSampleIndex = -1
 
   for (
-    let sampleIndexForTrace = 0;
-    sampleIndexForTrace <= sampleIndex && positionIndex < pointCount * 3;
+    let sampleIndexForTrace = firstTraceSampleIndex;
+    sampleIndexForTrace <= sampleIndex && pointIndex < maxTracePoints;
     sampleIndexForTrace += stride
   ) {
     const traceSample = samples[sampleIndexForTrace]
 
-    objects.tracePositions[positionIndex] = traceSample.xMeters
-    objects.tracePositions[positionIndex + 1] = traceSample.yMeters
-    objects.tracePositions[positionIndex + 2] = -0.04
-    positionIndex += 3
+    writeTracePoint(objects, pointIndex, traceSample, newestTimeSeconds)
+    pointIndex += 1
+    lastWrittenSampleIndex = sampleIndexForTrace
+  }
+
+  if (lastWrittenSampleIndex === sampleIndex) {
+    writeTracePoint(objects, pointIndex - 1, currentSample, newestTimeSeconds)
+  } else if (pointIndex < maxTracePoints) {
+    writeTracePoint(objects, pointIndex, currentSample, newestTimeSeconds)
+    pointIndex += 1
+  }
+
+  if (pointIndex < 2) {
+    objects.trace.visible = false
+    objects.trace.geometry.setDrawRange(0, 0)
+    return
   }
 
   objects.trace.visible = true
-  objects.trace.geometry.setDrawRange(0, positionIndex / 3)
+  objects.trace.geometry.setDrawRange(0, pointIndex)
   objects.tracePositionAttribute.needsUpdate = true
+  objects.traceColorAttribute.needsUpdate = true
+}
+
+function findTraceStartIndex(
+  samples: PendulumSample[],
+  sampleIndex: number,
+  oldestVisibleTimeSeconds: number,
+) {
+  let firstTraceSampleIndex = sampleIndex
+
+  while (
+    firstTraceSampleIndex > 0 &&
+    samples[firstTraceSampleIndex - 1].timeSeconds >= oldestVisibleTimeSeconds
+  ) {
+    firstTraceSampleIndex -= 1
+  }
+
+  return firstTraceSampleIndex
+}
+
+function writeTracePoint(
+  objects: SceneObjects,
+  pointIndex: number,
+  sample: PendulumSample,
+  newestTimeSeconds: number,
+) {
+  const positionIndex = pointIndex * 3
+  const colorIndex = pointIndex * 4
+  const ageSeconds = Math.max(0, newestTimeSeconds - sample.timeSeconds)
+  const fadeProgress = Math.min(1, ageSeconds / traceFadeSeconds)
+  const opacity =
+    traceMinOpacity +
+    (1 - fadeProgress) * (traceMaxOpacity - traceMinOpacity)
+
+  objects.tracePositions[positionIndex] = sample.xMeters
+  objects.tracePositions[positionIndex + 1] = sample.yMeters
+  objects.tracePositions[positionIndex + 2] = -0.04
+  objects.traceColors[colorIndex] = traceColor.red
+  objects.traceColors[colorIndex + 1] = traceColor.green
+  objects.traceColors[colorIndex + 2] = traceColor.blue
+  objects.traceColors[colorIndex + 3] = opacity
 }
 
 function getTimelineFrame(
@@ -521,7 +598,7 @@ function getTimelineFrame(
 
   return {
     sample: interpolateSample(samples[lowerIndex], samples[upperIndex], ratio),
-    sampleIndex: Math.min(samples.length - 1, Math.round(exactIndex)),
+    sampleIndex: lowerIndex,
   }
 }
 
@@ -536,6 +613,31 @@ function interpolateSample(
     angularVelocityRadiansPerSecond: interpolate(
       start.angularVelocityRadiansPerSecond,
       end.angularVelocityRadiansPerSecond,
+      ratio,
+    ),
+    angularAccelerationRadiansPerSecondSquared: interpolate(
+      start.angularAccelerationRadiansPerSecondSquared,
+      end.angularAccelerationRadiansPerSecondSquared,
+      ratio,
+    ),
+    linearVelocityMetersPerSecond: interpolate(
+      start.linearVelocityMetersPerSecond,
+      end.linearVelocityMetersPerSecond,
+      ratio,
+    ),
+    tangentialAccelerationMetersPerSecondSquared: interpolate(
+      start.tangentialAccelerationMetersPerSecondSquared,
+      end.tangentialAccelerationMetersPerSecondSquared,
+      ratio,
+    ),
+    radialAccelerationMetersPerSecondSquared: interpolate(
+      start.radialAccelerationMetersPerSecondSquared,
+      end.radialAccelerationMetersPerSecondSquared,
+      ratio,
+    ),
+    totalAccelerationMetersPerSecondSquared: interpolate(
+      start.totalAccelerationMetersPerSecondSquared,
+      end.totalAccelerationMetersPerSecondSquared,
       ratio,
     ),
     xMeters: interpolate(start.xMeters, end.xMeters, ratio),

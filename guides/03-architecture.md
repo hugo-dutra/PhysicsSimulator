@@ -53,7 +53,7 @@ Dependencias opcionais por fase:
 ```text
 Usuario altera parametro
   -> SimulationShell valida e normaliza unidades
-  -> physics-core recalcula estado inicial e/ou timeline
+  -> physics-core recalcula estado inicial, timeline e campos derivados de cinematica
   -> renderer recebe timeline/samples e controla o playback visual em loop proprio
   -> SimulationShell recebe leituras periodicas do sample atual para UI
   -> charts recebem a janela movel dos ultimos N segundos quando o bloco chevron esta aberto
@@ -69,11 +69,13 @@ Toda simulacao animada deve seguir o padrao adotado no pendulo:
 - O renderer visual (`Three.js`, `PixiJS` ou equivalente) deve possuir o loop de `requestAnimationFrame` e atualizar objetos de cena de forma imperativa.
 - O shell React deve orquestrar parametros, toggles, layout, graficos, tabela, formulas e teoria, mas nao deve re-renderizar a arvore inteira a cada frame.
 - A fonte fisica continua unica: motor numerico, cena, graficos, tabela e formulas derivam dos mesmos parametros e samples.
+- Campos derivados como velocidade linear tangencial, aceleracao angular, aceleracao tangencial, aceleracao radial e modulo total de aceleracao pertencem ao sample do motor, nao a calculos soltos de UI.
 - O renderer pode manter refs para timeline, parametros e flags visuais; a UI recebe snapshots periodicos do sample atual apenas na cadencia necessaria para leitura humana.
 - Buffers e geometrias dinamicas devem ser reutilizados quando possivel; evitar recriar `BufferGeometry`, materiais, renderers ou series pesadas dentro do frame loop.
 - `devicePixelRatio`, quantidade de pontos de trilha, densidade de particulas e amostragem visual devem ter limites explicitos para proteger maquinas boas e medianas.
 - Graficos Plotly, tabelas e conteudo KaTeX/Markdown nao entram no caminho quente da animacao; atualizar por recorte, decimacao, memoizacao ou toggle quando necessario.
 - Saidas pesadas de simulacao, como graficos, tabela, formulas e teoria, devem usar blocos chevron recolhiveis. Recolher um bloco deve desmontar o conteudo e suspender processamento derivado, nao apenas ocultar via CSS.
+- Esses blocos de saida pesada devem iniciar fechados por padrao; o clique no cabecalho precisa alternar montagem e desmontagem do conteudo.
 - Graficos progressivos em tempo real nao devem depender de redraw completo em blocos. Use adapter imperativo com `requestAnimationFrame` (canvas/SVG), ponta/cursor interpolado, densidade suficiente de pontos e recorte movel suave.
 - Controles numericos podem manter valor local de edicao e confirmar recalculos caros apenas ao soltar o slider, pressionar Enter ou sair do input.
 - Simulacoes com timeline longa devem separar duracao do ciclo, taxa de amostragem e janela visivel de graficos para preservar fluidez sem perder contexto historico.
@@ -129,7 +131,7 @@ Na Fase 1, usar:
 - `fixtures/simulations/mechanics-pendulum.json` para parametros, presets e defaults.
 - MDX local para teoria do pendulo e guia de formulas.
 - Metadados locais para mapear formulas a parametros, samples, vetores e graficos.
-- Dados gerados pelo motor numerico em runtime para graficos e tabela.
+- Dados gerados pelo motor numerico em runtime para graficos e tabela, incluindo cinematicas derivadas usadas por legendas e formulas.
 
 ## Caminho de evolucao
 

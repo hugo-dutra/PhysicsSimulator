@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from 'react'
-import { Box, ButtonBase, Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { themeTokens } from '../../theme/appTheme'
@@ -36,14 +36,20 @@ export function ChevronSection({
         overflow: 'hidden',
       }}
     >
-      <ButtonBase
-        aria-controls={expanded ? contentId : undefined}
+      <Box
+        aria-controls={contentId}
         aria-expanded={expanded}
-        aria-labelledby={titleId}
+        aria-label={`${expanded ? 'Recolher' : 'Abrir'} ${title}`}
+        component="button"
         onClick={onToggle}
         sx={{
           alignItems: { xs: 'flex-start', md: 'center' },
+          background: 'transparent',
+          border: 0,
+          color: 'inherit',
+          cursor: 'pointer',
           display: 'flex',
+          font: 'inherit',
           gap: 1.5,
           justifyContent: 'space-between',
           p: 1.5,
@@ -52,6 +58,9 @@ export function ChevronSection({
           '&:focus-visible': {
             outline: `2px solid ${themeTokens.teal}`,
             outlineOffset: -2,
+          },
+          '&:hover': {
+            bgcolor: alpha(themeTokens.teal, 0.06),
           },
         }}
         type="button"
@@ -87,7 +96,7 @@ export function ChevronSection({
             {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
           </Box>
         </Stack>
-      </ButtonBase>
+      </Box>
 
       {expanded ? (
         <Box id={contentId} sx={{ px: 1.5, pb: 1.5 }}>

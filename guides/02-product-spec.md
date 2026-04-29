@@ -52,6 +52,7 @@ Layout recomendado:
 - Bloco chevron de tabela de amostras, recolhivel pelo proprio cabecalho.
 - Bloco chevron de formulas aplicadas, conectado aos parametros e dados exibidos.
 - Bloco chevron de apendice teorico.
+- Blocos chevron de saida pesada devem iniciar recolhidos por padrao, para o usuario abrir apenas o que quer observar.
 
 ## Controles esperados no pendulo simples
 
@@ -69,16 +70,18 @@ Layout recomendado:
 - Toggle de vetores.
 - Toggle de trilha.
 - Toggle de energia.
-- Blocos chevron para graficos, tabela, formulas e teoria, permitindo minimizar saidas pesadas quando for preciso aliviar a UI.
+- Blocos chevron para graficos, tabela, formulas e teoria, iniciando fechados e permitindo abrir/minimizar saidas pesadas quando for preciso aliviar a UI.
 
 ## Representacoes esperadas
 
 - Cena animada do pendulo.
-- Vetores de peso, tensao e velocidade.
+- Vetores de peso, tensao e velocidade linear com legenda visivel de cor, modulo e significado.
 - Grafico de angulo por tempo com janela movel dos ultimos N segundos.
 - Grafico de velocidade angular por tempo com a mesma janela movel.
+- Grafico de velocidade linear tangencial por tempo com a mesma janela movel.
+- Grafico de aceleracao por tempo, exibindo componentes tangencial, radial e modulo total.
 - Grafico de energia cinetica, potencial e total com a mesma janela movel.
-- Tabela com tempo, angulo, velocidade, posicao e energia, mantendo quantidade fixa de linhas visiveis para evitar oscilacao de layout durante o playback.
+- Tabela com tempo, angulo, velocidade angular, velocidade linear, aceleracoes, posicao e energia, mantendo quantidade fixa de linhas visiveis para evitar oscilacao de layout durante o playback.
 - Formulas do processo analisado, com variaveis, unidades, condicoes de uso e exemplo curto.
 - Apendice teorico com equacoes, unidades, contexto de uso e limites da aproximacao.
 
@@ -102,6 +105,7 @@ No pendulo simples, o guia deve cobrir pelo menos:
 - periodo aproximado;
 - energia potencial, cinetica e total;
 - posicao cartesiana da massa;
+- velocidade linear tangencial e aceleracoes tangencial/radial/total;
 - vetores principais, como peso, tensao e velocidade.
 
 ## Estados de tela
@@ -126,8 +130,10 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 - Alterar a janela dos graficos muda quantos segundos recentes ficam visiveis.
 - Graficos e tabela refletem os mesmos samples quando suas saidas estao ligadas.
 - Graficos, tabela, formulas e teoria podem ser recolhidos por chevron; quando um bloco pesado esta recolhido, seu conteudo deve ser desmontado e seu processamento suspenso.
+- Esses blocos chevron iniciam fechados por padrao e precisam alternar aberto/fechado ao clicar no cabecalho.
 - A tabela de amostras mantem uma quantidade constante de linhas enquanto esta aberta, preenchendo slots vazios quando ainda nao ha amostras suficientes.
 - Vetores podem ser ligados e desligados.
+- Vetores exibidos devem ter legenda junto ao viewport, incluindo cor, modulo atual e leitura fisica.
 - Formulas exibidas explicam quando usar cada equacao e quais dados da simulacao a alimentam.
 - O apendice teorico aparece ao lado ou abaixo da simulacao sem substituir a experiencia principal.
 - A interface usa Material UI em dark graphite com acento cyan/teal e leitura confortavel.

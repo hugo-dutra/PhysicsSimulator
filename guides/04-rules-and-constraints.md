@@ -17,6 +17,7 @@
 - Formulas exibidas devem corresponder ao modelo numerico implementado.
 - O modelo numerico deve ser deterministico para os mesmos parametros.
 - Tabela, graficos e animacao devem ser derivados da mesma fonte de dados.
+- Velocidades e aceleracoes derivadas exibidas em graficos, tabela, metricas ou formulas devem ser calculadas no motor/sample e manter unidades explicitas.
 - Quando houver aproximacao, a teoria e o guia de formulas devem explicar a aproximacao e seus limites.
 - O produto educacional nao deve sugerir precisao de simulador profissional quando o modelo for didatico.
 
@@ -25,7 +26,9 @@
 - Interface dark graphite com uma cor principal cyan/teal.
 - Controles numericos usam slider e input quando precisao importar.
 - Toggles para exibir vetores, trilha, energia e overlays.
+- Vetores exibidos precisam de legenda visivel com cor, modulo atual e significado fisico, especialmente quando a direcao nao e obvia no movimento.
 - Blocos de saida pesada, como graficos, tabela, formulas e teoria, devem ser recolhiveis por chevron no proprio cabecalho.
+- Blocos chevron de saida pesada iniciam fechados por padrao e devem abrir/fechar ao clique no cabecalho.
 - Quando um bloco chevron estiver recolhido, a aplicacao deve desmontar o conteudo e suspender calculos/renderizacao derivados daquele bloco.
 - Icones em botoes sempre que houver comando conhecido como play, pause, reset, zoom ou download.
 - Texto dentro de paineis deve ser compacto; evitar hero, landing page e blocos promocionais.

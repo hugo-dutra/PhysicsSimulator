@@ -145,6 +145,11 @@
           "unit": "rad/s"
         },
         {
+          "symbol": "\\ddot{\\theta}",
+          "label": "aceleracao angular",
+          "unit": "rad/s^2"
+        },
+        {
           "symbol": "g",
           "label": "gravidade",
           "unit": "m/s^2"
@@ -169,8 +174,16 @@
         "initialAngularVelocityRadiansPerSecond",
         "dampingPerSecond"
       ],
-      "sampleFields": ["angleRadians", "angularVelocityRadiansPerSecond"],
-      "relatedChartIds": ["angle-time", "angular-velocity-time"],
+      "sampleFields": [
+        "angleRadians",
+        "angularVelocityRadiansPerSecond",
+        "angularAccelerationRadiansPerSecondSquared"
+      ],
+      "relatedChartIds": [
+        "angle-time",
+        "angular-velocity-time",
+        "acceleration-time"
+      ],
       "relatedVectorIds": ["velocity", "tension"],
       "example": "Com L = 1,2 m e g = 9,81 m/s^2, a aceleracao angular inicial e calculada a partir de -g/L sen(theta)."
     },
@@ -241,6 +254,51 @@
       "example": "Com L = 1 m e theta = 30 graus, x = 0,5 m e y fica abaixo do pivo."
     },
     {
+      "id": "linear-kinematics",
+      "title": "Cinematica tangencial e radial",
+      "expressionLatex": "v = L\\dot{\\theta},\\quad a_t = L\\ddot{\\theta},\\quad a_r = L\\dot{\\theta}^{2},\\quad |\\vec{a}| = \\sqrt{a_t^2 + a_r^2}",
+      "description": "Deriva velocidade linear tangencial, aceleracao tangencial, aceleracao radial e modulo total da aceleracao a partir do estado angular.",
+      "variables": [
+        {
+          "symbol": "v",
+          "label": "velocidade linear tangencial",
+          "unit": "m/s"
+        },
+        {
+          "symbol": "a_t",
+          "label": "aceleracao tangencial",
+          "unit": "m/s^2"
+        },
+        {
+          "symbol": "a_r",
+          "label": "aceleracao radial",
+          "unit": "m/s^2"
+        },
+        {
+          "symbol": "|\\vec{a}|",
+          "label": "modulo da aceleracao",
+          "unit": "m/s^2"
+        }
+      ],
+      "usedWhen": "Usar para interpretar os graficos de velocidade linear e aceleracao derivados da mesma trajetoria angular.",
+      "notUsedWhen": "Nao substitui a leitura vetorial de forcas; descreve a cinematica instantanea no plano.",
+      "parameterIds": [
+        "lengthMeters",
+        "gravityMetersPerSecondSquared",
+        "dampingPerSecond"
+      ],
+      "sampleFields": [
+        "angularAccelerationRadiansPerSecondSquared",
+        "linearVelocityMetersPerSecond",
+        "tangentialAccelerationMetersPerSecondSquared",
+        "radialAccelerationMetersPerSecondSquared",
+        "totalAccelerationMetersPerSecondSquared"
+      ],
+      "relatedChartIds": ["linear-velocity-time", "acceleration-time"],
+      "relatedVectorIds": ["velocity"],
+      "example": "A velocidade linear muda de sinal com omega, enquanto a aceleracao radial usa omega^2 e aponta para o pivo."
+    },
+    {
       "id": "vector-overlays",
       "title": "Vetores principais",
       "expressionLatex": "\\vec{P}=m\\vec{g},\\quad T\\approx m(g\\cos\\theta + L\\dot{\\theta}^{2}),\\quad v=L\\dot{\\theta}",
@@ -272,9 +330,11 @@
       "sampleFields": [
         "angleRadians",
         "angularVelocityRadiansPerSecond",
+        "linearVelocityMetersPerSecond",
         "xMeters",
         "yMeters"
       ],
+      "relatedChartIds": ["linear-velocity-time"],
       "relatedVectorIds": ["weight", "tension", "velocity"],
       "example": "Se omega dobra, o modulo da velocidade tangencial dobra porque v = L omega."
     },
@@ -308,8 +368,7 @@
         "potentialEnergyJoules",
         "totalEnergyJoules"
       ],
-      "relatedChartIds": ["energy-time"]
-      ,
+      "relatedChartIds": ["energy-time"],
       "example": "Sem amortecimento, o grafico de energia total deve ficar quase constante; com b > 0 ele decai."
     }
   ]

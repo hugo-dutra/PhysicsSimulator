@@ -26,6 +26,7 @@ npm run test:e2e
 - Testes de invariantes fisicos dentro do modelo declarado.
 - Testes de validacao de parametros e unidades.
 - Testes de geracao de samples para graficos e tabela.
+- Testes de campos derivados de cinematica quando eles alimentarem graficos, tabela, legendas ou formulas.
 - Testes de recorte temporal para graficos/tabela quando houver janela movel configuravel.
 - Testes de que blocos chevron recolhidos desmontam graficos, tabela, formulas e teoria em vez de apenas ocultar visualmente.
 - Testes de que a tabela de amostras mantem quantidade fixa de linhas visiveis enquanto esta aberta.
@@ -51,11 +52,14 @@ Depois da prova do core, cada nova simulacao promovida para `available` deve ter
 
 - Canvas nao pode estar em branco.
 - Vetores devem acompanhar o movimento.
+- Vetores devem ter legenda visivel com cor, modulo atual e significado fisico.
 - Graficos devem atualizar quando parametros mudam.
+- Graficos derivados de velocidade linear e aceleracao devem seguir a mesma janela temporal e a mesma fonte de samples dos demais graficos.
 - Graficos com janela movel devem manter apenas os ultimos N segundos visiveis depois que o tempo atual ultrapassar a largura do plot.
 - Graficos nao devem piscar por remount/purge em mudancas normais de parametro.
 - Graficos progressivos devem parecer continuos, sem avanco em blocos grandes que sugiram travamento.
 - Blocos de graficos, tabela, formulas e teoria devem abrir/fechar por chevron sem deixar processamento pesado ativo quando recolhidos.
+- Blocos chevron de saida pesada devem iniciar fechados e testes devem cobrir abrir e fechar pelo cabecalho.
 - A tabela de amostras nao deve variar sua altura durante playback por mudar a quantidade de linhas.
 - Formulas devem permanecer legiveis e indicar quando usar cada equacao.
 - Layout nao deve quebrar em desktop comum.
