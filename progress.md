@@ -284,29 +284,6 @@ Validacao:
 
 - Executado `npm run test -- src/App.test.tsx`.
 
-## 2026-04-29 - Fade da trilha do pendulo
-
-Correcao visual do viewport Three.js do pendulo:
-
-- A trilha deixou de desenhar uma linha reamostrada desde o inicio do ciclo.
-- O renderer agora mostra apenas uma cauda temporal curta com opacidade por vertice, fazendo os pontos antigos sumirem por fade.
-- O sample atual passou a fechar a ponta da trilha para acompanhar a massa sem depender de re-render React.
-- O fixture de teste de janela de samples foi completado com os campos derivados atuais de `PendulumSample`, removendo o bloqueio de build TypeScript.
-
-Arquivos atualizados:
-
-- `progress.md`
-- `src/features/simulation-shell/PendulumScene.tsx`
-- `src/features/simulation-shell/sampleWindow.test.ts`
-
-Validacao:
-
-- Executado `npm run test -- src/App.test.tsx`.
-- Executado `npm run test`.
-- Executado `npm run lint`.
-- Executado `npm run build`; build passou com aviso conhecido de chunks acima de 500 kB.
-- Smoke visual headless em `http://127.0.0.1:5182/` com screenshots desktop e mobile. Regiao do canvas com pixels nao-background e pixels cyan/teal presentes nos dois tamanhos.
-
 ## 2026-04-29 - Velocidade linear, aceleracao e legenda de vetores
 
 Ajuste didatico do pendulo:
@@ -657,3 +634,26 @@ Arquivos atualizados:
 Validacao:
 
 - Executado `npm run test -- src/App.test.tsx`.
+
+## 2026-04-29 - Fade da trilha do pendulo
+
+Correcao visual do viewport Three.js do pendulo:
+
+- A trilha deixou de desenhar uma linha reamostrada desde o inicio do ciclo.
+- O renderer agora mostra apenas uma cauda temporal curta com opacidade por vertice, fazendo os pontos antigos sumirem por fade.
+- O sample atual passou a fechar a ponta da trilha para acompanhar a massa sem depender de re-render React.
+- O fixture de teste de janela de samples foi completado com os campos derivados atuais de `PendulumSample`, removendo o bloqueio de build TypeScript.
+
+Arquivos atualizados:
+
+- `progress.md`
+- `src/features/simulation-shell/PendulumScene.tsx`
+- `src/features/simulation-shell/sampleWindow.test.ts`
+
+Validacao:
+
+- Executado `npm run test -- src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunks acima de 500 kB.
+- Smoke visual headless em `http://127.0.0.1:5182/` com screenshots desktop e mobile. Regiao do canvas com pixels nao-background e pixels cyan/teal presentes nos dois tamanhos.
