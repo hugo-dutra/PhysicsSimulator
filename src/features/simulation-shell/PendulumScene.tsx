@@ -17,6 +17,7 @@ export type PendulumFrameStats = {
 type PendulumSceneProps = {
   durationSeconds: number
   isPlaying: boolean
+  maximized?: boolean
   onSampleChange: (sample: PendulumSample, stats: PendulumFrameStats) => void
   parameters: PendulumParameters
   playbackRate: number
@@ -73,6 +74,7 @@ const maxFrameDeltaSeconds = 0.12
 export function PendulumScene({
   durationSeconds,
   isPlaying,
+  maximized = false,
   onSampleChange,
   parameters,
   playbackRate,
@@ -409,7 +411,13 @@ export function PendulumScene({
   return (
     <Box
       sx={{
-        height: { xs: 326, md: 382 },
+        height: maximized
+          ? {
+              xs: '52svh',
+              md: 'calc(100svh - 256px)',
+            }
+          : { xs: 326, md: 382 },
+        minHeight: maximized ? { xs: 320, md: 430 } : undefined,
         position: 'relative',
       }}
     >

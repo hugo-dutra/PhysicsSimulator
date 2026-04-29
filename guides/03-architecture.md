@@ -40,6 +40,7 @@ Dependencias opcionais por fase:
 - `content`: MDX/Markdown, formulas, exemplos e metadados teoricos das simulacoes.
 - `formula-guide`: metadados que conectam formulas a parametros, samples, vetores, graficos e limites de uso.
 - `fixtures`: JSON local para presets e exemplos.
+- `SidebarCatalog`: read model derivado do catalogo local, agrupando `SimulationDefinition` por area e subarea para menus expansiveis.
 
 ## Estrategia tecnica por area
 
@@ -76,6 +77,8 @@ Toda simulacao animada deve seguir o padrao adotado no pendulo:
 - Graficos Plotly, tabelas e conteudo KaTeX/Markdown nao entram no caminho quente da animacao; atualizar por recorte, decimacao, memoizacao ou toggle quando necessario.
 - Saidas pesadas de simulacao, como graficos, tabela, formulas e teoria, devem usar blocos chevron recolhiveis. Recolher um bloco deve desmontar o conteudo e suspender processamento derivado, nao apenas ocultar via CSS.
 - Esses blocos de saida pesada devem iniciar fechados por padrao; o clique no cabecalho precisa alternar montagem e desmontagem do conteudo.
+- Viewport, graficos, tabela, formulas e apendice teorico devem seguir o padrao de painel maximizavel: um unico painel pode ocupar a area util da janela, os demais paineis ficam invisiveis, e a acao de minimizar restaura o layout e o estado aberto/fechado anterior.
+- Quando graficos ou tabela estiverem maximizados, a fonte de tempo e samples da simulacao deve continuar ativa para preservar sincronizacao. No pendulo, enquanto o runtime visual ainda e a fonte do sample vivo, o viewport pode ficar visualmente oculto, mas nao deve ser desmontado durante esse foco.
 - Graficos progressivos em tempo real nao devem depender de redraw completo em blocos. Use adapter imperativo com `requestAnimationFrame` (canvas/SVG), ponta/cursor interpolado, densidade suficiente de pontos e recorte movel suave.
 - Controles numericos podem manter valor local de edicao e confirmar recalculos caros apenas ao soltar o slider, pressionar Enter ou sair do input.
 - Simulacoes com timeline longa devem separar duracao do ciclo, taxa de amostragem e janela visivel de graficos para preservar fluidez sem perder contexto historico.
@@ -128,6 +131,7 @@ O tema inicial usa `#2DD4BF` como acento principal teal e reserva `#38BDF8` para
 Na Fase 1, usar:
 
 - `fixtures/simulations/catalog.json` para areas e simulacoes.
+- O catalogo local deve incluir todas as simulacoes planejadas em `09-simulation-catalog-plan.md`, agrupadas por `topicPath`, com apenas o pendulo como `available` ate o core ser expandido.
 - `fixtures/simulations/mechanics-pendulum.json` para parametros, presets e defaults.
 - MDX local para teoria do pendulo e guia de formulas.
 - Metadados locais para mapear formulas a parametros, samples, vetores e graficos.

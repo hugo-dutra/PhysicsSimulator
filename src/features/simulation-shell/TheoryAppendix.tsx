@@ -10,17 +10,23 @@ import { ChevronSection } from './ChevronSection'
 type TheoryAppendixProps = {
   expanded: boolean
   limits: string[]
+  maximized?: boolean
+  onMaximizeToggle?: () => void
   onToggle: () => void
 }
 
 export function TheoryAppendix({
   expanded,
   limits,
+  maximized = false,
+  onMaximizeToggle,
   onToggle,
 }: TheoryAppendixProps) {
   return (
     <ChevronSection
       expanded={expanded}
+      maximized={maximized}
+      onMaximizeToggle={onMaximizeToggle}
       onToggle={onToggle}
       subtitle={
         expanded
@@ -30,7 +36,12 @@ export function TheoryAppendix({
       title="Apendice teorico"
     >
       {expanded ? (
-        <Stack spacing={1.5}>
+        <Stack
+          spacing={1.5}
+          sx={{
+            maxWidth: maximized ? 1180 : 'none',
+          }}
+        >
           <Box
             sx={{
               '& h1': {

@@ -27,6 +27,7 @@ A aplicacao deve agrupar simulacoes por area do conhecimento em uma sidebar:
 - Eletromagnetismo, com Eletrostatica, Circuitos, Magnetismo, Inducao e Ondas eletromagneticas.
 
 No MVP, apenas `Mecanica > Pendulo simples` precisa estar funcional. As demais areas podem aparecer como itens planejados, desde que nao confundam com simulacoes prontas.
+Mesmo quando ainda estiverem planejadas, as simulacoes do catalogo curricular devem aparecer na sidebar em menus navegaveis de area e subarea, com status claro de `planejado`.
 
 ## Catalogo curricular planejado
 
@@ -39,6 +40,7 @@ O catalogo detalhado de simulacoes fica em `09-simulation-catalog-plan.md`. A ex
 - filtros ou agrupamentos por area, nivel e tipo de modelo quando o catalogo crescer.
 
 Itens planejados podem aparecer na sidebar como bloqueados, desabilitados ou marcados como `planejado`. Eles nao devem parecer clicaveis como simulacoes completas enquanto nao tiverem motor, visualizacao, graficos, tabela, formulas e teoria.
+A sidebar deve ser organizada como arvore compacta: area principal expansivel, subarea expansivel e simulacoes como folhas marcadas por status. O fixture local de catalogo deve conter todas as simulacoes planejadas em `09-simulation-catalog-plan.md`, mesmo que apenas o pendulo esteja disponivel.
 
 ## Tela da simulacao
 
@@ -53,6 +55,8 @@ Layout recomendado:
 - Bloco chevron de formulas aplicadas, conectado aos parametros e dados exibidos.
 - Bloco chevron de apendice teorico.
 - Blocos chevron de saida pesada devem iniciar recolhidos por padrao, para o usuario abrir apenas o que quer observar.
+- Viewport de simulacao, graficos, tabela, formulas e apendice teorico devem expor acao compacta de maximizar/minimizar no proprio card ou cabecalho chevron.
+- Ao maximizar um desses paineis, os demais paineis do shell ficam invisiveis dentro da janela; ao minimizar, o layout e os estados anteriores voltam ao normal.
 
 ## Controles esperados no pendulo simples
 
@@ -71,6 +75,7 @@ Layout recomendado:
 - Toggle de trilha.
 - Toggle de energia.
 - Blocos chevron para graficos, tabela, formulas e teoria, iniciando fechados e permitindo abrir/minimizar saidas pesadas quando for preciso aliviar a UI.
+- Botao de maximizar/minimizar no viewport da simulacao, graficos, tabela, formulas e apendice teorico para inspecao ampliada durante aula ou demonstracao.
 
 ## Representacoes esperadas
 
@@ -131,6 +136,7 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 - Graficos e tabela refletem os mesmos samples quando suas saidas estao ligadas.
 - Graficos, tabela, formulas e teoria podem ser recolhidos por chevron; quando um bloco pesado esta recolhido, seu conteudo deve ser desmontado e seu processamento suspenso.
 - Esses blocos chevron iniciam fechados por padrao e precisam alternar aberto/fechado ao clicar no cabecalho.
+- Viewport, graficos, tabela, formulas e apendice teorico podem ser maximizados dentro da janela. Apenas um painel fica maximizado por vez, os demais ficam invisiveis, e minimizar restaura o shell anterior sem perder o playback nem a sincronizacao de samples.
 - A tabela de amostras mantem uma quantidade constante de linhas enquanto esta aberta, preenchendo slots vazios quando ainda nao ha amostras suficientes.
 - Vetores podem ser ligados e desligados.
 - Vetores exibidos devem ter legenda junto ao viewport, incluindo cor, modulo atual e leitura fisica.

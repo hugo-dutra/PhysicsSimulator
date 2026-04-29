@@ -31,6 +31,8 @@ Usar JSON local para:
 - formulas e metadados de uso;
 - textos curtos de descricao.
 
+O fixture `fixtures/simulations/catalog.json` deve listar todo o catalogo curricular planejado em `09-simulation-catalog-plan.md`. A UI deriva dele a sidebar hierarquica por `area > subarea > simulacao`; apenas itens com `status: "available"` podem parecer selecionaveis como simulacoes prontas.
+
 Usar MDX/Markdown local para:
 
 - apendice teorico;
@@ -86,7 +88,7 @@ Persistencia so deve entrar depois da Fase 1. Possiveis dados futuros:
 
 ## Read models
 
-- `SidebarCatalog`: areas, subareas, simulacoes e status.
+- `SidebarCatalog`: areas, subareas, simulacoes e status, derivado de `topicPath` para alimentar menus expansiveis.
 - `SimulationViewModel`: parametros, valores atuais, playback e layout.
 - `ChartViewModel`: series prontas para o adapter de grafico escolhido (Plotly.js, canvas ou SVG), com recorte movel dos ultimos N segundos quando configurado.
 - `TableViewModel`: amostras paginadas ou recortadas pela mesma janela temporal visivel.

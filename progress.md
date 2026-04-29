@@ -657,3 +657,76 @@ Validacao:
 - Executado `npm run lint`.
 - Executado `npm run build`; build passou com aviso conhecido de chunks acima de 500 kB.
 - Smoke visual headless em `http://127.0.0.1:5182/` com screenshots desktop e mobile. Regiao do canvas com pixels nao-background e pixels cyan/teal presentes nos dois tamanhos.
+
+## 2026-04-29 - Paineis maximizaveis
+
+Ajuste de interface para inspecao ampliada:
+
+- Viewport da simulacao, graficos e tabela de amostras ganharam botao com icone para maximizar/minimizar dentro da janela.
+- Quando um painel esta maximizado, os demais paineis do shell ficam invisiveis; ao minimizar, o layout e o estado aberto/fechado anterior voltam ao normal.
+- Graficos e tabela maximizados montam seu conteudo mesmo que estivessem recolhidos, mas voltam ao estado recolhido original ao minimizar.
+- A tabela maximizada usa uma contagem fixa maior de linhas visiveis, mantendo estabilidade de layout no modo ampliado.
+- Enquanto graficos ou tabela ficam em foco, o viewport permanece visualmente oculto, mas montado, para continuar emitindo o sample vivo que sincroniza playback, graficos e dados.
+- O padrao foi registrado nos guides como decisao de UX/arquitetura para futuros paineis de simulacao.
+
+Arquivos atualizados:
+
+- `guides/02-product-spec.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/07-quality-and-operations.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/ChevronSection.tsx`
+- `src/features/simulation-shell/PendulumCharts.tsx`
+- `src/features/simulation-shell/PendulumScene.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+
+Validacao:
+
+- Executado `npm run lint`.
+- Executado `npm run test -- src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `npm run build`; build passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `validate_guides.py`.
+- Smoke visual headless em `http://127.0.0.1:5184/`: modo maximizado da simulacao em desktop/mobile sem overflow horizontal, canvas com pixels nao-background/coloridos, graficos maximizados com 5 charts visiveis e tabela maximizada com 18 linhas fixas.
+- Capturas geradas em `artifacts/pendulum-max-simulation-desktop.png`, `artifacts/pendulum-max-charts-desktop.png`, `artifacts/pendulum-max-table-desktop.png` e `artifacts/pendulum-max-simulation-mobile.png`.
+
+## 2026-04-29 - Sidebar curricular e foco em formulas/teoria
+
+Ajuste de navegacao e foco de leitura:
+
+- O modo maximizado foi estendido para o guia de formulas e o apendice teorico.
+- Formulas e teoria maximizadas montam seu conteudo mesmo se estavam recolhidas, escondem os demais paineis e voltam ao estado anterior ao minimizar.
+- A sidebar passou a renderizar menus hierarquicos por area e subarea, com folhas de simulacao marcadas por status.
+- `fixtures/simulations/catalog.json` passou a listar as 51 simulacoes planejadas em `09-simulation-catalog-plan.md`; apenas o pendulo simples segue como `available`.
+- Itens planejados ficam visiveis no catalogo, mas marcados como `planejado` para nao parecerem simulacoes prontas.
+- O padrao foi registrado nos guides como contrato de UI e dados para o catalogo planejado.
+
+Arquivos atualizados:
+
+- `fixtures/simulations/catalog.json`
+- `guides/02-product-spec.md`
+- `guides/03-architecture.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/06-data-and-api.md`
+- `guides/07-quality-and-operations.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/FormulaGuide.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+- `src/features/simulation-shell/TheoryAppendix.tsx`
+- `src/simulation-registry/catalog.test.ts`
+
+Validacao:
+
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts src/App.test.tsx`.
+- Executado `npm run lint`.
+- Executado `npm run test`.
+- Executado `npm run build`; build passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `validate_guides.py`.
+- Smoke visual headless em `http://127.0.0.1:5184/`: menus de Cinematica, Gases e Circuitos AC abrem itens planejados; formulas e apendice teorico maximizados escondem controles e exibem conteudo.
+- Capturas geradas em `artifacts/physic-sidebar-catalog-desktop.png`, `artifacts/pendulum-max-formulas-desktop.png` e `artifacts/pendulum-max-theory-desktop.png`.

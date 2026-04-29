@@ -50,6 +50,32 @@
           ]
         },
         {
+          "id": "uniform-linear-motion",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Cinematica", "Movimento retilineo uniforme"],
+          "title": "Movimento retilineo uniforme",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Posicao, deslocamento e velocidade constante em movimento 1D."
+        },
+        {
+          "id": "uniformly-accelerated-motion",
+          "areaId": "mechanics",
+          "topicPath": [
+            "Mecanica",
+            "Cinematica",
+            "Movimento uniformemente variado e queda livre"
+          ],
+          "title": "Movimento uniformemente variado e queda livre",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Aceleracao constante, lancamento vertical, queda livre e graficos cinematicos."
+        },
+        {
           "id": "projectile-motion",
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Cinematica", "Lancamento obliquo"],
@@ -58,7 +84,150 @@
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
-          "description": "Trajetoria balistica sem resistencia do ar."
+          "description": "Trajetoria balistica sem resistencia do ar no primeiro modelo."
+        },
+        {
+          "id": "uniform-circular-motion",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Cinematica", "Movimento circular uniforme"],
+          "title": "Movimento circular uniforme",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Periodo, frequencia, velocidade angular e aceleracao centripeta."
+        },
+        {
+          "id": "inclined-plane-friction",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Dinamica", "Plano inclinado com atrito"],
+          "title": "Plano inclinado com atrito",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Forcas normal, peso, atrito e regimes de repouso ou deslizamento."
+        },
+        {
+          "id": "atwood-machine",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Dinamica", "Maquina de Atwood"],
+          "title": "Maquina de Atwood",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "numerical",
+          "renderer": "three",
+          "description": "Massas acopladas, tensao, aceleracao e energia."
+        },
+        {
+          "id": "centripetal-force-curve",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Dinamica", "Forca centripeta em curva"],
+          "title": "Forca centripeta em curva",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Atrito lateral, raio, velocidade critica e perda de aderencia."
+        },
+        {
+          "id": "work-energy-track",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Energia e momento", "Trabalho e energia em trilho"],
+          "title": "Trabalho e energia em trilho",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "numerical",
+          "renderer": "three",
+          "description": "Trabalho, energia cinetica, energia potencial e dissipacao em uma trajetoria."
+        },
+        {
+          "id": "collisions-1d-2d",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Energia e momento", "Colisoes 1D e 2D"],
+          "title": "Colisoes 1D e 2D",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "hybrid",
+          "renderer": "three",
+          "description": "Momento linear, impulso e coeficiente de restituicao."
+        },
+        {
+          "id": "particle-equilibrium",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Estatica", "Equilibrio de particula"],
+          "title": "Equilibrio de particula",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Soma vetorial de forcas, cabos, tracao e resultante nula."
+        },
+        {
+          "id": "torque-levers-center-mass",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Estatica", "Torque, alavancas e centro de massa"],
+          "title": "Torque, alavancas e centro de massa",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Momento de forca, equilibrio rotacional e distribuicao de massa."
+        },
+        {
+          "id": "rigid-body-rotation",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Rotacao", "Rotacao de corpo rigido"],
+          "title": "Rotacao de corpo rigido",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "numerical",
+          "renderer": "three",
+          "description": "Momento de inercia, torque, aceleracao angular e energia rotacional."
+        },
+        {
+          "id": "rolling-without-slipping",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Rotacao", "Rolamento sem escorregamento"],
+          "title": "Rolamento sem escorregamento",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Relacao entre translacao, rotacao, energia e condicao de escorregamento."
+        },
+        {
+          "id": "gravitational-field-orbits",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Gravitacao", "Campo gravitacional e orbitas"],
+          "title": "Campo gravitacional e orbitas",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "numerical",
+          "renderer": "three",
+          "description": "Lei da gravitacao, campo, velocidade orbital e orbitas didaticas."
+        },
+        {
+          "id": "hydrostatics-buoyancy",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Fluidos basicos", "Hidrostatica e empuxo"],
+          "title": "Hidrostatica e empuxo",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Pressao, profundidade, principio de Pascal, Arquimedes e flutuacao."
+        },
+        {
+          "id": "continuity-bernoulli",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Fluidos basicos", "Continuidade e Bernoulli"],
+          "title": "Continuidade e Bernoulli",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Vazao, velocidade, pressao, tubo de Venturi e limites do fluido ideal."
         }
       ]
     },
@@ -68,15 +237,114 @@
       "description": "Calor, temperatura, gases e transformacoes de energia.",
       "simulations": [
         {
+          "id": "temperature-scales-equilibrium",
+          "areaId": "thermodynamics",
+          "topicPath": ["Termodinamica", "Temperatura", "Escalas termometricas e equilibrio"],
+          "title": "Escalas termometricas e equilibrio",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "dom",
+          "description": "Conversao entre escalas, equilibrio termico e interpretacao de temperatura."
+        },
+        {
+          "id": "thermal-expansion",
+          "areaId": "thermodynamics",
+          "topicPath": ["Termodinamica", "Temperatura", "Dilatacao termica"],
+          "title": "Dilatacao termica",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Dilatacao linear, superficial e volumetrica com coeficientes de material."
+        },
+        {
+          "id": "thermal-mixture",
+          "areaId": "thermodynamics",
+          "topicPath": ["Termodinamica", "Calorimetria", "Mistura termica"],
+          "title": "Mistura termica",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "dom",
+          "description": "Calor sensivel, temperatura de equilibrio e perdas opcionais."
+        },
+        {
+          "id": "phase-changes",
+          "areaId": "thermodynamics",
+          "topicPath": ["Termodinamica", "Calorimetria", "Mudancas de fase"],
+          "title": "Mudancas de fase",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "dom",
+          "description": "Calor latente, curva de aquecimento e patamares de fase."
+        },
+        {
           "id": "ideal-gas",
           "areaId": "thermodynamics",
           "topicPath": ["Termodinamica", "Gases", "Gas ideal"],
           "title": "Gas ideal",
           "status": "planned",
           "level": "introductory",
+          "modelKind": "particle-demo",
+          "renderer": "three",
+          "description": "Relacao entre pressao, volume, temperatura e quantidade de materia."
+        },
+        {
+          "id": "gas-transformations",
+          "areaId": "thermodynamics",
+          "topicPath": ["Termodinamica", "Gases", "Transformacoes gasosas"],
+          "title": "Transformacoes gasosas",
+          "status": "planned",
+          "level": "introductory",
           "modelKind": "analytic",
           "renderer": "dom",
-          "description": "Relacao entre pressao, volume, temperatura e quantidade de materia."
+          "description": "Processos isotermicos, isobaricos, isocoricos e adiabaticos com diagramas P-V."
+        },
+        {
+          "id": "first-law-work-heat",
+          "areaId": "thermodynamics",
+          "topicPath": ["Termodinamica", "Primeira lei", "Trabalho, calor e energia interna"],
+          "title": "Trabalho, calor e energia interna",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "dom",
+          "description": "Sinais de calor e trabalho, variacao de energia interna e trajetorias no diagrama."
+        },
+        {
+          "id": "thermal-cycles-efficiency",
+          "areaId": "thermodynamics",
+          "topicPath": ["Termodinamica", "Maquinas termicas", "Ciclos termicos e rendimento"],
+          "title": "Ciclos termicos e rendimento",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "dom",
+          "description": "Trabalho liquido, calor absorvido/rejeitado e eficiencia."
+        },
+        {
+          "id": "carnot-cycle",
+          "areaId": "thermodynamics",
+          "topicPath": ["Termodinamica", "Segunda lei", "Ciclo de Carnot"],
+          "title": "Ciclo de Carnot",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "dom",
+          "description": "Reservatorios quente/frio, rendimento maximo e comparacao com maquinas reais."
+        },
+        {
+          "id": "heat-transfer-basics",
+          "areaId": "thermodynamics",
+          "topicPath": ["Termodinamica", "Transferencia de calor", "Conducao, conveccao e radiacao basicas"],
+          "title": "Conducao, conveccao e radiacao basicas",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "hybrid",
+          "renderer": "pixi",
+          "description": "Fluxo de calor, gradiente de temperatura e leis introdutorias de transferencia."
         }
       ]
     },
@@ -94,7 +362,128 @@
           "level": "introductory",
           "modelKind": "numerical",
           "renderer": "three",
-          "description": "Oscilador harmonico linear com massa e constante elastica."
+          "description": "Oscilador harmonico linear com massa, constante elastica, energia e fase."
+        },
+        {
+          "id": "damped-oscillator",
+          "areaId": "waves",
+          "topicPath": ["Oscilacoes e Ondas", "Oscilacoes", "Oscilador amortecido"],
+          "title": "Oscilador amortecido",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Regimes subamortecido, criticamente amortecido e superamortecido."
+        },
+        {
+          "id": "forced-oscillator-resonance",
+          "areaId": "waves",
+          "topicPath": ["Oscilacoes e Ondas", "Oscilacoes", "Oscilador forcado e ressonancia"],
+          "title": "Oscilador forcado e ressonancia",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "numerical",
+          "renderer": "three",
+          "description": "Frequencia externa, amplitude de resposta, fase e curva de ressonancia."
+        },
+        {
+          "id": "coupled-oscillators",
+          "areaId": "waves",
+          "topicPath": ["Oscilacoes e Ondas", "Oscilacoes", "Osciladores acoplados"],
+          "title": "Osciladores acoplados",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "numerical",
+          "renderer": "three",
+          "description": "Modos normais, batimentos, troca de energia e fase relativa."
+        },
+        {
+          "id": "wave-on-string",
+          "areaId": "waves",
+          "topicPath": ["Oscilacoes e Ondas", "Ondas mecanicas", "Onda em corda"],
+          "title": "Onda em corda",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Comprimento de onda, frequencia, velocidade, amplitude e pulso viajante."
+        },
+        {
+          "id": "superposition-interference",
+          "areaId": "waves",
+          "topicPath": ["Oscilacoes e Ondas", "Ondas mecanicas", "Superposicao e interferencia"],
+          "title": "Superposicao e interferencia",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "pixi",
+          "description": "Interferencia construtiva/destrutiva e principio de superposicao."
+        },
+        {
+          "id": "standing-waves",
+          "areaId": "waves",
+          "topicPath": ["Oscilacoes e Ondas", "Ondas mecanicas", "Ondas estacionarias"],
+          "title": "Ondas estacionarias",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Nos, ventres, harmonicos, frequencia fundamental e modos."
+        },
+        {
+          "id": "beats",
+          "areaId": "waves",
+          "topicPath": ["Oscilacoes e Ondas", "Som", "Batimentos"],
+          "title": "Batimentos",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "dom",
+          "description": "Diferenca de frequencias, envoltoria, grafico de pressao e audio opcional."
+        },
+        {
+          "id": "doppler-effect",
+          "areaId": "waves",
+          "topicPath": ["Oscilacoes e Ondas", "Som", "Efeito Doppler"],
+          "title": "Efeito Doppler",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "pixi",
+          "description": "Fonte e observador em movimento, frequencia percebida e limites classicos."
+        },
+        {
+          "id": "reflection-refraction",
+          "areaId": "waves",
+          "topicPath": ["Oscilacoes e Ondas", "Optica", "Reflexao e refracao"],
+          "title": "Reflexao e refracao",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "pixi",
+          "description": "Lei de Snell, angulo critico, reflexao interna total e raios."
+        },
+        {
+          "id": "lenses-mirrors",
+          "areaId": "waves",
+          "topicPath": ["Oscilacoes e Ondas", "Optica", "Lentes e espelhos"],
+          "title": "Lentes e espelhos",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "pixi",
+          "description": "Foco, imagem real/virtual, aumento e equacao dos espelhos e lentes."
+        },
+        {
+          "id": "light-diffraction-interference",
+          "areaId": "waves",
+          "topicPath": ["Oscilacoes e Ondas", "Optica", "Difracao e interferencia da luz"],
+          "title": "Difracao e interferencia da luz",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "pixi",
+          "description": "Fendas, padrao de intensidade, comprimento de onda e distancia."
         }
       ]
     },
@@ -106,17 +495,134 @@
         {
           "id": "coulomb-law",
           "areaId": "electromagnetism",
-          "topicPath": [
-            "Eletromagnetismo",
-            "Eletrostatica",
-            "Lei de Coulomb"
-          ],
-          "title": "Lei de Coulomb",
+          "topicPath": ["Eletromagnetismo", "Eletrostatica", "Lei de Coulomb e campo eletrico"],
+          "title": "Lei de Coulomb e campo eletrico",
           "status": "planned",
           "level": "introductory",
           "modelKind": "field-sampling",
           "renderer": "three",
-          "description": "Forca e campo eletrico gerados por cargas pontuais."
+          "description": "Cargas pontuais, forca, campo resultante, vetores e linhas de campo."
+        },
+        {
+          "id": "electric-potential-equipotentials",
+          "areaId": "electromagnetism",
+          "topicPath": ["Eletromagnetismo", "Eletrostatica", "Potencial eletrico e equipotenciais"],
+          "title": "Potencial eletrico e equipotenciais",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "field-sampling",
+          "renderer": "pixi",
+          "description": "Potencial, energia potencial, linhas equipotenciais e relacao com campo."
+        },
+        {
+          "id": "parallel-plate-capacitor",
+          "areaId": "electromagnetism",
+          "topicPath": ["Eletromagnetismo", "Eletrostatica", "Capacitor de placas paralelas"],
+          "title": "Capacitor de placas paralelas",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Campo uniforme aproximado, capacitancia, carga, tensao e energia armazenada."
+        },
+        {
+          "id": "ohms-law-resistor-association",
+          "areaId": "electromagnetism",
+          "topicPath": ["Eletromagnetismo", "Circuitos DC", "Lei de Ohm e associacao de resistores"],
+          "title": "Lei de Ohm e associacao de resistores",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "dom",
+          "description": "Tensao, corrente, resistencia equivalente, potencia e leitura de instrumentos."
+        },
+        {
+          "id": "rc-circuit-transient",
+          "areaId": "electromagnetism",
+          "topicPath": ["Eletromagnetismo", "Circuitos DC", "Circuito RC transiente"],
+          "title": "Circuito RC transiente",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "dom",
+          "description": "Carga e descarga do capacitor, constante de tempo, tensao e corrente."
+        },
+        {
+          "id": "rlc-circuit",
+          "areaId": "electromagnetism",
+          "topicPath": ["Eletromagnetismo", "Circuitos AC", "Circuito RLC"],
+          "title": "Circuito RLC",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "numerical",
+          "renderer": "dom",
+          "description": "Oscilacao eletrica, amortecimento, ressonancia e energia."
+        },
+        {
+          "id": "magnetic-field-current",
+          "areaId": "electromagnetism",
+          "topicPath": ["Eletromagnetismo", "Magnetismo", "Campo magnetico por corrente"],
+          "title": "Campo magnetico por corrente",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "field-sampling",
+          "renderer": "three",
+          "description": "Fio retilineo, espira, solenoide, regra da mao direita e intensidade do campo."
+        },
+        {
+          "id": "magnetic-force",
+          "areaId": "electromagnetism",
+          "topicPath": ["Eletromagnetismo", "Magnetismo", "Forca magnetica"],
+          "title": "Forca magnetica",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "numerical",
+          "renderer": "three",
+          "description": "Carga em campo, fio com corrente, trajetoria circular ou helicoidal."
+        },
+        {
+          "id": "faraday-lenz-law",
+          "areaId": "electromagnetism",
+          "topicPath": ["Eletromagnetismo", "Inducao", "Lei de Faraday-Lenz"],
+          "title": "Lei de Faraday-Lenz",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Fluxo magnetico, fem induzida, sentido da corrente e variacao temporal."
+        },
+        {
+          "id": "motor-generator",
+          "areaId": "electromagnetism",
+          "topicPath": ["Eletromagnetismo", "Inducao", "Motor e gerador didatico"],
+          "title": "Motor e gerador didatico",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "hybrid",
+          "renderer": "three",
+          "description": "Torque em espira, comutacao conceitual, fem alternada e transferencia de energia."
+        },
+        {
+          "id": "plane-electromagnetic-wave",
+          "areaId": "electromagnetism",
+          "topicPath": ["Eletromagnetismo", "Ondas EM", "Onda eletromagnetica plana"],
+          "title": "Onda eletromagnetica plana",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "description": "Campos E e B, propagacao, energia e polarizacao basica."
+        },
+        {
+          "id": "phasors-ac-power",
+          "areaId": "electromagnetism",
+          "topicPath": ["Eletromagnetismo", "Circuitos AC", "Fasores e potencia AC"],
+          "title": "Fasores e potencia AC",
+          "status": "planned",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "dom",
+          "description": "Fasores, impedancia, fase, potencia media e fator de potencia."
         }
       ]
     }

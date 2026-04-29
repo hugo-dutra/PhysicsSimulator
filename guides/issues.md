@@ -33,6 +33,8 @@
 - O padrao de renderizacao animada passa a ser renderer-first: `requestAnimationFrame` pertence ao renderer visual, o shell React recebe leituras periodicas e componentes pesados como Plotly, tabela, formulas e teoria ficam fora do caminho quente da animacao.
 - Graficos, tabela, formulas e teoria devem seguir o padrao de bloco chevron recolhivel: quando recolhidos, desmontam o conteudo e suspendem processamento derivado em vez de apenas esconder a UI.
 - Blocos chevron de saida pesada iniciam fechados por padrao e precisam alternar aberto/fechado ao clique no cabecalho.
+- Viewport, graficos, tabela, formulas e apendice teorico seguem o padrao de painel maximizavel: apenas um fica em foco na janela, os demais paineis ficam invisiveis, e minimizar restaura o shell anterior sem perder sincronizacao.
+- `fixtures/simulations/catalog.json` deve listar todas as simulacoes planejadas do catalogo curricular, mas apenas `Mecanica > Oscilacoes > Pendulo simples` fica como `available` ate novas simulacoes terem core completo.
 - Tabelas sincronizadas em playback devem manter quantidade fixa de linhas visiveis para evitar piscadas e deslocamento de layout; slots sem amostra podem aparecer vazios ate haver dados suficientes.
 - O pendulo simples deve expor, alem da velocidade angular, velocidade linear tangencial e aceleracoes tangencial/radial/total em graficos e tabela, calculadas no sample do motor.
 - Vetores exibidos na cena devem ter legenda visivel com cor, modulo atual e significado fisico.

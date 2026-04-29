@@ -5,6 +5,7 @@
 - Toda simulacao funcional deve ter visualizacao, parametros, graficos/tabela, formulas aplicadas e teoria.
 - Toda simulacao deve declarar area do conhecimento, subarea, caminho de topico, nivel, objetivos didaticos, formulas usadas e limites do modelo.
 - Itens planejados podem aparecer na sidebar, mas devem ser claramente marcados como indisponiveis ou planejados.
+- A sidebar deve ser hierarquica e navegavel por area e subarea; simulacoes planejadas podem aparecer como folhas marcadas, sem parecerem disponiveis.
 - A primeira entrega funcional deve ser `Mecanica > Pendulo simples`.
 - A taxonomia principal do catalogo deve usar `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo`; fluidos basicos entram como subarea, nao como prioridade separada antes do core.
 
@@ -30,6 +31,8 @@
 - Blocos de saida pesada, como graficos, tabela, formulas e teoria, devem ser recolhiveis por chevron no proprio cabecalho.
 - Blocos chevron de saida pesada iniciam fechados por padrao e devem abrir/fechar ao clique no cabecalho.
 - Quando um bloco chevron estiver recolhido, a aplicacao deve desmontar o conteudo e suspender calculos/renderizacao derivados daquele bloco.
+- Viewport, graficos, tabela, formulas e apendice teorico devem oferecer botao com icone para maximizar/minimizar o painel dentro da janela.
+- Enquanto um painel estiver maximizado, os demais paineis do shell devem ficar invisiveis; minimizar deve restaurar o layout anterior e manter a fonte unica de samples.
 - Icones em botoes sempre que houver comando conhecido como play, pause, reset, zoom ou download.
 - Texto dentro de paineis deve ser compacto; evitar hero, landing page e blocos promocionais.
 - UI deve evitar cards dentro de cards.
@@ -52,6 +55,7 @@
 - Nao recriar renderers, materiais, geometrias, buffers ou series Plotly no caminho quente da animacao sem justificativa medida.
 - Nao desmontar/remontar graficos ou viewport como mecanismo padrao de reset de parametro; preferir atualizar dados e refs preservando os componentes pesados montados.
 - Nao manter canvas de grafico, tabela tabular, KaTeX ou Markdown processando quando o bloco chevron correspondente estiver recolhido.
+- Nao congelar graficos ou tabela ao maximizar um painel: se a cena for a fonte atual do sample vivo, ela pode ficar invisivel, mas precisa continuar alimentando o runtime ate esse relogio ser extraido.
 - Renderers interativos devem limitar custo de preenchimento e densidade visual, por exemplo com `devicePixelRatio` maximo, downsampling, trilhas limitadas e toggles de saidas pesadas.
 
 ## Dados mockados

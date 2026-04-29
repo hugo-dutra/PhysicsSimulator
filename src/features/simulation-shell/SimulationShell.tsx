@@ -8,6 +8,7 @@ import {
   Box,
   Button,
   Chip,
+  Collapse,
   Divider,
   FormControlLabel,
   IconButton,
@@ -26,7 +27,15 @@ import {
   Typography,
 } from '@mui/material'
 import { alpha } from '@mui/material/styles'
-import { Pause, Play, RotateCcw } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  Maximize2,
+  Minimize2,
+  Pause,
+  Play,
+  RotateCcw,
+} from 'lucide-react'
 import {
   activeSimulation,
   pendulumFixture,
@@ -34,6 +43,7 @@ import {
 } from '../../simulation-registry/catalog'
 import type {
   ParameterValue,
+  SimulationDefinition,
   SimulationParameter,
 } from '../../simulation-registry/types'
 import {
@@ -73,9 +83,12 @@ type OutputPanelState = {
   theory: boolean
 }
 
+type MaximizedPanelId = 'charts' | 'formulas' | 'simulation' | 'table' | 'theory'
+
 const customPresetId = 'custom'
 const playbackRate = 0.6
 const sampleTableRowCount = 9
+const maximizedSampleTableRowCount = 18
 const sampleTableColumnIds = [
   'time',
   'angle',
@@ -141,6 +154,8 @@ export function SimulationShell() {
     table: false,
     theory: false,
   })
+  const [maximizedPanel, setMaximizedPanel] =
+    useState<MaximizedPanelId | null>(null)
   const parameters = useMemo(
     () => toPendulumParameters(parameterValues),
     [parameterValues],
@@ -266,6 +281,20 @@ export function SimulationShell() {
     }))
   }
 
+  const handleMaximizedPanelToggle = (panelId: MaximizedPanelId) => {
+    setMaximizedPanel((currentPanelId) =>
+      currentPanelId === panelId ? null : panelId,
+    )
+  }
+
+  const isPanelMaximized = maximizedPanel !== null
+  const isFormulasMaximized = maximizedPanel === 'formulas'
+  const isTheoryMaximized = maximizedPanel === 'theory'
+  const formulasExpanded = outputPanels.formulas || isFormulasMaximized
+  const theoryExpanded = outputPanels.theory || isTheoryMaximized
+  const shouldShowFormulas = !isPanelMaximized || isFormulasMaximized
+  const shouldShowTheory = !isPanelMaximized || isTheoryMaximized
+
   return (
     <Box
       component="main"
@@ -274,7 +303,10 @@ export function SimulationShell() {
         bgcolor: 'background.default',
         color: 'text.primary',
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', lg: '288px minmax(0, 1fr)' },
+        gridTemplateColumns: {
+          xs: '1fr',
+          lg: isPanelMaximized ? '1fr' : '288px minmax(0, 1fr)',
+        },
       }}
     >
       <Box
@@ -283,6 +315,7 @@ export function SimulationShell() {
           borderRight: { lg: `1px solid ${themeTokens.border}` },
           borderBottom: { xs: `1px solid ${themeTokens.border}`, lg: 0 },
           bgcolor: themeTokens.surface,
+          display: isPanelMaximized ? 'none' : 'block',
           minWidth: 0,
         }}
       >
@@ -294,68 +327,7 @@ export function SimulationShell() {
         </Box>
         <Divider />
 
-        <Stack spacing={1.5} sx={{ p: 1.5 }}>
-          {simulationCatalog.areas.map((area) => (
-            <Box key={area.id}>
-              <Typography
-                color="text.secondary"
-                sx={{ mb: 0.75, px: 0.5 }}
-                variant="body2"
-              >
-                {area.label}
-              </Typography>
-              <Stack spacing={0.75}>
-                {area.simulations.map((simulation) => {
-                  const isActive = simulation.id === activeSimulation.id
-
-                  return (
-                    <Box
-                      aria-current={isActive ? 'page' : undefined}
-                      key={simulation.id}
-                      sx={{
-                        border: `1px solid ${
-                          isActive ? themeTokens.teal : themeTokens.border
-                        }`,
-                        borderRadius: 1,
-                        bgcolor: isActive
-                          ? alpha(themeTokens.teal, 0.12)
-                          : alpha(themeTokens.panel, 0.58),
-                        p: 1,
-                      }}
-                    >
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        sx={{
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <Typography variant="body2">
-                          {simulation.title}
-                        </Typography>
-                        <Chip
-                          color={
-                            simulation.status === 'available'
-                              ? 'primary'
-                              : 'default'
-                          }
-                          label={getStatusLabel(simulation.status)}
-                          size="small"
-                          variant={
-                            simulation.status === 'available'
-                              ? 'filled'
-                              : 'outlined'
-                          }
-                        />
-                      </Stack>
-                    </Box>
-                  )
-                })}
-              </Stack>
-            </Box>
-          ))}
-        </Stack>
+        <SimulationSidebar />
       </Box>
 
       <Box sx={{ minWidth: 0 }}>
@@ -364,7 +336,7 @@ export function SimulationShell() {
           sx={{
             alignItems: { xs: 'flex-start', md: 'center' },
             borderBottom: `1px solid ${themeTokens.border}`,
-            display: 'flex',
+            display: isPanelMaximized ? 'none' : 'flex',
             flexDirection: { xs: 'column', md: 'row' },
             gap: 1.5,
             justifyContent: 'space-between',
@@ -413,8 +385,11 @@ export function SimulationShell() {
           sx={{
             display: 'grid',
             gap: 2,
-            gridTemplateColumns: { xs: '1fr', xl: 'minmax(0, 1fr) 340px' },
-            p: { xs: 2, md: 3 },
+            gridTemplateColumns: {
+              xs: '1fr',
+              xl: isPanelMaximized ? '1fr' : 'minmax(0, 1fr) 340px',
+            },
+            p: isPanelMaximized ? { xs: 1, md: 1.5 } : { xs: 2, md: 3 },
           }}
         >
           <Stack spacing={2} sx={{ minWidth: 0 }}>
@@ -422,6 +397,8 @@ export function SimulationShell() {
               chartWindowSeconds={effectiveChartWindowSeconds}
               durationSeconds={durationSeconds}
               isPlaying={isPlaying}
+              maximizedPanel={maximizedPanel}
+              onMaximizedPanelToggle={handleMaximizedPanelToggle}
               onPlaybackToggle={handlePlaybackToggle}
               onOutputPanelToggle={handleOutputPanelToggle}
               overlays={overlays}
@@ -431,35 +408,52 @@ export function SimulationShell() {
               samples={timeline.samples}
             />
 
-            <FormulaGuide
-              expanded={outputPanels.formulas}
-              formulas={pendulumFixture.formulas}
-              onToggle={() => {
-                handleOutputPanelToggle('formulas')
-              }}
-              parameters={pendulumFixture.parameters}
-            />
+            {shouldShowFormulas || shouldShowTheory ? (
+              <>
+                {shouldShowFormulas ? (
+                  <FormulaGuide
+                    expanded={formulasExpanded}
+                    formulas={pendulumFixture.formulas}
+                    maximized={isFormulasMaximized}
+                    onMaximizeToggle={() => {
+                      handleMaximizedPanelToggle('formulas')
+                    }}
+                    onToggle={() => {
+                      handleOutputPanelToggle('formulas')
+                    }}
+                    parameters={pendulumFixture.parameters}
+                  />
+                ) : null}
 
-            <TheoryAppendix
-              expanded={outputPanels.theory}
-              limits={pendulumFixture.limits}
-              onToggle={() => {
-                handleOutputPanelToggle('theory')
-              }}
-            />
+                {shouldShowTheory ? (
+                  <TheoryAppendix
+                    expanded={theoryExpanded}
+                    limits={pendulumFixture.limits}
+                    maximized={isTheoryMaximized}
+                    onMaximizeToggle={() => {
+                      handleMaximizedPanelToggle('theory')
+                    }}
+                    onToggle={() => {
+                      handleOutputPanelToggle('theory')
+                    }}
+                  />
+                ) : null}
+              </>
+            ) : null}
           </Stack>
 
-          <Box
-            component="section"
-            sx={{
-              border: `1px solid ${themeTokens.border}`,
-              borderRadius: 1,
-              bgcolor: alpha(themeTokens.panel, 0.55),
-              minWidth: 0,
-              p: 1.5,
-            }}
-          >
-            <Stack spacing={2}>
+          {isPanelMaximized ? null : (
+            <Box
+              component="section"
+              sx={{
+                border: `1px solid ${themeTokens.border}`,
+                borderRadius: 1,
+                bgcolor: alpha(themeTokens.panel, 0.55),
+                minWidth: 0,
+                p: 1.5,
+              }}
+            >
+              <Stack spacing={2}>
               <Stack
                 direction="row"
                 spacing={1}
@@ -651,10 +645,299 @@ export function SimulationShell() {
                   />
                 </Stack>
               </Box>
-            </Stack>
-          </Box>
+              </Stack>
+            </Box>
+          )}
         </Box>
       </Box>
+    </Box>
+  )
+}
+
+type SidebarSubarea = {
+  label: string
+  simulations: SimulationDefinition[]
+}
+
+function SimulationSidebar() {
+  const areaGroups = useMemo(
+    () =>
+      simulationCatalog.areas.map((area) => ({
+        area,
+        subareas: groupSimulationsBySubarea(area.simulations),
+      })),
+    [],
+  )
+  const [expandedAreas, setExpandedAreas] = useState<Record<string, boolean>>(
+    () =>
+      Object.fromEntries(
+        simulationCatalog.areas.map((area) => [
+          area.id,
+          area.simulations.some((simulation) => isActiveSimulation(simulation)),
+        ]),
+      ),
+  )
+  const [expandedSubareas, setExpandedSubareas] = useState<
+    Record<string, boolean>
+  >(() => {
+    const entries = simulationCatalog.areas.flatMap((area) =>
+      groupSimulationsBySubarea(area.simulations).map((subarea) => [
+        getSubareaKey(area.id, subarea.label),
+        subarea.simulations.some((simulation) => isActiveSimulation(simulation)),
+      ]),
+    )
+
+    return Object.fromEntries(entries)
+  })
+
+  const toggleArea = (areaId: string) => {
+    setExpandedAreas((current) => ({
+      ...current,
+      [areaId]: !current[areaId],
+    }))
+  }
+
+  const toggleSubarea = (subareaKey: string) => {
+    setExpandedSubareas((current) => ({
+      ...current,
+      [subareaKey]: !current[subareaKey],
+    }))
+  }
+
+  return (
+    <Box
+      aria-label="Catalogo de simulacoes"
+      component="nav"
+      sx={{ p: 1.25 }}
+    >
+      <Stack spacing={0.75}>
+        {areaGroups.map(({ area, subareas }) => {
+          const isAreaExpanded = Boolean(expandedAreas[area.id])
+          const areaContentId = `area-${area.id}`
+
+          return (
+            <Box key={area.id}>
+              <SidebarToggle
+                ariaControls={areaContentId}
+                expanded={isAreaExpanded}
+                label={area.label}
+                onClick={() => {
+                  toggleArea(area.id)
+                }}
+                prefix="area"
+                trailing={`${area.simulations.length}`}
+              />
+              <Collapse in={isAreaExpanded} timeout="auto" unmountOnExit>
+                <Stack
+                  id={areaContentId}
+                  spacing={0.5}
+                  sx={{
+                    borderLeft: `1px solid ${themeTokens.border}`,
+                    ml: 1,
+                    mt: 0.5,
+                    pl: 1,
+                  }}
+                >
+                  {subareas.map((subarea) => {
+                    const subareaKey = getSubareaKey(area.id, subarea.label)
+                    const isSubareaExpanded = Boolean(
+                      expandedSubareas[subareaKey],
+                    )
+                    const subareaContentId = `subarea-${area.id}-${slugify(
+                      subarea.label,
+                    )}`
+
+                    return (
+                      <Box key={subareaKey}>
+                        <SidebarToggle
+                          ariaControls={subareaContentId}
+                          expanded={isSubareaExpanded}
+                          label={subarea.label}
+                          onClick={() => {
+                            toggleSubarea(subareaKey)
+                          }}
+                          prefix="subarea"
+                          trailing={`${subarea.simulations.length}`}
+                        />
+                        <Collapse
+                          in={isSubareaExpanded}
+                          timeout="auto"
+                          unmountOnExit
+                        >
+                          <Stack
+                            id={subareaContentId}
+                            spacing={0.5}
+                            sx={{ mt: 0.5, pl: 1.25 }}
+                          >
+                            {subarea.simulations.map((simulation) => (
+                              <SidebarSimulationItem
+                                key={simulation.id}
+                                simulation={simulation}
+                              />
+                            ))}
+                          </Stack>
+                        </Collapse>
+                      </Box>
+                    )
+                  })}
+                </Stack>
+              </Collapse>
+            </Box>
+          )
+        })}
+      </Stack>
+    </Box>
+  )
+}
+
+function SidebarToggle({
+  ariaControls,
+  expanded,
+  label,
+  onClick,
+  prefix,
+  trailing,
+}: {
+  ariaControls: string
+  expanded: boolean
+  label: string
+  onClick: () => void
+  prefix: 'area' | 'subarea'
+  trailing: string
+}) {
+  return (
+    <Box
+      aria-controls={ariaControls}
+      aria-expanded={expanded}
+      aria-label={`Alternar ${prefix} ${label}`}
+      component="button"
+      onClick={onClick}
+      sx={{
+        alignItems: 'center',
+        background: 'transparent',
+        border: 0,
+        borderRadius: 1,
+        color: 'inherit',
+        cursor: 'pointer',
+        display: 'grid',
+        font: 'inherit',
+        gap: 0.75,
+        gridTemplateColumns: '18px minmax(0, 1fr) auto',
+        p: prefix === 'area' ? 0.875 : 0.75,
+        textAlign: 'left',
+        width: '100%',
+        '&:focus-visible': {
+          outline: `2px solid ${themeTokens.teal}`,
+          outlineOffset: -2,
+        },
+        '&:hover': {
+          bgcolor: alpha(themeTokens.teal, 0.08),
+        },
+      }}
+      type="button"
+    >
+      <Box
+        aria-hidden
+        sx={{
+          color: expanded ? 'primary.main' : 'text.secondary',
+          display: 'grid',
+          placeItems: 'center',
+        }}
+      >
+        {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+      </Box>
+      <Typography
+        sx={{
+          fontWeight: prefix === 'area' ? 750 : 650,
+          overflowWrap: 'anywhere',
+        }}
+        variant="body2"
+      >
+        {label}
+      </Typography>
+      <Chip label={trailing} size="small" variant="outlined" />
+    </Box>
+  )
+}
+
+function SidebarSimulationItem({
+  simulation,
+}: {
+  simulation: SimulationDefinition
+}) {
+  const isActive = isActiveSimulation(simulation)
+  const isAvailable = simulation.status === 'available'
+  const commonSx = {
+    bgcolor: isActive
+      ? alpha(themeTokens.teal, 0.12)
+      : alpha(themeTokens.panel, 0.42),
+    border: `1px solid ${isActive ? themeTokens.teal : themeTokens.border}`,
+    borderRadius: 1,
+    color: isAvailable ? 'text.primary' : 'text.secondary',
+    display: 'block',
+    minWidth: 0,
+    p: 0.875,
+    textAlign: 'left',
+    width: '100%',
+  }
+
+  const content = (
+    <Stack spacing={0.75}>
+      <Typography
+        sx={{ fontWeight: isActive ? 750 : 600, overflowWrap: 'anywhere' }}
+        variant="body2"
+      >
+        {simulation.title}
+      </Typography>
+      <Stack
+        direction="row"
+        sx={{
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 0.75,
+          justifyContent: 'space-between',
+        }}
+      >
+        <Chip
+          color={isAvailable ? 'primary' : 'default'}
+          label={getStatusLabel(simulation.status)}
+          size="small"
+          variant={isAvailable ? 'filled' : 'outlined'}
+        />
+        <Typography color="text.secondary" variant="body2">
+          {getModelKindLabel(simulation.modelKind)}
+        </Typography>
+      </Stack>
+    </Stack>
+  )
+
+  if (isAvailable) {
+    return (
+      <Box
+        aria-current={isActive ? 'page' : undefined}
+        component="button"
+        sx={{
+          ...commonSx,
+          cursor: 'pointer',
+          font: 'inherit',
+          '&:focus-visible': {
+            outline: `2px solid ${themeTokens.teal}`,
+            outlineOffset: -2,
+          },
+          '&:hover': {
+            bgcolor: alpha(themeTokens.teal, 0.1),
+          },
+        }}
+        type="button"
+      >
+        {content}
+      </Box>
+    )
+  }
+
+  return (
+    <Box aria-disabled="true" role="listitem" sx={commonSx}>
+      {content}
     </Box>
   )
 }
@@ -663,6 +946,8 @@ function PendulumRuntime({
   chartWindowSeconds,
   durationSeconds,
   isPlaying,
+  maximizedPanel,
+  onMaximizedPanelToggle,
   onOutputPanelToggle,
   onPlaybackToggle,
   overlays,
@@ -674,6 +959,8 @@ function PendulumRuntime({
   chartWindowSeconds: number
   durationSeconds: number
   isPlaying: boolean
+  maximizedPanel: MaximizedPanelId | null
+  onMaximizedPanelToggle: (panelId: MaximizedPanelId) => void
   onOutputPanelToggle: (panelId: keyof OutputPanelState) => void
   onPlaybackToggle: () => void
   overlays: OverlayState
@@ -694,12 +981,24 @@ function PendulumRuntime({
     },
     [],
   )
+  const isSimulationMaximized = maximizedPanel === 'simulation'
+  const isChartsMaximized = maximizedPanel === 'charts'
+  const isTableMaximized = maximizedPanel === 'table'
+  const hasMaximizedPanel = maximizedPanel !== null
+  const chartsExpanded = outputPanels.charts || isChartsMaximized
+  const tableExpanded = outputPanels.table || isTableMaximized
+  const tableRowCount = isTableMaximized
+    ? maximizedSampleTableRowCount
+    : sampleTableRowCount
+  const shouldShowCharts = !hasMaximizedPanel || isChartsMaximized
+  const shouldShowTable = !hasMaximizedPanel || isTableMaximized
+  const shouldHideSimulationCard = hasMaximizedPanel && !isSimulationMaximized
   const currentSampleIndex = getSampleIndexForTime(
     samples,
     durationSeconds,
     liveSample.timeSeconds,
   )
-  const needsSampleWindow = outputPanels.charts || outputPanels.table
+  const needsSampleWindow = chartsExpanded || tableExpanded
   const visibleWindowSamples = useMemo(
     () => {
       if (!needsSampleWindow) {
@@ -716,7 +1015,7 @@ function PendulumRuntime({
   )
   const xAxisRange = useMemo<[number, number]>(
     () => {
-      if (!outputPanels.charts) {
+      if (!chartsExpanded) {
         return [0, chartWindowSeconds]
       }
 
@@ -728,9 +1027,9 @@ function PendulumRuntime({
     },
     [
       chartWindowSeconds,
+      chartsExpanded,
       durationSeconds,
       liveSample.timeSeconds,
-      outputPanels.charts,
     ],
   )
   const vectors = useMemo(
@@ -742,32 +1041,55 @@ function PendulumRuntime({
   )
   const chartSamples = useMemo(
     () =>
-      outputPanels.charts
+      chartsExpanded
         ? appendLiveSample(visibleWindowSamples, liveSample)
         : [],
-    [liveSample, outputPanels.charts, visibleWindowSamples],
+    [chartsExpanded, liveSample, visibleWindowSamples],
   )
   const tableRows = useMemo(() => {
-    if (!outputPanels.table) {
+    if (!tableExpanded) {
       return []
     }
 
-    return selectStableTableRows(visibleWindowSamples, sampleTableRowCount)
-  }, [outputPanels.table, visibleWindowSamples])
+    return selectStableTableRows(visibleWindowSamples, tableRowCount)
+  }, [tableExpanded, tableRowCount, visibleWindowSamples])
   const angleDegrees = radiansToDegrees(liveSample.angleRadians)
 
   return (
     <>
       <Box
+        aria-hidden={shouldHideSimulationCard ? true : undefined}
         aria-label="Pendulum numerical viewport"
-        sx={{
-          border: `1px solid ${themeTokens.border}`,
-          borderRadius: 1,
-          bgcolor: alpha(themeTokens.panel, 0.58),
-          minHeight: 322,
-          overflow: 'hidden',
-          position: 'relative',
-        }}
+        sx={[
+          {
+            border: `1px solid ${themeTokens.border}`,
+            borderRadius: 1,
+            bgcolor: alpha(themeTokens.panel, 0.58),
+            minHeight: 322,
+            overflow: 'hidden',
+            position: 'relative',
+          },
+          isSimulationMaximized
+            ? {
+                minHeight: 'calc(100svh - 24px)',
+              }
+            : null,
+          shouldHideSimulationCard
+            ? {
+                border: 0,
+                height: 1,
+                left: -10000,
+                minHeight: 1,
+                opacity: 0,
+                overflow: 'hidden',
+                pointerEvents: 'none',
+                position: 'fixed',
+                top: 0,
+                visibility: 'hidden',
+                width: 1,
+              }
+            : null,
+        ]}
       >
         <Box
           sx={{
@@ -818,12 +1140,36 @@ function PendulumRuntime({
             >
               {isPlaying ? 'Pausar' : 'Reproduzir'}
             </Button>
+            <Tooltip
+              title={isSimulationMaximized ? 'Minimizar' : 'Maximizar'}
+            >
+              <IconButton
+                aria-label={
+                  isSimulationMaximized
+                    ? 'Minimizar simulacao'
+                    : 'Maximizar simulacao'
+                }
+                aria-pressed={isSimulationMaximized}
+                color={isSimulationMaximized ? 'primary' : 'default'}
+                onClick={() => {
+                  onMaximizedPanelToggle('simulation')
+                }}
+                size="small"
+              >
+                {isSimulationMaximized ? (
+                  <Minimize2 aria-hidden size={17} />
+                ) : (
+                  <Maximize2 aria-hidden size={17} />
+                )}
+              </IconButton>
+            </Tooltip>
           </Stack>
         </Box>
 
         <PendulumScene
           durationSeconds={durationSeconds}
           isPlaying={isPlaying}
+          maximized={isSimulationMaximized}
           onSampleChange={handleSampleChange}
           parameters={parameters}
           playbackRate={playbackRate}
@@ -882,48 +1228,56 @@ function PendulumRuntime({
         {overlays.vectors ? <VectorLegend vectors={vectors} /> : null}
       </Box>
 
-      <PendulumCharts
-        chartWindowSeconds={chartWindowSeconds}
-        expanded={outputPanels.charts}
-        onToggle={() => {
-          onOutputPanelToggle('charts')
-        }}
-        samples={chartSamples}
-        showEnergy={overlays.energy}
-        xAxisRange={xAxisRange}
-      />
+      {shouldShowCharts ? (
+        <PendulumCharts
+          chartWindowSeconds={chartWindowSeconds}
+          expanded={chartsExpanded}
+          maximized={isChartsMaximized}
+          onMaximizeToggle={() => {
+            onMaximizedPanelToggle('charts')
+          }}
+          onToggle={() => {
+            onOutputPanelToggle('charts')
+          }}
+          samples={chartSamples}
+          showEnergy={overlays.energy}
+          xAxisRange={xAxisRange}
+        />
+      ) : null}
 
-      <ChevronSection
-        action={
-          <Chip
-            label={
-              outputPanels.table
-                ? `${sampleTableRowCount} linhas`
-                : 'recolhido'
-            }
-            size="small"
-            variant="outlined"
-          />
-        }
-        expanded={outputPanels.table}
-        onToggle={() => {
-          onOutputPanelToggle('table')
-        }}
-        subtitle={
-          outputPanels.table
-            ? `${samples.length} amostras em ${formatNumber(
-                durationSeconds,
-                's',
-              )} | janela ${formatNumber(chartWindowSeconds, 's')}`
-            : 'Recolhida; selecao e renderizacao de linhas suspensas.'
-        }
-        title="Tabela de amostras"
-      >
-        {outputPanels.table ? (
+      {shouldShowTable ? (
+        <ChevronSection
+          action={
+            <Chip
+              label={tableExpanded ? `${tableRowCount} linhas` : 'recolhido'}
+              size="small"
+              variant="outlined"
+            />
+          }
+          expanded={tableExpanded}
+          maximized={isTableMaximized}
+          onMaximizeToggle={() => {
+            onMaximizedPanelToggle('table')
+          }}
+          onToggle={() => {
+            onOutputPanelToggle('table')
+          }}
+          subtitle={
+            tableExpanded
+              ? `${samples.length} amostras em ${formatNumber(
+                  durationSeconds,
+                  's',
+                )} | janela ${formatNumber(chartWindowSeconds, 's')}`
+              : 'Recolhida; selecao e renderizacao de linhas suspensas.'
+          }
+          title="Tabela de amostras"
+        >
+          {tableExpanded ? (
           <TableContainer
             sx={{
               border: `1px solid ${themeTokens.border}`,
               borderRadius: 1,
+              maxHeight: isTableMaximized ? 'calc(100svh - 128px)' : 'none',
             }}
           >
             <Table
@@ -1016,8 +1370,9 @@ function PendulumRuntime({
               </TableBody>
             </Table>
           </TableContainer>
-        ) : null}
-      </ChevronSection>
+          ) : null}
+        </ChevronSection>
+      ) : null}
     </>
   )
 }
@@ -1324,6 +1679,44 @@ function Metric({ label, value }: { label: string; value: string }) {
   )
 }
 
+function groupSimulationsBySubarea(simulations: SimulationDefinition[]) {
+  const subareas = new Map<string, SimulationDefinition[]>()
+
+  simulations.forEach((simulation) => {
+    const subarea = getSimulationSubarea(simulation)
+    const currentSimulations = subareas.get(subarea) ?? []
+
+    currentSimulations.push(simulation)
+    subareas.set(subarea, currentSimulations)
+  })
+
+  return Array.from(subareas, ([label, groupedSimulations]) => ({
+    label,
+    simulations: groupedSimulations,
+  })) satisfies SidebarSubarea[]
+}
+
+function getSimulationSubarea(simulation: SimulationDefinition) {
+  return simulation.topicPath[1] ?? 'Geral'
+}
+
+function getSubareaKey(areaId: string, subarea: string) {
+  return `${areaId}:${subarea}`
+}
+
+function isActiveSimulation(simulation: SimulationDefinition) {
+  return simulation.id === activeSimulation.id
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
+
 function getStatusLabel(status: string) {
   if (status === 'available') {
     return 'pronto'
@@ -1334,6 +1727,26 @@ function getStatusLabel(status: string) {
   }
 
   return 'planejado'
+}
+
+function getModelKindLabel(modelKind: SimulationDefinition['modelKind']) {
+  if (modelKind === 'field-sampling') {
+    return 'campo'
+  }
+
+  if (modelKind === 'particle-demo') {
+    return 'particulas'
+  }
+
+  if (modelKind === 'analytic') {
+    return 'analitico'
+  }
+
+  if (modelKind === 'numerical') {
+    return 'numerico'
+  }
+
+  return 'hibrido'
 }
 
 function radiansToDegrees(value: number) {

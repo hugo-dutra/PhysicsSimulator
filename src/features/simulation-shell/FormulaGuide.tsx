@@ -10,6 +10,8 @@ import { ChevronSection } from './ChevronSection'
 type FormulaGuideProps = {
   expanded: boolean
   formulas: FormulaReference[]
+  maximized?: boolean
+  onMaximizeToggle?: () => void
   onToggle: () => void
   parameters: SimulationParameter[]
 }
@@ -17,6 +19,8 @@ type FormulaGuideProps = {
 export function FormulaGuide({
   expanded,
   formulas,
+  maximized = false,
+  onMaximizeToggle,
   onToggle,
   parameters,
 }: FormulaGuideProps) {
@@ -36,6 +40,8 @@ export function FormulaGuide({
   return (
     <ChevronSection
       expanded={expanded}
+      maximized={maximized}
+      onMaximizeToggle={onMaximizeToggle}
       onToggle={onToggle}
       subtitle={
         expanded
@@ -51,7 +57,13 @@ export function FormulaGuide({
             gap: 1.5,
             gridTemplateColumns: {
               xs: '1fr',
-              lg: 'repeat(3, minmax(0, 1fr))',
+              md: maximized ? 'repeat(2, minmax(0, 1fr))' : '1fr',
+              lg: maximized
+                ? 'repeat(3, minmax(0, 1fr))'
+                : 'repeat(3, minmax(0, 1fr))',
+              xl: maximized
+                ? 'repeat(4, minmax(0, 1fr))'
+                : 'repeat(3, minmax(0, 1fr))',
             },
           }}
         >

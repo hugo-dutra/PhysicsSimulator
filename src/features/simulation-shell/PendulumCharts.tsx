@@ -8,6 +8,8 @@ import { LiveLineChart, type ChartTrace } from './LiveLineChart'
 type PendulumChartsProps = {
   chartWindowSeconds: number
   expanded: boolean
+  maximized?: boolean
+  onMaximizeToggle?: () => void
   onToggle: () => void
   samples: PendulumSample[]
   showEnergy: boolean
@@ -29,6 +31,8 @@ const compactSeconds = new Intl.NumberFormat('pt-BR', {
 export const PendulumCharts = memo(function PendulumCharts({
   chartWindowSeconds,
   expanded,
+  maximized = false,
+  onMaximizeToggle,
   onToggle,
   samples,
   showEnergy,
@@ -134,6 +138,8 @@ export const PendulumCharts = memo(function PendulumCharts({
   return (
     <ChevronSection
       expanded={expanded}
+      maximized={maximized}
+      onMaximizeToggle={onMaximizeToggle}
       onToggle={onToggle}
       subtitle={
         expanded
@@ -154,7 +160,10 @@ export const PendulumCharts = memo(function PendulumCharts({
             gap: 1.5,
             gridTemplateColumns: {
               xs: '1fr',
-              xl: 'repeat(2, minmax(0, 1fr))',
+              lg: maximized ? 'repeat(2, minmax(0, 1fr))' : '1fr',
+              xl: maximized
+                ? 'repeat(3, minmax(0, 1fr))'
+                : 'repeat(2, minmax(0, 1fr))',
             },
           }}
         >

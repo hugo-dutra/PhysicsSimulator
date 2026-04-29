@@ -24,11 +24,43 @@ describe('simulation registry', () => {
       (area) => area.simulations,
     )
 
+    expect(allSimulations).toHaveLength(51)
     expect(allSimulations.filter((item) => item.status === 'available')).toHaveLength(
       1,
     )
     expect(allSimulations.some((item) => item.status === 'planned')).toBe(true)
     expect(findSimulation('projectile-motion').status).toBe('planned')
+  })
+
+  it('exposes the planned curriculum by area and subarea', () => {
+    const simulationsByArea = new Map(
+      simulationCatalog.areas.map((area) => [area.id, area.simulations]),
+    )
+
+    expect(simulationsByArea.get('mechanics')).toHaveLength(17)
+    expect(simulationsByArea.get('thermodynamics')).toHaveLength(10)
+    expect(simulationsByArea.get('waves')).toHaveLength(12)
+    expect(simulationsByArea.get('electromagnetism')).toHaveLength(12)
+    expect(findSimulation('continuity-bernoulli').topicPath).toEqual([
+      'Mecanica',
+      'Fluidos basicos',
+      'Continuidade e Bernoulli',
+    ])
+    expect(findSimulation('carnot-cycle').topicPath).toEqual([
+      'Termodinamica',
+      'Segunda lei',
+      'Ciclo de Carnot',
+    ])
+    expect(findSimulation('standing-waves').topicPath).toEqual([
+      'Oscilacoes e Ondas',
+      'Ondas mecanicas',
+      'Ondas estacionarias',
+    ])
+    expect(findSimulation('phasors-ac-power').topicPath).toEqual([
+      'Eletromagnetismo',
+      'Circuitos AC',
+      'Fasores e potencia AC',
+    ])
   })
 
   it('declares pendulum parameters, presets, limits, and formulas', () => {
