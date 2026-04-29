@@ -361,7 +361,10 @@ export function KinematicsScene({
       bounds.centerY,
       bounds.centerZ,
     )
-    const cameraRadius = Math.max(4.2, bounds.span * 1.35)
+    const cameraRadius = Math.max(
+      4.2,
+      bounds.span * (simulationId === 'collisions-1d-2d' ? 0.92 : 1.35),
+    )
     const cameraMinRadius = Math.max(1.2, cameraRadius * minCameraRadiusScale)
     const cameraMaxRadius = cameraRadius * maxCameraRadiusScale
 
@@ -400,7 +403,11 @@ export function KinematicsScene({
               sceneBodySize * 0.78,
               sceneBodySize * 0.38,
             )
-        : new THREE.SphereGeometry(sceneBodySize, 24, 16),
+        : new THREE.SphereGeometry(
+            simulationId === 'collisions-1d-2d' ? 1 : sceneBodySize,
+            24,
+            16,
+          ),
       new THREE.MeshStandardMaterial({
         color: 0x2dd4bf,
         metalness: 0.08,
@@ -411,7 +418,7 @@ export function KinematicsScene({
 
     const secondaryBody = new THREE.Mesh(
       simulationId === 'collisions-1d-2d'
-        ? new THREE.SphereGeometry(sceneBodySize, 24, 16)
+        ? new THREE.SphereGeometry(1, 24, 16)
         : new THREE.BoxGeometry(atwoodMassSize, atwoodMassSize, atwoodMassSize),
       new THREE.MeshStandardMaterial({
         color: 0x38bdf8,
@@ -716,7 +723,11 @@ function updateKinematicsObjects({
     }
 
     arrow.visible = true
-    arrow.position.copy(bodyPosition)
+    arrow.position.copy(
+      simulationId === 'collisions-1d-2d' && vector.id === 'secondaryVelocity'
+        ? objects.secondaryBody.position
+        : bodyPosition,
+    )
     arrow.setDirection(direction.normalize())
     arrow.setLength(getVectorDisplayLength(vector), 0.08, 0.045)
   })
@@ -739,6 +750,18 @@ function updateConstrainedBodyObjects(
   objects.supportStem.visible = isAtwood
 
   if (isCollision) {
+    const scale = objects.sceneProjection.positionScale
+
+    objects.body.scale.setScalar(
+      sample.primaryRadiusMeters > 0
+        ? sample.primaryRadiusMeters * scale
+        : bodySize,
+    )
+    objects.secondaryBody.scale.setScalar(
+      sample.secondaryRadiusMeters > 0
+        ? sample.secondaryRadiusMeters * scale
+        : bodySize,
+    )
     objects.secondaryBody.position.copy(
       toKinematicsScenePosition(
         {
@@ -927,6 +950,10 @@ function createReferencePath(
     return new THREE.Group()
   }
 
+  if (simulationId === 'collisions-1d-2d') {
+    return createCollisionReferencePath(samples, sceneProjection)
+  }
+
   if (
     simulationId === 'uniform-circular-motion' ||
     simulationId === 'centripetal-force-curve'
@@ -958,6 +985,81 @@ function createReferencePath(
   })
 
   return new THREE.Line(geometry, material)
+}
+
+function createCollisionReferencePath(
+  samples: KinematicsSample[],
+  sceneProjection: KinematicsSceneProjection,
+) {
+  const group = new THREE.Group()
+
+  group.add(
+    createPathLine({
+      color: 0x2dd4bf,
+      opacity: 0.44,
+      samples,
+      sceneProjection,
+      selectSample: (sample) => sample,
+    }),
+  )
+  group.add(
+    createPathLine({
+      color: 0x38bdf8,
+      opacity: 0.4,
+      samples,
+      sceneProjection,
+      selectSample: (sample) => ({
+        ...sample,
+        xMeters: sample.secondaryXMeters,
+        zMeters: sample.secondaryZMeters,
+      }),
+    }),
+  )
+
+  return group
+}
+
+function createPathLine({
+  color,
+  opacity,
+  samples,
+  sceneProjection,
+  selectSample,
+}: {
+  color: number
+  opacity: number
+  samples: KinematicsSample[]
+  sceneProjection: KinematicsSceneProjection
+  selectSample: (sample: KinematicsSample) => KinematicsSample
+}) {
+  const pathSamples = downsamplePath(samples)
+  const positions = new Float32Array(Math.max(2, pathSamples.length) * 3)
+
+  pathSamples.forEach((sample, index) => {
+    const position = toKinematicsScenePosition(
+      selectSample(sample),
+      sceneProjection,
+    )
+    const offset = index * 3
+
+    positions[offset] = position.x
+    positions[offset + 1] = position.y
+    positions[offset + 2] = position.z
+  })
+
+  const geometry = new THREE.BufferGeometry()
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  geometry.setDrawRange(0, pathSamples.length)
+
+  return new THREE.Line(
+    geometry,
+    new THREE.LineBasicMaterial({
+      color,
+      opacity,
+      transparent: true,
+    }),
+  )
 }
 
 function createCircularReferencePath(
@@ -1032,6 +1134,21 @@ function estimateSceneBounds(
   const positions = samples.map((sample) =>
     toKinematicsScenePosition(sample, sceneProjection),
   )
+
+  if (simulationId === 'collisions-1d-2d') {
+    samples.forEach((sample) => {
+      positions.push(
+        toKinematicsScenePosition(
+          {
+            ...sample,
+            xMeters: sample.secondaryXMeters,
+            zMeters: sample.secondaryZMeters,
+          },
+          sceneProjection,
+        ),
+      )
+    })
+  }
 
   if (simulationId === 'atwood-machine') {
     const firstSample = samples[0]

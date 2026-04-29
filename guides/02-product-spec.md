@@ -134,7 +134,7 @@ Layout recomendado:
 - Tempo maximo do ciclo de simulacao.
 - Janela temporal dos graficos.
 - Toggles de vetores, trilha e energia.
-- Colisoes 1D e 2D: massas, velocidades normal e tangencial dos corpos, angulo do eixo de impacto, coeficiente de restituicao e separacao inicial.
+- Colisoes 1D e 2D: massas, raios das esferas, velocidades normal e tangencial dos corpos, angulo de impacto obliquo, coeficiente de restituicao e separacao inicial.
 - Equilibrio de particula: tres modulos de forca, tres angulos de aplicacao e massa didatica para mostrar aceleracao quando a resultante nao fecha.
 - Torque, alavancas e centro de massa: massas esquerda/direita, bracos de alavanca, forca aplicada, braco da forca aplicada e gravidade.
 - Rotacao de corpo rigido: momento de inercia, torque aplicado, velocidade angular inicial, angulo inicial e amortecimento angular.
@@ -204,7 +204,7 @@ No segundo lote de Mecanica, o guia deve cobrir pelo menos:
 
 No terceiro lote de Mecanica, o guia deve cobrir pelo menos:
 
-- Colisoes 1D e 2D: momento linear total, coeficiente de restituicao, impulso normal e energia cinetica antes/depois do contato.
+- Colisoes 1D e 2D: geometria de contato por `r1 + r2`, momento linear total, coeficiente de restituicao, impulso normal e energia cinetica antes/depois do contato.
 - Equilibrio de particula: decomposicao de forcas, condicao `sum F = 0` e aceleracao quando a resultante e diferente de zero.
 - Torque, alavancas e centro de massa: definicao de torque, equilibrio rotacional e centro de massa em linha.
 - Rotacao de corpo rigido: `tau = I alpha`, cinamatica angular, amortecimento angular e energia rotacional.

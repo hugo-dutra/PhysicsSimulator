@@ -1,6 +1,12 @@
 # Colisoes 1D e 2D
 
-Esta simulacao trata dois corpos como particulas que se movem livres ate o contato. No instante da colisao, o motor aplica um impulso normal e conserva o momento linear total do sistema isolado.
+Esta simulacao trata dois corpos como esferas rigidas didaticas. O corpo 2 inicia no centro da cena e o corpo 1 se aproxima; o contato acontece somente quando a distancia entre centros chega a soma dos raios:
+
+$$
+|\vec r_2-\vec r_1|=r_1+r_2
+$$
+
+No instante da colisao, o motor aplica um impulso normal e conserva o momento linear total do sistema isolado.
 
 O coeficiente de restituicao controla a velocidade relativa depois do impacto:
 
@@ -14,8 +20,9 @@ Quando \(e=1\), a colisao e elastica no eixo normal e a energia cinetica total e
 
 - As componentes normais mudam no contato.
 - As componentes tangenciais permanecem constantes porque o modelo nao inclui atrito de contato.
+- O angulo de impacto obliquo desloca a linha de centros no contato; por isso, depois do impacto, as esferas podem sair em lados diferentes.
 - O grafico de momento deve permanecer constante antes e depois do contato.
-- O impulso aparece apenas depois que a distancia entre os centros chega ao contato didatico.
+- O impulso aparece apenas depois que a distancia entre os centros chega a \(r_1+r_2\).
 
 ## Limites do modelo
 

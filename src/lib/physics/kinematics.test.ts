@@ -216,25 +216,59 @@ describe('kinematics physics engine', () => {
       massOneKilograms: 1,
       massTwoKilograms: 2,
       normalSpeedOneMetersPerSecond: 2,
-      normalSpeedTwoMetersPerSecond: 1,
-      tangentialSpeedOneMetersPerSecond: 0.4,
-      tangentialSpeedTwoMetersPerSecond: -0.2,
+      normalSpeedTwoMetersPerSecond: 0,
+      radiusOneMeters: 0.4,
+      radiusTwoMeters: 0.6,
+      tangentialSpeedOneMetersPerSecond: 0,
+      tangentialSpeedTwoMetersPerSecond: 0,
     }
     const result = computeKinematicsTimeline({
-      durationSeconds: 3,
+      durationSeconds: 4,
       parameters,
-      sampleRateHz: 60,
+      sampleRateHz: 240,
       simulationId: 'collisions-1d-2d',
     })
     const firstSample = result.samples[0]
     const lastSample = result.samples.at(-1)
 
-    expect(lastSample?.impulseNewtonSeconds).toBeGreaterThan(0)
-    expect(lastSample?.momentumXKilogramMetersPerSecond)
+    expect(lastSample).toBeDefined()
+
+    if (!lastSample) {
+      throw new Error('Collision test expected a final sample.')
+    }
+
+    const contactDistanceMeters =
+      parameters.radiusOneMeters + parameters.radiusTwoMeters
+    const closestSample = result.samples.reduce((closest, sample) => {
+      const distanceMeters = Math.hypot(
+        sample.secondaryXMeters - sample.xMeters,
+        sample.secondaryZMeters - sample.zMeters,
+      )
+      const closestDistanceMeters = Math.hypot(
+        closest.secondaryXMeters - closest.xMeters,
+        closest.secondaryZMeters - closest.zMeters,
+      )
+
+      return distanceMeters < closestDistanceMeters ? sample : closest
+    }, firstSample)
+    const closestDistanceMeters = Math.hypot(
+      closestSample.secondaryXMeters - closestSample.xMeters,
+      closestSample.secondaryZMeters - closestSample.zMeters,
+    )
+
+    expect(firstSample.secondaryXMeters).toBeCloseTo(0)
+    expect(firstSample.secondaryZMeters).toBeCloseTo(0)
+    expect(closestDistanceMeters).toBeCloseTo(contactDistanceMeters, 2)
+    expect(lastSample.impulseNewtonSeconds).toBeGreaterThan(0)
+    expect(
+      lastSample.velocityZMetersPerSecond *
+        lastSample.secondaryVelocityZMetersPerSecond,
+    ).toBeLessThan(0)
+    expect(lastSample.momentumXKilogramMetersPerSecond)
       .toBeCloseTo(firstSample.momentumXKilogramMetersPerSecond)
-    expect(lastSample?.momentumZKilogramMetersPerSecond)
+    expect(lastSample.momentumZKilogramMetersPerSecond)
       .toBeCloseTo(firstSample.momentumZKilogramMetersPerSecond)
-    expect(lastSample?.kineticEnergyJoules)
+    expect(lastSample.kineticEnergyJoules)
       .toBeLessThan(firstSample.kineticEnergyJoules)
     expect(result.warnings[0]?.code).toBe('COLLISION_INELASTIC_LOSS')
   })
@@ -425,7 +459,9 @@ function readFixtureLikeParameters(
         massOneKilograms: 1,
         massTwoKilograms: 1.4,
         normalSpeedOneMetersPerSecond: 1.6,
-        normalSpeedTwoMetersPerSecond: 0.7,
+        normalSpeedTwoMetersPerSecond: 0,
+        radiusOneMeters: 0.42,
+        radiusTwoMeters: 0.42,
         tangentialSpeedOneMetersPerSecond: 0.2,
         tangentialSpeedTwoMetersPerSecond: -0.1,
       }

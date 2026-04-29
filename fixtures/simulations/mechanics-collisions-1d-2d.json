@@ -1,18 +1,18 @@
 {
   "simulationId": "collisions-1d-2d",
-  "durationSeconds": 14,
+  "durationSeconds": 7,
   "sampleRateHz": 120,
-  "chartWindowSeconds": 7,
+  "chartWindowSeconds": 5,
   "runtimeParameters": [
     {
       "id": "durationSeconds",
       "label": "Tempo do ciclo",
       "unit": "s",
       "kind": "number",
-      "min": 5,
-      "max": 40,
+      "min": 4,
+      "max": 16,
       "step": 1,
-      "defaultValue": 14
+      "defaultValue": 7
     },
     {
       "id": "chartWindowSeconds",
@@ -22,19 +22,21 @@
       "min": 3,
       "max": 20,
       "step": 1,
-      "defaultValue": 7
+      "defaultValue": 5
     }
   ],
   "defaultParameters": {
-    "massOneKilograms": 1.2,
-    "massTwoKilograms": 1.8,
-    "normalSpeedOneMetersPerSecond": 1.8,
-    "normalSpeedTwoMetersPerSecond": 0.8,
-    "tangentialSpeedOneMetersPerSecond": 0.45,
-    "tangentialSpeedTwoMetersPerSecond": -0.25,
-    "impactAngleDegrees": 18,
-    "coefficientOfRestitution": 0.85,
-    "initialSeparationMeters": 5
+    "massOneKilograms": 1,
+    "massTwoKilograms": 1,
+    "radiusOneMeters": 0.55,
+    "radiusTwoMeters": 0.55,
+    "normalSpeedOneMetersPerSecond": 2.2,
+    "normalSpeedTwoMetersPerSecond": 0,
+    "tangentialSpeedOneMetersPerSecond": 0,
+    "tangentialSpeedTwoMetersPerSecond": 0,
+    "impactAngleDegrees": 24,
+    "coefficientOfRestitution": 0.92,
+    "initialSeparationMeters": 4.8
   },
   "parameters": [
     {
@@ -45,7 +47,7 @@
       "min": 0.2,
       "max": 12,
       "step": 0.1,
-      "defaultValue": 1.2
+      "defaultValue": 1
     },
     {
       "id": "massTwoKilograms",
@@ -55,7 +57,27 @@
       "min": 0.2,
       "max": 12,
       "step": 0.1,
-      "defaultValue": 1.8
+      "defaultValue": 1
+    },
+    {
+      "id": "radiusOneMeters",
+      "label": "Raio do corpo 1",
+      "unit": "m",
+      "kind": "number",
+      "min": 0.1,
+      "max": 1.2,
+      "step": 0.01,
+      "defaultValue": 0.55
+    },
+    {
+      "id": "radiusTwoMeters",
+      "label": "Raio do corpo 2",
+      "unit": "m",
+      "kind": "number",
+      "min": 0.1,
+      "max": 1.2,
+      "step": 0.01,
+      "defaultValue": 0.55
     },
     {
       "id": "normalSpeedOneMetersPerSecond",
@@ -65,7 +87,7 @@
       "min": 0,
       "max": 8,
       "step": 0.05,
-      "defaultValue": 1.8
+      "defaultValue": 2.2
     },
     {
       "id": "normalSpeedTwoMetersPerSecond",
@@ -75,7 +97,7 @@
       "min": 0,
       "max": 8,
       "step": 0.05,
-      "defaultValue": 0.8
+      "defaultValue": 0
     },
     {
       "id": "tangentialSpeedOneMetersPerSecond",
@@ -85,7 +107,7 @@
       "min": -4,
       "max": 4,
       "step": 0.05,
-      "defaultValue": 0.45
+      "defaultValue": 0
     },
     {
       "id": "tangentialSpeedTwoMetersPerSecond",
@@ -95,17 +117,17 @@
       "min": -4,
       "max": 4,
       "step": 0.05,
-      "defaultValue": -0.25
+      "defaultValue": 0
     },
     {
       "id": "impactAngleDegrees",
-      "label": "Angulo do eixo de impacto",
+      "label": "Angulo de impacto obliquo",
       "unit": "deg",
       "kind": "number",
       "min": -75,
       "max": 75,
       "step": 1,
-      "defaultValue": 18
+      "defaultValue": 24
     },
     {
       "id": "coefficientOfRestitution",
@@ -114,7 +136,7 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "defaultValue": 0.85
+      "defaultValue": 0.92
     },
     {
       "id": "initialSeparationMeters",
@@ -124,7 +146,7 @@
       "min": 1,
       "max": 12,
       "step": 0.1,
-      "defaultValue": 5
+      "defaultValue": 4.8
     }
   ],
   "presets": [
@@ -134,26 +156,30 @@
       "parameters": {
         "massOneKilograms": 1,
         "massTwoKilograms": 1,
+        "radiusOneMeters": 0.55,
+        "radiusTwoMeters": 0.55,
         "normalSpeedOneMetersPerSecond": 2,
-        "normalSpeedTwoMetersPerSecond": 1,
+        "normalSpeedTwoMetersPerSecond": 0,
         "tangentialSpeedOneMetersPerSecond": 0,
         "tangentialSpeedTwoMetersPerSecond": 0,
         "impactAngleDegrees": 0,
         "coefficientOfRestitution": 1,
-        "initialSeparationMeters": 5
+        "initialSeparationMeters": 4.8
       }
     },
     {
       "id": "inelastic-two-dimensional",
       "label": "Inelastica 2D",
       "parameters": {
-        "massOneKilograms": 1.2,
-        "massTwoKilograms": 1.8,
-        "normalSpeedOneMetersPerSecond": 1.8,
-        "normalSpeedTwoMetersPerSecond": 0.8,
-        "tangentialSpeedOneMetersPerSecond": 0.45,
-        "tangentialSpeedTwoMetersPerSecond": -0.25,
-        "impactAngleDegrees": 18,
+        "massOneKilograms": 1,
+        "massTwoKilograms": 1.2,
+        "radiusOneMeters": 0.55,
+        "radiusTwoMeters": 0.62,
+        "normalSpeedOneMetersPerSecond": 2.2,
+        "normalSpeedTwoMetersPerSecond": 0,
+        "tangentialSpeedOneMetersPerSecond": 0,
+        "tangentialSpeedTwoMetersPerSecond": 0,
+        "impactAngleDegrees": 28,
         "coefficientOfRestitution": 0.65,
         "initialSeparationMeters": 5
       }
@@ -164,6 +190,8 @@
       "parameters": {
         "massOneKilograms": 1,
         "massTwoKilograms": 2,
+        "radiusOneMeters": 0.55,
+        "radiusTwoMeters": 0.55,
         "normalSpeedOneMetersPerSecond": 0.1,
         "normalSpeedTwoMetersPerSecond": 0,
         "tangentialSpeedOneMetersPerSecond": 0.2,
@@ -175,12 +203,36 @@
     }
   ],
   "limits": [
-    "Os corpos sao particulas circulares didaticas e so trocam impulso no eixo normal do contato.",
+    "O corpo 2 inicia no centro da cena; o corpo 1 se aproxima e o contato ocorre quando a distancia entre centros chega a r1 + r2.",
+    "Os corpos sao esferas/circulos rigidos didaticos e so trocam impulso no eixo normal do contato.",
     "O momento linear total e conservado no contato; energia cinetica so e conservada quando e = 1.",
     "As componentes tangenciais permanecem constantes: nao ha atrito de contato, giro, deformacao, som ou calor detalhado.",
     "Se a velocidade de aproximacao nao gerar contato dentro do ciclo, o motor mantém os corpos em movimento livre e emite warning."
   ],
   "formulas": [
+    {
+      "id": "contact-geometry",
+      "title": "Geometria do contato",
+      "expressionLatex": "|\\vec r_2-\\vec r_1|=r_1+r_2",
+      "description": "Define o instante fisico da colisao: o impulso so e aplicado quando a distancia entre os centros atinge a soma dos raios.",
+      "variables": [
+        { "symbol": "\\vec r", "label": "posicao do centro", "unit": "m" },
+        { "symbol": "r", "label": "raio do corpo", "unit": "m" }
+      ],
+      "usedWhen": "Usar para validar se as esferas realmente tocaram antes de aplicar impulso.",
+      "notUsedWhen": "Nao descreve deformacao, contato prolongado nem corpos nao circulares.",
+      "parameterIds": ["radiusOneMeters", "radiusTwoMeters", "initialSeparationMeters"],
+      "sampleFields": [
+        "xMeters",
+        "zMeters",
+        "secondaryXMeters",
+        "secondaryZMeters",
+        "primaryRadiusMeters",
+        "secondaryRadiusMeters"
+      ],
+      "relatedChartIds": [],
+      "relatedVectorIds": []
+    },
     {
       "id": "linear-momentum",
       "title": "Momento linear total",

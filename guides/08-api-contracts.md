@@ -197,8 +197,10 @@ type KinematicsSample = {
   displacementMeters: number;
   xMeters: number;
   zMeters: number;
+  primaryRadiusMeters: number;
   secondaryXMeters: number;
   secondaryZMeters: number;
+  secondaryRadiusMeters: number;
   secondaryVelocityMetersPerSecond: number;
   secondaryVelocityXMetersPerSecond: number;
   secondaryVelocityZMetersPerSecond: number;

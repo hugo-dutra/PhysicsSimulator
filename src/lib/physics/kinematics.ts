@@ -36,6 +36,8 @@ export type CollisionsParameters = {
   massTwoKilograms: number
   normalSpeedOneMetersPerSecond: number
   normalSpeedTwoMetersPerSecond: number
+  radiusOneMeters: number
+  radiusTwoMeters: number
   tangentialSpeedOneMetersPerSecond: number
   tangentialSpeedTwoMetersPerSecond: number
 }
@@ -161,7 +163,9 @@ export type KinematicsSample = {
   periodSeconds: number
   positionMeters: number
   potentialEnergyJoules: number
+  primaryRadiusMeters: number
   secondarySpeedMetersPerSecond: number
+  secondaryRadiusMeters: number
   secondaryVelocityMetersPerSecond: number
   secondaryVelocityXMetersPerSecond: number
   secondaryVelocityZMetersPerSecond: number
@@ -293,6 +297,8 @@ const sampleNumericKeys = [
   'periodSeconds',
   'positionMeters',
   'potentialEnergyJoules',
+  'primaryRadiusMeters',
+  'secondaryRadiusMeters',
   'secondarySpeedMetersPerSecond',
   'secondaryVelocityMetersPerSecond',
   'secondaryVelocityXMetersPerSecond',
@@ -312,7 +318,6 @@ const sampleNumericKeys = [
   'zMeters',
 ] as const
 const atwoodHorizontalOffsetMeters = 0.48
-const collisionContactDistanceMeters = 0.72
 const centripetalGripRatioDisplayCap = 99
 const centripetalSlipTolerance = 1e-9
 const equilibriumForceToleranceNewtons = 0.05
@@ -386,6 +391,8 @@ export function toKinematicsParameters(
           values,
           'normalSpeedTwoMetersPerSecond',
         ),
+        radiusOneMeters: readNumber(values, 'radiusOneMeters'),
+        radiusTwoMeters: readNumber(values, 'radiusTwoMeters'),
         tangentialSpeedOneMetersPerSecond: readNumber(
           values,
           'tangentialSpeedOneMetersPerSecond',
@@ -754,8 +761,8 @@ export function getKinematicsVectorOverlays(
       },
       {
         direction: normalizeVector({
-          x: -sample.velocityXMetersPerSecond + sample.secondaryVelocityXMetersPerSecond,
-          z: -sample.velocityZMetersPerSecond + sample.secondaryVelocityZMetersPerSecond,
+          x: sample.secondaryXMeters - sample.xMeters,
+          z: sample.secondaryZMeters - sample.zMeters,
         }),
         id: 'impulse',
         label: 'Impulso no contato',
@@ -1199,6 +1206,8 @@ function computeCollisionsSample(
     momentumXKilogramMetersPerSecond: totalMomentum.x,
     momentumZKilogramMetersPerSecond: totalMomentum.z,
     positionMeters: collision.primaryPosition.x,
+    primaryRadiusMeters: parameters.radiusOneMeters,
+    secondaryRadiusMeters: parameters.radiusTwoMeters,
     secondarySpeedMetersPerSecond,
     secondaryVelocityMetersPerSecond: secondarySpeedMetersPerSecond,
     secondaryVelocityXMetersPerSecond: collision.secondaryVelocity.x,
@@ -1748,6 +1757,8 @@ function buildSample(
     periodSeconds: sample.periodSeconds ?? 0,
     positionMeters: sample.positionMeters ?? sample.xMeters,
     potentialEnergyJoules,
+    primaryRadiusMeters: sample.primaryRadiusMeters ?? 0,
+    secondaryRadiusMeters: sample.secondaryRadiusMeters ?? 0,
     secondarySpeedMetersPerSecond: sample.secondarySpeedMetersPerSecond ?? 0,
     secondaryVelocityMetersPerSecond:
       sample.secondaryVelocityMetersPerSecond ?? 0,
@@ -2056,6 +2067,8 @@ function validateCollisionsParameters(parameters: CollisionsParameters) {
     'normalSpeedTwoMetersPerSecond',
     parameters.normalSpeedTwoMetersPerSecond,
   )
+  assertFinitePositive('radiusOneMeters', parameters.radiusOneMeters)
+  assertFinitePositive('radiusTwoMeters', parameters.radiusTwoMeters)
   assertFinite(
     'tangentialSpeedOneMetersPerSecond',
     parameters.tangentialSpeedOneMetersPerSecond,
@@ -2069,7 +2082,10 @@ function validateCollisionsParameters(parameters: CollisionsParameters) {
     throw new Error('coefficientOfRestitution must be between 0 and 1.')
   }
 
-  if (parameters.initialSeparationMeters <= collisionContactDistanceMeters) {
+  if (
+    parameters.initialSeparationMeters <=
+    parameters.radiusOneMeters + parameters.radiusTwoMeters
+  ) {
     throw new Error('initialSeparationMeters must exceed the contact distance.')
   }
 }
@@ -2382,74 +2398,90 @@ function resolveCollision(
 }
 
 function getCollisionSetup(parameters: CollisionsParameters) {
-  const angleRadians = degreesToRadians(parameters.impactAngleDegrees)
-  const normal = {
-    x: Math.cos(angleRadians),
-    z: Math.sin(angleRadians),
+  const contactDistanceMeters =
+    parameters.radiusOneMeters + parameters.radiusTwoMeters
+  const impactAngleRadians = degreesToRadians(parameters.impactAngleDegrees)
+  const impactOffsetMeters =
+    contactDistanceMeters * Math.sin(impactAngleRadians)
+  const initialPrimaryXMeters = -Math.sqrt(
+    Math.max(
+      0,
+      parameters.initialSeparationMeters ** 2 - impactOffsetMeters ** 2,
+    ),
+  )
+  const initialPrimaryPosition = {
+    x: initialPrimaryXMeters,
+    z: impactOffsetMeters,
   }
-  const tangent = {
-    x: -normal.z,
-    z: normal.x,
+  const initialSecondaryPosition = {
+    x: 0,
+    z: 0,
   }
-  const initialPrimaryPosition = scaleVector(
-    normal,
-    -parameters.initialSeparationMeters / 2,
+  const primaryVelocityBefore = {
+    x: parameters.normalSpeedOneMetersPerSecond,
+    z: parameters.tangentialSpeedOneMetersPerSecond,
+  }
+  const secondaryVelocityBefore = {
+    x: -parameters.normalSpeedTwoMetersPerSecond,
+    z: parameters.tangentialSpeedTwoMetersPerSecond,
+  }
+  const relativePosition = {
+    x: initialPrimaryPosition.x - initialSecondaryPosition.x,
+    z: initialPrimaryPosition.z - initialSecondaryPosition.z,
+  }
+  const relativeVelocity = {
+    x: primaryVelocityBefore.x - secondaryVelocityBefore.x,
+    z: primaryVelocityBefore.z - secondaryVelocityBefore.z,
+  }
+  const collisionTimeSeconds = findCircleContactTime(
+    relativePosition,
+    relativeVelocity,
+    contactDistanceMeters,
   )
-  const initialSecondaryPosition = scaleVector(
-    normal,
-    parameters.initialSeparationMeters / 2,
+  const primaryCollisionPosition = Number.isFinite(collisionTimeSeconds)
+    ? addVectors(
+        initialPrimaryPosition,
+        scaleVector(primaryVelocityBefore, collisionTimeSeconds),
+      )
+    : initialPrimaryPosition
+  const secondaryCollisionPosition = Number.isFinite(collisionTimeSeconds)
+    ? addVectors(
+        initialSecondaryPosition,
+        scaleVector(secondaryVelocityBefore, collisionTimeSeconds),
+      )
+    : initialSecondaryPosition
+  const contactNormal = normalizeVector({
+    x: secondaryCollisionPosition.x - primaryCollisionPosition.x,
+    z: secondaryCollisionPosition.z - primaryCollisionPosition.z,
+  })
+  const closingSpeedMetersPerSecond = dotVector(
+    relativeVelocity,
+    contactNormal,
   )
-  const primaryVelocityBefore = addVectors(
-    scaleVector(normal, parameters.normalSpeedOneMetersPerSecond),
-    scaleVector(tangent, parameters.tangentialSpeedOneMetersPerSecond),
-  )
-  const secondaryVelocityBefore = addVectors(
-    scaleVector(normal, -parameters.normalSpeedTwoMetersPerSecond),
-    scaleVector(tangent, parameters.tangentialSpeedTwoMetersPerSecond),
-  )
-  const primaryNormalVelocityBefore = dotVector(primaryVelocityBefore, normal)
-  const secondaryNormalVelocityBefore = dotVector(secondaryVelocityBefore, normal)
-  const closingSpeedMetersPerSecond =
-    primaryNormalVelocityBefore - secondaryNormalVelocityBefore
-  const collisionTimeSeconds =
-    closingSpeedMetersPerSecond > 0
-      ? (parameters.initialSeparationMeters - collisionContactDistanceMeters) /
-        closingSpeedMetersPerSecond
-      : Number.POSITIVE_INFINITY
-  const sharedMomentum =
-    parameters.massOneKilograms * primaryNormalVelocityBefore +
-    parameters.massTwoKilograms * secondaryNormalVelocityBefore
-  const relativeNormalVelocity =
-    primaryNormalVelocityBefore - secondaryNormalVelocityBefore
-  const primaryNormalVelocityAfter =
-    (sharedMomentum -
-      parameters.massTwoKilograms *
-        parameters.coefficientOfRestitution *
-        relativeNormalVelocity) /
-    (parameters.massOneKilograms + parameters.massTwoKilograms)
-  const secondaryNormalVelocityAfter =
-    (sharedMomentum +
-      parameters.massOneKilograms *
-        parameters.coefficientOfRestitution *
-        relativeNormalVelocity) /
-    (parameters.massOneKilograms + parameters.massTwoKilograms)
-  const primaryTangentialVelocity = dotVector(primaryVelocityBefore, tangent)
-  const secondaryTangentialVelocity = dotVector(secondaryVelocityBefore, tangent)
+  const impulseNewtonSeconds =
+    Number.isFinite(collisionTimeSeconds) && closingSpeedMetersPerSecond > 0
+      ? ((1 + parameters.coefficientOfRestitution) *
+          closingSpeedMetersPerSecond) /
+        (1 / parameters.massOneKilograms + 1 / parameters.massTwoKilograms)
+      : 0
   const primaryVelocityAfter = addVectors(
-    scaleVector(normal, primaryNormalVelocityAfter),
-    scaleVector(tangent, primaryTangentialVelocity),
+    primaryVelocityBefore,
+    scaleVector(
+      contactNormal,
+      -impulseNewtonSeconds / parameters.massOneKilograms,
+    ),
   )
   const secondaryVelocityAfter = addVectors(
-    scaleVector(normal, secondaryNormalVelocityAfter),
-    scaleVector(tangent, secondaryTangentialVelocity),
+    secondaryVelocityBefore,
+    scaleVector(
+      contactNormal,
+      impulseNewtonSeconds / parameters.massTwoKilograms,
+    ),
   )
 
   return {
     collisionTimeSeconds,
-    impulseNewtonSeconds: Math.abs(
-      parameters.massOneKilograms *
-        (primaryNormalVelocityAfter - primaryNormalVelocityBefore),
-    ),
+    impulseNewtonSeconds,
     initialKineticEnergyJoules:
       0.5 *
         parameters.massOneKilograms *
@@ -2464,6 +2496,36 @@ function getCollisionSetup(parameters: CollisionsParameters) {
     secondaryVelocityAfter,
     secondaryVelocityBefore,
   }
+}
+
+function findCircleContactTime(
+  relativePosition: { x: number; z: number },
+  relativeVelocity: { x: number; z: number },
+  contactDistanceMeters: number,
+) {
+  const a = vectorMagnitudeSquared(relativeVelocity)
+  const b = 2 * dotVector(relativePosition, relativeVelocity)
+  const c = vectorMagnitudeSquared(relativePosition) - contactDistanceMeters ** 2
+
+  if (c <= 0) {
+    return 0
+  }
+
+  if (a === 0 || b >= 0) {
+    return Number.POSITIVE_INFINITY
+  }
+
+  const discriminant = b ** 2 - 4 * a * c
+
+  if (discriminant < 0) {
+    return Number.POSITIVE_INFINITY
+  }
+
+  const firstContactTime = (-b - Math.sqrt(discriminant)) / (2 * a)
+
+  return firstContactTime >= 0
+    ? firstContactTime
+    : Number.POSITIVE_INFINITY
 }
 
 function computeDampedAngularMotion({

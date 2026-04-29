@@ -79,7 +79,9 @@ function estimateRawSceneBounds(
     sample.xMeters,
     sample.secondaryXMeters,
   ])
-  const ys = horizontalPlane ? samples.map((sample) => sample.zMeters) : [0]
+  const ys = horizontalPlane
+    ? samples.flatMap((sample) => [sample.zMeters, sample.secondaryZMeters])
+    : [0]
   const zs = horizontalPlane
     ? [0]
     : samples.flatMap((sample) => [sample.zMeters, sample.secondaryZMeters])

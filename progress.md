@@ -1282,3 +1282,35 @@ Validacao:
 - Dev server aberto em `http://127.0.0.1:5193/`.
 - Smoke visual headless via Chrome/CDP em desktop e mobile confirmou canvas nao vazio para as quatro simulacoes. Colisoes e rotacao tiveram diferenca entre frames; equilibrio e torque ficaram estaticos por padrao, como esperado pelos parametros iniciais.
 - Capturas geradas em `artifacts/third-lot-desktop-*-a.png`, `artifacts/third-lot-desktop-*-b.png`, `artifacts/third-lot-mobile-*-a.png` e `artifacts/third-lot-mobile-*-b.png`.
+
+## 2026-04-29 - Ajuste visual e geometrico de Colisoes 1D e 2D
+
+Problema reportado:
+
+- A cena de `Colisoes 1D e 2D` nao comunicava uma colisao didatica: os corpos pareciam soltos, a esfera secundaria ficava afastada/fora de foco e o contato nao deixava claro que os raios determinavam o impacto.
+
+Ajuste:
+
+- O corpo 2 agora inicia no centro da cena e o corpo 1 se aproxima a partir da esquerda.
+- O motor passou a usar `radiusOneMeters` e `radiusTwoMeters`; a colisao so acontece quando a distancia entre centros chega a `r1 + r2`.
+- O angulo de impacto obliquo agora define o deslocamento da linha de centros no contato, permitindo que depois do impacto uma esfera saia para um lado e a outra para o lado oposto.
+- A cena Three.js usa os raios fisicos do sample para escalar as esferas, reposiciona o vetor de velocidade do corpo 2 sobre o corpo 2 e desenha trajetorias de referencia para os dois corpos.
+- O enquadramento da cena de colisoes foi aproximado e o preset padrao ficou com ciclo mais curto, para manter o evento de contato legivel.
+- Atualizados fixture, teoria e docs de produto/dados/contrato para declarar a geometria de contato por raios.
+
+Gate de fidelidade:
+
+- Parametros fisicamente validos continuam permitidos, incluindo velocidade zero do corpo 2.
+- O limite de contato agora e geometrico (`distancia entre centros = soma dos raios`) e o teste do motor verifica que a distancia minima respeita esse limite.
+- Samples, cena, vetores, formulas, teoria e warnings continuam derivados do mesmo motor de colisao.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts`; 14 testes passaram.
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts src/features/simulation-shell/KinematicsScene.test.ts src/App.test.tsx`; 15 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test`; 50 testes passaram.
+- Executado `python3 /mnt/c/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py /mnt/d/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+- Executado `git diff --check -- . ':!src/features/simulation-shell/LiveLineChart.tsx'`; sem erros nas mudancas desta task.
+- Smoke visual Chrome/CDP em `http://127.0.0.1:5193/` confirmou canvas ativo e movimento; captura final em `artifacts/collisions-radius-contact-desktop-later.png` mostra as duas esferas separadas apos o impacto.
