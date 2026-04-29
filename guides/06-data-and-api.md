@@ -11,7 +11,7 @@
 - `SimulationPreset`: conjunto nomeado de parametros para demonstracao.
 - `SimulationState`: estado instantaneo do sistema fisico.
 - `SimulationSample`: amostra derivada para graficos e tabela, incluindo cinematicas calculadas pelo motor quando forem exibidas.
-- `VectorOverlay`: vetor exibido na cena, como peso, tensao ou velocidade, acompanhado por metadados suficientes para legenda.
+- `VectorOverlay`: vetor exibido na cena, como peso, tensao ou velocidade, acompanhado por cor, rotulo, modulo atual, unidade abreviada quando houver e metadados suficientes para legenda.
 - `ChartSeries`: serie derivada dos samples.
 - `FormulaReference`: formula usada pela simulacao, com variaveis, unidades, condicoes de uso e relacao com parametros/samples.
 - `TheoryAppendix`: conteudo teorico em MDX/Markdown.
@@ -92,7 +92,7 @@ Persistencia so deve entrar depois da Fase 1. Possiveis dados futuros:
 - `SimulationViewModel`: parametros, valores atuais, playback e layout.
 - `ChartViewModel`: series prontas para o adapter de grafico escolhido (Plotly.js, canvas ou SVG), com recorte movel dos ultimos N segundos quando configurado.
 - `TableViewModel`: amostras paginadas ou recortadas pela mesma janela temporal visivel.
-- `VectorLegendViewModel`: cor, rotulo, modulo atual e leitura fisica dos vetores ativos na cena.
+- `VectorLegendViewModel`: cor, rotulo, unidade abreviada quando houver, modulo atual e leitura fisica dos vetores ativos na cena; tambem alimenta a legenda compacta sobreposta a area de animacao.
 - `FormulaGuideViewModel`: formulas renderizaveis, variaveis, unidades, uso indicado e links para parametros/samples.
 - `TheoryViewModel`: conteudo teorico associado a simulacao.
 

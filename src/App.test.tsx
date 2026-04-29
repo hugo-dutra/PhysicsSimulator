@@ -24,12 +24,22 @@ describe('App', () => {
     const viewport = screen.getByLabelText(/Pendulum numerical viewport/i)
     const angleMetric = within(viewport).getByText(/^Angulo do pendulo$/i)
     const vectorLegend = within(viewport).getByLabelText(/Legenda dos vetores/i)
+    const animationVectorLegend = within(viewport).getByLabelText(
+      /Legenda compacta dos vetores na animacao/i,
+    )
     const simulationCanvas = within(viewport).getByLabelText(
       /Cena 3D do pendulo simples/i,
     )
 
     expect(simulationCanvas).toBeInTheDocument()
     expect(simulationCanvas).toHaveAccessibleName(/scroll para zoom/i)
+    expect(within(animationVectorLegend).getByText(/^Peso \(N\)$/i))
+      .toBeInTheDocument()
+    expect(within(animationVectorLegend).getByText(/^Tensao \(N\)$/i))
+      .toBeInTheDocument()
+    expect(
+      within(animationVectorLegend).getByText(/^Velocidade linear \(m\/s\)$/i),
+    ).toBeInTheDocument()
     expect(
       angleMetric.compareDocumentPosition(simulationCanvas) &
         Node.DOCUMENT_POSITION_FOLLOWING,
@@ -490,11 +500,22 @@ describe('App', () => {
     expect(
       screen.getByText(/Mecanica > Dinamica > Plano inclinado com atrito/i),
     ).toBeInTheDocument()
-    expect(
-      screen.getByLabelText(/Inclined plane numerical viewport/i),
-    ).toBeInTheDocument()
+    const viewport = screen.getByLabelText(/Inclined plane numerical viewport/i)
+    const animationVectorLegend = within(viewport).getByLabelText(
+      /Legenda compacta dos vetores na animacao/i,
+    )
+
+    expect(viewport).toBeInTheDocument()
     expect(screen.getByLabelText(/Cena 3D do plano inclinado/i))
       .toHaveAccessibleName(/scroll para zoom/i)
+    expect(within(animationVectorLegend).getByText(/^Peso \(N\)$/i))
+      .toBeInTheDocument()
+    expect(within(animationVectorLegend).getByText(/^Normal \(N\)$/i))
+      .toBeInTheDocument()
+    expect(within(animationVectorLegend).getByText(/^Atrito \(N\)$/i))
+      .toBeInTheDocument()
+    expect(within(animationVectorLegend).getByText(/^Velocidade \(m\/s\)$/i))
+      .toBeInTheDocument()
     expect(screen.getByLabelText(/Angulo do plano \(deg\)/i))
       .toBeInTheDocument()
     expect(screen.getAllByLabelText(/Coeficiente de atrito/i).length)

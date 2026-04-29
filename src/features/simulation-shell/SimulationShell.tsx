@@ -113,6 +113,17 @@ type MaximizedPanelId = 'charts' | 'formulas' | 'simulation' | 'table' | 'theory
 
 type AvailableSimulationId = 'inclined-plane-friction' | 'simple-pendulum'
 
+type AnimationVectorLegendItem = {
+  color: string
+  id: string
+  label: string
+}
+
+type AnimationVector = {
+  id: string
+  unit?: string
+}
+
 const customPresetId = 'custom'
 const playbackRate = 0.6
 const sampleTableRowCount = 9
@@ -1548,7 +1559,7 @@ function PendulumRuntime({
             p: focusedChart ? 1.5 : 0,
           }}
         >
-          <Box sx={{ minWidth: 0 }}>
+          <Box sx={{ minWidth: 0, position: 'relative' }}>
             <PendulumScene
               durationSeconds={durationSeconds}
               isPlaying={isPlaying}
@@ -1561,6 +1572,12 @@ function PendulumRuntime({
               showTrace={overlays.trace}
               showVectors={overlays.vectors}
             />
+            {overlays.vectors ? (
+              <AnimationVectorLegend
+                items={vectorLegendItems}
+                vectors={vectors}
+              />
+            ) : null}
           </Box>
           {focusedChart ? (
             <Box
@@ -2060,7 +2077,7 @@ function InclinedPlaneRuntime({
             p: focusedChart ? 1.5 : 0,
           }}
         >
-          <Box sx={{ minWidth: 0 }}>
+          <Box sx={{ minWidth: 0, position: 'relative' }}>
             <InclinedPlaneScene
               durationSeconds={durationSeconds}
               isPlaying={isPlaying}
@@ -2073,6 +2090,12 @@ function InclinedPlaneRuntime({
               showTrace={overlays.trace}
               showVectors={overlays.vectors}
             />
+            {overlays.vectors ? (
+              <AnimationVectorLegend
+                items={inclinedPlaneVectorLegendItems}
+                vectors={vectors}
+              />
+            ) : null}
           </Box>
           {focusedChart ? (
             <Box
@@ -2520,6 +2543,74 @@ function selectStableInclinedPlaneTableRows(
   return rows
 }
 
+function AnimationVectorLegend({
+  items,
+  vectors,
+}: {
+  items: readonly AnimationVectorLegendItem[]
+  vectors: readonly AnimationVector[]
+}) {
+  const unitByVectorId = new Map(
+    vectors.map((vector) => [vector.id, vector.unit] as const),
+  )
+
+  return (
+    <Box
+      aria-label="Legenda compacta dos vetores na animacao"
+      sx={{
+        bgcolor: alpha(themeTokens.background, 0.78),
+        border: `1px solid ${alpha(themeTokens.text, 0.16)}`,
+        borderRadius: 1,
+        display: 'grid',
+        gap: 0.5,
+        maxWidth: 'calc(100% - 16px)',
+        minWidth: { xs: 132, sm: 158 },
+        p: 0.75,
+        pointerEvents: 'none',
+        position: 'absolute',
+        right: { xs: 8, sm: 10 },
+        top: { xs: 8, sm: 10 },
+        zIndex: 1,
+      }}
+    >
+      {items.map((item) => (
+        <Stack
+          direction="row"
+          key={item.id}
+          spacing={0.75}
+          sx={{
+            alignItems: 'center',
+            minWidth: 0,
+          }}
+        >
+          <Box
+            aria-hidden
+            sx={{
+              bgcolor: item.color,
+              borderRadius: 0.5,
+              flex: '0 0 auto',
+              height: 2,
+              width: 24,
+            }}
+          />
+          <Typography
+            sx={{
+              fontWeight: 700,
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+            variant="caption"
+          >
+            {formatVectorLegendLabel(item.label, unitByVectorId.get(item.id))}
+          </Typography>
+        </Stack>
+      ))}
+    </Box>
+  )
+}
+
 function VectorLegend({ vectors }: { vectors: PendulumVectorOverlay[] }) {
   const vectorsById = new Map(vectors.map((vector) => [vector.id, vector]))
 
@@ -2786,6 +2877,10 @@ function formatEnergy(value: number) {
 
 function formatFps(value: number) {
   return value > 0 ? `${value} FPS` : 'medindo FPS'
+}
+
+function formatVectorLegendLabel(label: string, unit?: string) {
+  return unit ? `${label} (${unit})` : label
 }
 
 function readEnergyRatio(samples: Array<{ totalEnergyJoules: number }>) {

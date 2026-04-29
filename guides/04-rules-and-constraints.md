@@ -30,7 +30,8 @@
 - Controles numericos usam slider e input quando precisao importar.
 - Toggles para exibir vetores, trilha, energia e overlays.
 - Vetores exibidos precisam de legenda visivel com cor, modulo atual e significado fisico, especialmente quando a direcao nao e obvia no movimento.
-- Leituras instantaneas e legenda de vetores devem ficar acima do canvas da simulacao, nao abaixo, para preservar a leitura antes da observacao visual.
+- Leituras instantaneas e legenda detalhada de vetores devem ficar acima do canvas da simulacao, nao abaixo, para preservar a leitura antes da observacao visual.
+- A area de animacao deve incluir legenda compacta dos vetores principais no canto superior direito, com traco na cor do vetor, grandeza representada e unidade abreviada quando houver.
 - Viewports Three.js devem ser cenas 3D orbitaveis: arraste horizontal no canvas gira a visualizacao ao redor do eixo Z, e scroll sobre o canvas aproxima ou afasta a camera em direcao a simulacao, sem alterar parametros fisicos ou samples.
 - O eixo Z deve ser tratado como vertical nas cenas Three.js padrao, para manter consistencia entre simulacoes.
 - Blocos de saida pesada, como graficos, tabela, formulas e teoria, devem ser recolhiveis por chevron no proprio cabecalho.

@@ -59,7 +59,8 @@ Depois da prova do core, cada nova simulacao promovida para `available` deve ter
 - Viewports Three.js devem renderizar cena 3D com pixels nao-background, responder a arraste horizontal mudando a visualizacao da camera e responder a scroll sobre o canvas com zoom da camera.
 - Vetores devem acompanhar o movimento.
 - Vetores devem ter legenda visivel com cor, modulo atual e significado fisico.
-- Metricas instantaneas e legenda de vetores devem aparecer acima do canvas do viewport.
+- Metricas instantaneas e legenda detalhada de vetores devem aparecer acima do canvas do viewport.
+- A animacao deve exibir legenda compacta dos vetores principais no canto superior direito, com traco na cor do vetor, grandeza representada e unidade abreviada quando houver.
 - Graficos devem atualizar quando parametros mudam.
 - Graficos devem exibir valores numericos do eixo Y e legendas de series com grandezas por extenso; unidades podem usar simbolos fisicos abreviados.
 - Graficos derivados de velocidade linear e aceleracao devem seguir a mesma janela temporal e a mesma fonte de samples dos demais graficos.

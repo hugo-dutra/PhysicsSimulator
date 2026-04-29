@@ -58,7 +58,7 @@ Layout recomendado:
 - Viewport de simulacao, graficos, tabela, formulas e apendice teorico devem expor acao compacta de maximizar/minimizar no proprio card ou cabecalho chevron.
 - Ao maximizar um desses paineis, os demais paineis do shell ficam invisiveis dentro da janela; ao minimizar, o layout e os estados anteriores voltam ao normal.
 - Viewports Three.js devem ser 3D por padrao quando a simulacao tiver cena espacial. Arrastar horizontalmente no canvas deve orbitar a camera ao redor do eixo Z, e usar scroll sobre o canvas deve aproximar ou afastar a camera na direcao da simulacao.
-- Leituras instantaneas e legenda de vetores pertencem ao topo do viewport, acima do canvas, para o usuario interpretar os valores antes de observar a cena.
+- Leituras instantaneas e legenda detalhada de vetores pertencem ao topo do viewport, acima do canvas, para o usuario interpretar valores e significados antes de observar a cena. A area de animacao tambem deve exibir uma legenda compacta no canto superior direito, com traco na cor do vetor, grandeza representada e unidade abreviada quando houver.
 - O viewport pode abrir um slot lateral direito para grafico em foco, ocupando 1/3 do container em desktop. Esse slot aparece ao clicar no icone de olho de um grafico e desaparece ao clicar novamente, devolvendo o grafico ao bloco de graficos.
 
 ## Controles esperados no pendulo simples
@@ -101,7 +101,7 @@ Layout recomendado:
 ## Representacoes esperadas
 
 - Cena 3D animada do pendulo, com massa renderizada como cubo didatico em vez de circulo plano.
-- Vetores de peso, tensao e velocidade linear com legenda visivel de cor, modulo e significado acima da cena.
+- Vetores de peso, tensao e velocidade linear com legenda detalhada de cor, modulo e significado acima da cena, alem de legenda compacta dentro da animacao com traco colorido, grandeza e unidade abreviada.
 - Grafico de angulo por tempo com janela movel dos ultimos N segundos.
 - Grafico de velocidade angular por tempo com a mesma janela movel.
 - Grafico de velocidade linear tangencial por tempo com a mesma janela movel.
@@ -163,7 +163,7 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 - O usuario consegue abrir `Mecanica > Pendulo simples` pela sidebar.
 - O usuario consegue abrir `Mecanica > Dinamica > Plano inclinado com atrito` pela sidebar quando quiser validar a segunda simulacao disponivel.
 - O canvas mostra a animacao do pendulo.
-- As metricas instantaneas e a legenda dos vetores ficam acima do canvas da simulacao.
+- As metricas instantaneas e a legenda detalhada dos vetores ficam acima do canvas da simulacao; a legenda compacta dos vetores aparece no canto superior direito da animacao.
 - O canvas do pendulo e uma cena 3D; arrastar horizontalmente gira a visualizacao ao redor do eixo Z e usar scroll sobre o canvas controla o zoom da camera sem alterar a fonte numerica da simulacao.
 - Alterar controles muda a simulacao e regenera dados derivados.
 - Alterar o tempo do ciclo muda a duracao maxima antes do playback reiniciar.
@@ -176,7 +176,7 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 - Viewport, graficos, tabela, formulas e apendice teorico podem ser maximizados dentro da janela. Apenas um painel fica maximizado por vez, os demais ficam invisiveis, e minimizar restaura o shell anterior sem perder o playback nem a sincronizacao de samples.
 - A tabela de amostras mantem uma quantidade constante de linhas enquanto esta aberta, preenchendo slots vazios quando ainda nao ha amostras suficientes.
 - Vetores podem ser ligados e desligados.
-- Vetores exibidos devem ter legenda junto ao viewport, incluindo cor, modulo atual e leitura fisica.
+- Vetores exibidos devem ter legenda junto ao viewport, incluindo cor, modulo atual e leitura fisica, e tambem legenda compacta dentro da animacao com traco na cor do vetor, grandeza e unidade abreviada quando houver.
 - Formulas exibidas explicam quando usar cada equacao e quais dados da simulacao a alimentam.
 - O apendice teorico aparece ao lado ou abaixo da simulacao sem substituir a experiencia principal.
 - A interface usa Material UI em dark graphite com acento cyan/teal e leitura confortavel.

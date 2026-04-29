@@ -975,3 +975,31 @@ Validacao:
 - Executado `npm run lint`.
 - Executado `npm run build`; build passou com aviso conhecido de chunk acima de 500 kB.
 - Executado `validate_guides.py`.
+
+## 2026-04-29 - Legenda compacta dos vetores na animacao
+
+Ajuste visual dos vetores principais das simulacoes disponiveis:
+
+- O viewport agora exibe uma legenda compacta sobre a propria area de animacao, no canto superior direito.
+- Cada item usa um traco na mesma cor do vetor e mostra a grandeza fisica com unidade abreviada quando houver, como `Peso (N)` e `Velocidade linear (m/s)`.
+- A legenda detalhada acima do canvas foi mantida para modulo atual e significado fisico, preservando a leitura didatica existente.
+- O ajuste foi aplicado ao pendulo simples e ao plano inclinado com atrito sem alterar a fonte numerica dos samples nem o loop renderer-first.
+
+Arquivos atualizados:
+
+- `guides/02-product-spec.md`
+- `guides/04-rules-and-constraints.md`
+- `guides/06-data-and-api.md`
+- `guides/07-quality-and-operations.md`
+- `guides/issues.md`
+- `progress.md`
+- `src/App.test.tsx`
+- `src/features/simulation-shell/SimulationShell.tsx`
+
+Validacao:
+
+- Executado `npm run test -- src/App.test.tsx`.
+- Executado `npm run test`.
+- Executado `npm run lint`.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`.
+- Executado `npm run build`; build passou com o aviso conhecido de chunk acima de 500 kB.

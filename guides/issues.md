@@ -39,7 +39,8 @@
 - Tabelas sincronizadas em playback devem manter quantidade fixa de linhas visiveis para evitar piscadas e deslocamento de layout; slots sem amostra podem aparecer vazios ate haver dados suficientes.
 - O pendulo simples deve expor, alem da velocidade angular, velocidade linear tangencial e aceleracoes tangencial/radial/total em graficos e tabela, calculadas no sample do motor.
 - Vetores exibidos na cena devem ter legenda visivel com cor, modulo atual e significado fisico.
-- Leituras instantaneas e legenda de vetores ficam no topo do viewport, acima do canvas, para que valores e significados antecedam a observacao da cena.
+- Leituras instantaneas e legenda detalhada de vetores ficam no topo do viewport, acima do canvas, para que valores e significados antecedam a observacao da cena.
+- A area de animacao tambem deve exibir legenda compacta dos vetores principais no canto superior direito, com traco na cor do vetor, grandeza representada e unidade abreviada quando houver.
 - Graficos devem manter escala numerica visivel no eixo Y e legendas com nomes fisicos completos para as grandezas; unidades podem usar abreviacoes fisicas padrao como `rad/s`, `m/s`, `m/s^2` e `J`.
 - Graficos temporais devem oferecer acao de olho para mover um unico grafico para um slot lateral direito dentro do viewport, preservando a mesma janela de samples e retornando ao bloco original quando a acao for desligada.
 - `Mecanica > Dinamica > Plano inclinado com atrito` e a segunda simulacao `available`, com fixture local, motor deterministico por regimes, cena Three.js, graficos live-canvas, tabela, formulas e teoria no mesmo shell.
