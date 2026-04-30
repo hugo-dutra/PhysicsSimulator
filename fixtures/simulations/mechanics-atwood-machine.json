@@ -7,6 +7,7 @@
     {
       "id": "durationSeconds",
       "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline e os samples; diminuir concentra a animacao em menos segundos.",
       "unit": "s",
       "kind": "number",
       "min": 6,
@@ -17,6 +18,7 @@
     {
       "id": "chartWindowSeconds",
       "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais historico; diminuir aproxima a leitura dos eventos atuais.",
       "unit": "s",
       "kind": "number",
       "min": 3,
@@ -37,6 +39,7 @@
     {
       "id": "massOneKilograms",
       "label": "Massa 1",
+      "description": "Massa do corpo 1. Aumentar eleva peso, inercia, momento ou impulso associado ao primeiro corpo, conforme a simulacao.",
       "unit": "kg",
       "kind": "number",
       "min": 0.2,
@@ -47,6 +50,7 @@
     {
       "id": "massTwoKilograms",
       "label": "Massa 2",
+      "description": "Massa do corpo 2. Aumentar altera o peso, a inercia e a troca de momento ou tensao do segundo corpo.",
       "unit": "kg",
       "kind": "number",
       "min": 0.2,
@@ -57,6 +61,7 @@
     {
       "id": "gravityMetersPerSecondSquared",
       "label": "Gravidade",
+      "description": "Aceleracao gravitacional usada no modelo. Aumentar intensifica pesos, quedas, tensoes e energias potenciais; diminuir suaviza esses efeitos.",
       "unit": "m/s^2",
       "kind": "number",
       "min": 1,
@@ -67,6 +72,7 @@
     {
       "id": "initialDisplacementMeters",
       "label": "Deslocamento inicial",
+      "description": "Deslocamento inicial das massas em relacao ao centro visual. Aumentar aproxima uma massa do limite de curso e antecipa o fim do movimento.",
       "unit": "m",
       "kind": "number",
       "min": 0,
@@ -77,6 +83,7 @@
     {
       "id": "initialVelocityMetersPerSecond",
       "label": "Velocidade inicial",
+      "description": "Velocidade inicial no eixo do movimento. Valores positivos ou negativos definem o sentido inicial e alteram posicao, energia e possiveis limites.",
       "unit": "m/s",
       "kind": "number",
       "min": -2,
@@ -87,6 +94,7 @@
     {
       "id": "travelLimitMeters",
       "label": "Curso vertical",
+      "description": "Curso vertical maximo das massas na Maquina de Atwood. Aumentar permite mais deslocamento; diminuir faz o limite ser atingido mais cedo.",
       "unit": "m",
       "kind": "number",
       "min": 1.5,

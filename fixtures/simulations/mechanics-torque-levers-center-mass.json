@@ -7,6 +7,7 @@
     {
       "id": "durationSeconds",
       "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline e os samples; diminuir concentra a animacao em menos segundos.",
       "unit": "s",
       "kind": "number",
       "min": 4,
@@ -17,6 +18,7 @@
     {
       "id": "chartWindowSeconds",
       "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais historico; diminuir aproxima a leitura dos eventos atuais.",
       "unit": "s",
       "kind": "number",
       "min": 3,
@@ -38,6 +40,7 @@
     {
       "id": "leftMassKilograms",
       "label": "Massa esquerda",
+      "description": "Massa no lado esquerdo da alavanca. Aumentar eleva o peso e o torque desse lado, deslocando o equilibrio.",
       "unit": "kg",
       "kind": "number",
       "min": 0.1,
@@ -48,6 +51,7 @@
     {
       "id": "rightMassKilograms",
       "label": "Massa direita",
+      "description": "Massa no lado direito da alavanca. Aumentar eleva o peso e o torque desse lado, deslocando o equilibrio.",
       "unit": "kg",
       "kind": "number",
       "min": 0.1,
@@ -58,6 +62,7 @@
     {
       "id": "leftArmMeters",
       "label": "Braco esquerdo",
+      "description": "Distancia da massa esquerda ate o apoio. Aumentar amplia o torque produzido pelo peso esquerdo.",
       "unit": "m",
       "kind": "number",
       "min": 0.2,
@@ -68,6 +73,7 @@
     {
       "id": "rightArmMeters",
       "label": "Braco direito",
+      "description": "Distancia da massa direita ate o apoio. Aumentar amplia o torque produzido pelo peso direito.",
       "unit": "m",
       "kind": "number",
       "min": 0.2,
@@ -78,6 +84,7 @@
     {
       "id": "appliedForceNewtons",
       "label": "Forca aplicada",
+      "description": "Forca externa aplicada no sistema. Aumentar no sentido positivo injeta trabalho ou torque; valores negativos atuam no sentido oposto.",
       "unit": "N",
       "kind": "number",
       "min": -30,
@@ -88,6 +95,7 @@
     {
       "id": "appliedForceArmMeters",
       "label": "Braco da forca aplicada",
+      "description": "Distancia entre o apoio e a forca aplicada. Aumentar amplia o torque dessa forca; zerar aplica a forca no apoio e nao gera torque.",
       "unit": "m",
       "kind": "number",
       "min": 0,
@@ -98,6 +106,7 @@
     {
       "id": "gravityMetersPerSecondSquared",
       "label": "Gravidade",
+      "description": "Aceleracao gravitacional usada no modelo. Aumentar intensifica pesos, quedas, tensoes e energias potenciais; diminuir suaviza esses efeitos.",
       "unit": "m/s^2",
       "kind": "number",
       "min": 1,

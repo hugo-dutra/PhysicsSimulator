@@ -12,7 +12,7 @@ type SimulationDefinition = {
   areaId: string;
   topicPath: string[];
   title: string;
-  status: "available" | "scaffolded" | "planned";
+  status: "analysis" | "planned" | "ready";
   level: "introductory" | "intermediate" | "advanced";
   modelKind: "analytic" | "numerical" | "field-sampling" | "particle-demo" | "hybrid";
   defaultParameters: Record<string, number | boolean | string>;
@@ -26,6 +26,12 @@ type SimulationDefinition = {
   charts: ChartDefinition[];
 };
 ```
+
+Semantica do status:
+
+- `planned`: item planejado, visivel no catalogo, mas bloqueado para execucao.
+- `analysis`: item implementado e executavel, aguardando teste manual do dono do projeto; subareas com este status iniciam abertas na sidebar.
+- `ready`: item implementado, executavel e aprovado manualmente; permanece fechado por padrao quando nao houver simulacoes em `analysis` na mesma subarea.
 
 ## Contrato `SimulationTechnologyPlan`
 
@@ -45,6 +51,7 @@ type SimulationTechnologyPlan = {
 type SimulationParameter = {
   id: string;
   label: string;
+  description: string;
   unit?: string;
   kind: "number" | "boolean" | "choice";
   min?: number;
@@ -53,6 +60,8 @@ type SimulationParameter = {
   defaultValue: number | boolean | string;
 };
 ```
+
+`description` e obrigatoria para todo parametro fisico e para todo `runtimeParameter`. Ela alimenta a tooltip com icone de interrogacao no painel de controles e deve explicar o que a variavel representa, como ela participa do modelo e qual efeito esperado ao aumentar, diminuir ou zerar o valor quando isso for valido.
 
 ## Contrato `FormulaReference`
 
@@ -141,6 +150,7 @@ type SimulationFixture = {
 ```
 
 Quando `regimes` existir, o resultado do motor deve usar warnings e campos de sample suficientes para que cena, graficos, tabela, formulas e teoria descrevam o mesmo regime aplicado. Uma mudanca de regime nao pode existir apenas como texto de UI.
+Toda entrada em `runtimeParameters` e `parameters` deve declarar `description`; fixtures sem essa legenda nao passam no contrato local de catalogo.
 
 ## Exemplo de sample do pendulo
 
@@ -259,7 +269,7 @@ type KinematicsSample = {
 
 - `INVALID_PARAMETER_RANGE`: parametro fora de minimo/maximo.
 - `INVALID_UNIT`: unidade nao suportada.
-- `SIMULATION_NOT_AVAILABLE`: simulacao planejada, mas ainda nao implementada.
+- `SIMULATION_NOT_RUNNABLE`: simulacao planejada, mas ainda nao implementada.
 - `RENDERER_INIT_FAILED`: canvas ou renderer nao inicializou.
 - `THEORY_CONTENT_MISSING`: apendice teorico nao encontrado.
 

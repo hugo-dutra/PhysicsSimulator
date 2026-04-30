@@ -1314,3 +1314,103 @@ Validacao:
 - Executado `python3 /mnt/c/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py /mnt/d/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
 - Executado `git diff --check -- . ':!src/features/simulation-shell/LiveLineChart.tsx'`; sem erros nas mudancas desta task.
 - Smoke visual Chrome/CDP em `http://127.0.0.1:5193/` confirmou canvas ativo e movimento; captura final em `artifacts/collisions-radius-contact-desktop-later.png` mostra as duas esferas separadas apos o impacto.
+
+## 2026-04-29 - Status de analise antes de pronto
+
+Pedido reportado:
+
+- Adicionar o status intermediario `analysis`/analise entre `planned`/planejado e `ready`/pronto.
+- Manter simulacoes como prontas apenas depois do teste manual do dono do projeto.
+- Deixar abertas na sidebar apenas as subareas com simulacoes em analise; subareas somente prontas ou planejadas iniciam fechadas.
+
+Ajuste:
+
+- O contrato `SimulationStatus` passou a usar `analysis`, `planned` e `ready`.
+- As 13 simulacoes implementadas no catalogo local passaram de `available` para `analysis`.
+- A sidebar passou a tratar `analysis` e `ready` como executaveis, mas so `analysis` abre area/subarea inicialmente.
+- A UI exibe os labels `analise`, `planejado` e `pronto`; o estado `ready` fica sem itens ate validacao manual.
+- Os guides e `AGENTS.md` foram atualizados para trocar a antiga nocao de `available` pelo fluxo `planned -> analysis -> ready`.
+
+Validacao:
+
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts src/App.test.tsx`; 13 testes passaram.
+- Executado `npm run test`; 50 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+- Busca em `AGENTS.md`, `guides/`, `src/` e `fixtures/` confirmou que nao restam usos de `available`/`scaffolded` como status de catalogo ativo; usos restantes de `available` sao variaveis de fisica como limite/forca disponivel.
+
+## 2026-04-29 - Pendulo simples pronto
+
+Pedido reportado:
+
+- Promover `Mecanica > Oscilacoes > Pendulo simples` de `analysis` para `ready` apos teste manual do dono do projeto.
+
+Ajuste:
+
+- `simple-pendulum` passou para `status: "ready"` no catalogo local.
+- As demais simulacoes implementadas permanecem em `analysis` ate validacao manual.
+- A sidebar continua abrindo automaticamente apenas subareas com simulacoes em `analysis`; por isso `Oscilacoes` inicia fechada enquanto o pendulo fica selecionado e marcado como `pronto`.
+- Guides de produto, arquitetura, dados, catalogo e decisoes foram atualizados para refletir o pendulo como primeira simulacao pronta.
+
+Gate de fidelidade:
+
+- Promocao baseada na aprovacao manual do dono do projeto.
+- O pendulo ja tinha auditoria registrada: fonte unica de samples para cena, vetores, graficos, tabela e formulas; parametros, limites, teoria e testes proporcionais documentados nas tasks anteriores.
+
+Validacao:
+
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts src/App.test.tsx`; 13 testes passaram.
+
+## 2026-04-29 - Planejamento de massa-mola vertical
+
+Pedido reportado:
+
+- Adicionar ao roadmap uma simulacao de sistema massa-mola no estilo da referencia visual: mola pendurada em suporte superior, massa esferica na ponta e oscilacao vertical.
+
+Ajuste documental:
+
+- `guides/05-roadmap.md` passou a tratar `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical` como primeira fatia recomendada da Fase 4.
+- `guides/09-simulation-catalog-plan.md` detalha a simulacao planejada com suporte fixo, mola helicoidal, massa esferica, deformacao, posicao, velocidade, aceleracao, forca elastica, peso e energias.
+- `guides/02-product-spec.md` recebeu controles, representacao esperada e formulas minimas para massa-mola vertical.
+- `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/07-quality-and-operations.md`, `guides/10-simulation-fidelity-adjustment-guide.md` e `guides/issues.md` foram alinhados com a decisao visual/fisica.
+
+Decisao:
+
+- A massa-mola vertical fica como ponte natural depois do pendulo pronto, mas segue planejada ate implementacao, gate de fidelidade e teste manual.
+
+Validacao:
+
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+- Executado `git diff --check`; sem erros de whitespace, apenas avisos esperados de normalizacao LF/CRLF no Windows.
+
+## 2026-04-29 - Legenda de ajuda em todos os parametros
+
+Pedido reportado:
+
+- Adicionar icone de interrogacao nos controles de variaveis de todos os experimentos funcionais, com tooltip explicando o que a variavel e, como funciona no modelo e o que muda ao alterar o valor.
+- Tornar essa legenda obrigatoria para os proximos experimentos via contrato e documentacao.
+
+Ajuste:
+
+- `SimulationParameter` passou a exigir `description`.
+- O controle compartilhado de parametros renderiza um icone de interrogacao com tooltip, incluindo descricao, unidade e faixa/passo do parametro.
+- Todos os fixtures funcionais de Mecanica receberam descricoes nos `runtimeParameters` e `parameters`, cobrindo pendulo, plano inclinado, Cinematica, Atwood, curva centripeta, trabalho/energia, colisoes, equilibrio, torque/alavancas e rotacao.
+- O teste de contrato do catalogo agora falha se algum parametro funcional vier sem descricao de ajuda.
+
+Documentacao:
+
+- Atualizados `AGENTS.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+
+Gate de fidelidade:
+
+- Aplicado ao escopo de parametros/controles: nenhuma grandeza fisica foi alterada; a mudanca adiciona metadados explicativos e UI de ajuda sem mudar motor, samples, cena, graficos, tabela ou formulas.
+
+Validacao:
+
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts src/App.test.tsx`; 14 testes passaram.
+- Executado `npm run test`; 51 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+- Dev server iniciado em `http://127.0.0.1:5195/`.

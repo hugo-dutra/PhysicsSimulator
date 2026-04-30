@@ -7,6 +7,7 @@
     {
       "id": "durationSeconds",
       "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline e os samples; diminuir concentra a animacao em menos segundos.",
       "unit": "s",
       "kind": "number",
       "min": 4,
@@ -17,6 +18,7 @@
     {
       "id": "chartWindowSeconds",
       "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais historico; diminuir aproxima a leitura dos eventos atuais.",
       "unit": "s",
       "kind": "number",
       "min": 3,
@@ -42,6 +44,7 @@
     {
       "id": "massOneKilograms",
       "label": "Massa do corpo 1",
+      "description": "Massa do corpo 1. Aumentar eleva peso, inercia, momento ou impulso associado ao primeiro corpo, conforme a simulacao.",
       "unit": "kg",
       "kind": "number",
       "min": 0.2,
@@ -52,6 +55,7 @@
     {
       "id": "massTwoKilograms",
       "label": "Massa do corpo 2",
+      "description": "Massa do corpo 2. Aumentar altera o peso, a inercia e a troca de momento ou tensao do segundo corpo.",
       "unit": "kg",
       "kind": "number",
       "min": 0.2,
@@ -62,6 +66,7 @@
     {
       "id": "radiusOneMeters",
       "label": "Raio do corpo 1",
+      "description": "Raio fisico do corpo 1. Aumentar muda o tamanho visual e antecipa o contato, pois a colisao ocorre pela soma dos raios.",
       "unit": "m",
       "kind": "number",
       "min": 0.1,
@@ -72,6 +77,7 @@
     {
       "id": "radiusTwoMeters",
       "label": "Raio do corpo 2",
+      "description": "Raio fisico do corpo 2. Aumentar muda o tamanho visual e antecipa o contato com o corpo 1.",
       "unit": "m",
       "kind": "number",
       "min": 0.1,
@@ -82,6 +88,7 @@
     {
       "id": "normalSpeedOneMetersPerSecond",
       "label": "Vel. normal corpo 1",
+      "description": "Componente normal inicial da velocidade do corpo 1, na linha de contato. Aumentar intensifica o impacto e o impulso.",
       "unit": "m/s",
       "kind": "number",
       "min": 0,
@@ -92,6 +99,7 @@
     {
       "id": "normalSpeedTwoMetersPerSecond",
       "label": "Vel. normal corpo 2",
+      "description": "Componente normal inicial da velocidade do corpo 2. Aumentar pode reduzir, atrasar ou inverter a aproximacao relativa.",
       "unit": "m/s",
       "kind": "number",
       "min": 0,
@@ -102,6 +110,7 @@
     {
       "id": "tangentialSpeedOneMetersPerSecond",
       "label": "Vel. tangencial corpo 1",
+      "description": "Componente tangencial inicial do corpo 1 no contato. Alterar muda o desvio lateral sem mudar diretamente o impulso normal ideal.",
       "unit": "m/s",
       "kind": "number",
       "min": -4,
@@ -112,6 +121,7 @@
     {
       "id": "tangentialSpeedTwoMetersPerSecond",
       "label": "Vel. tangencial corpo 2",
+      "description": "Componente tangencial inicial do corpo 2 no contato. Alterar muda o movimento lateral relativo apos o impacto.",
       "unit": "m/s",
       "kind": "number",
       "min": -4,
@@ -122,6 +132,7 @@
     {
       "id": "impactAngleDegrees",
       "label": "Angulo de impacto obliquo",
+      "description": "Inclinacao da linha de impacto entre os corpos. Alterar torna a colisao mais frontal ou obliqua, mudando a troca entre componentes normal e tangencial.",
       "unit": "deg",
       "kind": "number",
       "min": -75,
@@ -132,6 +143,7 @@
     {
       "id": "coefficientOfRestitution",
       "label": "Coeficiente de restituicao",
+      "description": "Fator de elasticidade da colisao. Perto de 1 conserva mais energia cinetica; perto de 0 torna o impacto mais inelastico.",
       "kind": "number",
       "min": 0,
       "max": 1,
@@ -141,6 +153,7 @@
     {
       "id": "initialSeparationMeters",
       "label": "Separacao inicial",
+      "description": "Distancia inicial entre os centros antes da colisao. Aumentar atrasa o contato; diminuir faz o impacto ocorrer mais cedo.",
       "unit": "m",
       "kind": "number",
       "min": 1,

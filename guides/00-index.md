@@ -17,7 +17,7 @@ Leia este arquivo primeiro antes de alterar produto, arquitetura, roadmap ou imp
 - `07-quality-and-operations.md`: estrategia de validacao, smoke tests e operacao inicial.
 - `08-api-contracts.md`: contratos conceituais para simulacoes e integracao de UI.
 - `09-simulation-catalog-plan.md`: plano curricular das simulacoes de fisica basica, tecnologias e ordem de implementacao.
-- `10-simulation-fidelity-adjustment-guide.md`: guia obrigatorio para auditar e ajustar simulacoes, evitando que uma simulacao `available` vire apenas animacao parametrizada.
+- `10-simulation-fidelity-adjustment-guide.md`: guia obrigatorio para auditar e ajustar simulacoes, evitando que uma simulacao `analysis` ou `ready` vire apenas animacao parametrizada.
 - `issues.md`: riscos, premissas abertas, decisoes pendentes e gaps.
 
 ## Como escolher o que ler
@@ -72,4 +72,4 @@ tests/
 
 O projeto deve evoluir core-first. Antes de adicionar catalogo amplo, login, cadastros, dashboard administrativo, backend completo ou polish avancado, a primeira simulacao precisa provar que parametros, animacao, graficos, tabela, vetores, formulas aplicadas e teoria permanecem sincronizados em uma experiencia educacional convincente.
 
-Toda task futura que envolva simulacao deve registrar, no proprio ciclo de trabalho, que passou pelo gate do `Simulation Fidelity Adjustment Guide`. Isso vale para novas simulacoes, ajustes em simulacoes `available`, revisoes de renderer, mudancas de parametros, formulas, teoria, graficos, tabela, warnings ou promocao de status no catalogo.
+Toda task futura que envolva simulacao deve registrar, no proprio ciclo de trabalho, que passou pelo gate do `Simulation Fidelity Adjustment Guide`. Isso vale para novas simulacoes, ajustes em simulacoes `analysis` ou `ready`, revisoes de renderer, mudancas de parametros, formulas, teoria, graficos, tabela, warnings ou promocao de status no catalogo.

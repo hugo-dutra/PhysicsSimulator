@@ -7,6 +7,7 @@
     {
       "id": "durationSeconds",
       "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline e os samples; diminuir concentra a animacao em menos segundos.",
       "unit": "s",
       "kind": "number",
       "min": 6,
@@ -17,6 +18,7 @@
     {
       "id": "chartWindowSeconds",
       "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais historico; diminuir aproxima a leitura dos eventos atuais.",
       "unit": "s",
       "kind": "number",
       "min": 3,
@@ -36,6 +38,7 @@
     {
       "id": "massKilograms",
       "label": "Massa",
+      "description": "Massa do corpo didatico. Pode mudar peso, energia, momento ou aceleracao conforme o modelo; em alguns modelos ideais a trajetoria nao depende dela.",
       "unit": "kg",
       "kind": "number",
       "min": 0.2,
@@ -46,6 +49,7 @@
     {
       "id": "radiusMeters",
       "label": "Raio da curva",
+      "description": "Raio da trajetoria circular. Aumentar amplia a curva e reduz demanda centripeta para a mesma velocidade tangencial.",
       "unit": "m",
       "kind": "number",
       "min": 0.8,
@@ -56,6 +60,7 @@
     {
       "id": "speedMetersPerSecond",
       "label": "Velocidade tangencial",
+      "description": "Velocidade tangencial na curva. Aumentar eleva a demanda centripeta e pode causar perda de aderencia quando supera o atrito disponivel.",
       "unit": "m/s",
       "kind": "number",
       "min": 0.2,
@@ -66,6 +71,7 @@
     {
       "id": "frictionCoefficient",
       "label": "Coeficiente de atrito",
+      "description": "Coeficiente adimensional de atrito. Aumentar eleva a forca resistente ou aderencia disponivel; zerar remove atrito quando o modelo permite.",
       "kind": "number",
       "min": 0,
       "max": 1.2,
@@ -75,6 +81,7 @@
     {
       "id": "gravityMetersPerSecondSquared",
       "label": "Gravidade",
+      "description": "Aceleracao gravitacional usada no modelo. Aumentar intensifica pesos, quedas, tensoes e energias potenciais; diminuir suaviza esses efeitos.",
       "unit": "m/s^2",
       "kind": "number",
       "min": 1,

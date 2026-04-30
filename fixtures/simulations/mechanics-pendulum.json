@@ -7,6 +7,7 @@
     {
       "id": "durationSeconds",
       "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline e os samples; diminuir concentra a animacao em menos segundos.",
       "unit": "s",
       "kind": "number",
       "min": 10,
@@ -17,6 +18,7 @@
     {
       "id": "chartWindowSeconds",
       "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais historico; diminuir aproxima a leitura dos eventos atuais.",
       "unit": "s",
       "kind": "number",
       "min": 4,
@@ -37,6 +39,7 @@
     {
       "id": "lengthMeters",
       "label": "Comprimento",
+      "description": "Comprimento do fio do pendulo. Aumentar deixa o periodo maior e a trajetoria mais ampla; diminuir acelera as oscilacoes.",
       "unit": "m",
       "kind": "number",
       "min": 0.2,
@@ -47,6 +50,7 @@
     {
       "id": "massKilograms",
       "label": "Massa",
+      "description": "Massa do corpo didatico. Pode mudar peso, energia, momento ou aceleracao conforme o modelo; em alguns modelos ideais a trajetoria nao depende dela.",
       "unit": "kg",
       "kind": "number",
       "min": 0.05,
@@ -57,6 +61,7 @@
     {
       "id": "gravityMetersPerSecondSquared",
       "label": "Gravidade",
+      "description": "Aceleracao gravitacional usada no modelo. Aumentar intensifica pesos, quedas, tensoes e energias potenciais; diminuir suaviza esses efeitos.",
       "unit": "m/s^2",
       "kind": "number",
       "min": 1,
@@ -67,6 +72,7 @@
     {
       "id": "initialAngleRadians",
       "label": "Angulo inicial",
+      "description": "Angulo inicial do pendulo em relacao ao repouso vertical. Aumentar amplia a amplitude e pode afastar o movimento da aproximacao de pequeno angulo.",
       "unit": "rad",
       "kind": "number",
       "min": -1.2217304763960306,
@@ -77,6 +83,7 @@
     {
       "id": "initialAngularVelocityRadiansPerSecond",
       "label": "Velocidade angular inicial",
+      "description": "Velocidade angular no instante inicial. Valores positivos ou negativos definem o sentido inicial do giro e mudam energia cinetica inicial.",
       "unit": "rad/s",
       "kind": "number",
       "min": -4,
@@ -87,6 +94,7 @@
     {
       "id": "dampingPerSecond",
       "label": "Amortecimento",
+      "description": "Amortecimento angular do pendulo. Aumentar dissipa energia e reduz a amplitude mais rapido; zerar mantem o pendulo ideal sem perda.",
       "unit": "s^-1",
       "kind": "number",
       "min": 0,

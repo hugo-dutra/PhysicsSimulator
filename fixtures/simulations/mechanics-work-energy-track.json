@@ -7,6 +7,7 @@
     {
       "id": "durationSeconds",
       "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline e os samples; diminuir concentra a animacao em menos segundos.",
       "unit": "s",
       "kind": "number",
       "min": 6,
@@ -17,6 +18,7 @@
     {
       "id": "chartWindowSeconds",
       "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais historico; diminuir aproxima a leitura dos eventos atuais.",
       "unit": "s",
       "kind": "number",
       "min": 3,
@@ -38,6 +40,7 @@
     {
       "id": "massKilograms",
       "label": "Massa",
+      "description": "Massa do corpo didatico. Pode mudar peso, energia, momento ou aceleracao conforme o modelo; em alguns modelos ideais a trajetoria nao depende dela.",
       "unit": "kg",
       "kind": "number",
       "min": 0.2,
@@ -48,6 +51,7 @@
     {
       "id": "trackLengthMeters",
       "label": "Comprimento do trilho",
+      "description": "Comprimento do trilho. Aumentar prolonga o percurso de trabalho, atrito e queda distribuida; diminuir concentra o evento.",
       "unit": "m",
       "kind": "number",
       "min": 6,
@@ -58,6 +62,7 @@
     {
       "id": "heightDropMeters",
       "label": "Desnivel vertical",
+      "description": "Desnivel vertical disponivel no trilho. Aumentar libera mais energia potencial; diminuir reduz a conversao para velocidade.",
       "unit": "m",
       "kind": "number",
       "min": 0.2,
@@ -68,6 +73,7 @@
     {
       "id": "initialSpeedMetersPerSecond",
       "label": "Velocidade inicial",
+      "description": "Rapidez inicial no trilho. Aumentar eleva a energia cinetica inicial; zerar deixa o movimento depender das forcas do modelo.",
       "unit": "m/s",
       "kind": "number",
       "min": 0,
@@ -78,6 +84,7 @@
     {
       "id": "frictionCoefficient",
       "label": "Coeficiente de atrito",
+      "description": "Coeficiente adimensional de atrito. Aumentar eleva a forca resistente ou aderencia disponivel; zerar remove atrito quando o modelo permite.",
       "kind": "number",
       "min": 0,
       "max": 1,
@@ -87,6 +94,7 @@
     {
       "id": "appliedForceNewtons",
       "label": "Forca aplicada",
+      "description": "Forca externa aplicada no sistema. Aumentar no sentido positivo injeta trabalho ou torque; valores negativos atuam no sentido oposto.",
       "unit": "N",
       "kind": "number",
       "min": -10,
@@ -97,6 +105,7 @@
     {
       "id": "gravityMetersPerSecondSquared",
       "label": "Gravidade",
+      "description": "Aceleracao gravitacional usada no modelo. Aumentar intensifica pesos, quedas, tensoes e energias potenciais; diminuir suaviza esses efeitos.",
       "unit": "m/s^2",
       "kind": "number",
       "min": 1,

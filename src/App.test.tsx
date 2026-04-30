@@ -88,6 +88,12 @@ describe('App', () => {
       screen.getByRole('heading', { name: /Tempo e janela/i }),
     ).toBeInTheDocument()
     expect(
+      screen.getByRole('button', { name: /Ajuda: Tempo do ciclo/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Ajuda: Comprimento/i }),
+    ).toBeInTheDocument()
+    expect(
       screen.getByRole('heading', { name: /Guia de formulas/i }),
     ).toBeInTheDocument()
     expect(
@@ -461,7 +467,7 @@ describe('App', () => {
     ).toBeInTheDocument()
   }, 20_000)
 
-  it('renders the planned simulation catalog as navigable sidebar menus', () => {
+  it('renders the simulation catalog with analysis subareas open', () => {
     render(
       <ThemeProvider theme={appTheme}>
         <App />
@@ -476,16 +482,42 @@ describe('App', () => {
     ).toHaveAttribute('aria-expanded', 'true')
     expect(
       screen.getByRole('button', { name: /Alternar subarea Oscilacoes/i }),
-    ).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getAllByText(/Pendulo simples/i).length).toBeGreaterThan(0)
-
-    fireEvent.click(
-      screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
-    )
+    ).toHaveAttribute('aria-expanded', 'false')
     expect(
-      screen.getByText(/Movimento retilineo uniforme/i),
+      screen.getByRole('heading', { name: /Pendulo simples/i }),
     ).toBeInTheDocument()
-    expect(screen.getByText(/Lancamento obliquo/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(
+      screen.getByRole('button', { name: /Alternar subarea Dinamica/i }),
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(
+      screen.getByRole('button', {
+        name: /Alternar subarea Energia e momento/i,
+      }),
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(
+      screen.getByRole('button', { name: /Alternar subarea Rotacao/i }),
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(
+      screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
+    ).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getAllByText(/^analise$/i).length).toBeGreaterThan(0)
+    expect(screen.getByText(/^pronto$/i)).toBeInTheDocument()
+    expect(
+      screen.getAllByText(/^planejado$/i).length,
+    ).toBeGreaterThan(0)
+    expect(
+      screen.getByRole('button', { name: /Movimento retilineo uniforme/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Lancamento obliquo/i }),
+    ).toBeInTheDocument()
+    const plannedSimulationItem = screen
+      .getByText(/Rolamento sem escorregamento/i)
+      .closest('[aria-disabled="true"]')
+    expect(plannedSimulationItem).not.toBeNull()
 
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar area Termodinamica/i }),
@@ -513,9 +545,6 @@ describe('App', () => {
       </ThemeProvider>,
     )
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /Alternar subarea Dinamica/i }),
-    )
     fireEvent.click(
       screen.getByRole('button', { name: /Plano inclinado com atrito/i }),
     )

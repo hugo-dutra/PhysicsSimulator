@@ -7,6 +7,7 @@
     {
       "id": "durationSeconds",
       "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline e os samples; diminuir concentra a animacao em menos segundos.",
       "unit": "s",
       "kind": "number",
       "min": 6,
@@ -17,6 +18,7 @@
     {
       "id": "chartWindowSeconds",
       "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais historico; diminuir aproxima a leitura dos eventos atuais.",
       "unit": "s",
       "kind": "number",
       "min": 3,
@@ -34,6 +36,7 @@
     {
       "id": "initialPositionMeters",
       "label": "Posicao inicial",
+      "description": "Posicao inicial no eixo ou na guia. Alterar desloca o ponto de partida e muda quando limites ou referencias sao atingidos.",
       "unit": "m",
       "kind": "number",
       "min": -10,
@@ -44,6 +47,7 @@
     {
       "id": "velocityMetersPerSecond",
       "label": "Velocidade",
+      "description": "Velocidade constante no MRU. Valores positivos ou negativos definem sentido e rapidez, mudando a inclinacao do grafico posicao-tempo.",
       "unit": "m/s",
       "kind": "number",
       "min": -5,
@@ -54,6 +58,7 @@
     {
       "id": "massKilograms",
       "label": "Massa",
+      "description": "Massa do corpo didatico. Pode mudar peso, energia, momento ou aceleracao conforme o modelo; em alguns modelos ideais a trajetoria nao depende dela.",
       "unit": "kg",
       "kind": "number",
       "min": 0.1,

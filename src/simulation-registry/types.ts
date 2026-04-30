@@ -1,4 +1,4 @@
-export type SimulationStatus = 'available' | 'scaffolded' | 'planned'
+export type SimulationStatus = 'analysis' | 'planned' | 'ready'
 
 export type SimulationLevel = 'introductory' | 'intermediate' | 'advanced'
 
@@ -57,6 +57,7 @@ export type SimulationCatalog = {
 export type SimulationParameter = {
   id: string
   label: string
+  description: string
   unit?: string
   kind: 'number' | 'boolean' | 'choice'
   min?: number

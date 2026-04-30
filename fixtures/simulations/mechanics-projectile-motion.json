@@ -7,6 +7,7 @@
     {
       "id": "durationSeconds",
       "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline e os samples; diminuir concentra a animacao em menos segundos.",
       "unit": "s",
       "kind": "number",
       "min": 2,
@@ -17,6 +18,7 @@
     {
       "id": "chartWindowSeconds",
       "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais historico; diminuir aproxima a leitura dos eventos atuais.",
       "unit": "s",
       "kind": "number",
       "min": 1,
@@ -36,6 +38,7 @@
     {
       "id": "launchSpeedMetersPerSecond",
       "label": "Velocidade inicial",
+      "description": "Rapidez inicial do projetil. Aumentar eleva alcance, altura maxima e energia cinetica no modelo balistico.",
       "unit": "m/s",
       "kind": "number",
       "min": 1,
@@ -46,6 +49,7 @@
     {
       "id": "launchAngleDegrees",
       "label": "Angulo de lancamento",
+      "description": "Angulo de lancamento em relacao ao eixo horizontal. Aumentar troca alcance horizontal por altura e muda o tempo de voo.",
       "unit": "deg",
       "kind": "number",
       "min": 0,
@@ -56,6 +60,7 @@
     {
       "id": "initialHeightMeters",
       "label": "Altura inicial",
+      "description": "Altura inicial do lancamento. Aumentar prolonga o voo e eleva a energia potencial inicial; zerar inicia no solo.",
       "unit": "m",
       "kind": "number",
       "min": 0,
@@ -66,6 +71,7 @@
     {
       "id": "gravityMetersPerSecondSquared",
       "label": "Gravidade",
+      "description": "Aceleracao gravitacional usada no modelo. Aumentar intensifica pesos, quedas, tensoes e energias potenciais; diminuir suaviza esses efeitos.",
       "unit": "m/s^2",
       "kind": "number",
       "min": 1,
@@ -76,6 +82,7 @@
     {
       "id": "massKilograms",
       "label": "Massa",
+      "description": "Massa do corpo didatico. Pode mudar peso, energia, momento ou aceleracao conforme o modelo; em alguns modelos ideais a trajetoria nao depende dela.",
       "unit": "kg",
       "kind": "number",
       "min": 0.05,

@@ -27,6 +27,7 @@ Dependencias opcionais por fase:
 - Usar fixtures locais ate haver evidencia de que a experiencia central funciona.
 - Evitar backend ate existir necessidade real de persistencia ou colaboracao.
 - Declarar limites fisicos do modelo dentro da propria simulacao.
+- Declarar a ajuda de cada parametro no contrato/fixture da simulacao, para que a UI gere tooltips de interrogacao sem texto solto por componente.
 - Tratar o `Simulation Fidelity Adjustment Guide` como gate arquitetural para qualquer simulacao nova ou alterada: o motor decide regimes e samples; renderers, graficos, tabela e formulas apenas consomem esse estado.
 - Separar loop visual de alta frequencia do shell React; animacao em `requestAnimationFrame` deve pertencer ao renderer, nao ao layout completo da UI.
 
@@ -48,7 +49,7 @@ Dependencias opcionais por fase:
 
 - Mecanica: comecar com solucoes analiticas e integradores proprios simples. Usar Three.js para corpos, vetores, trajetorias, planos inclinados, orbitas e diagramas de forcas. Avaliar Rapier ou Matter.js apenas para colisoes e corpos rigidos que nao compensem motor proprio.
 - Termodinamica: priorizar modelos analiticos, diagramas de estado e processos por trechos. Usar Plotly.js para `P-V`, `T-V`, curvas de aquecimento e energia; usar Three.js ou PixiJS apenas quando particulas ou mapas termicos melhorarem a explicacao.
-- Oscilacoes e Ondas: usar solucoes analiticas para osciladores simples e ondas senoidais; usar integradores ou malhas discretas para acoplamentos, amortecimento, forca externa e propagacao. Avaliar PixiJS para ondas 2D densas e Web Audio API para som.
+- Oscilacoes e Ondas: usar solucoes analiticas para osciladores simples e ondas senoidais; usar integradores ou malhas discretas para acoplamentos, amortecimento, forca externa e propagacao. A primeira fatia recomendada e a massa-mola vertical, com suporte superior fixo, mola helicoidal, massa esferica, eixo Z vertical em Three.js e samples compartilhados para deformacao da mola, vetores, graficos, tabela e formulas. Avaliar PixiJS para ondas 2D densas e Web Audio API para som.
 - Eletromagnetismo: usar superposicao vetorial, circuitos analiticos simples e integradores leves para transientes. Usar Three.js para vetores, cargas, bobinas e trajetorias; PixiJS pode entrar para mapas 2D de campo e equipotenciais.
 
 ## Fluxo do core
@@ -140,12 +141,13 @@ O tema inicial usa `#2DD4BF` como acento principal teal e reserva `#38BDF8` para
 Na Fase 1, usar:
 
 - `fixtures/simulations/catalog.json` para areas e simulacoes.
-- O catalogo local deve incluir todas as simulacoes planejadas em `09-simulation-catalog-plan.md`, agrupadas por `topicPath`. Depois do terceiro lote da Fase 3, `simple-pendulum`, `inclined-plane-friction`, `uniform-linear-motion`, `uniformly-accelerated-motion`, `projectile-motion`, `uniform-circular-motion`, `atwood-machine`, `centripetal-force-curve`, `work-energy-track`, `collisions-1d-2d`, `particle-equilibrium`, `torque-levers-center-mass` e `rigid-body-rotation` ficam como `available`; demais itens permanecem `planned` ate terem motor, cena, graficos, tabela, formulas e teoria.
+- O catalogo local deve incluir todas as simulacoes planejadas em `09-simulation-catalog-plan.md`, agrupadas por `topicPath`. Depois da validacao manual do core, `simple-pendulum` fica como `ready`; `inclined-plane-friction`, `uniform-linear-motion`, `uniformly-accelerated-motion`, `projectile-motion`, `uniform-circular-motion`, `atwood-machine`, `centripetal-force-curve`, `work-energy-track`, `collisions-1d-2d`, `particle-equilibrium`, `torque-levers-center-mass` e `rigid-body-rotation` ficam como `analysis` ate teste manual; demais itens permanecem `planned` ate terem motor, cena, graficos, tabela, formulas e teoria. Uma simulacao so deve virar `ready` depois da validacao manual do dono do projeto.
 - `fixtures/simulations/mechanics-pendulum.json` para parametros, presets e defaults.
 - `fixtures/simulations/mechanics-inclined-plane-friction.json` para parametros, presets e defaults do plano inclinado.
 - `fixtures/simulations/mechanics-uniform-linear-motion.json`, `mechanics-uniformly-accelerated-motion.json`, `mechanics-projectile-motion.json`, `mechanics-uniform-circular-motion.json`, `mechanics-atwood-machine.json`, `mechanics-centripetal-force-curve.json`, `mechanics-work-energy-track.json`, `mechanics-collisions-1d-2d.json`, `mechanics-particle-equilibrium.json`, `mechanics-torque-levers-center-mass.json` e `mechanics-rigid-body-rotation.json` para parametros, presets, formulas e limites das simulacoes analiticas compartilhadas.
 - MDX local para teoria do pendulo e guia de formulas.
 - Metadados locais para mapear formulas a parametros, samples, vetores e graficos.
+- Metadados locais de ajuda para cada parametro fisico e de runtime, renderizados como tooltip de interrogacao no painel de controles.
 - Dados gerados pelo motor numerico em runtime para graficos e tabela, incluindo cinematicas derivadas usadas por legendas e formulas.
 
 ## Caminho de evolucao
@@ -157,7 +159,7 @@ Na Fase 1, usar:
 5. Adicionar o primeiro lote de Cinematica analitica para testar velocidade de producao.
 6. Adicionar Atwood, forca centripeta em curva e trabalho/energia em trilho para validar reuso em Dinamica e Energia.
 7. Adicionar colisoes, equilibrio, torque/alavancas e rotacao para cobrir momento, estatica e primeiros conceitos angulares no mesmo shell.
-8. Expandir por `Mecanica`, `Oscilacoes e Ondas`, `Termodinamica` e `Eletromagnetismo` em fatias pequenas, sempre aplicando o gate de fidelidade antes de promover ou manter simulacoes como `available`.
+8. Expandir por `Mecanica`, `Oscilacoes e Ondas`, `Termodinamica` e `Eletromagnetismo` em fatias pequenas, sempre aplicando o gate de fidelidade antes de promover ou manter simulacoes como `analysis` ou `ready`.
 9. Avaliar engines especializadas somente quando a simulacao exigir.
 10. Persistencia, usuarios e backend entram depois do core comprovado.
 

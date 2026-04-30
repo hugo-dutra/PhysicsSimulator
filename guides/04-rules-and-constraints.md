@@ -6,26 +6,30 @@
 - Toda simulacao deve declarar area do conhecimento, subarea, caminho de topico, nivel, objetivos didaticos, formulas usadas e limites do modelo.
 - Toda task que cria, ajusta, revisa ou promove uma simulacao deve aplicar o `Simulation Fidelity Adjustment Guide` e registrar a verificacao junto da validacao da task.
 - Itens planejados podem aparecer na sidebar, mas devem ser claramente marcados como indisponiveis ou planejados.
-- A sidebar deve ser hierarquica e navegavel por area e subarea; simulacoes planejadas podem aparecer como folhas marcadas, sem parecerem disponiveis.
+- A sidebar deve ser hierarquica e navegavel por area e subarea; simulacoes planejadas podem aparecer como folhas marcadas, sem parecerem executaveis.
+- O status do catalogo deve usar `planned`, `analysis` e `ready`, exibidos como `planejado`, `analise` e `pronto`.
+- Simulacoes em `analysis` sao implementadas e executaveis, mas aguardam teste manual do dono do projeto; por isso suas subareas iniciam abertas na sidebar.
+- Simulacoes em `ready` sao implementadas, executaveis e ja aprovadas manualmente; suas subareas nao iniciam abertas automaticamente se nao houver itens em `analysis`.
 - A primeira entrega funcional deve ser `Mecanica > Pendulo simples`.
 - A segunda simulacao funcional da Fase 2 e `Mecanica > Dinamica > Plano inclinado com atrito`, usada para validar reuso antes de expandir o catalogo.
-- O primeiro lote da Fase 3 promove `Mecanica > Cinematica` com MRU, MUV/queda livre, lancamento obliquo e MCU como simulacoes `available`, todas com motor analitico compartilhado e saidas completas.
-- O segundo lote da Fase 3 promove `Mecanica > Dinamica > Maquina de Atwood`, `Mecanica > Dinamica > Forca centripeta em curva` e `Mecanica > Energia e momento > Trabalho e energia em trilho` como simulacoes `available`, todas com fixtures locais, formulas, teoria, graficos, tabela e vetores sincronizados.
-- O terceiro lote da Fase 3 promove `Mecanica > Energia e momento > Colisoes 1D e 2D`, `Mecanica > Estatica > Equilibrio de particula`, `Mecanica > Estatica > Torque, alavancas e centro de massa` e `Mecanica > Rotacao > Rotacao de corpo rigido` como simulacoes `available`, mantendo motor, cena, graficos, tabela, formulas, teoria, regimes e warnings sincronizados.
+- O primeiro lote da Fase 3 mantem `Mecanica > Cinematica` com MRU, MUV/queda livre, lancamento obliquo e MCU como simulacoes `analysis`, todas com motor analitico compartilhado e saidas completas.
+- O segundo lote da Fase 3 mantem `Mecanica > Dinamica > Maquina de Atwood`, `Mecanica > Dinamica > Forca centripeta em curva` e `Mecanica > Energia e momento > Trabalho e energia em trilho` como simulacoes `analysis`, todas com fixtures locais, formulas, teoria, graficos, tabela e vetores sincronizados.
+- O terceiro lote da Fase 3 mantem `Mecanica > Energia e momento > Colisoes 1D e 2D`, `Mecanica > Estatica > Equilibrio de particula`, `Mecanica > Estatica > Torque, alavancas e centro de massa` e `Mecanica > Rotacao > Rotacao de corpo rigido` como simulacoes `analysis`, mantendo motor, cena, graficos, tabela, formulas, teoria, regimes e warnings sincronizados.
 - A taxonomia principal do catalogo deve usar `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo`; fluidos basicos entram como subarea, nao como prioridade separada antes do core.
 
 ## Regras de fisica
 
 - Unidades devem ser explicitas.
 - Parametros devem ter minimo, maximo, passo e valor padrao.
+- Parametros fisicos e controles de runtime devem ter `description` obrigatoria para a tooltip de interrogacao, explicando o que a variavel e, como afeta o modelo e o que muda ao aumentar, diminuir ou zerar quando aplicavel.
 - Parametros fisicamente validos em zero, como coeficiente de atrito zero ou forca aplicada zero, nao devem ser bloqueados apenas para manter uma animacao ideal.
 - Controles de runtime, como duracao do ciclo e janela do grafico, tambem devem declarar minimo, maximo, passo e valor padrao.
 - Formulas devem declarar variaveis, unidades, significado fisico, quando usar e quando nao usar.
 - Formulas exibidas devem corresponder ao modelo numerico ou analitico implementado.
 - O modelo numerico ou analitico deve ser deterministico para os mesmos parametros.
 - Tabela, graficos e animacao devem ser derivados da mesma fonte de dados.
-- Cada simulacao `available` deve ter uma unica fonte de samples para cena, graficos, tabela, metricas, formulas e legenda.
-- Toda simulacao `available` deve declarar seus regimes fisicos, mesmo quando houver apenas o regime ideal declarado. Se houver transicao de regime, o sample deve carregar os campos necessarios para cena, graficos, tabela, formulas e warnings descreverem o estado real.
+- Cada simulacao `analysis` ou `ready` deve ter uma unica fonte de samples para cena, graficos, tabela, metricas, formulas e legenda.
+- Toda simulacao `analysis` ou `ready` deve declarar seus regimes fisicos, mesmo quando houver apenas o regime ideal declarado. Se houver transicao de regime, o sample deve carregar os campos necessarios para cena, graficos, tabela, formulas e warnings descreverem o estado real.
 - Velocidades e aceleracoes derivadas exibidas em graficos, tabela, metricas ou formulas devem ser calculadas no motor/sample e manter unidades explicitas.
 - Quando houver aproximacao, a teoria e o guia de formulas devem explicar a aproximacao e seus limites.
 - Quando uma restricao fisica deixa de ser satisfeita, a simulacao deve trocar de regime no motor e expor esse efeito nos samples, cena, graficos e avisos. Exemplo: se a forca centripeta requerida supera o atrito disponivel, o corpo deve sair da curva ideal em vez de continuar preso nela.
@@ -36,12 +40,14 @@
 
 - Interface dark graphite com uma cor principal cyan/teal.
 - Controles numericos usam slider e input quando precisao importar.
+- Rotulos de variaveis nos controles exibem icone de interrogacao com tooltip compacta; a legenda vem do fixture/contrato, nao de texto solto duplicado no componente.
 - Toggles para exibir vetores, trilha, energia e overlays.
 - Vetores exibidos precisam de legenda visivel com cor, modulo atual e significado fisico, especialmente quando a direcao nao e obvia no movimento.
 - Leituras instantaneas e legenda detalhada de vetores devem ficar acima do canvas da simulacao, nao abaixo, para preservar a leitura antes da observacao visual.
 - A area de animacao deve incluir legenda compacta dos vetores principais no canto superior direito, com traco na cor do vetor, grandeza representada e unidade abreviada quando houver.
 - Viewports Three.js devem ser cenas 3D orbitaveis: arraste horizontal no canvas gira a visualizacao ao redor do eixo Z, e Shift + scroll sobre o canvas aproxima ou afasta a camera em direcao a simulacao, sem alterar parametros fisicos ou samples.
 - O eixo Z deve ser tratado como vertical nas cenas Three.js padrao, para manter consistencia entre simulacoes.
+- Sistemas com mola vertical devem mostrar suporte superior fixo, mola deformando a partir do sample fisico e massa esferica presa na extremidade inferior; a mola nao pode oscilar como decoracao independente da posicao calculada.
 - Blocos de saida pesada, como graficos, tabela, formulas e teoria, devem ser recolhiveis por chevron no proprio cabecalho.
 - Blocos chevron de saida pesada iniciam fechados por padrao e devem abrir/fechar ao clique no cabecalho.
 - Quando um bloco chevron estiver recolhido, a aplicacao deve desmontar o conteudo e suspender calculos/renderizacao derivados daquele bloco.

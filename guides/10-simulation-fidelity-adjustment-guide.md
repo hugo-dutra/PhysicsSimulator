@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Este guia define como ajustar simulacoes que parecam apenas animacoes parametrizadas. Uma simulacao `available` deve resolver o modelo fisico declarado, gerar samples derivados desse modelo e so entao renderizar cena, graficos, tabela, vetores, formulas e teoria.
+Este guia define como ajustar simulacoes que parecam apenas animacoes parametrizadas. Uma simulacao `analysis` ou `ready` deve resolver o modelo fisico declarado, gerar samples derivados desse modelo e so entao renderizar cena, graficos, tabela, vetores, formulas e teoria.
 
 ## Regra central
 
@@ -15,8 +15,8 @@ Este guia e gate de pronto para qualquer task que crie, altere, revise ou promov
 Isso vale para:
 
 - simulacoes novas;
-- simulacoes `available` alteradas por parametro, fixture, motor, renderer, graficos, tabela, formulas, teoria ou warnings;
-- promocao de status `planned` ou `scaffolded` para `available`;
+- simulacoes `analysis` ou `ready` alteradas por parametro, fixture, motor, renderer, graficos, tabela, formulas, teoria ou warnings;
+- promocao de status `planned` para `analysis` ou de `analysis` para `ready`;
 - refactors de motor ou renderer que possam mudar samples, trajetorias, vetores ou leituras exibidas;
 - revisoes retroativas de simulacoes ja entregues.
 
@@ -24,7 +24,7 @@ Isso vale para:
 
 Para cada simulacao funcional, conferir:
 
-- Parametros: todo controle fisico declara unidade, minimo, maximo, passo e valor padrao. Valores fisicamente validos como `mu = 0`, velocidade inicial zero ou forca aplicada zero nao devem ser bloqueados por conveniencia visual.
+- Parametros: todo controle fisico e de runtime declara unidade quando houver, minimo, maximo, passo, valor padrao e `description` para a tooltip de interrogacao. A descricao deve dizer o que a variavel e, como entra no modelo e o que muda ao alterar o valor. Valores fisicamente validos como `mu = 0`, velocidade inicial zero ou forca aplicada zero nao devem ser bloqueados por conveniencia visual.
 - Modelo: o motor declara quais equacoes usa, quais aproximacoes assume e quais regimes existem.
 - Regimes: quando uma condicao deixa de ser satisfeita, o motor troca de regime em vez de continuar a animacao ideal. Exemplos: corpo sai da curva se `m v^2 / r > mu m g`; bloco para se a energia/velocidade zera; massa de Atwood para no fim do curso visual.
 - Samples: graficos, tabela, vetores, metricas e formulas usam os mesmos campos do sample. Grandezas exibidas nao podem ser recalculadas soltas na UI.
@@ -46,6 +46,19 @@ Sistemas com fios, polias, hastes ou trilhos devem parecer diagramas fisicos, na
 
 Aplicacao imediata: a Maquina de Atwood deve mostrar suporte fixo, polia fixa, fio passando pelo arco superior da polia e massas em blocos alinhados aos trechos verticais do fio.
 
+## Guia visual para molas verticais
+
+Sistemas massa-mola verticais devem parecer um diagrama fisico pendurado, nao uma mola decorativa:
+
+- O suporte superior fica fixo e neutro, como teto ou barra horizontal.
+- A mola helicoidal fica presa ao suporte e a massa, deformando em comprimento conforme a coordenada vertical calculada no sample.
+- A massa didatica deve ser esferica quando o objetivo visual for o sistema massa-mola vertical solicitado.
+- A posicao de equilibrio deve aparecer como referencia secundaria, especialmente porque a gravidade desloca o repouso estatico em `mg/k`.
+- Vetores de peso, forca elastica, velocidade e aceleracao devem acompanhar a massa esferica e usar a mesma fonte de sample dos graficos e tabela.
+- Se houver amortecimento ou limite geometrico de extensao/compressao, o motor deve declarar o regime e a cena deve refletir esse estado.
+
+Aplicacao imediata: `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical` deve mostrar uma mola presa no topo, oscilando no eixo vertical com massa esferica na extremidade inferior.
+
 ## Guia para perda de restricao
 
 Quando o usuario escolhe parametros que tornam a restricao impossivel, a simulacao deve mostrar o evento fisico:
@@ -62,7 +75,7 @@ Aplicacao imediata: em Forca centripeta em curva, `mu = 0` e valido. Se `v^2 / r
 
 Ao revisar uma simulacao existente, seguir esta ordem:
 
-1. Auditar parametros e permitir zeros fisicamente validos.
+1. Auditar parametros, garantir tooltips de interrogacao em todos eles e permitir zeros fisicamente validos.
 2. Listar regimes fisicos possiveis e limites de transicao.
 3. Garantir que o motor gera samples diferentes para cada regime.
 4. Ajustar renderer para desenhar o sample real e uma referencia ideal apenas quando for didatico.
@@ -71,4 +84,4 @@ Ao revisar uma simulacao existente, seguir esta ordem:
 7. Registrar no `progress.md` ou na trilha da task quais regimes/limites foram conferidos.
 8. Rodar build, testes, lint e smoke visual quando houver cena.
 
-Nenhuma nova simulacao deve ser promovida para `available`, nem permanecer como `available` apos mudanca relevante, sem passar por este guia. As simulacoes ja `available` devem ser revisitadas com este guia antes de novas promocoes amplas do catalogo.
+Nenhuma nova simulacao deve ser promovida para `analysis`, nem permanecer como `analysis` ou `ready` apos mudanca relevante, sem passar por este guia. As simulacoes em `analysis` devem ser revisitadas com este guia antes de virarem `ready`, e a promocao para `ready` tambem exige teste manual do dono do projeto.

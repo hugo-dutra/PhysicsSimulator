@@ -7,6 +7,7 @@
     {
       "id": "durationSeconds",
       "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline e os samples; diminuir concentra a animacao em menos segundos.",
       "unit": "s",
       "kind": "number",
       "min": 4,
@@ -17,6 +18,7 @@
     {
       "id": "chartWindowSeconds",
       "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais historico; diminuir aproxima a leitura dos eventos atuais.",
       "unit": "s",
       "kind": "number",
       "min": 3,
@@ -38,6 +40,7 @@
     {
       "id": "forceOneNewtons",
       "label": "Forca A",
+      "description": "Modulo da forca A aplicada na particula. Aumentar puxa mais nessa direcao e pode tirar ou restaurar o equilibrio.",
       "unit": "N",
       "kind": "number",
       "min": 0,
@@ -48,6 +51,7 @@
     {
       "id": "forceOneAngleDegrees",
       "label": "Angulo da forca A",
+      "description": "Direcao da forca A medida no plano. Girar este angulo muda as componentes x/z e, portanto, a resultante vetorial.",
       "unit": "deg",
       "kind": "number",
       "min": -180,
@@ -58,6 +62,7 @@
     {
       "id": "forceTwoNewtons",
       "label": "Forca B",
+      "description": "Modulo da forca B aplicada na particula. Aumentar desloca a resultante para sua direcao e muda a condicao de equilibrio.",
       "unit": "N",
       "kind": "number",
       "min": 0,
@@ -68,6 +73,7 @@
     {
       "id": "forceTwoAngleDegrees",
       "label": "Angulo da forca B",
+      "description": "Direcao da forca B medida no plano. Girar este angulo muda as componentes x/z e o fechamento do triangulo de forcas.",
       "unit": "deg",
       "kind": "number",
       "min": -180,
@@ -78,6 +84,7 @@
     {
       "id": "forceThreeNewtons",
       "label": "Forca C",
+      "description": "Modulo da forca C aplicada na particula. Aumentar altera a resultante e a aceleracao quando a soma das forcas nao zera.",
       "unit": "N",
       "kind": "number",
       "min": 0,
@@ -88,6 +95,7 @@
     {
       "id": "forceThreeAngleDegrees",
       "label": "Angulo da forca C",
+      "description": "Direcao da forca C medida no plano. Girar este angulo muda as componentes x/z e a soma vetorial das forcas.",
       "unit": "deg",
       "kind": "number",
       "min": -180,
@@ -98,6 +106,7 @@
     {
       "id": "massKilograms",
       "label": "Massa didatica",
+      "description": "Massa do corpo didatico. Pode mudar peso, energia, momento ou aceleracao conforme o modelo; em alguns modelos ideais a trajetoria nao depende dela.",
       "unit": "kg",
       "kind": "number",
       "min": 0.2,

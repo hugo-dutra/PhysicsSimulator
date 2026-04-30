@@ -7,6 +7,7 @@
     {
       "id": "durationSeconds",
       "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline e os samples; diminuir concentra a animacao em menos segundos.",
       "unit": "s",
       "kind": "number",
       "min": 6,
@@ -17,6 +18,7 @@
     {
       "id": "chartWindowSeconds",
       "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais historico; diminuir aproxima a leitura dos eventos atuais.",
       "unit": "s",
       "kind": "number",
       "min": 3,
@@ -38,6 +40,7 @@
     {
       "id": "planeAngleDegrees",
       "label": "Angulo do plano",
+      "description": "Inclinacao do plano. Aumentar aumenta a componente do peso ladeira abaixo e muda o balanco com atrito e normal.",
       "unit": "deg",
       "kind": "number",
       "min": 5,
@@ -48,6 +51,7 @@
     {
       "id": "blockMassKilograms",
       "label": "Massa do bloco",
+      "description": "Massa do bloco no plano inclinado. Aumentar eleva peso, normal, atrito e energias; a aceleracao ideal so muda quando o regime depende dessas forcas.",
       "unit": "kg",
       "kind": "number",
       "min": 0.2,
@@ -58,6 +62,7 @@
     {
       "id": "gravityMetersPerSecondSquared",
       "label": "Gravidade",
+      "description": "Aceleracao gravitacional usada no modelo. Aumentar intensifica pesos, quedas, tensoes e energias potenciais; diminuir suaviza esses efeitos.",
       "unit": "m/s^2",
       "kind": "number",
       "min": 1,
@@ -68,6 +73,7 @@
     {
       "id": "frictionCoefficient",
       "label": "Coeficiente de atrito",
+      "description": "Coeficiente adimensional de atrito. Aumentar eleva a forca resistente ou aderencia disponivel; zerar remove atrito quando o modelo permite.",
       "kind": "number",
       "min": 0,
       "max": 1.2,
@@ -77,6 +83,7 @@
     {
       "id": "initialPositionMeters",
       "label": "Posicao inicial",
+      "description": "Posicao inicial no eixo ou na guia. Alterar desloca o ponto de partida e muda quando limites ou referencias sao atingidos.",
       "unit": "m",
       "kind": "number",
       "min": 0,
@@ -87,6 +94,7 @@
     {
       "id": "initialVelocityMetersPerSecond",
       "label": "Velocidade inicial",
+      "description": "Velocidade inicial no eixo do movimento. Valores positivos ou negativos definem o sentido inicial e alteram posicao, energia e possiveis limites.",
       "unit": "m/s",
       "kind": "number",
       "min": -4,
@@ -97,6 +105,7 @@
     {
       "id": "planeLengthMeters",
       "label": "Comprimento do plano",
+      "description": "Comprimento util do plano inclinado. Aumentar permite mais percurso antes do fim; diminuir antecipa o limite visual.",
       "unit": "m",
       "kind": "number",
       "min": 2,

@@ -14,7 +14,7 @@ A primeira entrega de produto deve provar o core de viabilidade com mocks, fixtu
 
 Toda task futura que implemente, altere, revise ou promova uma simulacao deve aplicar `10-simulation-fidelity-adjustment-guide.md` antes de ser marcada como concluida. O gate exige parametros fisicamente validos, regimes e limites declarados, samples como fonte unica, renderer fiel ao sample, graficos/tabela/formulas/teoria sincronizados, warnings explicando o regime aplicado e testes proporcionais para o regime nominal e pelo menos um limite quando o modelo tiver transicao.
 
-Esse gate vale para todas as fases abaixo. Uma simulacao nao deve ser promovida para `available`, nem permanecer como `available` apos alteracao relevante, sem registro de que essa auditoria passou.
+Esse gate vale para todas as fases abaixo. Uma simulacao nao deve ser promovida para `analysis`, nem permanecer como `analysis` ou `ready` apos alteracao relevante, sem registro de que essa auditoria passou. O status `ready` exige tambem teste manual do dono do projeto depois da implementacao.
 
 ## Fase 0 - Fundacao documental e operacional
 
@@ -71,10 +71,10 @@ Tasks:
 
 - `[x]` Extrair contrato comum `SimulationDefinition`.
 - `[x]` Adicionar `topicPath` para representar caminhos como `Mecanica > Cinematica > MRU`.
-- `[x]` Criar status de catalogo `planned`, `scaffolded` e `available`.
+- `[x]` Criar status de catalogo `planned`, `analysis` e `ready`.
 - `[x]` Criar fixtures locais para as quatro areas principais: `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo`.
 - `[x]` Registrar todas as simulacoes planejadas como itens indisponiveis ate terem motor, cena, graficos, tabela, formulas e teoria.
-- `[x]` Adicionar segunda simulacao de Mecanica, preferencialmente `Mecanica > Dinamica > Plano inclinado com atrito` ou `Oscilacoes e Ondas > Oscilacoes > Massa-mola`.
+- `[x]` Adicionar segunda simulacao de Mecanica, preferencialmente `Mecanica > Dinamica > Plano inclinado com atrito` ou `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical`.
 - `[x]` Reusar shell, controles, graficos, tabela e guia de formulas.
 - `[x]` Extrair o padrao reutilizavel de runtime visual: renderer com loop proprio, UI React em cadencia reduzida, buffers reutilizados e metricas de FPS/frame time.
 - `[x]` Ajustar docs com aprendizados da primeira simulacao.
@@ -83,7 +83,7 @@ Criterio de saida:
 
 - Duas simulacoes usam o mesmo shell.
 - O custo de adicionar uma nova simulacao fica claro.
-- O catalogo planejado aparece separado de simulacoes disponiveis.
+- O catalogo planejado aparece separado de simulacoes em analise e prontas.
 
 ## Fase 3 - Expansao de Mecanica
 
@@ -115,15 +115,17 @@ Criterio de saida:
 - O catalogo de Mecanica tem cobertura didatica ampla.
 - Simulacoes analiticas e numericas reutilizam o mesmo shell.
 - Todas as simulacoes mecanicas funcionais possuem formulas, teoria e testes proporcionais.
-- Toda simulacao mecanica nova ou alterada passa pelo `Simulation Fidelity Adjustment Guide` antes de ficar `available`.
+- Toda simulacao mecanica nova ou alterada passa pelo `Simulation Fidelity Adjustment Guide` antes de ficar `analysis` ou `ready`.
 
 ## Fase 4 - Oscilacoes e Ondas
 
 Objetivo: validar sistemas periodicos, propagacao de ondas, som e optica basica com modelos visuais leves.
 
+Primeira fatia recomendada desta fase: `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical`, aproveitando o aprendizado do pendulo para outro oscilador harmonico simples. A cena deve seguir a referencia visual proposta: suporte fixo no topo, mola helicoidal pendurada, massa esferica presa na extremidade inferior e oscilacao vertical em torno da posicao de equilibrio.
+
 Tasks:
 
-- `[ ]` Implementar `Oscilacoes e Ondas > Oscilacoes > Massa-mola`.
+- `[ ]` Implementar `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical`, com suporte superior fixo, mola helicoidal, massa esferica, vetores e energia sincronizados.
 - `[ ]` Implementar `Oscilacoes e Ondas > Oscilacoes > Oscilador amortecido`.
 - `[ ]` Implementar `Oscilacoes e Ondas > Oscilacoes > Oscilador forcado e ressonancia`.
 - `[ ]` Implementar `Oscilacoes e Ondas > Oscilacoes > Osciladores acoplados`.
@@ -141,6 +143,7 @@ Tasks:
 Criterio de saida:
 
 - O produto cobre os fenomenos basicos de oscilacao, onda mecanica, som e optica.
+- A massa-mola vertical mostra a deformacao real da mola a partir do sample, com posicao, velocidade, aceleracao, forca elastica, peso e energias sincronizados entre cena, graficos, tabela, formulas e teoria.
 - PixiJS e Web Audio API so entram se houver ganho didatico claro.
 - Toda simulacao promovida nesta fase passa pelo gate de fidelidade, incluindo regimes como amortecimento, ressonancia, acoplamento, reflexao, refracao ou limites de modelo.
 

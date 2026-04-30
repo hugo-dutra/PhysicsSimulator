@@ -26,8 +26,9 @@ A primeira entrega funcional deve provar `Mecanica > Pendulo simples` com mocks/
 
 - Nao quebrar a sincronizacao entre motor numerico, cena, graficos, tabela e formulas exibidas.
 - Simulacoes animadas devem usar renderizacao desacoplada: o loop de alta frequencia pertence ao renderer visual, nao ao shell React inteiro.
-- Toda simulacao deve declarar parametros, unidades, formulas usadas, quando usa-las e limites do modelo.
-- Toda task de simulacao deve passar pelo `Simulation Fidelity Adjustment Guide`: parametros fisicamente validos em zero, regimes, samples, cena, graficos, tabela, formulas, teoria, warnings e testes devem concordar antes de promover ou manter uma simulacao como `available`.
+- Toda simulacao deve declarar parametros, unidades, legenda de ajuda por parametro, formulas usadas, quando usa-las e limites do modelo.
+- Todo parametro fisico ou de runtime deve ter tooltip de ajuda no controle, acionado por icone de interrogacao, explicando o que a variavel representa, como entra no modelo e o que muda ao alterar o valor.
+- Toda task de simulacao deve passar pelo `Simulation Fidelity Adjustment Guide`: parametros fisicamente validos em zero, regimes, samples, cena, graficos, tabela, formulas, teoria, warnings e testes devem concordar antes de promover uma simulacao para `analysis` ou `ready`, ou manter uma simulacao nesses estados.
 - Use dados locais enquanto o core nao estiver validado.
 - Mantenha UI compacta, cientifica e orientada a ferramenta.
 - Atualize os guides quando decisoes estruturais mudarem.

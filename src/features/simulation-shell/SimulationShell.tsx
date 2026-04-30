@@ -49,6 +49,7 @@ import type {
   SimulationDefinition,
   SimulationFixture,
   SimulationParameter,
+  SimulationStatus,
 } from '../../simulation-registry/types'
 import {
   computeInclinedPlaneTimeline,
@@ -146,7 +147,7 @@ type OutputPanelState = {
 
 type MaximizedPanelId = 'charts' | 'formulas' | 'simulation' | 'table' | 'theory'
 
-type AvailableSimulationId =
+type RunnableSimulationId =
   | 'inclined-plane-friction'
   | 'simple-pendulum'
   | KinematicsSimulationId
@@ -555,7 +556,7 @@ const initialKinematicsFrameStats: KinematicsFrameStats = {
 
 export function SimulationShell() {
   const [selectedSimulationId, setSelectedSimulationId] =
-    useState<AvailableSimulationId>(activeSimulationId as AvailableSimulationId)
+    useState<RunnableSimulationId>(activeSimulationId as RunnableSimulationId)
   const selectedSimulation = useMemo(
     () => findSimulation(selectedSimulationId),
     [selectedSimulationId],
@@ -770,7 +771,7 @@ export function SimulationShell() {
       : pendulumTimeline
   const energyRatio = readEnergyRatio(selectedTimeline.samples)
 
-  const handleSimulationSelect = (simulationId: AvailableSimulationId) => {
+  const handleSimulationSelect = (simulationId: RunnableSimulationId) => {
     setSelectedSimulationId(simulationId)
     setMaximizedPanel(null)
     setPlaybackResetVersion((current) => current + 1)
@@ -1029,7 +1030,11 @@ export function SimulationShell() {
               size="small"
               variant="outlined"
             />
-            <Chip color="primary" label={selectedSimulation.status} size="small" />
+            <Chip
+              color={getStatusChipColor(selectedSimulation.status)}
+              label={getStatusLabel(selectedSimulation.status)}
+              size="small"
+            />
           </Stack>
         </Box>
 
@@ -1424,7 +1429,7 @@ function SimulationSidebar({
   onSelectSimulation,
   selectedSimulationId,
 }: {
-  onSelectSimulation: (simulationId: AvailableSimulationId) => void
+  onSelectSimulation: (simulationId: RunnableSimulationId) => void
   selectedSimulationId: string
 }) {
   const areaGroups = useMemo(
@@ -1440,8 +1445,8 @@ function SimulationSidebar({
       Object.fromEntries(
         simulationCatalog.areas.map((area) => [
           area.id,
-          area.simulations.some(
-            (simulation) => simulation.id === selectedSimulationId,
+          area.simulations.some((simulation) =>
+            shouldStartExpanded(simulation),
           ),
         ]),
       ),
@@ -1454,8 +1459,7 @@ function SimulationSidebar({
         getSubareaKey(area.id, subarea.label),
         subarea.simulations.some(
           (simulation) =>
-            simulation.id === selectedSimulationId ||
-            simulation.status === 'available',
+            shouldStartExpanded(simulation),
         ),
       ]),
     )
@@ -1641,17 +1645,17 @@ function SidebarSimulationItem({
   simulation,
 }: {
   active: boolean
-  onSelectSimulation: (simulationId: AvailableSimulationId) => void
+  onSelectSimulation: (simulationId: RunnableSimulationId) => void
   simulation: SimulationDefinition
 }) {
-  const isAvailable = simulation.status === 'available'
+  const isRunnable = isRunnableSimulation(simulation)
   const commonSx = {
     bgcolor: active
       ? alpha(themeTokens.teal, 0.12)
       : alpha(themeTokens.panel, 0.42),
     border: `1px solid ${active ? themeTokens.teal : themeTokens.border}`,
     borderRadius: 1,
-    color: isAvailable ? 'text.primary' : 'text.secondary',
+    color: isRunnable ? 'text.primary' : 'text.secondary',
     display: 'block',
     minWidth: 0,
     p: 0.875,
@@ -1677,10 +1681,10 @@ function SidebarSimulationItem({
         }}
       >
         <Chip
-          color={isAvailable ? 'primary' : 'default'}
+          color={getStatusChipColor(simulation.status)}
           label={getStatusLabel(simulation.status)}
           size="small"
-          variant={isAvailable ? 'filled' : 'outlined'}
+          variant={isRunnable ? 'filled' : 'outlined'}
         />
         <Typography color="text.secondary" variant="body2">
           {getModelKindLabel(simulation.modelKind)}
@@ -1689,13 +1693,13 @@ function SidebarSimulationItem({
     </Stack>
   )
 
-  if (isAvailable) {
+  if (isRunnable) {
     return (
       <Box
         aria-current={active ? 'page' : undefined}
         component="button"
         onClick={() => {
-          onSelectSimulation(simulation.id as AvailableSimulationId)
+          onSelectSimulation(simulation.id as RunnableSimulationId)
         }}
         sx={{
           ...commonSx,
@@ -3405,6 +3409,9 @@ function ParameterControl({
   value: number
 }) {
   const [draftValue, setDraftValue] = useState(value)
+  const parameterLabel = parameter.unit
+    ? `${parameter.label} (${parameter.unit})`
+    : parameter.label
 
   const commitValue = (nextValue: number) => {
     if (!Number.isFinite(nextValue)) {
@@ -3429,6 +3436,49 @@ function ParameterControl({
         }}
       >
         <Typography variant="body2">{parameter.label}</Typography>
+        <Tooltip
+          arrow
+          placement="top"
+          title={
+            <Box sx={{ maxWidth: 280 }}>
+              <Typography sx={{ fontWeight: 700 }} variant="body2">
+                {parameterLabel}
+              </Typography>
+              <Typography sx={{ mt: 0.5 }} variant="body2">
+                {parameter.description}
+              </Typography>
+              <Typography
+                color="text.secondary"
+                component="p"
+                sx={{ mt: 0.75 }}
+                variant="caption"
+              >
+                {formatParameterRange(parameter)}
+              </Typography>
+            </Box>
+          }
+        >
+          <IconButton
+            aria-label={`Ajuda: ${parameter.label}`}
+            size="small"
+            sx={{
+              bgcolor: alpha(themeTokens.teal, 0.12),
+              border: `1px solid ${alpha(themeTokens.teal, 0.75)}`,
+              color: 'primary.main',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              height: 22,
+              lineHeight: 1,
+              width: 22,
+              '&:hover': {
+                bgcolor: alpha(themeTokens.teal, 0.22),
+                borderColor: themeTokens.teal,
+              },
+            }}
+          >
+            ?
+          </IconButton>
+        </Tooltip>
       </Stack>
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
@@ -3451,11 +3501,7 @@ function ParameterControl({
           value={draftValue}
         />
         <TextField
-          label={
-            parameter.unit
-              ? `${parameter.label} (${parameter.unit})`
-              : parameter.label
-          }
+          label={parameterLabel}
           onChange={(event) => {
             setDraftValue(Number(event.target.value))
           }}
@@ -3482,6 +3528,25 @@ function ParameterControl({
       </Stack>
     </Box>
   )
+}
+
+function formatParameterRange(parameter: SimulationParameter) {
+  if (
+    typeof parameter.min !== 'number' ||
+    typeof parameter.max !== 'number'
+  ) {
+    return 'Faixa livre dentro do modelo declarado.'
+  }
+
+  const unit = parameter.unit ? ` ${parameter.unit}` : ''
+  const step =
+    typeof parameter.step === 'number'
+      ? `; passo ${compactNumber.format(parameter.step)}${unit}`
+      : ''
+
+  return `Faixa: ${compactNumber.format(parameter.min)}${unit} a ${compactNumber.format(
+    parameter.max,
+  )}${unit}${step}.`
 }
 
 function readDefaultRuntimeValues(
@@ -3900,15 +3965,35 @@ function slugify(value: string) {
 }
 
 function getStatusLabel(status: string) {
-  if (status === 'available') {
+  if (status === 'ready') {
     return 'pronto'
   }
 
-  if (status === 'scaffolded') {
-    return 'base'
+  if (status === 'analysis') {
+    return 'analise'
   }
 
   return 'planejado'
+}
+
+function getStatusChipColor(status: SimulationStatus) {
+  if (status === 'ready') {
+    return 'primary'
+  }
+
+  if (status === 'analysis') {
+    return 'info'
+  }
+
+  return 'default'
+}
+
+function isRunnableSimulation(simulation: SimulationDefinition) {
+  return simulation.status === 'analysis' || simulation.status === 'ready'
+}
+
+function shouldStartExpanded(simulation: SimulationDefinition) {
+  return simulation.status === 'analysis'
 }
 
 function getModelKindLabel(modelKind: SimulationDefinition['modelKind']) {

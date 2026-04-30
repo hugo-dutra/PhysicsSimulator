@@ -7,6 +7,7 @@
     {
       "id": "durationSeconds",
       "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline e os samples; diminuir concentra a animacao em menos segundos.",
       "unit": "s",
       "kind": "number",
       "min": 4,
@@ -17,6 +18,7 @@
     {
       "id": "chartWindowSeconds",
       "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais historico; diminuir aproxima a leitura dos eventos atuais.",
       "unit": "s",
       "kind": "number",
       "min": 2,
@@ -35,6 +37,7 @@
     {
       "id": "radiusMeters",
       "label": "Raio",
+      "description": "Raio da trajetoria circular. Aumentar amplia a curva e reduz demanda centripeta para a mesma velocidade tangencial.",
       "unit": "m",
       "kind": "number",
       "min": 0.2,
@@ -45,6 +48,7 @@
     {
       "id": "angularVelocityRadiansPerSecond",
       "label": "Velocidade angular",
+      "description": "Taxa de variacao do angulo no MCU. Aumentar encurta o periodo, eleva a velocidade tangencial e aumenta a aceleracao centripeta.",
       "unit": "rad/s",
       "kind": "number",
       "min": 0.1,
@@ -55,6 +59,7 @@
     {
       "id": "initialAngleDegrees",
       "label": "Angulo inicial",
+      "description": "Angulo inicial do corpo ou do raio. Alterar muda a fase inicial da rotacao, mas nao muda periodo ou energia sozinho.",
       "unit": "deg",
       "kind": "number",
       "min": -180,
@@ -65,6 +70,7 @@
     {
       "id": "massKilograms",
       "label": "Massa",
+      "description": "Massa do corpo didatico. Pode mudar peso, energia, momento ou aceleracao conforme o modelo; em alguns modelos ideais a trajetoria nao depende dela.",
       "unit": "kg",
       "kind": "number",
       "min": 0.05,

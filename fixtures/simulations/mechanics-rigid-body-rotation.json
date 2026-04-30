@@ -7,6 +7,7 @@
     {
       "id": "durationSeconds",
       "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline e os samples; diminuir concentra a animacao em menos segundos.",
       "unit": "s",
       "kind": "number",
       "min": 5,
@@ -17,6 +18,7 @@
     {
       "id": "chartWindowSeconds",
       "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais historico; diminuir aproxima a leitura dos eventos atuais.",
       "unit": "s",
       "kind": "number",
       "min": 3,
@@ -36,6 +38,7 @@
     {
       "id": "momentOfInertiaKilogramMetersSquared",
       "label": "Momento de inercia",
+      "description": "Resistencia do corpo a mudar o giro. Aumentar reduz a aceleracao angular para o mesmo torque; diminuir torna o giro mais sensivel.",
       "unit": "kg m^2",
       "kind": "number",
       "min": 0.1,
@@ -46,6 +49,7 @@
     {
       "id": "appliedTorqueNewtonMeters",
       "label": "Torque aplicado",
+      "description": "Torque externo sobre o corpo rigido. Aumentar muda mais rapido a velocidade angular; valores negativos aceleram o giro no sentido contrario.",
       "unit": "N m",
       "kind": "number",
       "min": -6,
@@ -56,6 +60,7 @@
     {
       "id": "initialAngularVelocityRadiansPerSecond",
       "label": "Velocidade angular inicial",
+      "description": "Velocidade angular no instante inicial. Valores positivos ou negativos definem o sentido inicial do giro e mudam energia cinetica inicial.",
       "unit": "rad/s",
       "kind": "number",
       "min": -6,
@@ -66,6 +71,7 @@
     {
       "id": "initialAngleDegrees",
       "label": "Angulo inicial",
+      "description": "Angulo inicial do corpo ou do raio. Alterar muda a fase inicial da rotacao, mas nao muda periodo ou energia sozinho.",
       "unit": "deg",
       "kind": "number",
       "min": -180,
@@ -76,6 +82,7 @@
     {
       "id": "angularDampingPerSecond",
       "label": "Amortecimento angular",
+      "description": "Perda angular proporcional a velocidade de giro. Aumentar faz a rotacao dissipar energia mais rapido; zerar mantem o modelo ideal sem amortecimento.",
       "unit": "1/s",
       "kind": "number",
       "min": 0,

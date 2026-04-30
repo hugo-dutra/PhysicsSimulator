@@ -26,8 +26,8 @@ A aplicacao deve agrupar simulacoes por area do conhecimento em uma sidebar:
 - Oscilacoes e Ondas, com Oscilacoes, Ondas mecanicas, Som e Optica basica.
 - Eletromagnetismo, com Eletrostatica, Circuitos, Magnetismo, Inducao e Ondas eletromagneticas.
 
-No core inicial, `Mecanica > Pendulo simples` provou a experiencia completa. Na Fase 2, `Mecanica > Dinamica > Plano inclinado com atrito` tambem ficou funcional para validar reuso do shell, controles, graficos, tabela, formulas e teoria. Na Fase 3, as primeiras simulacoes de Cinematica (`Movimento retilineo uniforme`, `Movimento uniformemente variado e queda livre`, `Lancamento obliquo` e `Movimento circular uniforme`) foram promovidas para `available` usando o mesmo shell e um motor analitico compartilhado. O lote seguinte da Fase 3 promoveu `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho`; o terceiro lote promoveu `Colisoes 1D e 2D`, `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido`, reutilizando a cena 2.5D/3D, graficos live-canvas, tabela, formulas e teoria. As demais areas podem aparecer como itens planejados, desde que nao confundam com simulacoes prontas.
-Mesmo quando ainda estiverem planejadas, as simulacoes do catalogo curricular devem aparecer na sidebar em menus navegaveis de area e subarea, com status claro de `planejado`.
+No core inicial, `Mecanica > Pendulo simples` provou a experiencia completa e, apos teste manual do dono do projeto, fica como `ready`. Na Fase 2, `Mecanica > Dinamica > Plano inclinado com atrito` tambem ficou funcional para validar reuso do shell, controles, graficos, tabela, formulas e teoria. Na Fase 3, as primeiras simulacoes de Cinematica (`Movimento retilineo uniforme`, `Movimento uniformemente variado e queda livre`, `Lancamento obliquo` e `Movimento circular uniforme`) foram implementadas usando o mesmo shell e um motor analitico compartilhado. O lote seguinte implementou `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho`; o terceiro lote implementou `Colisoes 1D e 2D`, `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido`, reutilizando a cena 2.5D/3D, graficos live-canvas, tabela, formulas e teoria. Essas demais simulacoes ficam em `analysis` ate passarem pelo teste manual do dono do projeto; so depois podem virar `ready`. As demais areas podem aparecer como itens planejados, desde que nao confundam com simulacoes prontas.
+Mesmo quando ainda estiverem planejadas, as simulacoes do catalogo curricular devem aparecer na sidebar em menus navegaveis de area e subarea, com status claro de `planejado`, `analise` ou `pronto`.
 
 ## Catalogo curricular planejado
 
@@ -36,12 +36,12 @@ O catalogo detalhado de simulacoes fica em `09-simulation-catalog-plan.md`. A ex
 - area principal;
 - subarea;
 - caminho de topico, como `Mecanica > Cinematica > Lancamento obliquo`;
-- status claro entre planejado, em preparacao e disponivel;
+- status claro entre `planned`/planejado, `analysis`/analise e `ready`/pronto;
 - filtros ou agrupamentos por area, nivel e tipo de modelo quando o catalogo crescer.
 
 Itens planejados podem aparecer na sidebar como bloqueados, desabilitados ou marcados como `planejado`. Eles nao devem parecer clicaveis como simulacoes completas enquanto nao tiverem motor, visualizacao, graficos, tabela, formulas e teoria.
-A sidebar deve ser organizada como arvore compacta: area principal expansivel, subarea expansivel e simulacoes como folhas marcadas por status. Subareas que contenham ao menos uma simulacao `available` iniciam abertas para que o usuario veja imediatamente o que ja pode executar; subareas apenas planejadas podem iniciar recolhidas. O fixture local de catalogo deve conter todas as simulacoes planejadas em `09-simulation-catalog-plan.md`; no estado atual, pendulo simples, plano inclinado com atrito, as quatro primeiras simulacoes de Cinematica, Maquina de Atwood, Forca centripeta em curva, Trabalho e energia em trilho, Colisoes 1D e 2D, Equilibrio de particula, Torque/alavancas/centro de massa e Rotacao de corpo rigido aparecem como `available`.
-Antes de uma simulacao aparecer ou continuar como `available` depois de uma mudanca, ela precisa passar pelo `Simulation Fidelity Adjustment Guide`: o modelo declarado deve gerar os samples, os regimes fisicos precisam mudar o estado real quando um limite for atingido, e cena, graficos, tabela, formulas, teoria e warnings devem refletir essa mesma fonte.
+A sidebar deve ser organizada como arvore compacta: area principal expansivel, subarea expansivel e simulacoes como folhas marcadas por status. Subareas que contenham ao menos uma simulacao `analysis` iniciam abertas para destacar o que precisa de teste; subareas que contenham apenas simulacoes `ready` ou `planned` iniciam recolhidas. O fixture local de catalogo deve conter todas as simulacoes planejadas em `09-simulation-catalog-plan.md`; no estado atual, pendulo simples aparece como `ready`, enquanto plano inclinado com atrito, as quatro primeiras simulacoes de Cinematica, Maquina de Atwood, Forca centripeta em curva, Trabalho e energia em trilho, Colisoes 1D e 2D, Equilibrio de particula, Torque/alavancas/centro de massa e Rotacao de corpo rigido aparecem como `analysis`.
+Antes de uma simulacao aparecer como `analysis`, virar `ready` ou continuar em um desses estados depois de uma mudanca, ela precisa passar pelo `Simulation Fidelity Adjustment Guide`: o modelo declarado deve gerar os samples, os regimes fisicos precisam mudar o estado real quando um limite for atingido, e cena, graficos, tabela, formulas, teoria e warnings devem refletir essa mesma fonte. A promocao de `analysis` para `ready` fica reservada ao teste manual do dono do projeto.
 
 ## Tela da simulacao
 
@@ -51,6 +51,7 @@ Layout recomendado:
 - Topbar compacta com nome da area, nome da simulacao e acoes globais.
 - Area central com viewport/canvas da simulacao.
 - Painel lateral de parametros com sliders, inputs numericos, toggles e presets.
+- Todo controle de variavel fisica ou de runtime deve exibir um icone de interrogacao junto ao rotulo. Ao passar o mouse ou focar o icone, a tooltip deve explicar o que a variavel representa, como ela entra no modelo e o que acontece quando o valor aumenta, diminui ou zera quando isso for fisicamente valido.
 - Bloco chevron de graficos sincronizados, recolhivel pelo proprio cabecalho.
 - Bloco chevron de tabela de amostras, recolhivel pelo proprio cabecalho.
 - Bloco chevron de formulas aplicadas, conectado aos parametros e dados exibidos.
@@ -81,6 +82,22 @@ Layout recomendado:
 - Blocos chevron para graficos, tabela, formulas e teoria, iniciando fechados e permitindo abrir/minimizar saidas pesadas quando for preciso aliviar a UI.
 - Botao de maximizar/minimizar no viewport da simulacao, graficos, tabela, formulas e apendice teorico para inspecao ampliada durante aula ou demonstracao.
 - Botao com icone de olho em cada grafico para mover temporariamente uma unica serie de graficos para o slot lateral do viewport.
+
+## Controles esperados no massa-mola vertical
+
+- Play/pause.
+- Reset.
+- Presets de demonstracao.
+- Massa da esfera.
+- Constante elastica da mola.
+- Gravidade.
+- Deslocamento inicial em relacao ao equilibrio.
+- Velocidade inicial.
+- Amortecimento opcional, mantendo o caso ideal sem amortecimento como regime base.
+- Tempo maximo do ciclo de simulacao.
+- Janela temporal dos graficos.
+- Toggles de vetores, trilha e energia.
+- Blocos chevron, grafico em foco e maximizacao com o mesmo comportamento do pendulo.
 
 ## Controles esperados no plano inclinado com atrito
 
@@ -144,6 +161,7 @@ Layout recomendado:
 
 - Cena 3D animada do pendulo, com massa renderizada como cubo didatico em vez de circulo plano.
 - Vetores de peso, tensao e velocidade linear com legenda detalhada de cor, modulo e significado acima da cena, alem de legenda compacta dentro da animacao com traco colorido, grandeza e unidade abreviada.
+- Cena 3D animada do massa-mola vertical, com suporte superior fixo, mola helicoidal deformando no eixo vertical, massa esferica presa a extremidade inferior, referencia de equilibrio e vetores de peso, forca elastica, velocidade e aceleracao derivados do mesmo sample.
 - Grafico de angulo por tempo com janela movel dos ultimos N segundos.
 - Grafico de velocidade angular por tempo com a mesma janela movel.
 - Grafico de velocidade linear tangencial por tempo com a mesma janela movel.
@@ -180,6 +198,15 @@ No pendulo simples, o guia deve cobrir pelo menos:
 - posicao cartesiana da massa;
 - velocidade linear tangencial e aceleracoes tangencial/radial/total;
 - vetores principais, como peso, tensao e velocidade.
+
+No massa-mola vertical, o guia deve cobrir pelo menos:
+
+- lei de Hooke e sentido da forca elastica;
+- equilibrio estatico com gravidade, deixando claro que `mg/k` desloca a posicao de repouso;
+- equacao do oscilador em torno do equilibrio;
+- periodo ideal `T = 2 pi sqrt(m/k)`;
+- energia cinetica, potencial elastica, potencial gravitacional e energia mecanica total;
+- relacao entre deslocamento, velocidade, aceleracao, forca elastica, peso, graficos, tabela e vetores.
 
 No plano inclinado com atrito, o guia deve cobrir pelo menos:
 
@@ -225,15 +252,16 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 ## Criterios de aceite do MVP
 
 - O usuario consegue abrir `Mecanica > Pendulo simples` pela sidebar.
-- O usuario consegue abrir `Mecanica > Dinamica > Plano inclinado com atrito` pela sidebar quando quiser validar a segunda simulacao disponivel.
+- O usuario consegue abrir `Mecanica > Dinamica > Plano inclinado com atrito` pela sidebar quando quiser validar a segunda simulacao em analise.
 - O usuario consegue abrir as quatro primeiras simulacoes de `Mecanica > Cinematica` pela sidebar e ver cena, vetores, graficos, tabela, formulas e teoria sincronizados.
 - O usuario consegue abrir `Mecanica > Dinamica > Maquina de Atwood`, `Mecanica > Dinamica > Forca centripeta em curva` e `Mecanica > Energia e momento > Trabalho e energia em trilho` pela sidebar com a mesma sincronizacao.
 - O usuario consegue abrir `Mecanica > Energia e momento > Colisoes 1D e 2D`, `Mecanica > Estatica > Equilibrio de particula`, `Mecanica > Estatica > Torque, alavancas e centro de massa` e `Mecanica > Rotacao > Rotacao de corpo rigido` pela sidebar com a mesma sincronizacao.
-- Toda simulacao `available` ou alterada em uma task futura tem a auditoria do `Simulation Fidelity Adjustment Guide` satisfeita e registrada: parametros fisicos validos, regimes, samples, renderer, graficos, tabela, formulas, teoria, warnings e testes proporcionais concordam.
+- Toda simulacao `analysis`, `ready` ou alterada em uma task futura tem a auditoria do `Simulation Fidelity Adjustment Guide` satisfeita e registrada: parametros fisicos validos, regimes, samples, renderer, graficos, tabela, formulas, teoria, warnings e testes proporcionais concordam.
 - O canvas mostra a animacao do pendulo.
 - As metricas instantaneas e a legenda detalhada dos vetores ficam acima do canvas da simulacao; a legenda compacta dos vetores aparece no canto superior direito da animacao.
 - O canvas do pendulo e uma cena 3D; arrastar horizontalmente gira a visualizacao ao redor do eixo Z e usar Shift + scroll sobre o canvas controla o zoom da camera sem alterar a fonte numerica da simulacao.
 - Alterar controles muda a simulacao e regenera dados derivados.
+- Todo parametro visivel em controles, inclusive tempo de ciclo e janela de grafico, possui legenda via tooltip de interrogacao derivada do contrato `SimulationParameter.description`.
 - Alterar o tempo do ciclo muda a duracao maxima antes do playback reiniciar.
 - Alterar a janela dos graficos muda quantos segundos recentes ficam visiveis.
 - Graficos e tabela refletem os mesmos samples quando suas saidas estao ligadas.

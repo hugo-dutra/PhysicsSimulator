@@ -8,11 +8,12 @@ import {
   pendulumFixture,
   simulationCatalog,
 } from './catalog'
+import type { SimulationFixture } from './types'
 
 describe('simulation registry', () => {
-  it('registers the simple pendulum as the available core simulation', () => {
+  it('registers the simple pendulum as the ready core simulation', () => {
     expect(activeSimulation.id).toBe('simple-pendulum')
-    expect(activeSimulation.status).toBe('available')
+    expect(activeSimulation.status).toBe('ready')
     expect(activeSimulation.topicPath).toEqual([
       'Mecanica',
       'Oscilacoes',
@@ -21,18 +22,21 @@ describe('simulation registry', () => {
     expect(getAreaForSimulation('simple-pendulum').id).toBe('mechanics')
   })
 
-  it('keeps planned catalog items separate from the available simulation', () => {
+  it('keeps planned catalog items separate from runnable simulations', () => {
     const allSimulations = simulationCatalog.areas.flatMap(
       (area) => area.simulations,
     )
 
     expect(allSimulations).toHaveLength(51)
     expect(
-      allSimulations.filter((item) => item.status === 'available'),
-    ).toHaveLength(13)
+      allSimulations.filter((item) => item.status === 'analysis'),
+    ).toHaveLength(12)
+    expect(
+      allSimulations.filter((item) => item.status === 'ready'),
+    ).toHaveLength(1)
     expect(allSimulations.some((item) => item.status === 'planned')).toBe(true)
-    expect(findSimulation('inclined-plane-friction').status).toBe('available')
-    expect(findSimulation('projectile-motion').status).toBe('available')
+    expect(findSimulation('inclined-plane-friction').status).toBe('analysis')
+    expect(findSimulation('projectile-motion').status).toBe('analysis')
   })
 
   it('exposes the planned curriculum by area and subarea', () => {
@@ -88,7 +92,7 @@ describe('simulation registry', () => {
     expect(pendulumFixture.formulas.length).toBeGreaterThan(0)
   })
 
-  it('declares the inclined plane as the second available mechanics simulation', () => {
+  it('declares the inclined plane as the second mechanics simulation in analysis', () => {
     const inclinedPlane = findSimulation('inclined-plane-friction')
 
     expect(inclinedPlane.topicPath).toEqual([
@@ -117,7 +121,7 @@ describe('simulation registry', () => {
     expect(inclinedPlaneFixture.formulas.length).toBeGreaterThan(0)
   })
 
-  it('declares the shared analytic mechanics simulations as available', () => {
+  it('declares the shared analytic mechanics simulations as in analysis', () => {
     const kinematicsSimulationIds = [
       'atwood-machine',
       'centripetal-force-curve',
@@ -136,7 +140,7 @@ describe('simulation registry', () => {
       const simulation = findSimulation(simulationId)
       const fixture = kinematicsFixtures[simulationId]
 
-      expect(simulation.status).toBe('available')
+      expect(simulation.status).toBe('analysis')
       expect(simulation.topicPath[0]).toBe('Mecanica')
       expect(simulation.technologyPlan?.engine).toBe('custom-analytic')
       expect(simulation.technologyPlan?.charting).toBe('live-canvas')
@@ -149,6 +153,29 @@ describe('simulation registry', () => {
       expect(fixture.presets.length).toBeGreaterThan(0)
       expect(fixture.limits.length).toBeGreaterThan(0)
       expect(fixture.formulas.length).toBeGreaterThan(0)
+    })
+  })
+
+  it('requires help descriptions for every runnable simulation parameter', () => {
+    const fixtureEntries = [
+      ['simple-pendulum', pendulumFixture],
+      ['inclined-plane-friction', inclinedPlaneFixture],
+      ...Object.entries(kinematicsFixtures),
+    ] satisfies Array<[string, SimulationFixture]>
+
+    fixtureEntries.forEach(([simulationId, fixture]) => {
+      const controls = [
+        ...fixture.runtimeParameters,
+        ...fixture.parameters,
+      ]
+
+      controls.forEach((parameter) => {
+        expect(
+          parameter.description,
+          `${simulationId}.${parameter.id} must declare tooltip help`,
+        ).toEqual(expect.any(String))
+        expect(parameter.description.trim().length).toBeGreaterThan(40)
+      })
     })
   })
 })
