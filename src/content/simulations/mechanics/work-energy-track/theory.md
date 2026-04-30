@@ -34,6 +34,8 @@ O grafico de energia mostra o balanco `K + U_g + E_termica - W_aplicado`, que de
 
 Sem atrito e sem forca aplicada, a queda de energia potencial aparece como aumento de energia cinetica. Com atrito, parte dessa energia vai para a parcela termica. Com forca aplicada positiva, o trabalho externo injeta energia no sistema.
 
+A cena mostra o trilho como uma bancada de laboratorio: o corpo acompanha a posicao calculada no sample, o rastro quente sobre o trilho cresce com `E_termica` e o painel compacto do viewport resume `K`, `U_g`, `E_termica`, `W_aplicado` e o saldo do balanco. Essas leituras sao as mesmas usadas nos graficos, na tabela e nas formulas.
+
 ## Limites do modelo
 
 O trilho real foi reduzido a uma rampa reta. Nao ha rolamento, rotacao, deformacao, mola, curva real nem colisao resolvida no fim do trilho. A forca aplicada e o atrito permanecem constantes no trecho.

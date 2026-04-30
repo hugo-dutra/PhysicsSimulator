@@ -22,6 +22,11 @@ import {
   updateFrameStatsWindow,
   type FrameStats,
 } from '../../lib/rendering/visualRuntime'
+import {
+  positionOrbitCamera,
+  updateOrbitCameraPose,
+  type OrbitCameraPose,
+} from '../../lib/rendering/orbitCamera'
 import { themeTokens } from '../../theme/appTheme'
 import {
   createKinematicsSceneProjection,
@@ -69,6 +74,10 @@ type SceneObjects = {
   tracePositionAttribute: THREE.BufferAttribute
   tracePositions: Float32Array
   atwoodMassHalfHeight: number
+  workEnergyBodyLift: number
+  workEnergyMaxThermalEnergyJoules: number
+  workEnergyTrackNormal: THREE.Vector3
+  workEnergyTrackPitchRadians: number
 }
 
 type RuntimeProps = {
@@ -83,7 +92,17 @@ type RuntimeProps = {
 
 type DragState = {
   lastClientX: number
+  lastClientY: number
   pointerId: number
+}
+
+type WorkEnergyTrackSceneProfile = {
+  direction: THREE.Vector3
+  end: THREE.Vector3
+  length: number
+  normal: THREE.Vector3
+  pitchRadians: number
+  start: THREE.Vector3
 }
 
 const vectorColors: Record<KinematicsVectorOverlay['id'], number> = {
@@ -145,13 +164,27 @@ const traceColor = {
   green: 0xbd / 255,
   red: 0x38 / 255,
 }
+const thermalTraceStartColor = {
+  blue: 0x0b / 255,
+  green: 0x9e / 255,
+  red: 0xf5 / 255,
+}
+const thermalTraceEndColor = {
+  blue: 0x5e / 255,
+  green: 0x3f / 255,
+  red: 0xf4 / 255,
+}
 const readoutIntervalMs = 33
 const maxFrameDeltaSeconds = 0.12
 const initialCameraYawRadians = -0.58
+const initialCameraPitchRadians = Math.atan2(0.38, 0.88)
 const dragYawRadiansPerPixel = 0.008
+const dragPitchRadiansPerPixel = 0.006
 const wheelZoomSensitivity = 0.0014
 const minCameraRadiusScale = 0.4
 const maxCameraRadiusScale = 2.4
+const workEnergyTrackHalfWidth = 0.28
+const workEnergySleeperCount = 15
 
 export function KinematicsScene({
   durationSeconds,
@@ -180,7 +213,10 @@ export function KinematicsScene({
   const frameIdRef = useRef<number | null>(null)
   const lastFrameTimeRef = useRef<number | null>(null)
   const lastReadoutTimeRef = useRef(0)
-  const cameraYawRadiansRef = useRef(initialCameraYawRadians)
+  const cameraPoseRef = useRef<OrbitCameraPose>({
+    pitchRadians: initialCameraPitchRadians,
+    yawRadians: initialCameraYawRadians,
+  })
   const dragStateRef = useRef<DragState | null>(null)
   const statsWindowRef = useRef(createFrameStatsWindow())
 
@@ -219,6 +255,7 @@ export function KinematicsScene({
     (event: ReactPointerEvent<HTMLCanvasElement>) => {
       dragStateRef.current = {
         lastClientX: event.clientX,
+        lastClientY: event.clientY,
         pointerId: event.pointerId,
       }
       event.currentTarget.setPointerCapture(event.pointerId)
@@ -235,18 +272,30 @@ export function KinematicsScene({
       }
 
       const deltaX = event.clientX - dragState.lastClientX
+      const deltaY = event.clientY - dragState.lastClientY
 
-      if (deltaX === 0) {
+      if (deltaX === 0 && deltaY === 0) {
         return
       }
 
       dragState.lastClientX = event.clientX
-      cameraYawRadiansRef.current += deltaX * dragYawRadiansPerPixel
+      dragState.lastClientY = event.clientY
+      cameraPoseRef.current = updateOrbitCameraPose(
+        cameraPoseRef.current,
+        {
+          deltaClientX: deltaX,
+          deltaClientY: deltaY,
+        },
+        {
+          pitchRadiansPerPixel: dragPitchRadiansPerPixel,
+          yawRadiansPerPixel: dragYawRadiansPerPixel,
+        },
+      )
 
       const objects = objectsRef.current
 
       if (objects) {
-        updateOrbitCamera(objects, cameraYawRadiansRef.current)
+        updateOrbitCamera(objects, cameraPoseRef.current)
         renderCurrentFrame()
       }
     },
@@ -296,7 +345,7 @@ export function KinematicsScene({
       }
 
       objects.cameraRadius = nextCameraRadius
-      updateOrbitCamera(objects, cameraYawRadiansRef.current)
+      updateOrbitCamera(objects, cameraPoseRef.current)
       renderCurrentFrame()
     },
     [renderCurrentFrame],
@@ -353,6 +402,10 @@ export function KinematicsScene({
       samples,
       simulationId,
     )
+    const workEnergyProfile = createWorkEnergyTrackSceneProfile(
+      samples,
+      sceneProjection,
+    )
     const bounds = estimateSceneBounds(samples, sceneProjection, simulationId)
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 160)
@@ -389,7 +442,14 @@ export function KinematicsScene({
     grid.material.opacity = 0.38
     scene.add(grid)
 
-    scene.add(createReferencePath(samples, simulationId, sceneProjection))
+    scene.add(
+      createReferencePath(
+        samples,
+        simulationId,
+        sceneProjection,
+        workEnergyProfile,
+      ),
+    )
 
     const sceneBodySize = getBodyDisplaySize(bounds.span)
     const atwoodMassSize = sceneBodySize * 1.8
@@ -402,6 +462,12 @@ export function KinematicsScene({
               sceneBodySize * 5.2,
               sceneBodySize * 0.78,
               sceneBodySize * 0.38,
+            )
+        : simulationId === 'work-energy-track'
+          ? new THREE.BoxGeometry(
+              sceneBodySize * 1.9,
+              sceneBodySize * 1.08,
+              sceneBodySize * 0.72,
             )
         : new THREE.SphereGeometry(
             simulationId === 'collisions-1d-2d' ? 1 : sceneBodySize,
@@ -525,7 +591,7 @@ export function KinematicsScene({
       camera.aspect = width / Math.max(1, height)
       camera.updateProjectionMatrix()
       renderer.setSize(width, height, false)
-      updateOrbitCamera(objectsRef.current, cameraYawRadiansRef.current)
+      updateOrbitCamera(objectsRef.current, cameraPoseRef.current)
       renderCurrentFrame()
     }
     const observer = new ResizeObserver(resizeRenderer)
@@ -554,11 +620,21 @@ export function KinematicsScene({
       tracePositionAttribute,
       tracePositions,
       atwoodMassHalfHeight: atwoodMassSize / 2,
+      workEnergyBodyLift: sceneBodySize * 0.55,
+      workEnergyMaxThermalEnergyJoules: Math.max(
+        1,
+        ...samples.map((sample) => sample.thermalEnergyJoules),
+      ),
+      workEnergyTrackNormal: workEnergyProfile.normal.clone(),
+      workEnergyTrackPitchRadians: workEnergyProfile.pitchRadians,
     }
 
-    cameraYawRadiansRef.current = getInitialCameraYawRadians(simulationId)
+    cameraPoseRef.current = {
+      pitchRadians: initialCameraPitchRadians,
+      yawRadians: getInitialCameraYawRadians(simulationId),
+    }
     observer.observe(parent)
-    updateOrbitCamera(objectsRef.current, cameraYawRadiansRef.current)
+    updateOrbitCamera(objectsRef.current, cameraPoseRef.current)
     resizeRenderer()
 
     return () => {
@@ -650,7 +726,7 @@ export function KinematicsScene({
       }}
     >
       <Box
-        aria-label="Cena 3D de Cinematica com arraste horizontal para orbitar o eixo Z e Shift + scroll para zoom"
+        aria-label="Cena 3D de Cinematica com arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom"
         component="canvas"
         onPointerCancel={handlePointerEnd}
         onPointerDown={handlePointerDown}
@@ -703,6 +779,12 @@ function updateKinematicsObjects({
     simulationId === 'torque-levers-center-mass'
   ) {
     objects.body.rotation.z = sample.angleRadians
+  } else if (simulationId === 'work-energy-track') {
+    objects.body.position.addScaledVector(
+      objects.workEnergyTrackNormal,
+      objects.workEnergyBodyLift,
+    )
+    objects.body.rotation.y = objects.workEnergyTrackPitchRadians
   }
 
   updateConstrainedBodyObjects(objects, sample, simulationId)
@@ -732,7 +814,7 @@ function updateKinematicsObjects({
     arrow.setLength(getVectorDisplayLength(vector), 0.08, 0.045)
   })
 
-  updateTrace(objects, samples, sampleIndex, sample, showTrace)
+  updateTrace(objects, samples, sampleIndex, sample, showTrace, simulationId)
 }
 
 function updateConstrainedBodyObjects(
@@ -885,6 +967,7 @@ function updateTrace(
   sampleIndex: number,
   currentSample: KinematicsSample,
   showTrace: boolean,
+  simulationId: KinematicsSimulationId,
 ) {
   if (!showTrace || sampleIndex < 1) {
     objects.trace.visible = false
@@ -906,6 +989,7 @@ function updateTrace(
     .slice(firstTraceSampleIndex, sampleIndex + 1)
     .slice(-maxTracePoints)
   const drawCount = traceSamples.length
+  const usesThermalTrace = simulationId === 'work-energy-track'
 
   if (drawCount < 2) {
     objects.trace.visible = false
@@ -918,6 +1002,16 @@ function updateTrace(
       sample,
       objects.sceneProjection,
     )
+    const heatRatio = usesThermalTrace
+      ? clamp(
+          sample.thermalEnergyJoules / objects.workEnergyMaxThermalEnergyJoules,
+          0,
+          1,
+        )
+      : 0
+    const color = usesThermalTrace
+      ? blendRgb(thermalTraceStartColor, thermalTraceEndColor, heatRatio)
+      : traceColor
     const positionOffset = traceIndex * 3
     const colorOffset = traceIndex * 4
     const ageRatio = Math.min(
@@ -926,12 +1020,16 @@ function updateTrace(
     )
     const opacity = traceMaxOpacity - ageRatio * (traceMaxOpacity - traceMinOpacity)
 
+    if (usesThermalTrace) {
+      position.addScaledVector(objects.workEnergyTrackNormal, 0.045)
+    }
+
     objects.tracePositions[positionOffset] = position.x
     objects.tracePositions[positionOffset + 1] = position.y
     objects.tracePositions[positionOffset + 2] = position.z
-    objects.traceColors[colorOffset] = traceColor.red
-    objects.traceColors[colorOffset + 1] = traceColor.green
-    objects.traceColors[colorOffset + 2] = traceColor.blue
+    objects.traceColors[colorOffset] = color.red
+    objects.traceColors[colorOffset + 1] = color.green
+    objects.traceColors[colorOffset + 2] = color.blue
     objects.traceColors[colorOffset + 3] = opacity
   })
 
@@ -941,13 +1039,188 @@ function updateTrace(
   objects.traceColorAttribute.needsUpdate = true
 }
 
+function createWorkEnergyTrackSceneProfile(
+  samples: KinematicsSample[],
+  sceneProjection: KinematicsSceneProjection,
+): WorkEnergyTrackSceneProfile {
+  const firstSample = samples[0]
+  const farthestSample =
+    samples.reduce<KinematicsSample | null>((currentFarthest, sample) => {
+      if (!currentFarthest || sample.positionMeters > currentFarthest.positionMeters) {
+        return sample
+      }
+
+      return currentFarthest
+    }, null) ?? firstSample
+  const start = firstSample
+    ? toKinematicsScenePosition(firstSample, sceneProjection)
+    : new THREE.Vector3(0, 0, 0)
+  const end = farthestSample
+    ? toKinematicsScenePosition(farthestSample, sceneProjection)
+    : new THREE.Vector3(1, 0, 0)
+  const direction = end.clone().sub(start)
+  const length = Math.max(1, direction.length())
+
+  if (direction.lengthSq() < 1e-8) {
+    direction.set(1, 0, 0)
+  } else {
+    direction.normalize()
+  }
+
+  const normal = new THREE.Vector3(-direction.z, 0, direction.x)
+
+  if (normal.z < 0) {
+    normal.multiplyScalar(-1)
+  }
+
+  return {
+    direction,
+    end,
+    length,
+    normal,
+    pitchRadians: -Math.atan2(direction.z, direction.x),
+    start,
+  }
+}
+
+function createWorkEnergyTrackReference(profile: WorkEnergyTrackSceneProfile) {
+  const group = new THREE.Group()
+  const railLift = profile.normal.clone().multiplyScalar(0.045)
+  const deckLift = profile.normal.clone().multiplyScalar(-0.035)
+  const start = profile.start.clone()
+  const end = profile.end.clone()
+  const center = start.clone().add(end).multiplyScalar(0.5)
+  const leftOffset = new THREE.Vector3(0, workEnergyTrackHalfWidth, 0)
+  const rightOffset = new THREE.Vector3(0, -workEnergyTrackHalfWidth, 0)
+  const deck = new THREE.Mesh(
+    new THREE.BoxGeometry(
+      profile.length + 0.32,
+      workEnergyTrackHalfWidth * 2.42,
+      0.045,
+    ),
+    new THREE.MeshStandardMaterial({
+      color: 0x20242d,
+      metalness: 0.04,
+      opacity: 0.68,
+      roughness: 0.62,
+      transparent: true,
+    }),
+  )
+
+  deck.position.copy(center).add(deckLift)
+  deck.rotation.y = profile.pitchRadians
+  group.add(deck)
+  group.add(
+    createSceneLine(
+      start.clone().add(leftOffset).add(railLift),
+      end.clone().add(leftOffset).add(railLift),
+      0x38bdf8,
+      0.78,
+    ),
+  )
+  group.add(
+    createSceneLine(
+      start.clone().add(rightOffset).add(railLift),
+      end.clone().add(rightOffset).add(railLift),
+      0x2dd4bf,
+      0.82,
+    ),
+  )
+
+  const sleeperGeometry = new THREE.BoxGeometry(
+    0.055,
+    workEnergyTrackHalfWidth * 2.72,
+    0.04,
+  )
+  const sleeperMaterial = new THREE.MeshStandardMaterial({
+    color: 0xe6e8ec,
+    metalness: 0.12,
+    opacity: 0.42,
+    roughness: 0.54,
+    transparent: true,
+  })
+
+  for (let index = 0; index < workEnergySleeperCount; index += 1) {
+    const ratio = index / (workEnergySleeperCount - 1)
+    const sleeper = new THREE.Mesh(sleeperGeometry, sleeperMaterial)
+
+    sleeper.position
+      .copy(start)
+      .lerp(end, ratio)
+      .add(profile.normal.clone().multiplyScalar(0.018))
+    sleeper.rotation.y = profile.pitchRadians
+    group.add(sleeper)
+  }
+
+  const baseZ = Math.min(start.z, end.z)
+  const rulerY = -workEnergyTrackHalfWidth - 0.42
+  const rulerBottom = new THREE.Vector3(start.x, rulerY, baseZ)
+  const rulerTop = new THREE.Vector3(start.x, rulerY, start.z)
+
+  group.add(createSceneLine(rulerBottom, rulerTop, 0xa3e635, 0.44))
+
+  for (let index = 0; index <= 4; index += 1) {
+    const ratio = index / 4
+    const z = lerp(baseZ, start.z, ratio)
+
+    group.add(
+      createSceneLine(
+        new THREE.Vector3(start.x - 0.1, rulerY, z),
+        new THREE.Vector3(start.x + 0.1, rulerY, z),
+        0xa3e635,
+        0.34,
+      ),
+    )
+  }
+
+  const endStop = new THREE.Mesh(
+    new THREE.BoxGeometry(0.08, workEnergyTrackHalfWidth * 2.58, 0.36),
+    new THREE.MeshStandardMaterial({
+      color: 0xf43f5e,
+      metalness: 0.06,
+      opacity: 0.72,
+      roughness: 0.48,
+      transparent: true,
+    }),
+  )
+
+  endStop.position.copy(end).add(profile.normal.clone().multiplyScalar(0.17))
+  endStop.rotation.y = profile.pitchRadians
+  group.add(endStop)
+
+  return group
+}
+
+function createSceneLine(
+  start: THREE.Vector3,
+  end: THREE.Vector3,
+  color: number,
+  opacity: number,
+) {
+  const geometry = new THREE.BufferGeometry().setFromPoints([start, end])
+
+  return new THREE.Line(
+    geometry,
+    new THREE.LineBasicMaterial({
+      color,
+      opacity,
+      transparent: opacity < 1,
+    }),
+  )
+}
+
 function createReferencePath(
   samples: KinematicsSample[],
   simulationId: KinematicsSimulationId,
   sceneProjection: KinematicsSceneProjection,
+  workEnergyProfile: WorkEnergyTrackSceneProfile,
 ) {
   if (simulationId === 'atwood-machine') {
     return new THREE.Group()
+  }
+
+  if (simulationId === 'work-energy-track') {
+    return createWorkEnergyTrackReference(workEnergyProfile)
   }
 
   if (simulationId === 'collisions-1d-2d') {
@@ -1231,21 +1504,9 @@ function updateOrbitCamera(
     SceneObjects,
     'camera' | 'cameraRadius' | 'cameraTarget'
   > | null,
-  yawRadians: number,
+  pose: OrbitCameraPose,
 ) {
-  if (!objects) {
-    return
-  }
-
-  const horizontalRadius = objects.cameraRadius * 0.88
-  const verticalOffset = objects.cameraRadius * 0.38
-
-  objects.camera.position.set(
-    objects.cameraTarget.x + Math.cos(yawRadians) * horizontalRadius,
-    objects.cameraTarget.y + Math.sin(yawRadians) * horizontalRadius,
-    objects.cameraTarget.z + verticalOffset,
-  )
-  objects.camera.lookAt(objects.cameraTarget)
+  positionOrbitCamera(objects, pose)
 }
 
 function getInitialCameraYawRadians(simulationId: KinematicsSimulationId) {
@@ -1289,6 +1550,22 @@ function disposeScene(scene: THREE.Scene) {
       }
     }
   })
+}
+
+function blendRgb(
+  start: { blue: number; green: number; red: number },
+  end: { blue: number; green: number; red: number },
+  ratio: number,
+) {
+  return {
+    blue: lerp(start.blue, end.blue, ratio),
+    green: lerp(start.green, end.green, ratio),
+    red: lerp(start.red, end.red, ratio),
+  }
+}
+
+function lerp(start: number, end: number, ratio: number) {
+  return start + (end - start) * ratio
 }
 
 function clamp(value: number, min: number, max: number) {

@@ -1204,6 +1204,100 @@ Validacao:
 - Executado `npm run lint`; passou.
 - Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
 - Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+
+## 2026-04-30 - Navegacao orbital yaw/pitch na viewport
+
+Pedido reportado:
+
+- Melhorar a navegacao da viewport Three.js para permitir olhar a cena por cima, por baixo e pelos lados mantendo o botao do mouse pressionado, em vez de girar apenas no eixo Z.
+
+Ajuste:
+
+- Adicionado helper compartilhado `src/lib/rendering/orbitCamera.ts` para manter a pose orbital da camera em refs, com yaw por arraste horizontal, pitch por arraste vertical e limite de pitch para evitar inversao da camera.
+- `PendulumScene`, `InclinedPlaneScene` e `KinematicsScene` passaram a usar a mesma logica de orbita yaw/pitch; Shift + scroll continua controlando apenas o zoom da camera.
+- Labels acessiveis dos canvases foram atualizados para comunicar arraste por cima/baixo e Shift + scroll.
+- Testes do app passaram a verificar a nova instrucao de navegacao, e o helper de camera recebeu teste unitario de drag e posicionamento.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/07-quality-and-operations.md` e `guides/issues.md` para trocar o contrato antigo de arraste horizontal por orbita bidimensional yaw/pitch.
+
+Gate de fidelidade:
+
+- O motor numerico, parametros, regimes, samples, graficos, tabela, formulas, teoria e warnings nao foram alterados. A task ficou restrita ao renderer/camera e preserva a fonte unica de samples; a cena continua apenas desenhando o sample calculado.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/rendering/orbitCamera.test.ts src/App.test.tsx`; 9 testes passaram.
+- Executado `npm run test`; 54 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+- Executado `git diff --check`; sem erros de whitespace, apenas avisos esperados de normalizacao LF/CRLF no Windows.
+- Dev server iniciado em `http://127.0.0.1:5198/`.
+- Smoke visual Playwright/Chrome em desktop confirmou canvas nao vazio e mudanca de pixels apos drag yaw/pitch em pendulo, plano inclinado e Cinematica; smoke mobile confirmou canvas do pendulo visivel, nao vazio e responsivo ao drag. Capturas em `artifacts/viewport-orbit-*.png`.
+
+## 2026-04-30 - Bancada visual de trabalho e energia em trilho
+
+Pedido reportado:
+
+- Tornar `Mecanica > Energia e momento > Trabalho e energia em trilho` mais criativa e visualmente interessante, seguindo a proposta de bancada visual de energia.
+
+Ajuste:
+
+- A cena Three.js de `work-energy-track` deixou de usar a representacao generica de esfera em linha e passou a renderizar um trilho 3D inclinado com dormentes, regua de altura, batente de fim de curso e corpo didatico em bloco alinhado ao trilho.
+- O rastro da simulacao nessa cena passou a usar gradiente termico a partir de `thermalEnergyJoules`, mantendo a trilha como leitura de dissipacao, nao como decoracao solta.
+- O viewport ganhou um painel compacto de balanco energetico para essa simulacao, exibindo `K`, `U_g`, `E_t`, `W` e saldo com valores em joules, todos lidos do mesmo `KinematicsSample` usado pelos graficos, tabela e formulas.
+- O apendice teorico da simulacao passou a explicar como ler o rastro termico e o painel de balanco no viewport.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/09-simulation-catalog-plan.md`, `guides/10-simulation-fidelity-adjustment-guide.md` e `guides/issues.md` para registrar a nova referencia visual e os criterios de validacao.
+
+Gate de fidelidade:
+
+- O motor numerico nao foi alterado. A mudanca ficou no renderer, HUD e teoria; corpo, rastro termico, vetores, painel, graficos, tabela e formulas continuam derivados de `KinematicsSample`.
+- Parametros fisicamente validos em zero, como atrito zero e forca aplicada zero, permanecem validos no fixture e no motor.
+
+Validacao:
+
+- Executado `npm run test -- src/App.test.tsx src/features/simulation-shell/KinematicsScene.test.ts`; 9 testes passaram.
+- Executado `npm run test`; 52 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+- Dev server iniciado em `http://127.0.0.1:5196/`.
+- Smoke visual Chrome/CDP em desktop e mobile confirmou `Trabalho e energia em trilho`, HUD de balanco energetico e canvas renderizado; capturas em `artifacts/work-energy-track-lab-desktop.png` e `artifacts/work-energy-track-lab-mobile-canvas.png`.
+- Pixel check por screenshot na regiao do canvas encontrou 23721 pixels nao-background no desktop e 12669 pixels nao-background no mobile.
+
+## 2026-04-30 - Tres simulacoes de Dinamica prontas
+
+Pedido reportado:
+
+- Marcar como feitos `Mecanica > Dinamica > Plano inclinado com atrito`, `Maquina de Atwood` e `Forca centripeta em curva`.
+
+Ajuste:
+
+- `inclined-plane-friction`, `atwood-machine` e `centripetal-force-curve` passaram de `analysis` para `ready` no catalogo local.
+- `Movimento circular uniforme`, `Trabalho e energia em trilho`, `Colisoes 1D e 2D`, `Equilibrio de particula`, `Torque/alavancas/centro de massa` e `Rotacao de corpo rigido` permanecem em `analysis`.
+- Os testes de contrato passaram a esperar 7 simulacoes `ready` e 6 simulacoes `analysis`.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/09-simulation-catalog-plan.md` e `guides/issues.md` para refletir que plano inclinado, Atwood e forca centripeta em curva estao prontos.
+
+Gate de fidelidade:
+
+- Promocao baseada na aprovacao manual do dono do projeto.
+- Nenhum motor, sample, renderer, grafico, tabela, formula, teoria ou warning foi alterado; a promocao preserva a auditoria de fidelidade ja aplicada a essas simulacoes e so atualiza o status de catalogo/documentacao.
+
+Validacao:
+
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts src/App.test.tsx`; 15 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+- Executado `git diff --check`; sem erros de whitespace, apenas avisos esperados de normalizacao LF/CRLF no Windows.
 - Dev server aberto em `http://127.0.0.1:5192/`.
 - Smoke visual headless com Chrome/CDP: Atwood renderizou canvas nao vazio com 12176 pixels nao-background e 3960 pixels diferentes entre frames; curva com `mu = 0` exibiu status `saiu da curva`, canvas nao vazio com 78893 pixels nao-background e 1006 pixels diferentes entre frames.
 - Capturas geradas em `artifacts/atwood-format-fixed-canvas-a.png`, `artifacts/atwood-format-fixed-canvas-b.png`, `artifacts/centripetal-zero-friction-visible-canvas-a.png` e `artifacts/centripetal-zero-friction-visible-canvas-b.png`.
@@ -1414,3 +1508,31 @@ Validacao:
 - Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
 - Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
 - Dev server iniciado em `http://127.0.0.1:5195/`.
+
+## 2026-04-30 - Tres simulacoes de Cinematica prontas
+
+Pedido reportado:
+
+- Marcar como feitos `Mecanica > Cinematica > Movimento retilineo uniforme`, `Movimento uniformemente variado e queda livre` e `Lancamento obliquo`.
+
+Ajuste:
+
+- `uniform-linear-motion`, `uniformly-accelerated-motion` e `projectile-motion` passaram de `analysis` para `ready` no catalogo local.
+- `Movimento circular uniforme` permanece em `analysis`, mantendo a subarea `Cinematica` aberta por ainda existir simulacao pendente de aprovacao manual.
+- Os testes de contrato passaram a esperar 4 simulacoes `ready` e 9 simulacoes `analysis`.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/09-simulation-catalog-plan.md` e `guides/issues.md` para refletir que MRU, MUV/queda livre e lancamento obliquo estao prontos.
+
+Gate de fidelidade:
+
+- Promocao baseada na aprovacao manual do dono do projeto.
+- Nenhum motor, sample, renderer, grafico, tabela, formula, teoria ou warning foi alterado; a promocao preserva a auditoria de fidelidade ja aplicada as simulacoes de Cinematica e so atualiza o status de catalogo/documentacao.
+
+Validacao:
+
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts src/App.test.tsx`; 15 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`

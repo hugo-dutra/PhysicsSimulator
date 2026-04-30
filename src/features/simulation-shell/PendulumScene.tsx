@@ -21,6 +21,11 @@ import {
   updateFrameStatsWindow,
   type FrameStats,
 } from '../../lib/rendering/visualRuntime'
+import {
+  positionOrbitCamera,
+  updateOrbitCameraPose,
+  type OrbitCameraPose,
+} from '../../lib/rendering/orbitCamera'
 import { themeTokens } from '../../theme/appTheme'
 
 export type PendulumFrameStats = FrameStats
@@ -69,6 +74,7 @@ type RuntimeProps = {
 
 type DragState = {
   lastClientX: number
+  lastClientY: number
   pointerId: number
 }
 
@@ -91,7 +97,10 @@ const traceColor = {
 const readoutIntervalMs = 33
 const maxFrameDeltaSeconds = 0.12
 const initialCameraYawRadians = -0.48
+const initialCameraPitchRadians = Math.atan(0.34)
 const dragYawRadiansPerPixel = 0.008
+const dragPitchRadiansPerPixel = 0.006
+const cameraAzimuthOffsetRadians = -Math.PI / 2
 const wheelZoomSensitivity = 0.0014
 const minCameraRadiusScale = 0.38
 const maxCameraRadiusScale = 2.25
@@ -123,7 +132,10 @@ export function PendulumScene({
   const frameIdRef = useRef<number | null>(null)
   const lastFrameTimeRef = useRef<number | null>(null)
   const lastReadoutTimeRef = useRef(0)
-  const cameraYawRadiansRef = useRef(initialCameraYawRadians)
+  const cameraPoseRef = useRef<OrbitCameraPose>({
+    pitchRadians: initialCameraPitchRadians,
+    yawRadians: initialCameraYawRadians,
+  })
   const dragStateRef = useRef<DragState | null>(null)
   const statsWindowRef = useRef(createFrameStatsWindow())
 
@@ -162,6 +174,7 @@ export function PendulumScene({
     (event: ReactPointerEvent<HTMLCanvasElement>) => {
       dragStateRef.current = {
         lastClientX: event.clientX,
+        lastClientY: event.clientY,
         pointerId: event.pointerId,
       }
       event.currentTarget.setPointerCapture(event.pointerId)
@@ -178,18 +191,30 @@ export function PendulumScene({
       }
 
       const deltaX = event.clientX - dragState.lastClientX
+      const deltaY = event.clientY - dragState.lastClientY
 
-      if (deltaX === 0) {
+      if (deltaX === 0 && deltaY === 0) {
         return
       }
 
       dragState.lastClientX = event.clientX
-      cameraYawRadiansRef.current += deltaX * dragYawRadiansPerPixel
+      dragState.lastClientY = event.clientY
+      cameraPoseRef.current = updateOrbitCameraPose(
+        cameraPoseRef.current,
+        {
+          deltaClientX: deltaX,
+          deltaClientY: deltaY,
+        },
+        {
+          pitchRadiansPerPixel: dragPitchRadiansPerPixel,
+          yawRadiansPerPixel: dragYawRadiansPerPixel,
+        },
+      )
 
       const objects = objectsRef.current
 
       if (objects) {
-        updateOrbitCamera(objects, cameraYawRadiansRef.current)
+        updateOrbitCamera(objects, cameraPoseRef.current)
         renderCurrentFrame()
       }
     },
@@ -239,7 +264,7 @@ export function PendulumScene({
       }
 
       objects.cameraRadius = nextCameraRadius
-      updateOrbitCamera(objects, cameraYawRadiansRef.current)
+      updateOrbitCamera(objects, cameraPoseRef.current)
       renderCurrentFrame()
     },
     [renderCurrentFrame],
@@ -407,7 +432,7 @@ export function PendulumScene({
       camera.aspect = width / Math.max(1, height)
       camera.updateProjectionMatrix()
       renderer.setSize(width, height, false)
-      updateOrbitCamera(objectsRef.current, cameraYawRadiansRef.current)
+      updateOrbitCamera(objectsRef.current, cameraPoseRef.current)
       renderCurrentFrame()
     }
     const observer = new ResizeObserver(resizeRenderer)
@@ -432,7 +457,7 @@ export function PendulumScene({
     }
 
     observer.observe(parent)
-    updateOrbitCamera(objectsRef.current, cameraYawRadiansRef.current)
+    updateOrbitCamera(objectsRef.current, cameraPoseRef.current)
     resizeRenderer()
 
     return () => {
@@ -525,7 +550,7 @@ export function PendulumScene({
     >
       <Box
         component="canvas"
-        aria-label="Cena 3D do pendulo simples com arraste horizontal para orbitar o eixo Z e Shift + scroll para zoom"
+        aria-label="Cena 3D do pendulo simples com arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom"
         onPointerCancel={handlePointerEnd}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -773,20 +798,9 @@ function toScenePosition(sample: Pick<PendulumSample, 'xMeters' | 'yMeters'>) {
 
 function updateOrbitCamera(
   objects: Pick<SceneObjects, 'camera' | 'cameraRadius' | 'cameraTarget'> | null,
-  yawRadians: number,
+  pose: OrbitCameraPose,
 ) {
-  if (!objects) {
-    return
-  }
-
-  const { camera, cameraRadius, cameraTarget } = objects
-
-  camera.position.set(
-    cameraTarget.x + Math.sin(yawRadians) * cameraRadius,
-    cameraTarget.y - Math.cos(yawRadians) * cameraRadius,
-    cameraTarget.z + cameraRadius * 0.34,
-  )
-  camera.lookAt(cameraTarget)
+  positionOrbitCamera(objects, pose, cameraAzimuthOffsetRadians)
 }
 
 function normalizeWheelDeltaY(event: ReactWheelEvent<HTMLCanvasElement>) {

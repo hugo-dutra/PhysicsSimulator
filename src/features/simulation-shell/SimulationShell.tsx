@@ -3083,6 +3083,9 @@ function KinematicsRuntime({
                 vectors={vectors}
               />
             ) : null}
+            {simulationId === 'work-energy-track' && overlays.energy ? (
+              <WorkEnergyTrackHud sample={liveSample} />
+            ) : null}
           </Box>
           {focusedChart ? (
             <Box
@@ -3878,6 +3881,128 @@ function KinematicsVectorLegend({
           </Box>
         )
       })}
+    </Box>
+  )
+}
+
+function WorkEnergyTrackHud({ sample }: { sample: KinematicsSample }) {
+  const terms = [
+    {
+      color: themeTokens.vector,
+      label: 'K',
+      value: sample.kineticEnergyJoules,
+    },
+    {
+      color: themeTokens.warning,
+      label: 'Ug',
+      value: sample.potentialEnergyJoules,
+    },
+    {
+      color: themeTokens.danger,
+      label: 'Et',
+      value: sample.thermalEnergyJoules,
+    },
+    {
+      color: themeTokens.teal,
+      label: 'W',
+      value: sample.appliedWorkJoules,
+    },
+  ]
+  const maxMagnitude = Math.max(
+    1,
+    Math.abs(sample.totalEnergyJoules),
+    ...terms.map((term) => Math.abs(term.value)),
+  )
+
+  return (
+    <Box
+      aria-label="Balanco energetico do trilho"
+      sx={{
+        bgcolor: alpha(themeTokens.background, 0.82),
+        border: `1px solid ${alpha(themeTokens.text, 0.16)}`,
+        borderRadius: 1,
+        bottom: { xs: 8, sm: 10 },
+        display: 'grid',
+        gap: 0.65,
+        left: { xs: 8, sm: 10 },
+        maxWidth: { xs: 'calc(100% - 16px)', sm: 268 },
+        minWidth: { xs: 176, sm: 236 },
+        p: 1,
+        pointerEvents: 'none',
+        position: 'absolute',
+        zIndex: 1,
+      }}
+    >
+      {terms.map((term) => {
+        const barWidth = `${Math.max(
+          4,
+          (Math.abs(term.value) / maxMagnitude) * 100,
+        )}%`
+
+        return (
+          <Box
+            key={term.label}
+            sx={{
+              columnGap: 0.75,
+              display: 'grid',
+              gridTemplateColumns: '26px minmax(0, 1fr) 72px',
+              minWidth: 0,
+              rowGap: 0.25,
+            }}
+          >
+            <Typography
+              sx={{ color: term.color, fontWeight: 800 }}
+              variant="caption"
+            >
+              {term.label}
+            </Typography>
+            <Box
+              sx={{
+                alignSelf: 'center',
+                bgcolor: alpha(themeTokens.text, 0.1),
+                borderRadius: 0.5,
+                height: 5,
+                minWidth: 0,
+                overflow: 'hidden',
+              }}
+            >
+              <Box
+                sx={{
+                  bgcolor: term.color,
+                  height: '100%',
+                  opacity: 0.88,
+                  width: barWidth,
+                }}
+              />
+            </Box>
+            <Typography
+              color="text.secondary"
+              sx={{ textAlign: 'right' }}
+              variant="caption"
+            >
+              {formatNumber(term.value, 'J')}
+            </Typography>
+          </Box>
+        )
+      })}
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: 'center',
+          borderTop: `1px solid ${alpha(themeTokens.text, 0.12)}`,
+          justifyContent: 'space-between',
+          minWidth: 0,
+          pt: 0.6,
+        }}
+      >
+        <Typography color="text.secondary" variant="caption">
+          saldo
+        </Typography>
+        <Typography sx={{ fontWeight: 800 }} variant="caption">
+          {formatNumber(sample.totalEnergyJoules, 'J')}
+        </Typography>
+      </Stack>
     </Box>
   )
 }

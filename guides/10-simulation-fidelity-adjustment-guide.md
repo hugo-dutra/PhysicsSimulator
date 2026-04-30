@@ -46,6 +46,18 @@ Sistemas com fios, polias, hastes ou trilhos devem parecer diagramas fisicos, na
 
 Aplicacao imediata: a Maquina de Atwood deve mostrar suporte fixo, polia fixa, fio passando pelo arco superior da polia e massas em blocos alinhados aos trechos verticais do fio.
 
+## Guia visual para trilhos e energia
+
+Simulacoes de trabalho, energia e dissipacao em trilhos devem parecer uma bancada fisica de laboratorio, nao uma particula solta sobre uma linha abstrata:
+
+- O trilho/guia fica fixo e coerente com a geometria declarada pelo modelo.
+- O corpo didatico fica alinhado ao trilho e usa volume simples, como bloco ou carrinho.
+- Marcas de distancia, altura ou fim de curso sao referencias secundarias, sem substituir o movimento real calculado.
+- Rastros de calor, dissipacao ou trabalho so podem crescer a partir de campos do sample, como `thermalEnergyJoules` e `appliedWorkJoules`.
+- Painel compacto de energia dentro do viewport pode resumir `K`, `U_g`, energia termica, trabalho aplicado e saldo, desde que leia os mesmos campos usados pelos graficos, tabela e formulas.
+
+Aplicacao imediata: `Mecanica > Energia e momento > Trabalho e energia em trilho` deve mostrar trilho 3D inclinado, corpo alinhado ao trilho, rastro termico por dissipacao e balanco energetico derivado de `KinematicsSample`.
+
 ## Guia visual para molas verticais
 
 Sistemas massa-mola verticais devem parecer um diagrama fisico pendurado, nao uma mola decorativa:

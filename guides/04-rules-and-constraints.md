@@ -11,9 +11,9 @@
 - Simulacoes em `analysis` sao implementadas e executaveis, mas aguardam teste manual do dono do projeto; por isso suas subareas iniciam abertas na sidebar.
 - Simulacoes em `ready` sao implementadas, executaveis e ja aprovadas manualmente; suas subareas nao iniciam abertas automaticamente se nao houver itens em `analysis`.
 - A primeira entrega funcional deve ser `Mecanica > Pendulo simples`.
-- A segunda simulacao funcional da Fase 2 e `Mecanica > Dinamica > Plano inclinado com atrito`, usada para validar reuso antes de expandir o catalogo.
-- O primeiro lote da Fase 3 mantem `Mecanica > Cinematica` com MRU, MUV/queda livre, lancamento obliquo e MCU como simulacoes `analysis`, todas com motor analitico compartilhado e saidas completas.
-- O segundo lote da Fase 3 mantem `Mecanica > Dinamica > Maquina de Atwood`, `Mecanica > Dinamica > Forca centripeta em curva` e `Mecanica > Energia e momento > Trabalho e energia em trilho` como simulacoes `analysis`, todas com fixtures locais, formulas, teoria, graficos, tabela e vetores sincronizados.
+- A segunda simulacao funcional da Fase 2 e `Mecanica > Dinamica > Plano inclinado com atrito`, usada para validar reuso antes de expandir o catalogo e promovida para `ready` apos aprovacao manual.
+- O primeiro lote da Fase 3 mantem `Mecanica > Cinematica` com MRU, MUV/queda livre e lancamento obliquo como simulacoes `ready`; MCU permanece em `analysis` ate aprovacao manual. Todas usam motor analitico compartilhado e saidas completas.
+- O segundo lote da Fase 3 mantem `Mecanica > Dinamica > Maquina de Atwood` e `Mecanica > Dinamica > Forca centripeta em curva` como simulacoes `ready`; `Mecanica > Energia e momento > Trabalho e energia em trilho` permanece em `analysis`. Todas usam fixtures locais, formulas, teoria, graficos, tabela e vetores sincronizados.
 - O terceiro lote da Fase 3 mantem `Mecanica > Energia e momento > Colisoes 1D e 2D`, `Mecanica > Estatica > Equilibrio de particula`, `Mecanica > Estatica > Torque, alavancas e centro de massa` e `Mecanica > Rotacao > Rotacao de corpo rigido` como simulacoes `analysis`, mantendo motor, cena, graficos, tabela, formulas, teoria, regimes e warnings sincronizados.
 - A taxonomia principal do catalogo deve usar `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo`; fluidos basicos entram como subarea, nao como prioridade separada antes do core.
 
@@ -45,9 +45,10 @@
 - Vetores exibidos precisam de legenda visivel com cor, modulo atual e significado fisico, especialmente quando a direcao nao e obvia no movimento.
 - Leituras instantaneas e legenda detalhada de vetores devem ficar acima do canvas da simulacao, nao abaixo, para preservar a leitura antes da observacao visual.
 - A area de animacao deve incluir legenda compacta dos vetores principais no canto superior direito, com traco na cor do vetor, grandeza representada e unidade abreviada quando houver.
-- Viewports Three.js devem ser cenas 3D orbitaveis: arraste horizontal no canvas gira a visualizacao ao redor do eixo Z, e Shift + scroll sobre o canvas aproxima ou afasta a camera em direcao a simulacao, sem alterar parametros fisicos ou samples.
+- Viewports Three.js devem ser cenas 3D orbitaveis: arraste com o botao pressionado no canvas gira a visualizacao em yaw e pitch para ver lados, topo e base da cena, e Shift + scroll sobre o canvas aproxima ou afasta a camera em direcao a simulacao, sem alterar parametros fisicos ou samples.
 - O eixo Z deve ser tratado como vertical nas cenas Three.js padrao, para manter consistencia entre simulacoes.
 - Sistemas com mola vertical devem mostrar suporte superior fixo, mola deformando a partir do sample fisico e massa esferica presa na extremidade inferior; a mola nao pode oscilar como decoracao independente da posicao calculada.
+- Sistemas de trabalho e energia em trilhos devem comunicar a restricao fisica como bancada didatica: trilho/guia fixo, corpo alinhado ao trilho, rastro termico derivado de dissipacao real e leitura compacta de balanco energetico derivada do sample; a cena nao deve reduzir energia a uma esfera solta em linha abstrata.
 - Blocos de saida pesada, como graficos, tabela, formulas e teoria, devem ser recolhiveis por chevron no proprio cabecalho.
 - Blocos chevron de saida pesada iniciam fechados por padrao e devem abrir/fechar ao clique no cabecalho.
 - Quando um bloco chevron estiver recolhido, a aplicacao deve desmontar o conteudo e suspender calculos/renderizacao derivados daquele bloco.
@@ -75,7 +76,7 @@
 - Nao travar contratos de API remota cedo demais.
 - Nao colocar `requestAnimationFrame` de playback no `SimulationShell` quando isso causar re-render de layout, graficos, tabela, formulas ou teoria a cada frame.
 - Nao recriar renderers, materiais, geometrias, buffers ou series Plotly no caminho quente da animacao sem justificativa medida.
-- Nao implementar orbitacao ou zoom da camera via estado React de alta frequencia; interacao de camera deve ficar em refs e atualizar o renderer diretamente.
+- Nao implementar orbitacao yaw/pitch ou zoom da camera via estado React de alta frequencia; interacao de camera deve ficar em refs e atualizar o renderer diretamente.
 - Nao desmontar/remontar graficos ou viewport como mecanismo padrao de reset de parametro; preferir atualizar dados e refs preservando os componentes pesados montados.
 - O helper compartilhado de runtime visual pode ser usado para agendar frames, interpolar samples e medir FPS/frame time, mas nao deve substituir o ownership local dos objetos e buffers de cada renderer.
 - Nao manter canvas de grafico, tabela tabular, KaTeX ou Markdown processando quando o bloco chevron correspondente estiver recolhido.

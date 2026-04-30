@@ -30,13 +30,13 @@ describe('simulation registry', () => {
     expect(allSimulations).toHaveLength(51)
     expect(
       allSimulations.filter((item) => item.status === 'analysis'),
-    ).toHaveLength(12)
+    ).toHaveLength(6)
     expect(
       allSimulations.filter((item) => item.status === 'ready'),
-    ).toHaveLength(1)
+    ).toHaveLength(7)
     expect(allSimulations.some((item) => item.status === 'planned')).toBe(true)
-    expect(findSimulation('inclined-plane-friction').status).toBe('analysis')
-    expect(findSimulation('projectile-motion').status).toBe('analysis')
+    expect(findSimulation('inclined-plane-friction').status).toBe('ready')
+    expect(findSimulation('projectile-motion').status).toBe('ready')
   })
 
   it('exposes the planned curriculum by area and subarea', () => {
@@ -92,9 +92,10 @@ describe('simulation registry', () => {
     expect(pendulumFixture.formulas.length).toBeGreaterThan(0)
   })
 
-  it('declares the inclined plane as the second mechanics simulation in analysis', () => {
+  it('declares the inclined plane as the second mechanics simulation ready', () => {
     const inclinedPlane = findSimulation('inclined-plane-friction')
 
+    expect(inclinedPlane.status).toBe('ready')
     expect(inclinedPlane.topicPath).toEqual([
       'Mecanica',
       'Dinamica',
@@ -121,15 +122,39 @@ describe('simulation registry', () => {
     expect(inclinedPlaneFixture.formulas.length).toBeGreaterThan(0)
   })
 
-  it('declares the shared analytic mechanics simulations as in analysis', () => {
-    const kinematicsSimulationIds = [
-      'atwood-machine',
-      'centripetal-force-curve',
-      'collisions-1d-2d',
-      'particle-equilibrium',
+  it('declares the approved kinematics simulations as ready', () => {
+    const readyKinematicsSimulationIds = [
       'uniform-linear-motion',
       'uniformly-accelerated-motion',
       'projectile-motion',
+      'atwood-machine',
+      'centripetal-force-curve',
+    ] as const
+
+    readyKinematicsSimulationIds.forEach((simulationId) => {
+      const simulation = findSimulation(simulationId)
+      const fixture = kinematicsFixtures[simulationId]
+
+      expect(simulation.status).toBe('ready')
+      expect(simulation.topicPath[0]).toBe('Mecanica')
+      expect(simulation.technologyPlan?.engine).toBe('custom-analytic')
+      expect(simulation.technologyPlan?.charting).toBe('live-canvas')
+      expect(fixture.simulationId).toBe(simulationId)
+      expect(fixture.runtimeParameters.map((parameter) => parameter.id)).toEqual([
+        'durationSeconds',
+        'chartWindowSeconds',
+      ])
+      expect(fixture.parameters.length).toBeGreaterThan(0)
+      expect(fixture.presets.length).toBeGreaterThan(0)
+      expect(fixture.limits.length).toBeGreaterThan(0)
+      expect(fixture.formulas.length).toBeGreaterThan(0)
+    })
+  })
+
+  it('declares the remaining shared analytic mechanics simulations as in analysis', () => {
+    const kinematicsSimulationIds = [
+      'collisions-1d-2d',
+      'particle-equilibrium',
       'rigid-body-rotation',
       'torque-levers-center-mass',
       'uniform-circular-motion',

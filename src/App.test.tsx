@@ -22,6 +22,9 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /Movimento retilineo uniforme/i }),
     ).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Dinamica/i }),
+    )
     expect(
       screen.getByRole('button', { name: /Maquina de Atwood/i }),
     ).toBeInTheDocument()
@@ -58,7 +61,9 @@ describe('App', () => {
     )
 
     expect(simulationCanvas).toBeInTheDocument()
-    expect(simulationCanvas).toHaveAccessibleName(/Shift \+ scroll para zoom/i)
+    expect(simulationCanvas).toHaveAccessibleName(
+      /por cima e por baixo.*Shift \+ scroll para zoom/i,
+    )
     expect(within(animationVectorLegend).getByText(/^Peso \(N\)$/i))
       .toBeInTheDocument()
     expect(within(animationVectorLegend).getByText(/^Tensao \(N\)$/i))
@@ -491,7 +496,7 @@ describe('App', () => {
     ).toHaveAttribute('aria-expanded', 'true')
     expect(
       screen.getByRole('button', { name: /Alternar subarea Dinamica/i }),
-    ).toHaveAttribute('aria-expanded', 'true')
+    ).toHaveAttribute('aria-expanded', 'false')
     expect(
       screen.getByRole('button', {
         name: /Alternar subarea Energia e momento/i,
@@ -504,7 +509,7 @@ describe('App', () => {
       screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
     ).toHaveAttribute('aria-expanded', 'false')
     expect(screen.getAllByText(/^analise$/i).length).toBeGreaterThan(0)
-    expect(screen.getByText(/^pronto$/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/^pronto$/i).length).toBeGreaterThan(0)
     expect(
       screen.getAllByText(/^planejado$/i).length,
     ).toBeGreaterThan(0)
@@ -546,6 +551,9 @@ describe('App', () => {
     )
 
     fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Dinamica/i }),
+    )
+    fireEvent.click(
       screen.getByRole('button', { name: /Plano inclinado com atrito/i }),
     )
 
@@ -562,7 +570,7 @@ describe('App', () => {
 
     expect(viewport).toBeInTheDocument()
     expect(screen.getByLabelText(/Cena 3D do plano inclinado/i))
-      .toHaveAccessibleName(/Shift \+ scroll para zoom/i)
+      .toHaveAccessibleName(/por cima e por baixo.*Shift \+ scroll para zoom/i)
     expect(within(animationVectorLegend).getByText(/^Peso \(N\)$/i))
       .toBeInTheDocument()
     expect(within(animationVectorLegend).getByText(/^Normal \(N\)$/i))
@@ -642,7 +650,7 @@ describe('App', () => {
       expect(screen.getByLabelText(/Kinematics numerical viewport/i))
         .toBeInTheDocument()
       expect(screen.getByLabelText(/Cena 3D de Cinematica/i))
-        .toHaveAccessibleName(/Shift \+ scroll para zoom/i)
+        .toHaveAccessibleName(/por cima e por baixo.*Shift \+ scroll para zoom/i)
       expect(screen.getAllByLabelText(control).length).toBeGreaterThan(0)
 
       fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
@@ -671,6 +679,10 @@ describe('App', () => {
       },
     ]
 
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Dinamica/i }),
+    )
+
     dynamicsCases.forEach(({ title, chart, control }) => {
       fireEvent.click(screen.getByRole('button', { name: title }))
 
@@ -678,7 +690,7 @@ describe('App', () => {
       expect(screen.getByLabelText(/Kinematics numerical viewport/i))
         .toBeInTheDocument()
       expect(screen.getByLabelText(/Cena 3D de Cinematica/i))
-        .toHaveAccessibleName(/Shift \+ scroll para zoom/i)
+        .toHaveAccessibleName(/por cima e por baixo.*Shift \+ scroll para zoom/i)
       expect(screen.getAllByLabelText(control).length).toBeGreaterThan(0)
 
       fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
@@ -694,6 +706,18 @@ describe('App', () => {
       screen.getByRole('heading', { name: /Trabalho e energia em trilho/i }),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/Forca aplicada \(N\)/i)).toBeInTheDocument()
+    const workEnergyViewport = screen.getByLabelText(
+      /Kinematics numerical viewport/i,
+    )
+    const energyBalanceHud = within(workEnergyViewport).getByLabelText(
+      /Balanco energetico do trilho/i,
+    )
+
+    expect(within(energyBalanceHud).getByText(/^K$/i)).toBeInTheDocument()
+    expect(within(energyBalanceHud).getByText(/^Ug$/i)).toBeInTheDocument()
+    expect(within(energyBalanceHud).getByText(/^Et$/i)).toBeInTheDocument()
+    expect(within(energyBalanceHud).getByText(/^W$/i)).toBeInTheDocument()
+    expect(within(energyBalanceHud).getByText(/^saldo$/i)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
     expect(

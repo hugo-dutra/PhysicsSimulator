@@ -69,10 +69,11 @@ Depois da prova do core, cada nova simulacao promovida para `analysis` ou `ready
 ## Validacoes visuais
 
 - Canvas nao pode estar em branco.
-- Viewports Three.js devem renderizar cena 3D com pixels nao-background, responder a arraste horizontal mudando a visualizacao da camera e responder a Shift + scroll sobre o canvas com zoom da camera.
+- Viewports Three.js devem renderizar cena 3D com pixels nao-background, responder a arraste horizontal mudando yaw, responder a arraste vertical mudando pitch para ver por cima/baixo e responder a Shift + scroll sobre o canvas com zoom da camera.
 - Vetores devem acompanhar o movimento.
 - Quando uma simulacao declara perda de restricao, a cena deve mostrar a trajetoria real calculada pelo motor e deixar a guia ideal apenas como referencia secundaria.
 - Na massa-mola vertical, o suporte superior deve permanecer fixo, a mola deve deformar de acordo com a posicao vertical calculada e a massa esferica deve acompanhar o mesmo sample usado por graficos, tabela, formulas e vetores.
+- Em `Trabalho e energia em trilho`, o smoke visual deve confirmar que o corpo aparece como bloco/carrinho alinhado ao trilho, que o trilho 3D tem referencia de altura/distancia, que o rastro termico acompanha a dissipacao do sample e que o painel compacto de `K`, `U_g`, `E_termica`, `W_aplicado` e saldo aparece no viewport quando energia esta ligada.
 - Quando a simulacao tiver parametros-limite relevantes, o smoke visual ou teste proporcional deve cobrir pelo menos um caso-limite didatico, nao apenas o preset nominal.
 - Vetores devem ter legenda visivel com cor, modulo atual e significado fisico.
 - Metricas instantaneas e legenda detalhada de vetores devem aparecer acima do canvas do viewport.
@@ -89,7 +90,7 @@ Depois da prova do core, cada nova simulacao promovida para `analysis` ou `ready
 - O modo maximizado de viewport, graficos, tabela, formulas e apendice teorico deve mostrar apenas o painel em foco dentro da janela e voltar ao layout anterior ao minimizar.
 - A sidebar deve permitir expandir areas e subareas planejadas sem confundir itens planejados com simulacoes em analise ou prontas.
 - A sidebar deve iniciar abertas apenas as subareas com simulacoes em `analysis`; subareas somente `ready` ou `planned` devem iniciar recolhidas.
-- A sidebar deve permitir trocar entre pendulo simples, plano inclinado com atrito, as simulacoes de Cinematica em analise, Maquina de Atwood, forca centripeta em curva, trabalho/energia em trilho, colisoes 1D/2D, equilibrio de particula, torque/alavancas/centro de massa e rotacao de corpo rigido sem abandonar o shell compartilhado.
+- A sidebar deve permitir trocar entre pendulo simples, plano inclinado com atrito, as simulacoes de Cinematica prontas ou em analise, Maquina de Atwood, forca centripeta em curva, trabalho/energia em trilho, colisoes 1D/2D, equilibrio de particula, torque/alavancas/centro de massa e rotacao de corpo rigido sem abandonar o shell compartilhado.
 - A tabela de amostras nao deve variar sua altura durante playback por mudar a quantidade de linhas.
 - Formulas devem permanecer legiveis e indicar quando usar cada equacao.
 - Layout nao deve quebrar em desktop comum.

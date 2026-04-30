@@ -31,7 +31,7 @@
 - O tema inicial usa `#2DD4BF` como cor primaria teal e `#38BDF8` como cor informativa/cyan.
 - O apendice teorico inicial do pendulo e renderizado como Markdown local com KaTeX abaixo do guia de formulas; o guia de formulas permanece como bloco aplicado e ligado a parametros, samples, graficos e vetores.
 - O padrao de renderizacao animada passa a ser renderer-first: `requestAnimationFrame` pertence ao renderer visual, o shell React recebe leituras periodicas e componentes pesados como Plotly, tabela, formulas e teoria ficam fora do caminho quente da animacao.
-- Viewports Three.js seguem o padrao 3D orbitavel: eixo Z vertical, camera girando por arraste horizontal, zoom por Shift + scroll sobre o canvas em refs do renderer e objetos principais com volume quando isso melhora a leitura espacial.
+- Viewports Three.js seguem o padrao 3D orbitavel: eixo Z vertical, camera girando por arraste horizontal e vertical para yaw/pitch, zoom por Shift + scroll sobre o canvas em refs do renderer e objetos principais com volume quando isso melhora a leitura espacial.
 - Graficos, tabela, formulas e teoria devem seguir o padrao de bloco chevron recolhivel: quando recolhidos, desmontam o conteudo e suspendem processamento derivado em vez de apenas esconder a UI.
 - Blocos chevron de saida pesada iniciam fechados por padrao e precisam alternar aberto/fechado ao clique no cabecalho.
 - Viewport, graficos, tabela, formulas e apendice teorico seguem o padrao de painel maximizavel: apenas um fica em foco na janela, os demais paineis ficam invisiveis, e minimizar restaura o shell anterior sem perder sincronizacao.
@@ -46,14 +46,15 @@
 - A area de animacao tambem deve exibir legenda compacta dos vetores principais no canto superior direito, com traco na cor do vetor, grandeza representada e unidade abreviada quando houver.
 - Graficos devem manter escala numerica visivel no eixo Y e legendas com nomes fisicos completos para as grandezas; unidades podem usar abreviacoes fisicas padrao como `rad/s`, `m/s`, `m/s^2` e `J`.
 - Graficos temporais devem oferecer acao de olho para mover um unico grafico para um slot lateral direito dentro do viewport, preservando a mesma janela de samples e retornando ao bloco original quando a acao for desligada.
-- `Mecanica > Dinamica > Plano inclinado com atrito` e a segunda simulacao em `analysis`, com fixture local, motor deterministico por regimes, cena Three.js, graficos live-canvas, tabela, formulas e teoria no mesmo shell.
+- `Mecanica > Dinamica > Plano inclinado com atrito` e a segunda simulacao `ready`, com fixture local, motor deterministico por regimes, cena Three.js, graficos live-canvas, tabela, formulas e teoria no mesmo shell.
 - O runtime visual reutilizavel fica em `src/lib/rendering/visualRuntime.ts` e centraliza agendamento de frames, interpolacao de timeline e metricas simples, mantendo cada renderer dono dos seus objetos e buffers.
-- `Mecanica > Cinematica` iniciou a Fase 3 com quatro simulacoes `analysis`: `Movimento retilineo uniforme`, `Movimento uniformemente variado e queda livre`, `Lancamento obliquo` e `Movimento circular uniforme`, todas com motor analitico compartilhado, cena Three.js 2.5D, live-canvas, tabela, formulas, teoria e fixtures locais.
-- O segundo lote da Fase 3 manteve `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho` em `analysis`, reutilizando o motor analitico compartilhado com campos extras de forca, tensao, atrito, trabalho, dissipacao e limites de modelo.
+- `Mecanica > Cinematica` iniciou a Fase 3 com quatro simulacoes executaveis. Apos aprovacao manual, `Movimento retilineo uniforme`, `Movimento uniformemente variado e queda livre` e `Lancamento obliquo` ficam como `ready`; `Movimento circular uniforme` permanece em `analysis`. Todas usam motor analitico compartilhado, cena Three.js 2.5D, live-canvas, tabela, formulas, teoria e fixtures locais.
+- O segundo lote da Fase 3 manteve `Maquina de Atwood` e `Forca centripeta em curva` como `ready`; `Trabalho e energia em trilho` permanece em `analysis`. Todas reutilizam o motor analitico compartilhado com campos extras de forca, tensao, atrito, trabalho, dissipacao e limites de modelo.
 - O terceiro lote da Fase 3 manteve `Colisoes 1D e 2D`, `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido` em `analysis`, ampliando o motor compartilhado com momento linear, impulso, componentes de forca, centro de massa, torque, momento de inercia e grandezas angulares.
 - Simulacoes `analysis` ou `ready` devem ser auditadas pelo guia `10-simulation-fidelity-adjustment-guide.md`: parametros fisicamente validos em zero nao devem ser bloqueados por conveniencia visual, falhas de restricao devem trocar o regime no motor, e toda task futura de simulacao deve registrar essa auditoria antes de ser considerada pronta.
 - Em `Forca centripeta em curva`, atrito zero e valido. Quando `v^2/r > mu g`, o corpo deixa a curva ideal; com `mu = 0`, sai pela tangente em linha reta.
 - Em `Maquina de Atwood`, a representacao visual deve seguir o formato didatico de suporte fixo, polia fixa, fio passando pelo arco superior e massas em blocos alinhadas aos trechos verticais.
+- Em `Trabalho e energia em trilho`, a representacao visual deve seguir o formato de bancada de energia: trilho 3D inclinado, corpo alinhado ao trilho, rastro termico e painel compacto de balanco energetico derivados de `KinematicsSample`, sem inventar energia fora do motor.
 
 ## Decisoes pendentes
 

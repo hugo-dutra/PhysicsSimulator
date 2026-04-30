@@ -21,6 +21,11 @@ import {
   updateFrameStatsWindow,
   type FrameStats,
 } from '../../lib/rendering/visualRuntime'
+import {
+  positionOrbitCamera,
+  updateOrbitCameraPose,
+  type OrbitCameraPose,
+} from '../../lib/rendering/orbitCamera'
 import { themeTokens } from '../../theme/appTheme'
 
 export type InclinedPlaneFrameStats = FrameStats
@@ -74,6 +79,7 @@ type RuntimeProps = {
 
 type DragState = {
   lastClientX: number
+  lastClientY: number
   pointerId: number
 }
 
@@ -98,7 +104,10 @@ const traceColor = {
 const readoutIntervalMs = 33
 const maxFrameDeltaSeconds = 0.12
 const initialCameraYawRadians = -0.62
+const initialCameraPitchRadians = Math.atan(0.38)
 const dragYawRadiansPerPixel = 0.008
+const dragPitchRadiansPerPixel = 0.006
+const cameraAzimuthOffsetRadians = -Math.PI / 2
 const wheelZoomSensitivity = 0.0014
 const minCameraRadiusScale = 0.42
 const maxCameraRadiusScale = 2.35
@@ -130,7 +139,10 @@ export function InclinedPlaneScene({
   const frameIdRef = useRef<number | null>(null)
   const lastFrameTimeRef = useRef<number | null>(null)
   const lastReadoutTimeRef = useRef(0)
-  const cameraYawRadiansRef = useRef(initialCameraYawRadians)
+  const cameraPoseRef = useRef<OrbitCameraPose>({
+    pitchRadians: initialCameraPitchRadians,
+    yawRadians: initialCameraYawRadians,
+  })
   const dragStateRef = useRef<DragState | null>(null)
   const statsWindowRef = useRef(createFrameStatsWindow())
 
@@ -169,6 +181,7 @@ export function InclinedPlaneScene({
     (event: ReactPointerEvent<HTMLCanvasElement>) => {
       dragStateRef.current = {
         lastClientX: event.clientX,
+        lastClientY: event.clientY,
         pointerId: event.pointerId,
       }
       event.currentTarget.setPointerCapture(event.pointerId)
@@ -185,18 +198,30 @@ export function InclinedPlaneScene({
       }
 
       const deltaX = event.clientX - dragState.lastClientX
+      const deltaY = event.clientY - dragState.lastClientY
 
-      if (deltaX === 0) {
+      if (deltaX === 0 && deltaY === 0) {
         return
       }
 
       dragState.lastClientX = event.clientX
-      cameraYawRadiansRef.current += deltaX * dragYawRadiansPerPixel
+      dragState.lastClientY = event.clientY
+      cameraPoseRef.current = updateOrbitCameraPose(
+        cameraPoseRef.current,
+        {
+          deltaClientX: deltaX,
+          deltaClientY: deltaY,
+        },
+        {
+          pitchRadiansPerPixel: dragPitchRadiansPerPixel,
+          yawRadiansPerPixel: dragYawRadiansPerPixel,
+        },
+      )
 
       const objects = objectsRef.current
 
       if (objects) {
-        updateOrbitCamera(objects, cameraYawRadiansRef.current)
+        updateOrbitCamera(objects, cameraPoseRef.current)
         renderCurrentFrame()
       }
     },
@@ -246,7 +271,7 @@ export function InclinedPlaneScene({
       }
 
       objects.cameraRadius = nextCameraRadius
-      updateOrbitCamera(objects, cameraYawRadiansRef.current)
+      updateOrbitCamera(objects, cameraPoseRef.current)
       renderCurrentFrame()
     },
     [renderCurrentFrame],
@@ -428,7 +453,7 @@ export function InclinedPlaneScene({
       camera.aspect = width / Math.max(1, height)
       camera.updateProjectionMatrix()
       renderer.setSize(width, height, false)
-      updateOrbitCamera(objectsRef.current, cameraYawRadiansRef.current)
+      updateOrbitCamera(objectsRef.current, cameraPoseRef.current)
       renderCurrentFrame()
     }
     const observer = new ResizeObserver(resizeRenderer)
@@ -452,7 +477,7 @@ export function InclinedPlaneScene({
     }
 
     observer.observe(parent)
-    updateOrbitCamera(objectsRef.current, cameraYawRadiansRef.current)
+    updateOrbitCamera(objectsRef.current, cameraPoseRef.current)
     resizeRenderer()
 
     return () => {
@@ -544,7 +569,7 @@ export function InclinedPlaneScene({
       }}
     >
       <Box
-        aria-label="Cena 3D do plano inclinado com arraste horizontal para orbitar o eixo Z e Shift + scroll para zoom"
+        aria-label="Cena 3D do plano inclinado com arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom"
         component="canvas"
         onPointerCancel={handlePointerEnd}
         onPointerDown={handlePointerDown}
@@ -821,20 +846,9 @@ function toScenePosition(
 
 function updateOrbitCamera(
   objects: Pick<SceneObjects, 'camera' | 'cameraRadius' | 'cameraTarget'> | null,
-  yawRadians: number,
+  pose: OrbitCameraPose,
 ) {
-  if (!objects) {
-    return
-  }
-
-  const { camera, cameraRadius, cameraTarget } = objects
-
-  camera.position.set(
-    cameraTarget.x + Math.sin(yawRadians) * cameraRadius,
-    cameraTarget.y - Math.cos(yawRadians) * cameraRadius,
-    cameraTarget.z + cameraRadius * 0.38,
-  )
-  camera.lookAt(cameraTarget)
+  positionOrbitCamera(objects, pose, cameraAzimuthOffsetRadians)
 }
 
 function normalizeWheelDeltaY(event: ReactWheelEvent<HTMLCanvasElement>) {
