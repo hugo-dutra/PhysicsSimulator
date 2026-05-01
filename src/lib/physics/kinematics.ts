@@ -2,9 +2,13 @@ export type KinematicsSimulationId =
   | 'atwood-machine'
   | 'centripetal-force-curve'
   | 'collisions-1d-2d'
+  | 'continuity-bernoulli'
+  | 'gravitational-field-orbits'
+  | 'hydrostatics-buoyancy'
   | 'particle-equilibrium'
   | 'projectile-motion'
   | 'rigid-body-rotation'
+  | 'rolling-without-slipping'
   | 'torque-levers-center-mass'
   | 'uniform-circular-motion'
   | 'uniform-linear-motion'
@@ -40,6 +44,32 @@ export type CollisionsParameters = {
   radiusTwoMeters: number
   tangentialSpeedOneMetersPerSecond: number
   tangentialSpeedTwoMetersPerSecond: number
+}
+
+export type ContinuityBernoulliParameters = {
+  flowRateCubicMetersPerSecond: number
+  fluidDensityKilogramsPerCubicMeter: number
+  gravityMetersPerSecondSquared: number
+  heightDifferenceMeters: number
+  inletAreaSquareMeters: number
+  inletPressureKilopascals: number
+  throatAreaSquareMeters: number
+}
+
+export type GravitationalFieldOrbitsParameters = {
+  centralMassEarths: number
+  eccentricity: number
+  initialAngleDegrees: number
+  orbitalRadiusKilometers: number
+  satelliteMassKilograms: number
+}
+
+export type HydrostaticsBuoyancyParameters = {
+  depthMeters: number
+  fluidDensityKilogramsPerCubicMeter: number
+  gravityMetersPerSecondSquared: number
+  objectDensityKilogramsPerCubicMeter: number
+  objectVolumeCubicMeters: number
 }
 
 export type ParticleEquilibriumParameters = {
@@ -108,13 +138,27 @@ export type RigidBodyRotationParameters = {
   momentOfInertiaKilogramMetersSquared: number
 }
 
+export type RollingWithoutSlippingParameters = {
+  frictionCoefficient: number
+  gravityMetersPerSecondSquared: number
+  inclineAngleDegrees: number
+  initialSpeedMetersPerSecond: number
+  massKilograms: number
+  radiusMeters: number
+  trackLengthMeters: number
+}
+
 export type KinematicsParameters =
   | AtwoodMachineParameters
   | CentripetalForceCurveParameters
   | CollisionsParameters
+  | ContinuityBernoulliParameters
+  | GravitationalFieldOrbitsParameters
+  | HydrostaticsBuoyancyParameters
   | ParticleEquilibriumParameters
   | ProjectileMotionParameters
   | RigidBodyRotationParameters
+  | RollingWithoutSlippingParameters
   | TorqueLeversCenterMassParameters
   | UniformCircularMotionParameters
   | UniformLinearMotionParameters
@@ -132,11 +176,14 @@ export type KinematicsSample = {
   appliedForceXNewtons: number
   appliedForceZNewtons: number
   appliedWorkJoules: number
+  buoyantForceNewtons: number
   centerOfMassMeters: number
   centripetalForceNewtons: number
   centripetalAccelerationMetersPerSecondSquared: number
+  crossSectionAreaSquareMeters: number
   displacementMeters: number
   frequencyHertz: number
+  flowRateCubicMetersPerSecond: number
   forceOneNewtons: number
   forceOneXNewtons: number
   forceOneZNewtons: number
@@ -147,6 +194,8 @@ export type KinematicsSample = {
   forceTwoXNewtons: number
   forceTwoZNewtons: number
   frictionForceNewtons: number
+  fluidPressurePascals: number
+  gravitationalFieldNewtonsPerKilogram: number
   gripRatio: number
   impulseNewtonSeconds: number
   isGrounded: boolean
@@ -163,7 +212,10 @@ export type KinematicsSample = {
   periodSeconds: number
   positionMeters: number
   potentialEnergyJoules: number
+  pressurePascals: number
   primaryRadiusMeters: number
+  secondaryPressurePascals: number
+  secondaryCrossSectionAreaSquareMeters: number
   secondarySpeedMetersPerSecond: number
   secondaryRadiusMeters: number
   secondaryVelocityMetersPerSecond: number
@@ -172,6 +224,7 @@ export type KinematicsSample = {
   secondaryXMeters: number
   secondaryZMeters: number
   speedMetersPerSecond: number
+  submergedFraction: number
   tensionNewtons: number
   thermalEnergyJoules: number
   timeSeconds: number
@@ -246,8 +299,12 @@ const kinematicsSimulationIds = [
   'atwood-machine',
   'centripetal-force-curve',
   'collisions-1d-2d',
+  'continuity-bernoulli',
+  'gravitational-field-orbits',
+  'hydrostatics-buoyancy',
   'particle-equilibrium',
   'rigid-body-rotation',
+  'rolling-without-slipping',
   'torque-levers-center-mass',
   'uniform-linear-motion',
   'uniformly-accelerated-motion',
@@ -267,11 +324,14 @@ const sampleNumericKeys = [
   'appliedForceXNewtons',
   'appliedForceZNewtons',
   'appliedWorkJoules',
+  'buoyantForceNewtons',
   'centerOfMassMeters',
   'centripetalForceNewtons',
   'centripetalAccelerationMetersPerSecondSquared',
+  'crossSectionAreaSquareMeters',
   'displacementMeters',
   'frequencyHertz',
+  'flowRateCubicMetersPerSecond',
   'forceOneNewtons',
   'forceOneXNewtons',
   'forceOneZNewtons',
@@ -282,6 +342,8 @@ const sampleNumericKeys = [
   'forceTwoXNewtons',
   'forceTwoZNewtons',
   'frictionForceNewtons',
+  'fluidPressurePascals',
+  'gravitationalFieldNewtonsPerKilogram',
   'gripRatio',
   'impulseNewtonSeconds',
   'kineticEnergyJoules',
@@ -297,7 +359,10 @@ const sampleNumericKeys = [
   'periodSeconds',
   'positionMeters',
   'potentialEnergyJoules',
+  'pressurePascals',
   'primaryRadiusMeters',
+  'secondaryCrossSectionAreaSquareMeters',
+  'secondaryPressurePascals',
   'secondaryRadiusMeters',
   'secondarySpeedMetersPerSecond',
   'secondaryVelocityMetersPerSecond',
@@ -306,6 +371,7 @@ const sampleNumericKeys = [
   'secondaryXMeters',
   'secondaryZMeters',
   'speedMetersPerSecond',
+  'submergedFraction',
   'tensionNewtons',
   'thermalEnergyJoules',
   'timeSeconds',
@@ -320,7 +386,12 @@ const sampleNumericKeys = [
 const atwoodHorizontalOffsetMeters = 0.48
 const centripetalGripRatioDisplayCap = 99
 const centripetalSlipTolerance = 1e-9
+const earthMassKilograms = 5.9722e24
 const equilibriumForceToleranceNewtons = 0.05
+const gravitationalConstant = 6.6743e-11
+const highEccentricityWarningThreshold = 0.65
+const hydrostaticFloatToleranceNewtons = 1e-6
+const rollingInertiaFactor = 0.5
 const torqueToleranceNewtonMeters = 0.05
 
 export function isKinematicsSimulationId(
@@ -406,6 +477,65 @@ export function toKinematicsParameters(
       validateCollisionsParameters(parameters)
       return parameters
     }
+    case 'continuity-bernoulli': {
+      const parameters: ContinuityBernoulliParameters = {
+        flowRateCubicMetersPerSecond: readNumber(
+          values,
+          'flowRateCubicMetersPerSecond',
+        ),
+        fluidDensityKilogramsPerCubicMeter: readNumber(
+          values,
+          'fluidDensityKilogramsPerCubicMeter',
+        ),
+        gravityMetersPerSecondSquared: readNumber(
+          values,
+          'gravityMetersPerSecondSquared',
+        ),
+        heightDifferenceMeters: readNumber(values, 'heightDifferenceMeters'),
+        inletAreaSquareMeters: readNumber(values, 'inletAreaSquareMeters'),
+        inletPressureKilopascals: readNumber(
+          values,
+          'inletPressureKilopascals',
+        ),
+        throatAreaSquareMeters: readNumber(values, 'throatAreaSquareMeters'),
+      }
+
+      validateContinuityBernoulliParameters(parameters)
+      return parameters
+    }
+    case 'gravitational-field-orbits': {
+      const parameters: GravitationalFieldOrbitsParameters = {
+        centralMassEarths: readNumber(values, 'centralMassEarths'),
+        eccentricity: readNumber(values, 'eccentricity'),
+        initialAngleDegrees: readNumber(values, 'initialAngleDegrees'),
+        orbitalRadiusKilometers: readNumber(values, 'orbitalRadiusKilometers'),
+        satelliteMassKilograms: readNumber(values, 'satelliteMassKilograms'),
+      }
+
+      validateGravitationalFieldOrbitsParameters(parameters)
+      return parameters
+    }
+    case 'hydrostatics-buoyancy': {
+      const parameters: HydrostaticsBuoyancyParameters = {
+        depthMeters: readNumber(values, 'depthMeters'),
+        fluidDensityKilogramsPerCubicMeter: readNumber(
+          values,
+          'fluidDensityKilogramsPerCubicMeter',
+        ),
+        gravityMetersPerSecondSquared: readNumber(
+          values,
+          'gravityMetersPerSecondSquared',
+        ),
+        objectDensityKilogramsPerCubicMeter: readNumber(
+          values,
+          'objectDensityKilogramsPerCubicMeter',
+        ),
+        objectVolumeCubicMeters: readNumber(values, 'objectVolumeCubicMeters'),
+      }
+
+      validateHydrostaticsBuoyancyParameters(parameters)
+      return parameters
+    }
     case 'particle-equilibrium': {
       const parameters: ParticleEquilibriumParameters = {
         forceOneAngleDegrees: readNumber(values, 'forceOneAngleDegrees'),
@@ -484,6 +614,26 @@ export function toKinematicsParameters(
       }
 
       validateRigidBodyRotationParameters(parameters)
+      return parameters
+    }
+    case 'rolling-without-slipping': {
+      const parameters: RollingWithoutSlippingParameters = {
+        frictionCoefficient: readNumber(values, 'frictionCoefficient'),
+        gravityMetersPerSecondSquared: readNumber(
+          values,
+          'gravityMetersPerSecondSquared',
+        ),
+        inclineAngleDegrees: readNumber(values, 'inclineAngleDegrees'),
+        initialSpeedMetersPerSecond: readNumber(
+          values,
+          'initialSpeedMetersPerSecond',
+        ),
+        massKilograms: readNumber(values, 'massKilograms'),
+        radiusMeters: readNumber(values, 'radiusMeters'),
+        trackLengthMeters: readNumber(values, 'trackLengthMeters'),
+      }
+
+      validateRollingWithoutSlippingParameters(parameters)
       return parameters
     }
     case 'torque-levers-center-mass': {
@@ -601,6 +751,21 @@ export function computeKinematicsSample(
         parameters as CollisionsParameters,
         timeSeconds,
       )
+    case 'continuity-bernoulli':
+      return computeContinuityBernoulliSample(
+        parameters as ContinuityBernoulliParameters,
+        timeSeconds,
+      )
+    case 'gravitational-field-orbits':
+      return computeGravitationalFieldOrbitsSample(
+        parameters as GravitationalFieldOrbitsParameters,
+        timeSeconds,
+      )
+    case 'hydrostatics-buoyancy':
+      return computeHydrostaticsBuoyancySample(
+        parameters as HydrostaticsBuoyancyParameters,
+        timeSeconds,
+      )
     case 'particle-equilibrium':
       return computeParticleEquilibriumSample(
         parameters as ParticleEquilibriumParameters,
@@ -624,6 +789,11 @@ export function computeKinematicsSample(
     case 'rigid-body-rotation':
       return computeRigidBodyRotationSample(
         parameters as RigidBodyRotationParameters,
+        timeSeconds,
+      )
+    case 'rolling-without-slipping':
+      return computeRollingWithoutSlippingSample(
+        parameters as RollingWithoutSlippingParameters,
         timeSeconds,
       )
     case 'torque-levers-center-mass':
@@ -772,6 +942,86 @@ export function getKinematicsVectorOverlays(
     ]
   }
 
+  if (simulationId === 'continuity-bernoulli') {
+    return [
+      {
+        direction: normalizeVector({
+          x: sample.velocityXMetersPerSecond,
+          z: sample.velocityZMetersPerSecond,
+        }),
+        id: 'velocity',
+        label: 'Velocidade na entrada',
+        magnitude: sample.speedMetersPerSecond,
+        unit: 'm/s',
+      },
+      {
+        direction: normalizeVector({
+          x: sample.secondaryVelocityXMetersPerSecond,
+          z: sample.secondaryVelocityZMetersPerSecond,
+        }),
+        id: 'secondaryVelocity',
+        label: 'Velocidade no estrangulamento',
+        magnitude: sample.secondarySpeedMetersPerSecond,
+        unit: 'm/s',
+      },
+    ]
+  }
+
+  if (simulationId === 'gravitational-field-orbits') {
+    return [
+      {
+        direction: normalizeVector({
+          x: sample.velocityXMetersPerSecond,
+          z: sample.velocityZMetersPerSecond,
+        }),
+        id: 'velocity',
+        label: 'Velocidade orbital',
+        magnitude: sample.speedMetersPerSecond,
+        unit: 'm/s',
+      },
+      {
+        direction: normalizeVector({ x: -sample.xMeters, z: -sample.zMeters }),
+        id: 'gravity',
+        label: 'Campo gravitacional',
+        magnitude: sample.gravitationalFieldNewtonsPerKilogram,
+        unit: 'm/s^2',
+      },
+      {
+        direction: normalizeVector({ x: -sample.xMeters, z: -sample.zMeters }),
+        id: 'centripetal',
+        label: 'Forca gravitacional',
+        magnitude: sample.centripetalForceNewtons,
+        unit: 'N',
+      },
+    ]
+  }
+
+  if (simulationId === 'hydrostatics-buoyancy') {
+    return [
+      {
+        direction: { x: 0, z: 1 },
+        id: 'normal',
+        label: 'Empuxo',
+        magnitude: sample.buoyantForceNewtons,
+        unit: 'N',
+      },
+      {
+        direction: { x: 0, z: -1 },
+        id: 'weight',
+        label: 'Peso',
+        magnitude: sample.weightNewtons,
+        unit: 'N',
+      },
+      {
+        direction: { x: 0, z: Math.sign(sample.netForceNewtons) || 0 },
+        id: 'resultant',
+        label: 'Resultante vertical',
+        magnitude: Math.abs(sample.netForceNewtons),
+        unit: 'N',
+      },
+    ]
+  }
+
   if (simulationId === 'particle-equilibrium') {
     return [
       {
@@ -812,6 +1062,48 @@ export function getKinematicsVectorOverlays(
         id: 'resultant',
         label: 'Resultante',
         magnitude: sample.netForceNewtons,
+        unit: 'N',
+      },
+    ]
+  }
+
+  if (simulationId === 'rolling-without-slipping') {
+    return [
+      {
+        direction: normalizeVector({
+          x: sample.velocityXMetersPerSecond,
+          z: sample.velocityZMetersPerSecond,
+        }),
+        id: 'velocity',
+        label: 'Velocidade do centro',
+        magnitude: sample.speedMetersPerSecond,
+        unit: 'm/s',
+      },
+      {
+        direction: normalizeVector({
+          x: sample.accelerationXMetersPerSecondSquared,
+          z: sample.accelerationZMetersPerSecondSquared,
+        }),
+        id: 'acceleration',
+        label: 'Aceleracao do centro',
+        magnitude: Math.abs(sample.accelerationMetersPerSecondSquared),
+        unit: 'm/s^2',
+      },
+      {
+        direction: normalizeVector({
+          x: -sample.velocityXMetersPerSecond,
+          z: -sample.velocityZMetersPerSecond,
+        }),
+        id: 'friction',
+        label: 'Atrito estatico requerido',
+        magnitude: sample.frictionForceNewtons,
+        unit: 'N',
+      },
+      {
+        direction: { x: 0, z: 1 },
+        id: 'normal',
+        label: 'Normal',
+        magnitude: sample.normalForceNewtons,
         unit: 'N',
       },
     ]
@@ -1225,6 +1517,204 @@ function computeCollisionsSample(
   })
 }
 
+function computeContinuityBernoulliSample(
+  parameters: ContinuityBernoulliParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const inletVelocityMetersPerSecond =
+    parameters.flowRateCubicMetersPerSecond / parameters.inletAreaSquareMeters
+  const throatVelocityMetersPerSecond =
+    parameters.flowRateCubicMetersPerSecond / parameters.throatAreaSquareMeters
+  const inletPressurePascals = parameters.inletPressureKilopascals * 1000
+  const throatPressurePascals =
+    inletPressurePascals -
+    parameters.fluidDensityKilogramsPerCubicMeter *
+      parameters.gravityMetersPerSecondSquared *
+      parameters.heightDifferenceMeters +
+    0.5 *
+      parameters.fluidDensityKilogramsPerCubicMeter *
+      (inletVelocityMetersPerSecond ** 2 -
+        throatVelocityMetersPerSecond ** 2)
+  const pressureDropPascals = inletPressurePascals - throatPressurePascals
+  const phase = (timeSeconds % 4) / 4
+  const xMeters = -3 + phase * 6
+  const zMeters =
+    phase < 0.5
+      ? 2 * phase * parameters.heightDifferenceMeters
+      : parameters.heightDifferenceMeters
+  const localVelocityMetersPerSecond =
+    phase < 0.5 ? inletVelocityMetersPerSecond : throatVelocityMetersPerSecond
+  const kineticEnergyJoules =
+    0.5 *
+    parameters.fluidDensityKilogramsPerCubicMeter *
+    localVelocityMetersPerSecond ** 2
+  const potentialEnergyJoules =
+    parameters.fluidDensityKilogramsPerCubicMeter *
+    parameters.gravityMetersPerSecondSquared *
+    zMeters
+
+  return buildSample({
+    crossSectionAreaSquareMeters: parameters.inletAreaSquareMeters,
+    displacementMeters: phase * 6,
+    flowRateCubicMetersPerSecond: parameters.flowRateCubicMetersPerSecond,
+    forceOneNewtons: inletPressurePascals,
+    forceTwoNewtons: throatPressurePascals,
+    kineticEnergyJoules,
+    positionMeters: phase * 6,
+    potentialEnergyJoules,
+    pressurePascals: inletPressurePascals,
+    secondaryCrossSectionAreaSquareMeters: parameters.throatAreaSquareMeters,
+    secondaryPressurePascals: throatPressurePascals,
+    secondarySpeedMetersPerSecond: throatVelocityMetersPerSecond,
+    secondaryVelocityMetersPerSecond: throatVelocityMetersPerSecond,
+    secondaryVelocityXMetersPerSecond: throatVelocityMetersPerSecond,
+    speedMetersPerSecond: inletVelocityMetersPerSecond,
+    timeSeconds,
+    totalEnergyJoules:
+      inletPressurePascals +
+      kineticEnergyJoules +
+      potentialEnergyJoules,
+    velocityMetersPerSecond: inletVelocityMetersPerSecond,
+    velocityXMetersPerSecond: inletVelocityMetersPerSecond,
+    xMeters,
+    zMeters,
+    netForceNewtons: pressureDropPascals,
+  })
+}
+
+function computeGravitationalFieldOrbitsSample(
+  parameters: GravitationalFieldOrbitsParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const centralMassKilograms =
+    parameters.centralMassEarths * earthMassKilograms
+  const gravitationalParameter =
+    gravitationalConstant * centralMassKilograms
+  const periapsisRadiusMeters = parameters.orbitalRadiusKilometers * 1000
+  const semiMajorAxisMeters =
+    periapsisRadiusMeters / (1 - parameters.eccentricity)
+  const meanMotionRadiansPerSecond = Math.sqrt(
+    gravitationalParameter / semiMajorAxisMeters ** 3,
+  )
+  const angleRadians =
+    degreesToRadians(parameters.initialAngleDegrees) +
+    meanMotionRadiansPerSecond * timeSeconds
+  const orbitalRadiusMeters =
+    (semiMajorAxisMeters * (1 - parameters.eccentricity ** 2)) /
+    (1 + parameters.eccentricity * Math.cos(angleRadians))
+  const xMeters = orbitalRadiusMeters * Math.cos(angleRadians)
+  const zMeters = orbitalRadiusMeters * Math.sin(angleRadians)
+  const orbitalSpeedMetersPerSecond = Math.sqrt(
+    gravitationalParameter *
+      (2 / orbitalRadiusMeters - 1 / semiMajorAxisMeters),
+  )
+  const velocityXMetersPerSecond =
+    -orbitalSpeedMetersPerSecond * Math.sin(angleRadians)
+  const velocityZMetersPerSecond =
+    orbitalSpeedMetersPerSecond * Math.cos(angleRadians)
+  const gravitationalFieldNewtonsPerKilogram =
+    gravitationalParameter / orbitalRadiusMeters ** 2
+  const accelerationXMetersPerSecondSquared =
+    -gravitationalFieldNewtonsPerKilogram * Math.cos(angleRadians)
+  const accelerationZMetersPerSecondSquared =
+    -gravitationalFieldNewtonsPerKilogram * Math.sin(angleRadians)
+  const kineticEnergyJoules =
+    0.5 *
+    parameters.satelliteMassKilograms *
+    orbitalSpeedMetersPerSecond ** 2
+  const potentialEnergyJoules =
+    (-gravitationalParameter * parameters.satelliteMassKilograms) /
+    orbitalRadiusMeters
+  const periodSeconds =
+    (2 * Math.PI) / meanMotionRadiansPerSecond
+
+  return buildSample({
+    accelerationMetersPerSecondSquared:
+      gravitationalFieldNewtonsPerKilogram,
+    accelerationXMetersPerSecondSquared,
+    accelerationZMetersPerSecondSquared,
+    angleRadians,
+    angularVelocityRadiansPerSecond: meanMotionRadiansPerSecond,
+    centripetalAccelerationMetersPerSecondSquared:
+      gravitationalFieldNewtonsPerKilogram,
+    centripetalForceNewtons:
+      parameters.satelliteMassKilograms *
+      gravitationalFieldNewtonsPerKilogram,
+    displacementMeters: orbitalRadiusMeters - periapsisRadiusMeters,
+    frequencyHertz: 1 / periodSeconds,
+    gravitationalFieldNewtonsPerKilogram,
+    kineticEnergyJoules,
+    periodSeconds,
+    positionMeters: orbitalRadiusMeters,
+    potentialEnergyJoules,
+    speedMetersPerSecond: orbitalSpeedMetersPerSecond,
+    timeSeconds,
+    totalEnergyJoules: kineticEnergyJoules + potentialEnergyJoules,
+    velocityMetersPerSecond: orbitalSpeedMetersPerSecond,
+    velocityXMetersPerSecond,
+    velocityZMetersPerSecond,
+    xMeters,
+    zMeters,
+  })
+}
+
+function computeHydrostaticsBuoyancySample(
+  parameters: HydrostaticsBuoyancyParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const objectMassKilograms =
+    parameters.objectDensityKilogramsPerCubicMeter *
+    parameters.objectVolumeCubicMeters
+  const weightNewtons =
+    objectMassKilograms * parameters.gravityMetersPerSecondSquared
+  const fullBuoyantForceNewtons =
+    parameters.fluidDensityKilogramsPerCubicMeter *
+    parameters.gravityMetersPerSecondSquared *
+    parameters.objectVolumeCubicMeters
+  const submergedFraction = clamp(
+    parameters.objectDensityKilogramsPerCubicMeter /
+      parameters.fluidDensityKilogramsPerCubicMeter,
+    0,
+    1,
+  )
+  const buoyantForceNewtons =
+    parameters.objectDensityKilogramsPerCubicMeter <=
+    parameters.fluidDensityKilogramsPerCubicMeter
+      ? weightNewtons
+      : fullBuoyantForceNewtons
+  const netForceNewtons = buoyantForceNewtons - weightNewtons
+  const fluidPressurePascals =
+    parameters.fluidDensityKilogramsPerCubicMeter *
+    parameters.gravityMetersPerSecondSquared *
+    parameters.depthMeters
+  const bobbingOffsetMeters =
+    Math.abs(netForceNewtons) <= hydrostaticFloatToleranceNewtons
+      ? Math.sin(timeSeconds * 1.6) * 0.035
+      : 0
+  const zMeters = -parameters.depthMeters + bobbingOffsetMeters
+
+  return buildSample({
+    buoyantForceNewtons,
+    displacementMeters: parameters.depthMeters,
+    fluidPressurePascals,
+    forceOneNewtons: buoyantForceNewtons,
+    forceTwoNewtons: weightNewtons,
+    netForceNewtons,
+    positionMeters: parameters.depthMeters,
+    pressurePascals: fluidPressurePascals,
+    primaryRadiusMeters: Math.cbrt(parameters.objectVolumeCubicMeters),
+    speedMetersPerSecond: 0,
+    submergedFraction,
+    timeSeconds,
+    totalEnergyJoules:
+      Math.abs(netForceNewtons) * parameters.depthMeters,
+    velocityMetersPerSecond: 0,
+    weightNewtons,
+    xMeters: 0,
+    zMeters,
+  })
+}
+
 function computeParticleEquilibriumSample(
   parameters: ParticleEquilibriumParameters,
   timeSeconds: number,
@@ -1570,6 +2060,145 @@ function computeRigidBodyRotationSample(
   })
 }
 
+function computeRollingWithoutSlippingSample(
+  parameters: RollingWithoutSlippingParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const inclineAngleRadians = degreesToRadians(parameters.inclineAngleDegrees)
+  const normalForceNewtons =
+    parameters.massKilograms *
+    parameters.gravityMetersPerSecondSquared *
+    Math.cos(inclineAngleRadians)
+  const weightNewtons =
+    parameters.massKilograms * parameters.gravityMetersPerSecondSquared
+  const momentOfInertiaKilogramMetersSquared =
+    rollingInertiaFactor *
+    parameters.massKilograms *
+    parameters.radiusMeters ** 2
+  const pureRollingAccelerationMetersPerSecondSquared =
+    (parameters.gravityMetersPerSecondSquared *
+      Math.sin(inclineAngleRadians)) /
+    (1 + rollingInertiaFactor)
+  const requiredStaticFrictionNewtons =
+    parameters.massKilograms *
+    parameters.gravityMetersPerSecondSquared *
+    Math.sin(inclineAngleRadians) *
+    (rollingInertiaFactor / (1 + rollingInertiaFactor))
+  const maxStaticFrictionNewtons =
+    parameters.frictionCoefficient * normalForceNewtons
+  const canRollWithoutSlipping =
+    requiredStaticFrictionNewtons <=
+    maxStaticFrictionNewtons + centripetalSlipTolerance
+  const accelerationMetersPerSecondSquared = canRollWithoutSlipping
+    ? pureRollingAccelerationMetersPerSecondSquared
+    : Math.max(
+        0,
+        parameters.gravityMetersPerSecondSquared *
+          (Math.sin(inclineAngleRadians) -
+            parameters.frictionCoefficient * Math.cos(inclineAngleRadians)),
+      )
+  const motion = computeForwardSegmentMotion({
+    accelerationMetersPerSecondSquared,
+    initialVelocityMetersPerSecond: parameters.initialSpeedMetersPerSecond,
+    maxPositionMeters: parameters.trackLengthMeters,
+    timeSeconds,
+  })
+  const speedMetersPerSecond = Math.max(0, motion.velocityMetersPerSecond)
+  const frictionForceNewtons = canRollWithoutSlipping
+    ? requiredStaticFrictionNewtons
+    : maxStaticFrictionNewtons
+  const angularAccelerationRadiansPerSecondSquared = canRollWithoutSlipping
+    ? motion.accelerationMetersPerSecondSquared / parameters.radiusMeters
+    : frictionForceNewtons * parameters.radiusMeters /
+      momentOfInertiaKilogramMetersSquared
+  const angularVelocityRadiansPerSecond = canRollWithoutSlipping
+    ? speedMetersPerSecond / parameters.radiusMeters
+    : parameters.initialSpeedMetersPerSecond / parameters.radiusMeters +
+      angularAccelerationRadiansPerSecondSquared * timeSeconds
+  const angleRadians = canRollWithoutSlipping
+    ? motion.positionMeters / parameters.radiusMeters
+    : parameters.initialSpeedMetersPerSecond * timeSeconds /
+        parameters.radiusMeters +
+      0.5 * angularAccelerationRadiansPerSecondSquared * timeSeconds ** 2
+  const xMeters = motion.positionMeters * Math.cos(inclineAngleRadians)
+  const zMeters =
+    parameters.trackLengthMeters * Math.sin(inclineAngleRadians) -
+    motion.positionMeters * Math.sin(inclineAngleRadians) +
+    parameters.radiusMeters
+  const translationalKineticEnergyJoules =
+    0.5 * parameters.massKilograms * speedMetersPerSecond ** 2
+  const rotationalKineticEnergyJoules =
+    0.5 *
+    momentOfInertiaKilogramMetersSquared *
+    angularVelocityRadiansPerSecond ** 2
+  const kineticEnergyJoules =
+    translationalKineticEnergyJoules + rotationalKineticEnergyJoules
+  const potentialEnergyJoules =
+    parameters.massKilograms *
+    parameters.gravityMetersPerSecondSquared *
+    Math.max(0, zMeters - parameters.radiusMeters)
+  const initialKineticEnergyJoules =
+    0.5 * parameters.massKilograms * parameters.initialSpeedMetersPerSecond ** 2 +
+    0.5 *
+      momentOfInertiaKilogramMetersSquared *
+      (parameters.initialSpeedMetersPerSecond / parameters.radiusMeters) ** 2
+  const initialPotentialEnergyJoules =
+    parameters.massKilograms *
+    parameters.gravityMetersPerSecondSquared *
+    parameters.trackLengthMeters *
+    Math.sin(inclineAngleRadians)
+  const trackedMechanicalEnergyJoules =
+    kineticEnergyJoules + potentialEnergyJoules
+  const initialMechanicalEnergyJoules =
+    initialKineticEnergyJoules + initialPotentialEnergyJoules
+  const thermalEnergyJoules = canRollWithoutSlipping
+    ? 0
+    : Math.max(0, initialMechanicalEnergyJoules - trackedMechanicalEnergyJoules)
+  const gripRatio = computeCentripetalGripRatio(
+    requiredStaticFrictionNewtons,
+    maxStaticFrictionNewtons,
+  )
+
+  return buildSample({
+    accelerationMetersPerSecondSquared:
+      motion.accelerationMetersPerSecondSquared,
+    accelerationXMetersPerSecondSquared:
+      motion.accelerationMetersPerSecondSquared *
+      Math.cos(inclineAngleRadians),
+    accelerationZMetersPerSecondSquared:
+      -motion.accelerationMetersPerSecondSquared *
+      Math.sin(inclineAngleRadians),
+    angleRadians,
+    angularAccelerationRadiansPerSecondSquared,
+    angularVelocityRadiansPerSecond,
+    displacementMeters: motion.positionMeters,
+    frictionForceNewtons,
+    gripRatio,
+    kineticEnergyJoules,
+    maxStaticFrictionNewtons,
+    momentOfInertiaKilogramMetersSquared,
+    netForceNewtons:
+      parameters.massKilograms * motion.accelerationMetersPerSecondSquared,
+    normalForceNewtons,
+    positionMeters: motion.positionMeters,
+    potentialEnergyJoules,
+    primaryRadiusMeters: parameters.radiusMeters,
+    speedMetersPerSecond,
+    thermalEnergyJoules,
+    timeSeconds,
+    totalEnergyJoules:
+      kineticEnergyJoules + potentialEnergyJoules + thermalEnergyJoules,
+    velocityMetersPerSecond: speedMetersPerSecond,
+    velocityXMetersPerSecond:
+      speedMetersPerSecond * Math.cos(inclineAngleRadians),
+    velocityZMetersPerSecond:
+      -speedMetersPerSecond * Math.sin(inclineAngleRadians),
+    weightNewtons,
+    xMeters,
+    zMeters,
+  })
+}
+
 function computeTorqueLeversCenterMassSample(
   parameters: TorqueLeversCenterMassParameters,
   timeSeconds: number,
@@ -1721,12 +2350,16 @@ function buildSample(
     appliedForceXNewtons: sample.appliedForceXNewtons ?? 0,
     appliedForceZNewtons: sample.appliedForceZNewtons ?? 0,
     appliedWorkJoules: sample.appliedWorkJoules ?? 0,
+    buoyantForceNewtons: sample.buoyantForceNewtons ?? 0,
     centerOfMassMeters: sample.centerOfMassMeters ?? 0,
     centripetalForceNewtons: sample.centripetalForceNewtons ?? 0,
     centripetalAccelerationMetersPerSecondSquared:
       sample.centripetalAccelerationMetersPerSecondSquared ?? 0,
+    crossSectionAreaSquareMeters: sample.crossSectionAreaSquareMeters ?? 0,
     displacementMeters: sample.displacementMeters ?? 0,
     frequencyHertz: sample.frequencyHertz ?? 0,
+    flowRateCubicMetersPerSecond:
+      sample.flowRateCubicMetersPerSecond ?? 0,
     forceOneNewtons: sample.forceOneNewtons ?? 0,
     forceOneXNewtons: sample.forceOneXNewtons ?? 0,
     forceOneZNewtons: sample.forceOneZNewtons ?? 0,
@@ -1737,6 +2370,9 @@ function buildSample(
     forceTwoXNewtons: sample.forceTwoXNewtons ?? 0,
     forceTwoZNewtons: sample.forceTwoZNewtons ?? 0,
     frictionForceNewtons: sample.frictionForceNewtons ?? 0,
+    fluidPressurePascals: sample.fluidPressurePascals ?? 0,
+    gravitationalFieldNewtonsPerKilogram:
+      sample.gravitationalFieldNewtonsPerKilogram ?? 0,
     gripRatio: sample.gripRatio ?? 0,
     impulseNewtonSeconds: sample.impulseNewtonSeconds ?? 0,
     isGrounded: sample.isGrounded ?? false,
@@ -1757,7 +2393,11 @@ function buildSample(
     periodSeconds: sample.periodSeconds ?? 0,
     positionMeters: sample.positionMeters ?? sample.xMeters,
     potentialEnergyJoules,
+    pressurePascals: sample.pressurePascals ?? 0,
     primaryRadiusMeters: sample.primaryRadiusMeters ?? 0,
+    secondaryCrossSectionAreaSquareMeters:
+      sample.secondaryCrossSectionAreaSquareMeters ?? 0,
+    secondaryPressurePascals: sample.secondaryPressurePascals ?? 0,
     secondaryRadiusMeters: sample.secondaryRadiusMeters ?? 0,
     secondarySpeedMetersPerSecond: sample.secondarySpeedMetersPerSecond ?? 0,
     secondaryVelocityMetersPerSecond:
@@ -1769,6 +2409,7 @@ function buildSample(
     secondaryXMeters: sample.secondaryXMeters ?? 0,
     secondaryZMeters: sample.secondaryZMeters ?? 0,
     speedMetersPerSecond: sample.speedMetersPerSecond ?? 0,
+    submergedFraction: sample.submergedFraction ?? 0,
     tensionNewtons: sample.tensionNewtons ?? 0,
     thermalEnergyJoules: sample.thermalEnergyJoules ?? 0,
     timeSeconds: sample.timeSeconds,
@@ -1866,6 +2507,60 @@ function getKinematicsWarnings(
     return []
   }
 
+  if (simulationId === 'continuity-bernoulli') {
+    const sample = computeContinuityBernoulliSample(
+      parameters as ContinuityBernoulliParameters,
+      0,
+    )
+
+    if (sample.secondaryPressurePascals < 0) {
+      return [
+        {
+          code: 'BERNOULLI_NEGATIVE_PRESSURE',
+          message:
+            'A pressao calculada no estrangulamento fica abaixo de zero; o modelo ideal deixa de representar o escoamento fisico.',
+        },
+      ]
+    }
+
+    return []
+  }
+
+  if (simulationId === 'gravitational-field-orbits') {
+    const orbitParameters = parameters as GravitationalFieldOrbitsParameters
+
+    if (orbitParameters.eccentricity > highEccentricityWarningThreshold) {
+      return [
+        {
+          code: 'ORBIT_HIGH_ECCENTRICITY',
+          message:
+            'A excentricidade alta destaca uma orbita didatica eliptica; perturbacoes, atmosfera e precessao nao entram no modelo.',
+        },
+      ]
+    }
+
+    return []
+  }
+
+  if (simulationId === 'hydrostatics-buoyancy') {
+    const sample = computeHydrostaticsBuoyancySample(
+      parameters as HydrostaticsBuoyancyParameters,
+      0,
+    )
+
+    if (sample.netForceNewtons < -hydrostaticFloatToleranceNewtons) {
+      return [
+        {
+          code: 'OBJECT_SINKS',
+          message:
+            'O peso supera o empuxo maximo; o corpo fica totalmente submerso e acelera para baixo no modelo ideal.',
+        },
+      ]
+    }
+
+    return []
+  }
+
   if (simulationId === 'particle-equilibrium') {
     const sample = computeParticleEquilibriumSample(
       parameters as ParticleEquilibriumParameters,
@@ -1878,6 +2573,25 @@ function getKinematicsWarnings(
           code: 'PARTICLE_NOT_IN_EQUILIBRIUM',
           message:
             'A soma vetorial das forcas nao e nula; o sample mostra aceleracao na direcao da resultante.',
+        },
+      ]
+    }
+
+    return []
+  }
+
+  if (simulationId === 'rolling-without-slipping') {
+    const sample = computeRollingWithoutSlippingSample(
+      parameters as RollingWithoutSlippingParameters,
+      0,
+    )
+
+    if (sample.gripRatio > 1) {
+      return [
+        {
+          code: 'ROLLING_STATIC_FRICTION_LIMIT_EXCEEDED',
+          message:
+            'O atrito estatico requerido para rolamento puro supera o maximo disponivel; o sample passa para regime de escorregamento didatico.',
         },
       ]
     }
@@ -1974,6 +2688,21 @@ function validateKinematicsParameters(
     case 'collisions-1d-2d':
       validateCollisionsParameters(parameters as CollisionsParameters)
       return
+    case 'continuity-bernoulli':
+      validateContinuityBernoulliParameters(
+        parameters as ContinuityBernoulliParameters,
+      )
+      return
+    case 'gravitational-field-orbits':
+      validateGravitationalFieldOrbitsParameters(
+        parameters as GravitationalFieldOrbitsParameters,
+      )
+      return
+    case 'hydrostatics-buoyancy':
+      validateHydrostaticsBuoyancyParameters(
+        parameters as HydrostaticsBuoyancyParameters,
+      )
+      return
     case 'particle-equilibrium':
       validateParticleEquilibriumParameters(
         parameters as ParticleEquilibriumParameters,
@@ -1995,6 +2724,11 @@ function validateKinematicsParameters(
     case 'rigid-body-rotation':
       validateRigidBodyRotationParameters(
         parameters as RigidBodyRotationParameters,
+      )
+      return
+    case 'rolling-without-slipping':
+      validateRollingWithoutSlippingParameters(
+        parameters as RollingWithoutSlippingParameters,
       )
       return
     case 'torque-levers-center-mass':
@@ -2088,6 +2822,72 @@ function validateCollisionsParameters(parameters: CollisionsParameters) {
   ) {
     throw new Error('initialSeparationMeters must exceed the contact distance.')
   }
+}
+
+function validateContinuityBernoulliParameters(
+  parameters: ContinuityBernoulliParameters,
+) {
+  assertFiniteNonNegative(
+    'flowRateCubicMetersPerSecond',
+    parameters.flowRateCubicMetersPerSecond,
+  )
+  assertFinitePositive(
+    'fluidDensityKilogramsPerCubicMeter',
+    parameters.fluidDensityKilogramsPerCubicMeter,
+  )
+  assertFinitePositive(
+    'gravityMetersPerSecondSquared',
+    parameters.gravityMetersPerSecondSquared,
+  )
+  assertFinite('heightDifferenceMeters', parameters.heightDifferenceMeters)
+  assertFinitePositive('inletAreaSquareMeters', parameters.inletAreaSquareMeters)
+  assertFiniteNonNegative(
+    'inletPressureKilopascals',
+    parameters.inletPressureKilopascals,
+  )
+  assertFinitePositive(
+    'throatAreaSquareMeters',
+    parameters.throatAreaSquareMeters,
+  )
+}
+
+function validateGravitationalFieldOrbitsParameters(
+  parameters: GravitationalFieldOrbitsParameters,
+) {
+  assertFinitePositive('centralMassEarths', parameters.centralMassEarths)
+  assertFinite('eccentricity', parameters.eccentricity)
+  assertFinite('initialAngleDegrees', parameters.initialAngleDegrees)
+  assertFinitePositive(
+    'orbitalRadiusKilometers',
+    parameters.orbitalRadiusKilometers,
+  )
+  assertFinitePositive(
+    'satelliteMassKilograms',
+    parameters.satelliteMassKilograms,
+  )
+
+  if (parameters.eccentricity < 0 || parameters.eccentricity >= 0.85) {
+    throw new Error('eccentricity must be between 0 and 0.85.')
+  }
+}
+
+function validateHydrostaticsBuoyancyParameters(
+  parameters: HydrostaticsBuoyancyParameters,
+) {
+  assertFiniteNonNegative('depthMeters', parameters.depthMeters)
+  assertFinitePositive(
+    'fluidDensityKilogramsPerCubicMeter',
+    parameters.fluidDensityKilogramsPerCubicMeter,
+  )
+  assertFinitePositive(
+    'gravityMetersPerSecondSquared',
+    parameters.gravityMetersPerSecondSquared,
+  )
+  assertFinitePositive(
+    'objectDensityKilogramsPerCubicMeter',
+    parameters.objectDensityKilogramsPerCubicMeter,
+  )
+  assertFinitePositive('objectVolumeCubicMeters', parameters.objectVolumeCubicMeters)
 }
 
 function validateParticleEquilibriumParameters(
@@ -2194,6 +2994,31 @@ function validateRigidBodyRotationParameters(
     'momentOfInertiaKilogramMetersSquared',
     parameters.momentOfInertiaKilogramMetersSquared,
   )
+}
+
+function validateRollingWithoutSlippingParameters(
+  parameters: RollingWithoutSlippingParameters,
+) {
+  assertFiniteNonNegative('frictionCoefficient', parameters.frictionCoefficient)
+  assertFinitePositive(
+    'gravityMetersPerSecondSquared',
+    parameters.gravityMetersPerSecondSquared,
+  )
+  assertFinite('inclineAngleDegrees', parameters.inclineAngleDegrees)
+  assertFiniteNonNegative(
+    'initialSpeedMetersPerSecond',
+    parameters.initialSpeedMetersPerSecond,
+  )
+  assertFinitePositive('massKilograms', parameters.massKilograms)
+  assertFinitePositive('radiusMeters', parameters.radiusMeters)
+  assertFinitePositive('trackLengthMeters', parameters.trackLengthMeters)
+
+  if (
+    parameters.inclineAngleDegrees < 0 ||
+    parameters.inclineAngleDegrees > 50
+  ) {
+    throw new Error('inclineAngleDegrees must be between 0 and 50 degrees.')
+  }
 }
 
 function validateTorqueLeversCenterMassParameters(

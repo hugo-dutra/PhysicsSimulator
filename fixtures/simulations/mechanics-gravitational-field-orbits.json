@@ -1,0 +1,187 @@
+{
+  "simulationId": "gravitational-field-orbits",
+  "durationSeconds": 7200,
+  "sampleRateHz": 1,
+  "chartWindowSeconds": 1800,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline orbital; diminuir concentra a leitura em menos segundos.",
+      "unit": "s",
+      "kind": "number",
+      "min": 900,
+      "max": 21600,
+      "step": 60,
+      "defaultValue": 7200
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais da orbita; diminuir aproxima a leitura do ponto atual.",
+      "unit": "s",
+      "kind": "number",
+      "min": 300,
+      "max": 7200,
+      "step": 60,
+      "defaultValue": 1800
+    }
+  ],
+  "defaultParameters": {
+    "centralMassEarths": 1,
+    "orbitalRadiusKilometers": 7000,
+    "eccentricity": 0.12,
+    "satelliteMassKilograms": 900,
+    "initialAngleDegrees": 0
+  },
+  "parameters": [
+    {
+      "id": "centralMassEarths",
+      "label": "Massa central",
+      "description": "Massa do corpo central em massas da Terra. Aumentar intensifica o campo gravitacional e eleva a velocidade orbital.",
+      "unit": "M_terra",
+      "kind": "number",
+      "min": 0.05,
+      "max": 8,
+      "step": 0.05,
+      "defaultValue": 1
+    },
+    {
+      "id": "orbitalRadiusKilometers",
+      "label": "Raio de periastro",
+      "description": "Distancia minima inicial ao centro em quilometros. Aumentar afasta a orbita e reduz campo, velocidade e curvatura.",
+      "unit": "km",
+      "kind": "number",
+      "min": 1200,
+      "max": 30000,
+      "step": 100,
+      "defaultValue": 7000
+    },
+    {
+      "id": "eccentricity",
+      "label": "Excentricidade",
+      "description": "Forma da orbita eliptica. Zero produz orbita circular; valores maiores alongam a elipse e variam mais a velocidade.",
+      "kind": "number",
+      "min": 0,
+      "max": 0.84,
+      "step": 0.01,
+      "defaultValue": 0.12
+    },
+    {
+      "id": "satelliteMassKilograms",
+      "label": "Massa do satelite",
+      "description": "Massa do corpo em orbita. Aumentar escala forca e energias, mas nao altera a trajetoria ideal de teste.",
+      "unit": "kg",
+      "kind": "number",
+      "min": 1,
+      "max": 5000,
+      "step": 10,
+      "defaultValue": 900
+    },
+    {
+      "id": "initialAngleDegrees",
+      "label": "Angulo inicial",
+      "description": "Orientacao inicial do satelite na orbita. Alterar muda onde a cena comeca, preservando o mesmo modelo gravitacional.",
+      "unit": "deg",
+      "kind": "number",
+      "min": 0,
+      "max": 360,
+      "step": 1,
+      "defaultValue": 0
+    }
+  ],
+  "presets": [
+    {
+      "id": "low-earth-like",
+      "label": "Orbita baixa",
+      "parameters": {
+        "centralMassEarths": 1,
+        "orbitalRadiusKilometers": 7000,
+        "eccentricity": 0.02,
+        "satelliteMassKilograms": 900,
+        "initialAngleDegrees": 0
+      }
+    },
+    {
+      "id": "elliptic-transfer",
+      "label": "Elipse didatica",
+      "parameters": {
+        "centralMassEarths": 1,
+        "orbitalRadiusKilometers": 7000,
+        "eccentricity": 0.45,
+        "satelliteMassKilograms": 900,
+        "initialAngleDegrees": 0
+      }
+    },
+    {
+      "id": "massive-planet",
+      "label": "Planeta massivo",
+      "parameters": {
+        "centralMassEarths": 3,
+        "orbitalRadiusKilometers": 12000,
+        "eccentricity": 0.18,
+        "satelliteMassKilograms": 900,
+        "initialAngleDegrees": 30
+      }
+    }
+  ],
+  "limits": [
+    "O modelo usa campo central de dois corpos e ignora atmosfera, arrasto, oblatividade e perturbacoes de terceiros.",
+    "A orbita eliptica e amostrada por uma parametrizacao didatica; nao resolve anomalia excentrica com precisao astronomica.",
+    "A massa do satelite escala energia e forca, mas nao altera a trajetoria no problema ideal de dois corpos.",
+    "Excentricidades altas sao mantidas como demonstracao visual e geram warning de limite de modelo."
+  ],
+  "formulas": [
+    {
+      "id": "gravitational-field",
+      "title": "Campo gravitacional",
+      "expressionLatex": "g=\\frac{GM}{r^2}",
+      "description": "Calcula a intensidade do campo gravitacional criado pela massa central na posicao do satelite.",
+      "variables": [
+        { "symbol": "G", "label": "constante gravitacional" },
+        { "symbol": "M", "label": "massa central", "unit": "kg" },
+        { "symbol": "r", "label": "raio orbital", "unit": "m" }
+      ],
+      "usedWhen": "Usar para campo central esfericamente simetrico.",
+      "notUsedWhen": "Nao inclui atmosfera, perturbacoes externas ou corpo central irregular.",
+      "parameterIds": ["centralMassEarths", "orbitalRadiusKilometers"],
+      "sampleFields": ["positionMeters", "gravitationalFieldNewtonsPerKilogram"],
+      "relatedChartIds": ["field-time"],
+      "relatedVectorIds": ["gravity"]
+    },
+    {
+      "id": "vis-viva",
+      "title": "Equacao vis-viva",
+      "expressionLatex": "v=\\sqrt{GM\\left(\\frac{2}{r}-\\frac{1}{a}\\right)}",
+      "description": "Relaciona velocidade orbital, raio atual e semi-eixo maior da orbita eliptica.",
+      "variables": [
+        { "symbol": "v", "label": "velocidade orbital", "unit": "m/s" },
+        { "symbol": "r", "label": "raio atual", "unit": "m" },
+        { "symbol": "a", "label": "semi-eixo maior", "unit": "m" }
+      ],
+      "usedWhen": "Usar em orbitas keplerianas ideais de dois corpos.",
+      "notUsedWhen": "Nao descreve propulsao ativa, arrasto ou encontro proximo com outros corpos.",
+      "parameterIds": ["centralMassEarths", "eccentricity", "orbitalRadiusKilometers"],
+      "sampleFields": ["speedMetersPerSecond", "positionMeters"],
+      "relatedChartIds": ["velocity-time"],
+      "relatedVectorIds": ["velocity"]
+    },
+    {
+      "id": "orbital-energy",
+      "title": "Energia orbital",
+      "expressionLatex": "E=\\frac{1}{2}mv^2-\\frac{GMm}{r}",
+      "description": "Combina energia cinetica e potencial gravitacional do satelite no campo central.",
+      "variables": [
+        { "symbol": "E", "label": "energia mecanica", "unit": "J" },
+        { "symbol": "m", "label": "massa do satelite", "unit": "kg" },
+        { "symbol": "r", "label": "raio orbital", "unit": "m" }
+      ],
+      "usedWhen": "Usar para comparar conservacao de energia no modelo orbital ideal.",
+      "notUsedWhen": "Nao representa perdas por atmosfera, motores ou mare terrestre.",
+      "parameterIds": ["satelliteMassKilograms"],
+      "sampleFields": ["kineticEnergyJoules", "potentialEnergyJoules", "totalEnergyJoules"],
+      "relatedChartIds": ["energy-time"],
+      "relatedVectorIds": ["centripetal"]
+    }
+  ]
+}

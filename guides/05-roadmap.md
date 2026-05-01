@@ -103,11 +103,11 @@ Tasks:
 - `[x]` Implementar `Mecanica > Estatica > Equilibrio de particula`.
 - `[x]` Implementar `Mecanica > Estatica > Torque, alavancas e centro de massa`.
 - `[x]` Implementar `Mecanica > Rotacao > Rotacao de corpo rigido`.
-- `[ ]` Implementar `Mecanica > Rotacao > Rolamento sem escorregamento`.
-- `[ ]` Implementar `Mecanica > Gravitacao > Campo gravitacional e orbitas`.
-- `[ ]` Implementar `Mecanica > Fluidos basicos > Hidrostatica e empuxo`.
-- `[ ]` Implementar `Mecanica > Fluidos basicos > Continuidade e Bernoulli`.
-- `[ ]` Criar presets didaticos por subarea mecanica.
+- `[x]` Implementar `Mecanica > Rotacao > Rolamento sem escorregamento`.
+- `[x]` Implementar `Mecanica > Gravitacao > Campo gravitacional e orbitas`.
+- `[x]` Implementar `Mecanica > Fluidos basicos > Hidrostatica e empuxo`.
+- `[x]` Implementar `Mecanica > Fluidos basicos > Continuidade e Bernoulli`.
+- `[x]` Criar presets didaticos por subarea mecanica.
 - `[ ]` Validar que todos os modelos mecanicos declaram limites, aproximacoes e regimes conforme o gate de fidelidade.
 
 Criterio de saida:

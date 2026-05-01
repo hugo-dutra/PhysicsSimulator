@@ -1,0 +1,186 @@
+{
+  "simulationId": "hydrostatics-buoyancy",
+  "durationSeconds": 12,
+  "sampleRateHz": 60,
+  "chartWindowSeconds": 6,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a leitura estatica e eventual oscilacao visual do corpo flutuante.",
+      "unit": "s",
+      "kind": "number",
+      "min": 6,
+      "max": 60,
+      "step": 1,
+      "defaultValue": 12
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais historico; diminuir aproxima a leitura atual.",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 30,
+      "step": 1,
+      "defaultValue": 6
+    }
+  ],
+  "defaultParameters": {
+    "fluidDensityKilogramsPerCubicMeter": 1000,
+    "objectDensityKilogramsPerCubicMeter": 650,
+    "objectVolumeCubicMeters": 0.08,
+    "depthMeters": 1.4,
+    "gravityMetersPerSecondSquared": 9.81
+  },
+  "parameters": [
+    {
+      "id": "fluidDensityKilogramsPerCubicMeter",
+      "label": "Densidade do fluido",
+      "description": "Densidade do fluido ao redor do corpo. Aumentar eleva pressao hidrostatica e empuxo para o mesmo volume deslocado.",
+      "unit": "kg/m^3",
+      "kind": "number",
+      "min": 100,
+      "max": 14000,
+      "step": 10,
+      "defaultValue": 1000
+    },
+    {
+      "id": "objectDensityKilogramsPerCubicMeter",
+      "label": "Densidade do corpo",
+      "description": "Densidade media do corpo. Aumentar cresce o peso por volume e pode mudar o regime de flutuacao para afundamento.",
+      "unit": "kg/m^3",
+      "kind": "number",
+      "min": 50,
+      "max": 20000,
+      "step": 10,
+      "defaultValue": 650
+    },
+    {
+      "id": "objectVolumeCubicMeters",
+      "label": "Volume do corpo",
+      "description": "Volume deslocavel pelo corpo. Aumentar escala peso e empuxo; o regime depende principalmente da comparacao de densidades.",
+      "unit": "m^3",
+      "kind": "number",
+      "min": 0.005,
+      "max": 0.5,
+      "step": 0.005,
+      "defaultValue": 0.08
+    },
+    {
+      "id": "depthMeters",
+      "label": "Profundidade",
+      "description": "Profundidade do ponto de leitura abaixo da superficie. Aumentar cresce a pressao hidrostatica linearmente.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "defaultValue": 1.4
+    },
+    {
+      "id": "gravityMetersPerSecondSquared",
+      "label": "Gravidade",
+      "description": "Aceleracao gravitacional usada no modelo. Aumentar intensifica peso, pressao hidrostatica e empuxo proporcionalmente.",
+      "unit": "m/s^2",
+      "kind": "number",
+      "min": 1,
+      "max": 25,
+      "step": 0.01,
+      "defaultValue": 9.81
+    }
+  ],
+  "presets": [
+    {
+      "id": "wood-in-water",
+      "label": "Madeira em agua",
+      "parameters": {
+        "fluidDensityKilogramsPerCubicMeter": 1000,
+        "objectDensityKilogramsPerCubicMeter": 650,
+        "objectVolumeCubicMeters": 0.08,
+        "depthMeters": 1.4,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    },
+    {
+      "id": "steel-in-water",
+      "label": "Aco afundando",
+      "parameters": {
+        "fluidDensityKilogramsPerCubicMeter": 1000,
+        "objectDensityKilogramsPerCubicMeter": 7850,
+        "objectVolumeCubicMeters": 0.04,
+        "depthMeters": 2.2,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    },
+    {
+      "id": "dense-fluid",
+      "label": "Fluido denso",
+      "parameters": {
+        "fluidDensityKilogramsPerCubicMeter": 1260,
+        "objectDensityKilogramsPerCubicMeter": 1050,
+        "objectVolumeCubicMeters": 0.08,
+        "depthMeters": 1.2,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    }
+  ],
+  "limits": [
+    "O fluido e incompressivel e em repouso; viscosidade, turbulencia e ondas de superficie nao entram.",
+    "O corpo e representado por densidade media e volume unico, sem geometria real detalhada.",
+    "Quando a densidade do corpo e menor que a do fluido, o modelo usa fracao submersa de equilibrio.",
+    "Quando o peso supera o empuxo maximo, a simulacao indica afundamento ideal sem calcular impacto no fundo."
+  ],
+  "formulas": [
+    {
+      "id": "hydrostatic-pressure",
+      "title": "Pressao hidrostatica",
+      "expressionLatex": "p=\\rho g h",
+      "description": "Calcula a pressao relativa em um ponto a profundidade h em um fluido em repouso.",
+      "variables": [
+        { "symbol": "p", "label": "pressao hidrostatica", "unit": "Pa" },
+        { "symbol": "\\rho", "label": "densidade do fluido", "unit": "kg/m^3" },
+        { "symbol": "h", "label": "profundidade", "unit": "m" }
+      ],
+      "usedWhen": "Usar em fluido estatico de densidade aproximadamente constante.",
+      "notUsedWhen": "Nao descreve escoamento rapido, fluido compressivel ou ondas.",
+      "parameterIds": ["fluidDensityKilogramsPerCubicMeter", "depthMeters", "gravityMetersPerSecondSquared"],
+      "sampleFields": ["fluidPressurePascals", "positionMeters"],
+      "relatedChartIds": ["pressure-time"]
+    },
+    {
+      "id": "buoyant-force",
+      "title": "Principio de Arquimedes",
+      "expressionLatex": "E=\\rho_f g V_{deslocado}",
+      "description": "Calcula o empuxo como peso do fluido deslocado pelo corpo.",
+      "variables": [
+        { "symbol": "E", "label": "empuxo", "unit": "N" },
+        { "symbol": "\\rho_f", "label": "densidade do fluido", "unit": "kg/m^3" },
+        { "symbol": "V", "label": "volume deslocado", "unit": "m^3" }
+      ],
+      "usedWhen": "Usar para corpo imerso em fluido estatico com volume deslocado conhecido.",
+      "notUsedWhen": "Nao inclui arrasto, aceleracao do fluido ou efeitos de superficie.",
+      "parameterIds": ["fluidDensityKilogramsPerCubicMeter", "objectVolumeCubicMeters"],
+      "sampleFields": ["buoyantForceNewtons", "submergedFraction"],
+      "relatedChartIds": ["forces-time"],
+      "relatedVectorIds": ["normal"]
+    },
+    {
+      "id": "float-or-sink",
+      "title": "Criterio de flutuacao",
+      "expressionLatex": "\\rho_{corpo}<\\rho_f",
+      "description": "Compara densidades para decidir se existe equilibrio flutuante antes de submergir todo o corpo.",
+      "variables": [
+        { "symbol": "\\rho_{corpo}", "label": "densidade media do corpo", "unit": "kg/m^3" },
+        { "symbol": "\\rho_f", "label": "densidade do fluido", "unit": "kg/m^3" }
+      ],
+      "usedWhen": "Usar para estimar se o corpo flutua ou afunda no modelo ideal.",
+      "notUsedWhen": "Nao substitui analise de estabilidade para formas complexas ou centro de massa deslocado.",
+      "parameterIds": ["fluidDensityKilogramsPerCubicMeter", "objectDensityKilogramsPerCubicMeter"],
+      "sampleFields": ["weightNewtons", "buoyantForceNewtons", "netForceNewtons"],
+      "relatedChartIds": ["forces-time"],
+      "relatedVectorIds": ["weight", "normal", "resultant"]
+    }
+  ]
+}

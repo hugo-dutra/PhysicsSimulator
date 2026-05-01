@@ -27,7 +27,7 @@ npm run test:e2e
 - Testes unitarios para o integrador do pendulo.
 - Testes unitarios para o modelo analitico/numerico por trechos do plano inclinado com atrito.
 - Testes unitarios para o motor analitico compartilhado de Cinematica, cobrindo MRU, MUV/queda livre, lancamento obliquo e MCU.
-- Testes unitarios para os modelos analiticos compartilhados de Dinamica/Energia/Estatica/Rotacao, cobrindo Maquina de Atwood, forca centripeta em curva, trabalho/energia em trilho, colisoes 1D/2D, equilibrio de particula, torque/alavancas/centro de massa e rotacao de corpo rigido.
+- Testes unitarios para os modelos analiticos compartilhados de Dinamica/Energia/Estatica/Rotacao/Gravitacao/Fluidos, cobrindo Maquina de Atwood, forca centripeta em curva, trabalho/energia em trilho, colisoes 1D/2D, equilibrio de particula, torque/alavancas/centro de massa, rotacao de corpo rigido, rolamento, campo gravitacional/orbitas, hidrostatica/empuxo e continuidade/Bernoulli.
 - Testes de invariantes fisicos dentro do modelo declarado.
 - Testes de validacao de parametros e unidades.
 - Testes de valores limite fisicamente validos, como atrito zero, forca aplicada zero e velocidades iniciais nulas quando o modelo permitir.
@@ -70,6 +70,7 @@ Depois da prova do core, cada nova simulacao promovida para `analysis` ou `ready
 
 - Canvas nao pode estar em branco.
 - Viewports Three.js devem renderizar cena 3D com pixels nao-background, responder a arraste horizontal mudando yaw, responder a arraste vertical mudando pitch para ver por cima/baixo e responder a Shift + scroll sobre o canvas com zoom da camera.
+- Viewports Three.js com grade devem manter eixos X, Y e Z de referencia no canto inferior esquerdo do plano, com cores distintas, alfa visual e legenda fixa no canto superior esquerdo do canvas.
 - Vetores devem acompanhar o movimento.
 - Quando uma simulacao declara perda de restricao, a cena deve mostrar a trajetoria real calculada pelo motor e deixar a guia ideal apenas como referencia secundaria.
 - Na massa-mola vertical, o suporte superior deve permanecer fixo, a mola deve deformar de acordo com a posicao vertical calculada e a massa esferica deve acompanhar o mesmo sample usado por graficos, tabela, formulas e vetores.

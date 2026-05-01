@@ -9,9 +9,12 @@ export type KinematicsChartId =
   | 'acceleration'
   | 'angle'
   | 'energy'
+  | 'field'
   | 'forces'
+  | 'flow'
   | 'momentum'
   | 'position'
+  | 'pressure'
   | 'torque'
   | 'velocity'
   | 'work'
@@ -230,6 +233,177 @@ export function buildKinematicsChartConfigs(
         yAxisTitle: 'Momento e impulso',
       },
     )
+  } else if (simulationId === 'continuity-bernoulli') {
+    charts.push(
+      {
+        id: 'flow',
+        title: 'Vazao e areas por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Vazao (m^3/s)',
+            x: time,
+            y: samples.map((sample) => sample.flowRateCubicMetersPerSecond),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Area de entrada (m^2)',
+            x: time,
+            y: samples.map((sample) => sample.crossSectionAreaSquareMeters),
+          },
+          {
+            lineColor: themeTokens.vector,
+            name: 'Area do estrangulamento (m^2)',
+            x: time,
+            y: samples.map(
+              (sample) => sample.secondaryCrossSectionAreaSquareMeters,
+            ),
+          },
+        ],
+        yAxisTitle: 'Vazao e area',
+      },
+      {
+        id: 'velocity',
+        title: 'Velocidades por continuidade',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Velocidade na entrada (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.speedMetersPerSecond),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Velocidade no estrangulamento (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.secondarySpeedMetersPerSecond),
+          },
+        ],
+        yAxisTitle: 'Velocidade (metros por segundo)',
+      },
+      {
+        id: 'pressure',
+        title: 'Pressao por Bernoulli',
+        traces: [
+          {
+            lineColor: themeTokens.vector,
+            name: 'Pressao na entrada (Pa)',
+            x: time,
+            y: samples.map((sample) => sample.pressurePascals),
+          },
+          {
+            lineColor: themeTokens.warning,
+            name: 'Pressao no estrangulamento (Pa)',
+            x: time,
+            y: samples.map((sample) => sample.secondaryPressurePascals),
+          },
+        ],
+        yAxisTitle: 'Pressao (pascals)',
+      },
+    )
+  } else if (simulationId === 'gravitational-field-orbits') {
+    charts.push(
+      {
+        id: 'position',
+        title: 'Raio orbital por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Raio orbital (m)',
+            x: time,
+            y: samples.map((sample) => sample.positionMeters),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Posicao x (m)',
+            x: time,
+            y: samples.map((sample) => sample.xMeters),
+          },
+        ],
+        yAxisTitle: 'Distancia (metros)',
+      },
+      {
+        id: 'velocity',
+        title: 'Velocidade orbital por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Rapidez orbital (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.speedMetersPerSecond),
+          },
+        ],
+        yAxisTitle: 'Velocidade (metros por segundo)',
+      },
+      {
+        id: 'field',
+        title: 'Campo gravitacional por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.warning,
+            name: 'Campo gravitacional (N/kg)',
+            x: time,
+            y: samples.map(
+              (sample) => sample.gravitationalFieldNewtonsPerKilogram,
+            ),
+          },
+          {
+            lineColor: themeTokens.vector,
+            name: 'Forca gravitacional (N)',
+            x: time,
+            y: samples.map((sample) => sample.centripetalForceNewtons),
+          },
+        ],
+        yAxisTitle: 'Campo e forca',
+      },
+    )
+  } else if (simulationId === 'hydrostatics-buoyancy') {
+    charts.push(
+      {
+        id: 'pressure',
+        title: 'Pressao hidrostatica por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Pressao no ponto (Pa)',
+            x: time,
+            y: samples.map((sample) => sample.fluidPressurePascals),
+          },
+          {
+            lineColor: themeTokens.teal,
+            name: 'Profundidade (m)',
+            x: time,
+            y: samples.map((sample) => sample.positionMeters),
+          },
+        ],
+        yAxisTitle: 'Pressao e profundidade',
+      },
+      {
+        id: 'forces',
+        title: 'Empuxo, peso e resultante',
+        traces: [
+          {
+            lineColor: themeTokens.vector,
+            name: 'Empuxo (N)',
+            x: time,
+            y: samples.map((sample) => sample.buoyantForceNewtons),
+          },
+          {
+            lineColor: themeTokens.danger,
+            name: 'Peso (N)',
+            x: time,
+            y: samples.map((sample) => sample.weightNewtons),
+          },
+          {
+            lineColor: themeTokens.warning,
+            name: 'Resultante vertical (N)',
+            x: time,
+            y: samples.map((sample) => sample.netForceNewtons),
+          },
+        ],
+        yAxisTitle: 'Forca (newtons)',
+      },
+    )
   } else if (simulationId === 'particle-equilibrium') {
     charts.push(
       {
@@ -277,6 +451,74 @@ export function buildKinematicsChartConfigs(
           },
         ],
         yAxisTitle: 'Aceleracao (metros por segundo ao quadrado)',
+      },
+    )
+  } else if (simulationId === 'rolling-without-slipping') {
+    charts.push(
+      {
+        id: 'position',
+        title: 'Rolamento no trilho por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Posicao no trilho (m)',
+            x: time,
+            y: samples.map((sample) => sample.positionMeters),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Angulo da roda (rad)',
+            x: time,
+            y: samples.map((sample) => sample.angleRadians),
+          },
+        ],
+        yAxisTitle: 'Posicao e angulo',
+      },
+      {
+        id: 'velocity',
+        title: 'Velocidade linear e angular',
+        traces: [
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Velocidade do centro (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.speedMetersPerSecond),
+          },
+          {
+            lineColor: themeTokens.vector,
+            name: 'Velocidade angular (rad/s)',
+            x: time,
+            y: samples.map(
+              (sample) => sample.angularVelocityRadiansPerSecond,
+            ),
+          },
+        ],
+        yAxisTitle: 'Velocidade',
+      },
+      {
+        id: 'forces',
+        title: 'Atrito estatico e aderencia',
+        traces: [
+          {
+            lineColor: themeTokens.warning,
+            name: 'Atrito requerido/usado (N)',
+            x: time,
+            y: samples.map((sample) => sample.frictionForceNewtons),
+          },
+          {
+            lineColor: themeTokens.vector,
+            name: 'Atrito estatico maximo (N)',
+            x: time,
+            y: samples.map((sample) => sample.maxStaticFrictionNewtons),
+          },
+          {
+            lineColor: themeTokens.danger,
+            name: 'Uso do atrito disponivel',
+            x: time,
+            y: samples.map((sample) => sample.gripRatio),
+          },
+        ],
+        yAxisTitle: 'Forca e razao',
       },
     )
   } else if (simulationId === 'torque-levers-center-mass') {
@@ -582,7 +824,11 @@ export function buildKinematicsChartConfigs(
     }
   }
 
-  if (showEnergy) {
+  const supportsEnergyChart =
+    simulationId !== 'continuity-bernoulli' &&
+    simulationId !== 'hydrostatics-buoyancy'
+
+  if (showEnergy && supportsEnergyChart) {
     charts.push({
       id: 'energy',
       title: 'Energia por tempo',
@@ -631,7 +877,9 @@ export function buildKinematicsChartConfigs(
               ]
             :
         simulationId === 'atwood-machine' ||
+        simulationId === 'gravitational-field-orbits' ||
         simulationId === 'projectile-motion' ||
+        simulationId === 'rolling-without-slipping' ||
         simulationId === 'work-energy-track'
           ? [
               {
@@ -646,11 +894,15 @@ export function buildKinematicsChartConfigs(
                 x: time,
                 y: samples.map((sample) => sample.potentialEnergyJoules),
               },
-              ...(simulationId === 'work-energy-track'
+              ...(simulationId === 'work-energy-track' ||
+              simulationId === 'rolling-without-slipping'
                 ? [
                     {
                       lineColor: themeTokens.danger,
-                      name: 'Energia termica acumulada (J)',
+                      name:
+                        simulationId === 'rolling-without-slipping'
+                          ? 'Energia dissipada no escorregamento (J)'
+                          : 'Energia termica acumulada (J)',
                       x: time,
                       y: samples.map((sample) => sample.thermalEnergyJoules),
                     },
@@ -661,6 +913,8 @@ export function buildKinematicsChartConfigs(
                 name:
                   simulationId === 'work-energy-track'
                     ? 'Balanco energetico total (J)'
+                    : simulationId === 'rolling-without-slipping'
+                      ? 'Energia rastreada total (J)'
                     : 'Energia mecanica total (J)',
                 x: time,
                 y: samples.map((sample) => sample.totalEnergyJoules),

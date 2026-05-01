@@ -18,6 +18,7 @@ export function createKinematicsSceneProjection(
 ): KinematicsSceneProjection {
   const horizontalPlane =
     simulationId === 'collisions-1d-2d' ||
+    simulationId === 'gravitational-field-orbits' ||
     simulationId === 'particle-equilibrium' ||
     simulationId === 'rigid-body-rotation' ||
     simulationId === 'torque-levers-center-mass' ||

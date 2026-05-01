@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Este guia define o catalogo planejado de simulacoes de fisica basica. Ele nao muda a regra core-first: a primeira entrega funcional continua sendo `Mecanica > Pendulo simples`, com dados locais, motor proprio e sincronizacao completa entre cena, graficos, tabela, formulas e teoria. No catalogo expandido, essa simulacao tambem pode receber o caminho de topico `Mecanica > Oscilacoes > Pendulo simples`. Apos teste manual do dono do projeto, o pendulo fica como `ready`. A Fase 2 implementou `Mecanica > Dinamica > Plano inclinado com atrito` como segunda simulacao executavel para validar reuso e, apos aprovacao manual, ela fica como `ready`. A Fase 3 iniciou a expansao de Mecanica implementando quatro simulacoes de Cinematica: MRU, MUV/queda livre, lancamento obliquo e MCU. Apos aprovacao manual, MRU, MUV/queda livre e lancamento obliquo ficam como `ready`, enquanto MCU permanece em `analysis`. O segundo lote implementou `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho`; apos aprovacao manual, Atwood e forca centripeta em curva ficam como `ready`, enquanto trabalho e energia em trilho permanece em `analysis`. O terceiro lote implementou `Colisoes 1D e 2D`, `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido`. Essas demais simulacoes ficam em `analysis` ate teste manual; so entao podem virar `ready`.
+Este guia define o catalogo planejado de simulacoes de fisica basica. Ele nao muda a regra core-first: a primeira entrega funcional continua sendo `Mecanica > Pendulo simples`, com dados locais, motor proprio e sincronizacao completa entre cena, graficos, tabela, formulas e teoria. No catalogo expandido, essa simulacao tambem pode receber o caminho de topico `Mecanica > Oscilacoes > Pendulo simples`. Apos teste manual do dono do projeto, o pendulo fica como `ready`. A Fase 2 implementou `Mecanica > Dinamica > Plano inclinado com atrito` como segunda simulacao executavel para validar reuso e, apos aprovacao manual, ela fica como `ready`. A Fase 3 iniciou a expansao de Mecanica implementando quatro simulacoes de Cinematica: MRU, MUV/queda livre, lancamento obliquo e MCU. Apos aprovacao manual, MRU, MUV/queda livre e lancamento obliquo ficam como `ready`, enquanto MCU permanece em `analysis`. O segundo lote implementou `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho`; apos aprovacao manual, as tres ficam como `ready`. O terceiro lote implementou `Colisoes 1D e 2D`, `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido`. Apos aprovacao manual, `Colisoes 1D e 2D` fica como `ready`; as demais desse lote permanecem em `analysis` ate teste manual. O quarto lote implementou `Rolamento sem escorregamento`, `Campo gravitacional e orbitas`, `Hidrostatica e empuxo` e `Continuidade e Bernoulli` como `analysis`, alem de consolidar presets didaticos por subarea mecanica.
 
 O catalogo amplo deve nascer como backlog planejado e virar produto funcional em fatias pequenas, sempre reaproveitando o contrato comum de simulacao. Toda promocao futura para `analysis` ou `ready` precisa aplicar o `Simulation Fidelity Adjustment Guide`, inclusive quando a simulacao parecer simples ou puramente analitica. A promocao de `analysis` para `ready` tambem exige teste manual do dono do projeto.
 
@@ -78,15 +78,27 @@ Implementacao preferencial:
 | Dinamica | Plano inclinado com atrito | Forcas normal, peso, atrito, aceleracao, energia e condicoes de repouso/deslizamento. | Fase 2 `ready`; modelo analitico por regimes, Three.js, live-canvas e KaTeX. |
 | Dinamica | Maquina de Atwood | Tensao, aceleracao, massas acopladas, energia e comparacao de massas. | Fase 3 `ready`; equacoes de Newton em modelo analitico ideal; cena Three.js compartilhada. |
 | Dinamica | Forca centripeta em curva | Atrito lateral, raio, velocidade critica e perda de aderencia. | Fase 3 `ready`; modelo analitico com alertas de limite; cena em Three.js. |
-| Energia e momento | Trabalho e energia em trilho | Trabalho de forcas, energia cinetica/potencial, conservacao e dissipacao em bancada visual com trilho 3D, regua de altura, rastro termico e painel compacto de balanco energetico derivado dos samples. | Fase 3 `analysis`; modelo analitico de rampa/trilho com grafico de energia e trabalho. |
-| Energia e momento | Colisoes 1D e 2D | Momento linear, impulso, coeficiente de restituicao, colisao elastica/inelastica. | Fase 3 `analysis`; motor proprio para duas particulas com impulso normal e componentes 2D; Rapier/Matter.js apenas se a cena crescer. |
+| Energia e momento | Trabalho e energia em trilho | Trabalho de forcas, energia cinetica/potencial, conservacao e dissipacao em bancada visual com trilho 3D, regua de altura, rastro termico e painel compacto de balanco energetico derivado dos samples. | Fase 3 `ready`; modelo analitico de rampa/trilho com grafico de energia e trabalho. |
+| Energia e momento | Colisoes 1D e 2D | Momento linear, impulso, coeficiente de restituicao, colisao elastica/inelastica. | Fase 3 `ready`; motor proprio para duas particulas com impulso normal e componentes 2D; Rapier/Matter.js apenas se a cena crescer. |
 | Estatica | Equilibrio de particula | Soma vetorial de forcas, cabos, tracao e resultante nula. | Fase 3 `analysis`; algebra vetorial simples com regime de equilibrio ou aceleracao por resultante. |
 | Estatica | Torque, alavancas e centro de massa | Momento de forca, equilibrio rotacional, ponto de apoio e distribuicao de massa. | Fase 3 `analysis`; modelo analitico de alavanca com pesos pontuais, forca externa, centro de massa e torque resultante. |
 | Rotacao | Rotacao de corpo rigido | Momento de inercia, torque, aceleracao angular, energia rotacional. | Fase 3 `analysis`; solucao angular deterministica com torque constante e amortecimento linear opcional. |
-| Rotacao | Rolamento sem escorregamento | Relacao translacao/rotacao, energia e condicao de escorregamento. | Modelo analitico com limites; Three.js para roda e trilho. |
-| Gravitacao | Campo gravitacional e orbitas | Lei da gravitacao, campo, velocidade orbital, orbitas circulares/elipticas didaticas. | Integrador Verlet/RK4; Three.js para orbitas e vetores. |
-| Fluidos basicos | Hidrostatica e empuxo | Pressao, profundidade, principio de Pascal, Arquimedes e flutuacao. | Modelo analitico; cena com corpo submerso e graficos de pressao. |
-| Fluidos basicos | Continuidade e Bernoulli | Vazao, velocidade, pressao, tubo de Venturi e limites do fluido ideal. | Modelo analitico; Three.js ou PixiJS se houver particulas 2D densas. |
+| Rotacao | Rolamento sem escorregamento | Relacao translacao/rotacao, energia e condicao de escorregamento. | Fase 3 `analysis`; modelo analitico de cilindro solido com limite de atrito estatico, roda Three.js e warning de escorregamento. |
+| Gravitacao | Campo gravitacional e orbitas | Lei da gravitacao, campo, velocidade orbital, orbitas circulares/elipticas didaticas. | Fase 3 `analysis`; campo central de dois corpos com amostragem eliptica didatica, orbitas e vetores em Three.js. |
+| Fluidos basicos | Hidrostatica e empuxo | Pressao, profundidade, principio de Pascal, Arquimedes e flutuacao. | Fase 3 `analysis`; modelo analitico `rho*g*h`, empuxo, fracao submersa e warning de afundamento. |
+| Fluidos basicos | Continuidade e Bernoulli | Vazao, velocidade, pressao, tubo de Venturi e limites do fluido ideal. | Fase 3 `analysis`; modelo ideal de continuidade/Bernoulli com warning para pressao negativa. |
+
+### Presets didaticos por subarea mecanica
+
+Cada subarea mecanica funcional deve ter presets que cubram pelo menos um caso nominal e um limite didatico:
+
+- Cinematica: velocidade constante, aceleracao/gravity customizada, voo balistico e movimento circular.
+- Dinamica: equilibrio/deslizamento no plano, massas quase equilibradas em Atwood e perda de aderencia em curva.
+- Energia e momento: trilho conservativo/dissipativo, trabalho externo e colisoes elasticas/inelasticas.
+- Estatica: equilibrio vetorial, resultante nao nula, alavanca balanceada e torque resultante.
+- Rotacao: torque/amortecimento em corpo rigido, rolamento puro e escorregamento.
+- Gravitacao: orbita baixa, elipse didatica e planeta massivo.
+- Fluidos basicos: flutuacao, afundamento, fluido denso, Venturi moderado, alta vazao e garganta elevada.
 
 ## Termodinamica
 

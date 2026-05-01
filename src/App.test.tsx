@@ -31,6 +31,11 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /Forca centripeta em curva/i }),
     ).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Alternar subarea Energia e momento/i,
+      }),
+    )
     expect(
       screen.getByRole('button', { name: /Trabalho e energia em trilho/i }),
     ).toBeInTheDocument()
@@ -48,11 +53,26 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /Rotacao de corpo rigido/i }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Rolamento sem escorregamento/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Campo gravitacional e orbitas/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Hidrostatica e empuxo/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Continuidade e Bernoulli/i }),
+    ).toBeInTheDocument()
     expect(screen.getByText('3601')).toBeInTheDocument()
     expect(screen.getByText(/Viewport Three\.js/i)).toBeInTheDocument()
     const viewport = screen.getByLabelText(/Pendulum numerical viewport/i)
     const angleMetric = within(viewport).getByText(/^Angulo do pendulo$/i)
     const vectorLegend = within(viewport).getByLabelText(/Legenda dos vetores/i)
+    const originLegend = within(viewport).getByLabelText(
+      /Referencia de origem dos eixos da grade/i,
+    )
     const animationVectorLegend = within(viewport).getByLabelText(
       /Legenda compacta dos vetores na animacao/i,
     )
@@ -64,6 +84,13 @@ describe('App', () => {
     expect(simulationCanvas).toHaveAccessibleName(
       /por cima e por baixo.*Shift \+ scroll para zoom/i,
     )
+    expect(within(originLegend).getByText(/^Origem da grade$/i))
+      .toBeInTheDocument()
+    expect(within(originLegend).getByText(/^X$/i)).toBeInTheDocument()
+    expect(within(originLegend).getByText(/^Y$/i)).toBeInTheDocument()
+    expect(within(originLegend).getByText(/^Z$/i)).toBeInTheDocument()
+    expect(within(originLegend).getByText(/canto inferior esquerdo/i))
+      .toBeInTheDocument()
     expect(within(animationVectorLegend).getByText(/^Peso \(N\)$/i))
       .toBeInTheDocument()
     expect(within(animationVectorLegend).getByText(/^Tensao \(N\)$/i))
@@ -501,28 +528,27 @@ describe('App', () => {
       screen.getByRole('button', {
         name: /Alternar subarea Energia e momento/i,
       }),
-    ).toHaveAttribute('aria-expanded', 'true')
+    ).toHaveAttribute('aria-expanded', 'false')
     expect(
       screen.getByRole('button', { name: /Alternar subarea Rotacao/i }),
     ).toHaveAttribute('aria-expanded', 'true')
     expect(
+      screen.getByRole('button', { name: /Alternar subarea Gravitacao/i }),
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(
       screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
-    ).toHaveAttribute('aria-expanded', 'false')
+    ).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getAllByText(/^analise$/i).length).toBeGreaterThan(0)
     expect(screen.getAllByText(/^pronto$/i).length).toBeGreaterThan(0)
-    expect(
-      screen.getAllByText(/^planejado$/i).length,
-    ).toBeGreaterThan(0)
     expect(
       screen.getByRole('button', { name: /Movimento retilineo uniforme/i }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Lancamento obliquo/i }),
     ).toBeInTheDocument()
-    const plannedSimulationItem = screen
-      .getByText(/Rolamento sem escorregamento/i)
-      .closest('[aria-disabled="true"]')
-    expect(plannedSimulationItem).not.toBeNull()
+    expect(
+      screen.getByRole('button', { name: /Rolamento sem escorregamento/i }),
+    ).toBeInTheDocument()
 
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar area Termodinamica/i }),
@@ -530,6 +556,7 @@ describe('App', () => {
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Gases/i }),
     )
+    expect(screen.getAllByText(/^planejado$/i).length).toBeGreaterThan(0)
     expect(screen.getByText(/^Gas ideal$/i)).toBeInTheDocument()
     expect(screen.getByText(/Transformacoes gasosas/i)).toBeInTheDocument()
 
@@ -569,6 +596,9 @@ describe('App', () => {
     )
 
     expect(viewport).toBeInTheDocument()
+    expect(
+      within(viewport).getByLabelText(/Referencia de origem dos eixos da grade/i),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText(/Cena 3D do plano inclinado/i))
       .toHaveAccessibleName(/por cima e por baixo.*Shift \+ scroll para zoom/i)
     expect(within(animationVectorLegend).getByText(/^Peso \(N\)$/i))
@@ -647,8 +677,14 @@ describe('App', () => {
       fireEvent.click(screen.getByRole('button', { name: title }))
 
       expect(screen.getByRole('heading', { name: title })).toBeInTheDocument()
-      expect(screen.getByLabelText(/Kinematics numerical viewport/i))
-        .toBeInTheDocument()
+      const viewport = screen.getByLabelText(/Kinematics numerical viewport/i)
+
+      expect(viewport).toBeInTheDocument()
+      expect(
+        within(viewport).getByLabelText(
+          /Referencia de origem dos eixos da grade/i,
+        ),
+      ).toBeInTheDocument()
       expect(screen.getByLabelText(/Cena 3D de Cinematica/i))
         .toHaveAccessibleName(/por cima e por baixo.*Shift \+ scroll para zoom/i)
       expect(screen.getAllByLabelText(control).length).toBeGreaterThan(0)
@@ -699,6 +735,11 @@ describe('App', () => {
     })
 
     fireEvent.click(
+      screen.getByRole('button', {
+        name: /Alternar subarea Energia e momento/i,
+      }),
+    )
+    fireEvent.click(
       screen.getByRole('button', { name: /Trabalho e energia em trilho/i }),
     )
 
@@ -746,6 +787,26 @@ describe('App', () => {
         chart: /Torque e aceleracao angular/i,
         control: /Momento de inercia \(kg m\^2\)/i,
       },
+      {
+        title: /Rolamento sem escorregamento/i,
+        chart: /Atrito estatico e aderencia/i,
+        control: /Raio \(m\)/i,
+      },
+      {
+        title: /Campo gravitacional e orbitas/i,
+        chart: /Campo gravitacional por tempo/i,
+        control: /Massa central \(M_terra\)/i,
+      },
+      {
+        title: /Hidrostatica e empuxo/i,
+        chart: /Empuxo, peso e resultante/i,
+        control: /Densidade do fluido \(kg\/m\^3\)/i,
+      },
+      {
+        title: /Continuidade e Bernoulli/i,
+        chart: /Pressao por Bernoulli/i,
+        control: /Vazao \(m\^3\/s\)/i,
+      },
     ]
 
     nextMechanicsCases.forEach(({ title, chart, control }) => {
@@ -760,5 +821,5 @@ describe('App', () => {
       expect(screen.getByRole('img', { name: chart })).toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: /Recolher Graficos/i }))
     })
-  }, 45_000)
+  }, 90_000)
 })

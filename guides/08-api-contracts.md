@@ -198,7 +198,7 @@ type InclinedPlaneSample = {
 
 ## Exemplo de sample de Cinematica
 
-O nome historico `KinematicsSample` cobre hoje o motor analitico compartilhado de Cinematica, Dinamica, Energia/momento, Estatica e Rotacao. Campos sem uso em uma simulacao ficam zerados, mas toda grandeza exibida em cena, grafico, tabela ou formula deve vir do sample.
+O nome historico `KinematicsSample` cobre hoje o motor analitico compartilhado de Cinematica, Dinamica, Energia/momento, Estatica, Rotacao, Gravitacao e Fluidos basicos. Campos sem uso em uma simulacao ficam zerados, mas toda grandeza exibida em cena, grafico, tabela ou formula deve vir do sample.
 
 ```ts
 type KinematicsSample = {
@@ -229,8 +229,17 @@ type KinematicsSample = {
   frequencyHertz: number;
   centripetalAccelerationMetersPerSecondSquared: number;
   centripetalForceNewtons: number;
+  gravitationalFieldNewtonsPerKilogram: number;
   maxStaticFrictionNewtons: number;
   frictionForceNewtons: number;
+  fluidPressurePascals: number;
+  pressurePascals: number;
+  secondaryPressurePascals: number;
+  flowRateCubicMetersPerSecond: number;
+  crossSectionAreaSquareMeters: number;
+  secondaryCrossSectionAreaSquareMeters: number;
+  buoyantForceNewtons: number;
+  submergedFraction: number;
   forceOneNewtons: number;
   forceOneXNewtons: number;
   forceOneZNewtons: number;

@@ -6,10 +6,14 @@ import {
   type AtwoodMachineParameters,
   type CentripetalForceCurveParameters,
   type CollisionsParameters,
+  type ContinuityBernoulliParameters,
+  type GravitationalFieldOrbitsParameters,
+  type HydrostaticsBuoyancyParameters,
   type KinematicsSimulationId,
   type ParticleEquilibriumParameters,
   type ProjectileMotionParameters,
   type RigidBodyRotationParameters,
+  type RollingWithoutSlippingParameters,
   type TorqueLeversCenterMassParameters,
   type UniformCircularMotionParameters,
   type UniformLinearMotionParameters,
@@ -208,6 +212,132 @@ describe('kinematics physics engine', () => {
     expect(lastSample?.totalEnergyJoules).toBeCloseTo(initialEnergy, 4)
   })
 
+  it('couples translation, rotation, and friction in rolling motion', () => {
+    const parameters: RollingWithoutSlippingParameters = {
+      frictionCoefficient: 0.4,
+      gravityMetersPerSecondSquared: 9.81,
+      inclineAngleDegrees: 18,
+      initialSpeedMetersPerSecond: 0,
+      massKilograms: 1.2,
+      radiusMeters: 0.3,
+      trackLengthMeters: 6,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 60,
+      simulationId: 'rolling-without-slipping',
+    })
+    const sample = result.samples.at(-1)
+
+    expect(sample?.speedMetersPerSecond).toBeGreaterThan(0)
+    expect(sample?.angularVelocityRadiansPerSecond)
+      .toBeCloseTo((sample?.speedMetersPerSecond ?? 0) / parameters.radiusMeters)
+    expect(sample?.gripRatio).toBeLessThanOrEqual(1)
+    expect(result.warnings).toHaveLength(0)
+  })
+
+  it('warns when rolling cannot satisfy the static friction constraint', () => {
+    const parameters: RollingWithoutSlippingParameters = {
+      frictionCoefficient: 0.03,
+      gravityMetersPerSecondSquared: 9.81,
+      inclineAngleDegrees: 30,
+      initialSpeedMetersPerSecond: 0,
+      massKilograms: 1,
+      radiusMeters: 0.35,
+      trackLengthMeters: 6,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 60,
+      simulationId: 'rolling-without-slipping',
+    })
+
+    expect(result.samples[0].gripRatio).toBeGreaterThan(1)
+    expect(result.samples.at(-1)?.thermalEnergyJoules).toBeGreaterThan(0)
+    expect(result.warnings[0]?.code)
+      .toBe('ROLLING_STATIC_FRICTION_LIMIT_EXCEEDED')
+  })
+
+  it('computes gravitational field, orbital speed, and negative orbital energy', () => {
+    const parameters: GravitationalFieldOrbitsParameters = {
+      centralMassEarths: 1,
+      eccentricity: 0,
+      initialAngleDegrees: 0,
+      orbitalRadiusKilometers: 7000,
+      satelliteMassKilograms: 900,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 60,
+      parameters,
+      sampleRateHz: 1,
+      simulationId: 'gravitational-field-orbits',
+    })
+    const sample = result.samples[0]
+
+    expect(sample.positionMeters).toBeCloseTo(7_000_000)
+    expect(sample.speedMetersPerSecond).toBeGreaterThan(7000)
+    expect(sample.gravitationalFieldNewtonsPerKilogram).toBeGreaterThan(7)
+    expect(sample.totalEnergyJoules).toBeLessThan(0)
+  })
+
+  it('computes hydrostatic pressure and buoyancy regimes', () => {
+    const floating: HydrostaticsBuoyancyParameters = {
+      depthMeters: 2,
+      fluidDensityKilogramsPerCubicMeter: 1000,
+      gravityMetersPerSecondSquared: 9.81,
+      objectDensityKilogramsPerCubicMeter: 600,
+      objectVolumeCubicMeters: 0.1,
+    }
+    const sinking: HydrostaticsBuoyancyParameters = {
+      ...floating,
+      objectDensityKilogramsPerCubicMeter: 1200,
+    }
+    const floatingResult = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters: floating,
+      sampleRateHz: 20,
+      simulationId: 'hydrostatics-buoyancy',
+    })
+    const sinkingResult = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters: sinking,
+      sampleRateHz: 20,
+      simulationId: 'hydrostatics-buoyancy',
+    })
+
+    expect(floatingResult.samples[0].fluidPressurePascals).toBeCloseTo(19620)
+    expect(floatingResult.samples[0].submergedFraction).toBeCloseTo(0.6)
+    expect(floatingResult.samples[0].netForceNewtons).toBeCloseTo(0)
+    expect(sinkingResult.samples[0].netForceNewtons).toBeLessThan(0)
+    expect(sinkingResult.warnings[0]?.code).toBe('OBJECT_SINKS')
+  })
+
+  it('computes continuity and Bernoulli pressure between tube sections', () => {
+    const parameters: ContinuityBernoulliParameters = {
+      flowRateCubicMetersPerSecond: 0.12,
+      fluidDensityKilogramsPerCubicMeter: 1000,
+      gravityMetersPerSecondSquared: 9.81,
+      heightDifferenceMeters: 0,
+      inletAreaSquareMeters: 0.08,
+      inletPressureKilopascals: 160,
+      throatAreaSquareMeters: 0.04,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'continuity-bernoulli',
+    })
+    const sample = result.samples[0]
+
+    expect(sample.speedMetersPerSecond).toBeCloseTo(1.5)
+    expect(sample.secondarySpeedMetersPerSecond).toBeCloseTo(3)
+    expect(sample.secondaryPressurePascals).toBeLessThan(sample.pressurePascals)
+    expect(result.warnings).toHaveLength(0)
+  })
+
   it('conserves total momentum and applies restitution in 1D and 2D collisions', () => {
     const parameters: CollisionsParameters = {
       coefficientOfRestitution: 0.8,
@@ -357,7 +487,11 @@ describe('kinematics physics engine', () => {
       'atwood-machine',
       'centripetal-force-curve',
       'collisions-1d-2d',
+      'continuity-bernoulli',
+      'gravitational-field-orbits',
+      'hydrostatics-buoyancy',
       'particle-equilibrium',
+      'rolling-without-slipping',
       'uniform-linear-motion',
       'uniformly-accelerated-motion',
       'projectile-motion',
@@ -465,6 +599,32 @@ function readFixtureLikeParameters(
         tangentialSpeedOneMetersPerSecond: 0.2,
         tangentialSpeedTwoMetersPerSecond: -0.1,
       }
+    case 'continuity-bernoulli':
+      return {
+        flowRateCubicMetersPerSecond: 0.12,
+        fluidDensityKilogramsPerCubicMeter: 1000,
+        gravityMetersPerSecondSquared: 9.81,
+        heightDifferenceMeters: 0,
+        inletAreaSquareMeters: 0.08,
+        inletPressureKilopascals: 160,
+        throatAreaSquareMeters: 0.04,
+      }
+    case 'gravitational-field-orbits':
+      return {
+        centralMassEarths: 1,
+        eccentricity: 0.08,
+        initialAngleDegrees: 0,
+        orbitalRadiusKilometers: 7000,
+        satelliteMassKilograms: 900,
+      }
+    case 'hydrostatics-buoyancy':
+      return {
+        depthMeters: 1.5,
+        fluidDensityKilogramsPerCubicMeter: 1000,
+        gravityMetersPerSecondSquared: 9.81,
+        objectDensityKilogramsPerCubicMeter: 650,
+        objectVolumeCubicMeters: 0.08,
+      }
     case 'particle-equilibrium':
       return {
         forceOneAngleDegrees: 0,
@@ -504,6 +664,16 @@ function readFixtureLikeParameters(
         initialAngleDegrees: 0,
         initialAngularVelocityRadiansPerSecond: 0.5,
         momentOfInertiaKilogramMetersSquared: 1.6,
+      }
+    case 'rolling-without-slipping':
+      return {
+        frictionCoefficient: 0.35,
+        gravityMetersPerSecondSquared: 9.81,
+        inclineAngleDegrees: 18,
+        initialSpeedMetersPerSecond: 0.1,
+        massKilograms: 1.2,
+        radiusMeters: 0.35,
+        trackLengthMeters: 6,
       }
     case 'torque-levers-center-mass':
       return {

@@ -71,6 +71,7 @@ import {
 import atwoodMachineTheory from '../../content/simulations/mechanics/atwood-machine/theory.md?raw'
 import centripetalForceCurveTheory from '../../content/simulations/mechanics/centripetal-force-curve/theory.md?raw'
 import collisionsTheory from '../../content/simulations/mechanics/collisions-1d-2d/theory.md?raw'
+import continuityBernoulliTheory from '../../content/simulations/mechanics/continuity-bernoulli/theory.md?raw'
 import {
   computePendulumTimeline,
   getPendulumVectorOverlays,
@@ -79,11 +80,14 @@ import {
   type PendulumSample,
   type PendulumVectorOverlay,
 } from '../../lib/physics/pendulum'
+import gravitationalFieldOrbitsTheory from '../../content/simulations/mechanics/gravitational-field-orbits/theory.md?raw'
+import hydrostaticsBuoyancyTheory from '../../content/simulations/mechanics/hydrostatics-buoyancy/theory.md?raw'
 import inclinedPlaneTheory from '../../content/simulations/mechanics/inclined-plane-friction/theory.md?raw'
 import particleEquilibriumTheory from '../../content/simulations/mechanics/particle-equilibrium/theory.md?raw'
 import pendulumTheory from '../../content/simulations/mechanics/pendulum/theory.md?raw'
 import projectileMotionTheory from '../../content/simulations/mechanics/projectile-motion/theory.md?raw'
 import rigidBodyRotationTheory from '../../content/simulations/mechanics/rigid-body-rotation/theory.md?raw'
+import rollingWithoutSlippingTheory from '../../content/simulations/mechanics/rolling-without-slipping/theory.md?raw'
 import torqueLeversCenterMassTheory from '../../content/simulations/mechanics/torque-levers-center-mass/theory.md?raw'
 import uniformCircularMotionTheory from '../../content/simulations/mechanics/uniform-circular-motion/theory.md?raw'
 import uniformLinearMotionTheory from '../../content/simulations/mechanics/uniform-linear-motion/theory.md?raw'
@@ -174,9 +178,13 @@ const kinematicsTheoryById = {
   'atwood-machine': atwoodMachineTheory,
   'centripetal-force-curve': centripetalForceCurveTheory,
   'collisions-1d-2d': collisionsTheory,
+  'continuity-bernoulli': continuityBernoulliTheory,
+  'gravitational-field-orbits': gravitationalFieldOrbitsTheory,
+  'hydrostatics-buoyancy': hydrostaticsBuoyancyTheory,
   'particle-equilibrium': particleEquilibriumTheory,
   'projectile-motion': projectileMotionTheory,
   'rigid-body-rotation': rigidBodyRotationTheory,
+  'rolling-without-slipping': rollingWithoutSlippingTheory,
   'torque-levers-center-mass': torqueLeversCenterMassTheory,
   'uniform-circular-motion': uniformCircularMotionTheory,
   'uniform-linear-motion': uniformLinearMotionTheory,
@@ -362,6 +370,60 @@ const kinematicsVectorLegendItemsById = {
       description: 'impulso normal acumulado quando ocorre a colisao',
     },
   ],
+  'continuity-bernoulli': [
+    {
+      id: 'velocity',
+      label: 'Entrada',
+      color: themeTokens.teal,
+      description: 'velocidade media no trecho largo do tubo',
+    },
+    {
+      id: 'secondaryVelocity',
+      label: 'Garganta',
+      color: themeTokens.cyan,
+      description: 'velocidade media no estrangulamento pela continuidade',
+    },
+  ],
+  'gravitational-field-orbits': [
+    {
+      id: 'velocity',
+      label: 'Velocidade orbital',
+      color: themeTokens.cyan,
+      description: 'velocidade tangencial aproximada no ponto da orbita',
+    },
+    {
+      id: 'gravity',
+      label: 'Campo gravitacional',
+      color: themeTokens.danger,
+      description: 'aceleracao gravitacional apontando para o corpo central',
+    },
+    {
+      id: 'centripetal',
+      label: 'Forca gravitacional',
+      color: themeTokens.warning,
+      description: 'forca central que sustenta a curvatura orbital',
+    },
+  ],
+  'hydrostatics-buoyancy': [
+    {
+      id: 'normal',
+      label: 'Empuxo',
+      color: themeTokens.vector,
+      description: 'forca vertical para cima exercida pelo fluido deslocado',
+    },
+    {
+      id: 'weight',
+      label: 'Peso',
+      color: themeTokens.danger,
+      description: 'forca gravitacional do corpo para baixo',
+    },
+    {
+      id: 'resultant',
+      label: 'Resultante',
+      color: themeTokens.warning,
+      description: 'diferenca vertical entre empuxo e peso',
+    },
+  ],
   'particle-equilibrium': [
     {
       id: 'forceOne',
@@ -472,6 +534,32 @@ const kinematicsVectorLegendItemsById = {
       label: 'Torque',
       color: themeTokens.warning,
       description: 'torque resultante em torno do ponto de apoio',
+    },
+  ],
+  'rolling-without-slipping': [
+    {
+      id: 'velocity',
+      label: 'Centro',
+      color: themeTokens.cyan,
+      description: 'velocidade translacional do centro da roda no trilho',
+    },
+    {
+      id: 'acceleration',
+      label: 'Aceleracao',
+      color: themeTokens.warning,
+      description: 'aceleracao do centro causada pela componente do peso',
+    },
+    {
+      id: 'friction',
+      label: 'Atrito',
+      color: themeTokens.danger,
+      description: 'atrito requerido para manter ou tentar manter rolamento puro',
+    },
+    {
+      id: 'normal',
+      label: 'Normal',
+      color: themeTokens.vector,
+      description: 'forca de contato perpendicular ao trilho',
     },
   ],
   'uniform-linear-motion': [
@@ -3316,6 +3404,69 @@ function buildKinematicsReadoutMetrics({
     ]
   }
 
+  if (simulationId === 'continuity-bernoulli') {
+    return [
+      {
+        label: 'Vazao',
+        value: formatNumber(sample.flowRateCubicMetersPerSecond, 'm^3/s'),
+      },
+      {
+        label: 'Entrada',
+        value: formatNumber(sample.speedMetersPerSecond, 'm/s'),
+      },
+      {
+        label: 'Garganta',
+        value: formatNumber(sample.secondarySpeedMetersPerSecond, 'm/s'),
+      },
+      {
+        label: 'Pressao garganta',
+        value: formatNumber(sample.secondaryPressurePascals, 'Pa'),
+      },
+      frameMetric,
+    ]
+  }
+
+  if (simulationId === 'gravitational-field-orbits') {
+    return [
+      {
+        label: 'Raio orbital',
+        value: formatNumber(sample.positionMeters, 'm'),
+      },
+      {
+        label: 'Velocidade',
+        value: formatNumber(sample.speedMetersPerSecond, 'm/s'),
+      },
+      {
+        label: 'Campo g',
+        value: formatNumber(sample.gravitationalFieldNewtonsPerKilogram, 'N/kg'),
+      },
+      ...energyMetric,
+      frameMetric,
+    ]
+  }
+
+  if (simulationId === 'hydrostatics-buoyancy') {
+    return [
+      {
+        label: 'Pressao',
+        value: formatNumber(sample.fluidPressurePascals, 'Pa'),
+      },
+      {
+        label: 'Empuxo',
+        value: formatNumber(sample.buoyantForceNewtons, 'N'),
+      },
+      {
+        label: 'Submersao',
+        value: formatNumber(sample.submergedFraction, ''),
+      },
+      {
+        label: 'Resultante',
+        value: formatNumber(sample.netForceNewtons, 'N'),
+      },
+      frameMetric,
+    ]
+  }
+
   if (simulationId === 'particle-equilibrium') {
     return [
       {
@@ -3327,6 +3478,29 @@ function buildKinematicsReadoutMetrics({
         value: formatNumber(sample.accelerationMetersPerSecondSquared, 'm/s^2'),
       },
       { label: 'Deslocamento', value: formatNumber(sample.displacementMeters, 'm') },
+      ...energyMetric,
+      frameMetric,
+    ]
+  }
+
+  if (simulationId === 'rolling-without-slipping') {
+    return [
+      {
+        label: 'Posicao',
+        value: formatNumber(sample.positionMeters, 'm'),
+      },
+      {
+        label: 'Velocidade',
+        value: formatNumber(sample.speedMetersPerSecond, 'm/s'),
+      },
+      {
+        label: 'Vel. angular',
+        value: formatNumber(sample.angularVelocityRadiansPerSecond, 'rad/s'),
+      },
+      {
+        label: 'Aderencia',
+        value: sample.gripRatio > 1 ? 'escorrega' : 'rolamento puro',
+      },
       ...energyMetric,
       frameMetric,
     ]

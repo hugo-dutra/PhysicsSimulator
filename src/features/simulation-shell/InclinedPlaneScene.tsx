@@ -26,7 +26,13 @@ import {
   updateOrbitCameraPose,
   type OrbitCameraPose,
 } from '../../lib/rendering/orbitCamera'
+import {
+  createOriginAxesMarker,
+  getGridLowerLeftOrigin,
+  getOriginAxesLength,
+} from '../../lib/rendering/originAxes'
 import { themeTokens } from '../../theme/appTheme'
+import { ViewportOriginLegend } from './ViewportOriginLegend'
 
 export type InclinedPlaneFrameStats = FrameStats
 
@@ -347,18 +353,25 @@ export function InclinedPlaneScene({
     keyLight.position.set(-2.4, -3.2, 5)
     scene.add(keyLight)
 
-    const grid = new THREE.GridHelper(
-      Math.max(5, planeLengthMeters * 1.35),
-      8,
-      0x2a2f3a,
-      0x20242d,
-    )
+    const gridSize = Math.max(5, planeLengthMeters * 1.35)
+    const grid = new THREE.GridHelper(gridSize, 8, 0x2a2f3a, 0x20242d)
 
     grid.rotation.x = Math.PI / 2
     grid.position.set(planeHorizontalMeters * 0.5, 0, -0.02)
     grid.material.transparent = true
     grid.material.opacity = 0.38
     scene.add(grid)
+    scene.add(
+      createOriginAxesMarker({
+        axisLength: getOriginAxesLength(gridSize),
+        origin: getGridLowerLeftOrigin({
+          centerX: planeHorizontalMeters * 0.5,
+          centerY: 0,
+          size: gridSize,
+          z: grid.position.z + 0.035,
+        }),
+      }),
+    )
 
     const plane = new THREE.Mesh(
       new THREE.BoxGeometry(planeLengthMeters, 0.72, 0.08),
@@ -588,6 +601,7 @@ export function InclinedPlaneScene({
           },
         }}
       />
+      <ViewportOriginLegend />
     </Box>
   )
 }

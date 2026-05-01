@@ -1205,6 +1205,34 @@ Validacao:
 - Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
 - Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
 
+## 2026-05-01 - Referencia de origem nos viewports
+
+Pedido reportado:
+
+- Adicionar eixos de origem X, Y e Z no plano com grade das simulacoes, no canto inferior esquerdo, com cores, legenda fixa no canto superior esquerdo e alfa visual.
+
+Ajuste:
+
+- Criado helper compartilhado para desenhar eixos X/Y/Z translucidos no canto inferior esquerdo da grade dos renderers Three.js.
+- Adicionada legenda fixa de origem da grade no canto superior esquerdo do canvas, sempre presente e independente dos toggles de vetores/energia.
+- Aplicado nos viewports de pendulo, plano inclinado e cena compartilhada de Cinematica/Mecanica.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/07-quality-and-operations.md` e `guides/issues.md`.
+
+Gate de fidelidade:
+
+- Mudanca visual de referencia espacial. Nenhum motor, parametro, sample, grafico, tabela, formula, teoria, regime ou warning foi alterado; a referencia nao recalcula nem contradiz a fisica.
+
+Validacao:
+
+- Executado `npm run test -- src/App.test.tsx`; 7 testes passaram.
+- Executado `npm run test`; 54 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+
 ## 2026-04-30 - Navegacao orbital yaw/pitch na viewport
 
 Pedido reportado:
@@ -1533,6 +1561,79 @@ Gate de fidelidade:
 Validacao:
 
 - Executado `npm run test -- src/simulation-registry/catalog.test.ts src/App.test.tsx`; 15 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+
+## 2026-05-01 - Trabalho/energia e colisoes prontos
+
+Pedido reportado:
+
+- Mudar `Mecanica > Energia e momento > Trabalho e energia em trilho` e `Mecanica > Energia e momento > Colisoes 1D e 2D` para pronto.
+
+Ajuste:
+
+- `work-energy-track` e `collisions-1d-2d` passaram de `analysis` para `ready` no catalogo local.
+- Os testes de contrato passaram a esperar 9 simulacoes `ready` e 4 simulacoes `analysis`.
+- Como `Energia e momento` agora contem apenas simulacoes `ready`, a sidebar passa a iniciar essa subarea recolhida.
+- O Vitest passou a descobrir testes apenas em `src/`, mantendo smokes Playwright em `artifacts/` fora da bateria unit/integration.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/09-simulation-catalog-plan.md` e `guides/issues.md` para refletir a promocao.
+
+Gate de fidelidade:
+
+- Promocao baseada na aprovacao manual do dono do projeto.
+- Nenhum motor, sample, renderer, grafico, tabela, formula, teoria ou warning foi alterado; a promocao preserva a auditoria de fidelidade ja aplicada e so atualiza o status de catalogo/documentacao.
+
+Validacao:
+
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts src/App.test.tsx`; 15 testes passaram.
+- Executado `npm run test`; 54 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+
+## 2026-05-01 - Rolamento, gravitacao, fluidos e presets mecanicos
+
+Pedido reportado:
+
+- Executar `task-skill 5`, seguindo as proximas cinco tasks pendentes da Fase 3.
+
+Tasks executadas:
+
+- `Mecanica > Rotacao > Rolamento sem escorregamento`.
+- `Mecanica > Gravitacao > Campo gravitacional e orbitas`.
+- `Mecanica > Fluidos basicos > Hidrostatica e empuxo`.
+- `Mecanica > Fluidos basicos > Continuidade e Bernoulli`.
+- Presets didaticos por subarea mecanica.
+
+Ajuste:
+
+- As quatro simulacoes novas entraram como `analysis`, com fixtures locais, parametros com tooltip, presets, limites, formulas e apendice teorico.
+- O motor `KinematicsSample` foi ampliado para rolamento/escorregamento, campo gravitacional, pressao, vazao, empuxo e fracao submersa.
+- A cena compartilhada ganhou roda cilindrica para rolamento e corpo central para orbitas, mantendo o renderer desacoplado do shell React.
+- Os graficos e smokes cobrem as novas leituras: aderencia, campo gravitacional, pressao/empuxo e vazao/Bernoulli.
+- Os testes de contrato passaram a esperar 9 simulacoes `ready` e 8 simulacoes `analysis`.
+
+Gate de fidelidade:
+
+- Rolamento: zero de velocidade inicial e angulo zero continuam validos; o limite `atrito requerido > atrito maximo` troca o regime para escorregamento e emite warning.
+- Gravitacao: excentricidade zero e valida; excentricidade alta gera warning de modelo didatico.
+- Hidrostatica: profundidade zero e valida; densidade do corpo maior que a do fluido gera warning de afundamento.
+- Bernoulli: vazao zero e valida; pressao negativa ideal gera warning de limite fisico.
+- Em todas, cena, vetores, graficos, tabela, formulas, teoria e warnings consomem os mesmos samples.
+
+Documentacao:
+
+- Atualizados `guides/01-strategy.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/05-roadmap.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/09-simulation-catalog-plan.md`, `guides/issues.md` e `progress.md`.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/simulation-registry/catalog.test.ts --run`; 27 testes passaram.
+- Executado `npm run test -- src/App.test.tsx --run`; 7 testes passaram.
+- Executado `npm run test`; 59 testes passaram.
 - Executado `npm run lint`; passou.
 - Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
 - Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`

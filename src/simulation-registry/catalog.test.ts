@@ -30,10 +30,10 @@ describe('simulation registry', () => {
     expect(allSimulations).toHaveLength(51)
     expect(
       allSimulations.filter((item) => item.status === 'analysis'),
-    ).toHaveLength(6)
+    ).toHaveLength(8)
     expect(
       allSimulations.filter((item) => item.status === 'ready'),
-    ).toHaveLength(7)
+    ).toHaveLength(9)
     expect(allSimulations.some((item) => item.status === 'planned')).toBe(true)
     expect(findSimulation('inclined-plane-friction').status).toBe('ready')
     expect(findSimulation('projectile-motion').status).toBe('ready')
@@ -129,6 +129,8 @@ describe('simulation registry', () => {
       'projectile-motion',
       'atwood-machine',
       'centripetal-force-curve',
+      'work-energy-track',
+      'collisions-1d-2d',
     ] as const
 
     readyKinematicsSimulationIds.forEach((simulationId) => {
@@ -153,12 +155,14 @@ describe('simulation registry', () => {
 
   it('declares the remaining shared analytic mechanics simulations as in analysis', () => {
     const kinematicsSimulationIds = [
-      'collisions-1d-2d',
+      'continuity-bernoulli',
+      'gravitational-field-orbits',
+      'hydrostatics-buoyancy',
       'particle-equilibrium',
       'rigid-body-rotation',
+      'rolling-without-slipping',
       'torque-levers-center-mass',
       'uniform-circular-motion',
-      'work-energy-track',
     ] as const
 
     kinematicsSimulationIds.forEach((simulationId) => {

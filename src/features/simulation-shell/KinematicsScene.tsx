@@ -27,6 +27,11 @@ import {
   updateOrbitCameraPose,
   type OrbitCameraPose,
 } from '../../lib/rendering/orbitCamera'
+import {
+  createOriginAxesMarker,
+  getGridLowerLeftOrigin,
+  getOriginAxesLength,
+} from '../../lib/rendering/originAxes'
 import { themeTokens } from '../../theme/appTheme'
 import {
   createKinematicsSceneProjection,
@@ -34,6 +39,7 @@ import {
   toKinematicsScenePosition,
   type KinematicsSceneProjection,
 } from './KinematicsSceneProjection'
+import { ViewportOriginLegend } from './ViewportOriginLegend'
 
 export type KinematicsFrameStats = FrameStats
 
@@ -429,18 +435,25 @@ export function KinematicsScene({
     keyLight.position.set(-2.4, -3.2, 5)
     scene.add(keyLight)
 
-    const grid = new THREE.GridHelper(
-      Math.max(5, bounds.span * 1.25),
-      10,
-      0x2a2f3a,
-      0x20242d,
-    )
+    const gridSize = Math.max(5, bounds.span * 1.25)
+    const grid = new THREE.GridHelper(gridSize, 10, 0x2a2f3a, 0x20242d)
 
     grid.rotation.x = Math.PI / 2
     grid.position.set(bounds.centerX, bounds.centerY, 0)
     grid.material.transparent = true
     grid.material.opacity = 0.38
     scene.add(grid)
+    scene.add(
+      createOriginAxesMarker({
+        axisLength: getOriginAxesLength(gridSize),
+        origin: getGridLowerLeftOrigin({
+          centerX: bounds.centerX,
+          centerY: bounds.centerY,
+          size: gridSize,
+          z: grid.position.z + 0.035,
+        }),
+      }),
+    )
 
     scene.add(
       createReferencePath(
@@ -456,6 +469,13 @@ export function KinematicsScene({
     const body = new THREE.Mesh(
       simulationId === 'atwood-machine'
         ? new THREE.BoxGeometry(atwoodMassSize, atwoodMassSize, atwoodMassSize)
+        : simulationId === 'rolling-without-slipping'
+          ? new THREE.CylinderGeometry(
+              sceneBodySize,
+              sceneBodySize,
+              sceneBodySize * 0.72,
+              32,
+            )
         : simulationId === 'rigid-body-rotation' ||
             simulationId === 'torque-levers-center-mass'
           ? new THREE.BoxGeometry(
@@ -483,7 +503,8 @@ export function KinematicsScene({
     scene.add(body)
 
     const secondaryBody = new THREE.Mesh(
-      simulationId === 'collisions-1d-2d'
+      simulationId === 'collisions-1d-2d' ||
+        simulationId === 'gravitational-field-orbits'
         ? new THREE.SphereGeometry(1, 24, 16)
         : new THREE.BoxGeometry(atwoodMassSize, atwoodMassSize, atwoodMassSize),
       new THREE.MeshStandardMaterial({
@@ -745,6 +766,7 @@ export function KinematicsScene({
           },
         }}
       />
+      <ViewportOriginLegend />
     </Box>
   )
 }
@@ -785,6 +807,8 @@ function updateKinematicsObjects({
       objects.workEnergyBodyLift,
     )
     objects.body.rotation.y = objects.workEnergyTrackPitchRadians
+  } else if (simulationId === 'rolling-without-slipping') {
+    objects.body.rotation.y = -sample.angleRadians
   }
 
   updateConstrainedBodyObjects(objects, sample, simulationId)
@@ -824,12 +848,19 @@ function updateConstrainedBodyObjects(
 ) {
   const isAtwood = simulationId === 'atwood-machine'
   const isCollision = simulationId === 'collisions-1d-2d'
+  const isOrbit = simulationId === 'gravitational-field-orbits'
 
-  objects.secondaryBody.visible = isAtwood || isCollision
+  objects.secondaryBody.visible = isAtwood || isCollision || isOrbit
   objects.pulley.visible = isAtwood
   objects.rope.visible = isAtwood
   objects.supportBar.visible = isAtwood
   objects.supportStem.visible = isAtwood
+
+  if (isOrbit) {
+    objects.secondaryBody.position.set(0, 0, 0)
+    objects.secondaryBody.scale.setScalar(0.78)
+    return
+  }
 
   if (isCollision) {
     const scale = objects.sceneProjection.positionScale

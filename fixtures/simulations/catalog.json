@@ -404,7 +404,7 @@
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Energia e momento", "Trabalho e energia em trilho"],
           "title": "Trabalho e energia em trilho",
-          "status": "analysis",
+          "status": "ready",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
@@ -450,7 +450,7 @@
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Energia e momento", "Colisoes 1D e 2D"],
           "title": "Colisoes 1D e 2D",
-          "status": "analysis",
+          "status": "ready",
           "level": "introductory",
           "modelKind": "hybrid",
           "renderer": "three",
@@ -633,44 +633,195 @@
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Rotacao", "Rolamento sem escorregamento"],
           "title": "Rolamento sem escorregamento",
-          "status": "planned",
+          "status": "analysis",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
-          "description": "Relacao entre translacao, rotacao, energia e condicao de escorregamento."
+          "fixturePath": "fixtures/simulations/mechanics-rolling-without-slipping.json",
+          "theoryPath": "src/content/simulations/mechanics/rolling-without-slipping/theory.md",
+          "description": "Relacao entre translacao, rotacao, energia e condicao de escorregamento.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo de cilindro solido em plano inclinado com limite de atrito estatico e regime didatico de escorregamento."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Rolamento no trilho por tempo",
+              "sampleFields": ["timeSeconds", "positionMeters", "angleRadians"]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidade linear e angular",
+              "sampleFields": [
+                "timeSeconds",
+                "speedMetersPerSecond",
+                "angularVelocityRadiansPerSecond"
+              ]
+            },
+            {
+              "id": "forces-time",
+              "title": "Atrito estatico e aderencia",
+              "sampleFields": [
+                "timeSeconds",
+                "frictionForceNewtons",
+                "maxStaticFrictionNewtons",
+                "gripRatio"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "potentialEnergyJoules",
+                "thermalEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
         },
         {
           "id": "gravitational-field-orbits",
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Gravitacao", "Campo gravitacional e orbitas"],
           "title": "Campo gravitacional e orbitas",
-          "status": "planned",
+          "status": "analysis",
           "level": "introductory",
-          "modelKind": "numerical",
+          "modelKind": "analytic",
           "renderer": "three",
-          "description": "Lei da gravitacao, campo, velocidade orbital e orbitas didaticas."
+          "fixturePath": "fixtures/simulations/mechanics-gravitational-field-orbits.json",
+          "theoryPath": "src/content/simulations/mechanics/gravitational-field-orbits/theory.md",
+          "description": "Lei da gravitacao, campo, velocidade orbital e orbitas didaticas.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Campo central de dois corpos com amostragem eliptica didatica, vetores de velocidade/campo e energia orbital."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Raio orbital por tempo",
+              "sampleFields": ["timeSeconds", "positionMeters", "xMeters"]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidade orbital por tempo",
+              "sampleFields": ["timeSeconds", "speedMetersPerSecond"]
+            },
+            {
+              "id": "field-time",
+              "title": "Campo gravitacional por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "gravitationalFieldNewtonsPerKilogram",
+                "centripetalForceNewtons"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "potentialEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
         },
         {
           "id": "hydrostatics-buoyancy",
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Fluidos basicos", "Hidrostatica e empuxo"],
           "title": "Hidrostatica e empuxo",
-          "status": "planned",
+          "status": "analysis",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
-          "description": "Pressao, profundidade, principio de Pascal, Arquimedes e flutuacao."
+          "fixturePath": "fixtures/simulations/mechanics-hydrostatics-buoyancy.json",
+          "theoryPath": "src/content/simulations/mechanics/hydrostatics-buoyancy/theory.md",
+          "description": "Pressao, profundidade, principio de Pascal, Arquimedes e flutuacao.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo hidrostatico local com pressao rho*g*h, empuxo de Arquimedes, fracao submersa e warning de afundamento."
+          },
+          "charts": [
+            {
+              "id": "pressure-time",
+              "title": "Pressao hidrostatica por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "fluidPressurePascals",
+                "positionMeters"
+              ]
+            },
+            {
+              "id": "forces-time",
+              "title": "Empuxo, peso e resultante",
+              "sampleFields": [
+                "timeSeconds",
+                "buoyantForceNewtons",
+                "weightNewtons",
+                "netForceNewtons"
+              ]
+            }
+          ]
         },
         {
           "id": "continuity-bernoulli",
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Fluidos basicos", "Continuidade e Bernoulli"],
           "title": "Continuidade e Bernoulli",
-          "status": "planned",
+          "status": "analysis",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
-          "description": "Vazao, velocidade, pressao, tubo de Venturi e limites do fluido ideal."
+          "fixturePath": "fixtures/simulations/mechanics-continuity-bernoulli.json",
+          "theoryPath": "src/content/simulations/mechanics/continuity-bernoulli/theory.md",
+          "description": "Vazao, velocidade, pressao, tubo de Venturi e limites do fluido ideal.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo ideal incompressivel com continuidade, Bernoulli entre entrada/garganta e warning para pressao negativa."
+          },
+          "charts": [
+            {
+              "id": "flow-time",
+              "title": "Vazao e areas por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "flowRateCubicMetersPerSecond",
+                "crossSectionAreaSquareMeters",
+                "secondaryCrossSectionAreaSquareMeters"
+              ]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidades por continuidade",
+              "sampleFields": [
+                "timeSeconds",
+                "speedMetersPerSecond",
+                "secondarySpeedMetersPerSecond"
+              ]
+            },
+            {
+              "id": "pressure-time",
+              "title": "Pressao por Bernoulli",
+              "sampleFields": [
+                "timeSeconds",
+                "pressurePascals",
+                "secondaryPressurePascals"
+              ]
+            }
+          ]
         }
       ]
     },

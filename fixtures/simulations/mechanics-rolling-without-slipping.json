@@ -1,0 +1,217 @@
+{
+  "simulationId": "rolling-without-slipping",
+  "durationSeconds": 14,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 7,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline e os samples; diminuir concentra a animacao em menos segundos.",
+      "unit": "s",
+      "kind": "number",
+      "min": 6,
+      "max": 60,
+      "step": 1,
+      "defaultValue": 14
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais historico; diminuir aproxima a leitura dos eventos atuais.",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 30,
+      "step": 1,
+      "defaultValue": 7
+    }
+  ],
+  "defaultParameters": {
+    "massKilograms": 1.2,
+    "radiusMeters": 0.35,
+    "trackLengthMeters": 6,
+    "inclineAngleDegrees": 18,
+    "initialSpeedMetersPerSecond": 0.2,
+    "frictionCoefficient": 0.35,
+    "gravityMetersPerSecondSquared": 9.81
+  },
+  "parameters": [
+    {
+      "id": "massKilograms",
+      "label": "Massa",
+      "description": "Massa da roda didatica. Aumentar escala peso, normal e energias; no rolamento ideal a aceleracao nao depende da massa.",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.2,
+      "max": 12,
+      "step": 0.1,
+      "defaultValue": 1.2
+    },
+    {
+      "id": "radiusMeters",
+      "label": "Raio",
+      "description": "Raio da roda. Aumentar reduz a velocidade angular para a mesma velocidade linear e muda o momento de inercia.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0.1,
+      "max": 1.2,
+      "step": 0.01,
+      "defaultValue": 0.35
+    },
+    {
+      "id": "trackLengthMeters",
+      "label": "Comprimento do trilho",
+      "description": "Comprimento util do plano inclinado. Aumentar prolonga o percurso e a conversao de energia potencial em translacao e rotacao.",
+      "unit": "m",
+      "kind": "number",
+      "min": 2,
+      "max": 14,
+      "step": 0.1,
+      "defaultValue": 6
+    },
+    {
+      "id": "inclineAngleDegrees",
+      "label": "Angulo do plano",
+      "description": "Inclinacao do trilho em relacao ao horizontal. Aumentar cresce a componente do peso e a demanda de atrito estatico.",
+      "unit": "deg",
+      "kind": "number",
+      "min": 0,
+      "max": 50,
+      "step": 0.5,
+      "defaultValue": 18
+    },
+    {
+      "id": "initialSpeedMetersPerSecond",
+      "label": "Velocidade inicial",
+      "description": "Rapidez inicial do centro da roda. Zerar deixa o movimento nascer apenas da gravidade ao longo do plano.",
+      "unit": "m/s",
+      "kind": "number",
+      "min": 0,
+      "max": 6,
+      "step": 0.05,
+      "defaultValue": 0.2
+    },
+    {
+      "id": "frictionCoefficient",
+      "label": "Coeficiente de atrito",
+      "description": "Atrito estatico disponivel entre roda e trilho. Aumentar favorece rolamento puro; zerar forca escorregamento no plano inclinado.",
+      "kind": "number",
+      "min": 0,
+      "max": 1.2,
+      "step": 0.01,
+      "defaultValue": 0.35
+    },
+    {
+      "id": "gravityMetersPerSecondSquared",
+      "label": "Gravidade",
+      "description": "Aceleracao gravitacional usada no modelo. Aumentar intensifica peso, normal, atrito requerido e energia potencial disponivel.",
+      "unit": "m/s^2",
+      "kind": "number",
+      "min": 1,
+      "max": 25,
+      "step": 0.01,
+      "defaultValue": 9.81
+    }
+  ],
+  "presets": [
+    {
+      "id": "pure-rolling",
+      "label": "Rolamento puro",
+      "parameters": {
+        "massKilograms": 1.2,
+        "radiusMeters": 0.35,
+        "trackLengthMeters": 6,
+        "inclineAngleDegrees": 18,
+        "initialSpeedMetersPerSecond": 0.2,
+        "frictionCoefficient": 0.35,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    },
+    {
+      "id": "near-slip",
+      "label": "Perto do limite",
+      "parameters": {
+        "massKilograms": 1.2,
+        "radiusMeters": 0.35,
+        "trackLengthMeters": 6,
+        "inclineAngleDegrees": 25,
+        "initialSpeedMetersPerSecond": 0,
+        "frictionCoefficient": 0.16,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    },
+    {
+      "id": "slipping-wheel",
+      "label": "Escorregamento",
+      "parameters": {
+        "massKilograms": 1.2,
+        "radiusMeters": 0.35,
+        "trackLengthMeters": 6,
+        "inclineAngleDegrees": 28,
+        "initialSpeedMetersPerSecond": 0,
+        "frictionCoefficient": 0.05,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    }
+  ],
+  "limits": [
+    "A roda e modelada como cilindro solido, com I = 1/2 m R^2.",
+    "O regime ideal usa rolamento sem escorregamento quando o atrito estatico requerido cabe no limite disponivel.",
+    "Quando o limite de atrito e excedido, o modelo mostra escorregamento didatico com atrito cinetico aproximado pelo mesmo coeficiente.",
+    "O trilho e reto; deformacao, pneus reais, impacto no fim do trilho e arrasto do ar ficam fora do modelo."
+  ],
+  "formulas": [
+    {
+      "id": "rolling-constraint",
+      "title": "Restricao de rolamento",
+      "expressionLatex": "v=\\omega R",
+      "description": "Relaciona a velocidade do centro com a velocidade angular quando nao ha escorregamento.",
+      "variables": [
+        { "symbol": "v", "label": "velocidade do centro", "unit": "m/s" },
+        { "symbol": "\\omega", "label": "velocidade angular", "unit": "rad/s" },
+        { "symbol": "R", "label": "raio da roda", "unit": "m" }
+      ],
+      "usedWhen": "Usar enquanto a razao de aderencia nao ultrapassa 1.",
+      "notUsedWhen": "Nao usar como igualdade no regime de escorregamento mostrado pelo warning.",
+      "parameterIds": ["radiusMeters"],
+      "sampleFields": ["speedMetersPerSecond", "angularVelocityRadiansPerSecond"],
+      "relatedChartIds": ["velocity-time"],
+      "relatedVectorIds": ["velocity"]
+    },
+    {
+      "id": "rolling-acceleration",
+      "title": "Aceleracao no plano",
+      "expressionLatex": "a=\\frac{g\\sin\\theta}{1+I/(mR^2)}",
+      "description": "Calcula a aceleracao translacional da roda no rolamento puro sobre plano inclinado.",
+      "variables": [
+        { "symbol": "a", "label": "aceleracao do centro", "unit": "m/s^2" },
+        { "symbol": "g", "label": "gravidade", "unit": "m/s^2" },
+        { "symbol": "\\theta", "label": "angulo do plano", "unit": "rad" }
+      ],
+      "usedWhen": "Usar para cilindro solido ideal com atrito estatico suficiente.",
+      "notUsedWhen": "Nao usar quando a simulacao indica escorregamento ou quando a roda nao e cilindro solido.",
+      "parameterIds": ["gravityMetersPerSecondSquared", "inclineAngleDegrees", "massKilograms", "radiusMeters"],
+      "sampleFields": ["accelerationMetersPerSecondSquared", "momentOfInertiaKilogramMetersSquared"],
+      "relatedChartIds": ["forces-time"],
+      "relatedVectorIds": ["acceleration"]
+    },
+    {
+      "id": "rolling-energy",
+      "title": "Energia translacional e rotacional",
+      "expressionLatex": "K=\\frac{1}{2}mv^2+\\frac{1}{2}I\\omega^2",
+      "description": "Soma a energia cinetica do centro da roda e a energia de rotacao em torno do eixo.",
+      "variables": [
+        { "symbol": "K", "label": "energia cinetica total", "unit": "J" },
+        { "symbol": "I", "label": "momento de inercia", "unit": "kg m^2" },
+        { "symbol": "\\omega", "label": "velocidade angular", "unit": "rad/s" }
+      ],
+      "usedWhen": "Usar para acompanhar a conversao entre energia potencial, translacao e rotacao.",
+      "notUsedWhen": "Nao inclui deformacao, som ou aquecimento real do contato.",
+      "parameterIds": ["massKilograms", "radiusMeters"],
+      "sampleFields": ["kineticEnergyJoules", "potentialEnergyJoules", "thermalEnergyJoules", "totalEnergyJoules"],
+      "relatedChartIds": ["energy-time"],
+      "relatedVectorIds": ["velocity"]
+    }
+  ]
+}

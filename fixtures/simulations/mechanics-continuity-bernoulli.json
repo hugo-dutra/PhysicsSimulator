@@ -1,0 +1,217 @@
+{
+  "simulationId": "continuity-bernoulli",
+  "durationSeconds": 16,
+  "sampleRateHz": 60,
+  "chartWindowSeconds": 8,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Tempo do ciclo",
+      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a animacao do marcador de fluido no tubo.",
+      "unit": "s",
+      "kind": "number",
+      "min": 6,
+      "max": 60,
+      "step": 1,
+      "defaultValue": 16
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais historico; diminuir aproxima os valores atuais.",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 30,
+      "step": 1,
+      "defaultValue": 8
+    }
+  ],
+  "defaultParameters": {
+    "inletAreaSquareMeters": 0.08,
+    "throatAreaSquareMeters": 0.035,
+    "flowRateCubicMetersPerSecond": 0.12,
+    "fluidDensityKilogramsPerCubicMeter": 1000,
+    "inletPressureKilopascals": 160,
+    "heightDifferenceMeters": 0,
+    "gravityMetersPerSecondSquared": 9.81
+  },
+  "parameters": [
+    {
+      "id": "inletAreaSquareMeters",
+      "label": "Area de entrada",
+      "description": "Area da secao larga do tubo. Aumentar reduz a velocidade de entrada para a mesma vazao volumetrica.",
+      "unit": "m^2",
+      "kind": "number",
+      "min": 0.01,
+      "max": 0.2,
+      "step": 0.005,
+      "defaultValue": 0.08
+    },
+    {
+      "id": "throatAreaSquareMeters",
+      "label": "Area da garganta",
+      "description": "Area da secao estreita do tubo. Diminuir aumenta a velocidade local e tende a reduzir a pressao no modelo ideal.",
+      "unit": "m^2",
+      "kind": "number",
+      "min": 0.005,
+      "max": 0.18,
+      "step": 0.005,
+      "defaultValue": 0.035
+    },
+    {
+      "id": "flowRateCubicMetersPerSecond",
+      "label": "Vazao",
+      "description": "Volume de fluido que atravessa o tubo por segundo. Aumentar eleva as velocidades e amplia diferencas de pressao dinamica.",
+      "unit": "m^3/s",
+      "kind": "number",
+      "min": 0,
+      "max": 0.6,
+      "step": 0.01,
+      "defaultValue": 0.12
+    },
+    {
+      "id": "fluidDensityKilogramsPerCubicMeter",
+      "label": "Densidade do fluido",
+      "description": "Densidade do fluido ideal. Aumentar amplia termos de pressao dinamica e hidrostatica para a mesma vazao.",
+      "unit": "kg/m^3",
+      "kind": "number",
+      "min": 100,
+      "max": 14000,
+      "step": 10,
+      "defaultValue": 1000
+    },
+    {
+      "id": "inletPressureKilopascals",
+      "label": "Pressao de entrada",
+      "description": "Pressao estatica na secao larga. Aumentar desloca as pressoes calculadas sem alterar a velocidade imposta pela vazao.",
+      "unit": "kPa",
+      "kind": "number",
+      "min": 0,
+      "max": 500,
+      "step": 1,
+      "defaultValue": 160
+    },
+    {
+      "id": "heightDifferenceMeters",
+      "label": "Desnivel da garganta",
+      "description": "Altura da garganta em relacao a entrada. Valores positivos elevam a garganta e reduzem a pressao pela parcela gravitacional.",
+      "unit": "m",
+      "kind": "number",
+      "min": -5,
+      "max": 5,
+      "step": 0.1,
+      "defaultValue": 0
+    },
+    {
+      "id": "gravityMetersPerSecondSquared",
+      "label": "Gravidade",
+      "description": "Aceleracao gravitacional usada na parcela de altura de Bernoulli. Aumentar intensifica efeitos de desnivel no tubo.",
+      "unit": "m/s^2",
+      "kind": "number",
+      "min": 1,
+      "max": 25,
+      "step": 0.01,
+      "defaultValue": 9.81
+    }
+  ],
+  "presets": [
+    {
+      "id": "venturi-default",
+      "label": "Venturi moderado",
+      "parameters": {
+        "inletAreaSquareMeters": 0.08,
+        "throatAreaSquareMeters": 0.035,
+        "flowRateCubicMetersPerSecond": 0.12,
+        "fluidDensityKilogramsPerCubicMeter": 1000,
+        "inletPressureKilopascals": 160,
+        "heightDifferenceMeters": 0,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    },
+    {
+      "id": "high-flow",
+      "label": "Alta vazao",
+      "parameters": {
+        "inletAreaSquareMeters": 0.08,
+        "throatAreaSquareMeters": 0.025,
+        "flowRateCubicMetersPerSecond": 0.22,
+        "fluidDensityKilogramsPerCubicMeter": 1000,
+        "inletPressureKilopascals": 180,
+        "heightDifferenceMeters": 0,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    },
+    {
+      "id": "raised-throat",
+      "label": "Garganta elevada",
+      "parameters": {
+        "inletAreaSquareMeters": 0.08,
+        "throatAreaSquareMeters": 0.04,
+        "flowRateCubicMetersPerSecond": 0.12,
+        "fluidDensityKilogramsPerCubicMeter": 1000,
+        "inletPressureKilopascals": 160,
+        "heightDifferenceMeters": 1.2,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    }
+  ],
+  "limits": [
+    "O escoamento e incompressivel, estacionario e sem viscosidade no modelo de Bernoulli ideal.",
+    "As velocidades sao medias por secao; perfil real de velocidade, perda de carga e turbulencia nao entram.",
+    "Quando a pressao calculada fica negativa, a simulacao emite warning porque o modelo ideal deixou de ser fisico.",
+    "A cena mostra um marcador didatico de fluido, nao particulas individuais nem conservacao de massa por malha."
+  ],
+  "formulas": [
+    {
+      "id": "continuity-equation",
+      "title": "Equacao da continuidade",
+      "expressionLatex": "Q=Av",
+      "description": "Relaciona vazao volumetrica, area da secao e velocidade media do fluido.",
+      "variables": [
+        { "symbol": "Q", "label": "vazao volumetrica", "unit": "m^3/s" },
+        { "symbol": "A", "label": "area da secao", "unit": "m^2" },
+        { "symbol": "v", "label": "velocidade media", "unit": "m/s" }
+      ],
+      "usedWhen": "Usar para fluido incompressivel em escoamento estacionario.",
+      "notUsedWhen": "Nao usar para fluido compressivel ou quando ha acumulacao de massa no volume de controle.",
+      "parameterIds": ["flowRateCubicMetersPerSecond", "inletAreaSquareMeters", "throatAreaSquareMeters"],
+      "sampleFields": ["flowRateCubicMetersPerSecond", "speedMetersPerSecond", "secondarySpeedMetersPerSecond"],
+      "relatedChartIds": ["flow-time", "velocity-time"],
+      "relatedVectorIds": ["velocity", "secondaryVelocity"]
+    },
+    {
+      "id": "bernoulli-equation",
+      "title": "Equacao de Bernoulli",
+      "expressionLatex": "p+\\frac{1}{2}\\rho v^2+\\rho gh=constante",
+      "description": "Compara pressao estatica, pressao dinamica e parcela gravitacional entre duas secoes do tubo.",
+      "variables": [
+        { "symbol": "p", "label": "pressao estatica", "unit": "Pa" },
+        { "symbol": "\\rho", "label": "densidade", "unit": "kg/m^3" },
+        { "symbol": "h", "label": "altura", "unit": "m" }
+      ],
+      "usedWhen": "Usar em linha de corrente ideal, incompressivel e sem perdas viscosas.",
+      "notUsedWhen": "Nao usar diretamente para bombas, turbinas, perdas por atrito ou cavitacao.",
+      "parameterIds": ["fluidDensityKilogramsPerCubicMeter", "inletPressureKilopascals", "heightDifferenceMeters", "gravityMetersPerSecondSquared"],
+      "sampleFields": ["pressurePascals", "secondaryPressurePascals"],
+      "relatedChartIds": ["pressure-time"],
+      "relatedVectorIds": ["velocity", "secondaryVelocity"]
+    },
+    {
+      "id": "pressure-drop",
+      "title": "Queda de pressao dinamica",
+      "expressionLatex": "\\Delta p=\\frac{1}{2}\\rho(v_2^2-v_1^2)+\\rho g\\Delta h",
+      "description": "Mostra como a pressao muda quando a velocidade e a altura variam entre entrada e garganta.",
+      "variables": [
+        { "symbol": "\\Delta p", "label": "queda de pressao", "unit": "Pa" },
+        { "symbol": "v_1", "label": "velocidade de entrada", "unit": "m/s" },
+        { "symbol": "v_2", "label": "velocidade na garganta", "unit": "m/s" }
+      ],
+      "usedWhen": "Usar para interpretar por que uma secao estreita tende a ter menor pressao estatica.",
+      "notUsedWhen": "Nao descreve perdas reais em tubos rugosos ou regimes turbulentos.",
+      "parameterIds": ["flowRateCubicMetersPerSecond", "heightDifferenceMeters"],
+      "sampleFields": ["pressurePascals", "secondaryPressurePascals", "netForceNewtons"],
+      "relatedChartIds": ["pressure-time"]
+    }
+  ]
+}

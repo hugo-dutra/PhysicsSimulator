@@ -26,7 +26,13 @@ import {
   updateOrbitCameraPose,
   type OrbitCameraPose,
 } from '../../lib/rendering/orbitCamera'
+import {
+  createOriginAxesMarker,
+  getGridLowerLeftOrigin,
+  getOriginAxesLength,
+} from '../../lib/rendering/originAxes'
 import { themeTokens } from '../../theme/appTheme'
+import { ViewportOriginLegend } from './ViewportOriginLegend'
 
 export type PendulumFrameStats = FrameStats
 
@@ -336,13 +342,25 @@ export function PendulumScene({
     keyLight.position.set(-2.5, -3.5, 4)
     scene.add(keyLight)
 
-    const grid = new THREE.GridHelper(maxLength * 2.6, 8, 0x2a2f3a, 0x20242d)
+    const gridSize = maxLength * 2.6
+    const grid = new THREE.GridHelper(gridSize, 8, 0x2a2f3a, 0x20242d)
 
     grid.rotation.x = Math.PI / 2
     grid.position.z = -maxLength * 1.08
     grid.material.transparent = true
     grid.material.opacity = 0.42
     scene.add(grid)
+    scene.add(
+      createOriginAxesMarker({
+        axisLength: getOriginAxesLength(gridSize),
+        origin: getGridLowerLeftOrigin({
+          centerX: 0,
+          centerY: 0,
+          size: gridSize,
+          z: grid.position.z + 0.035,
+        }),
+      }),
+    )
 
     const pivot = new THREE.Mesh(
       new THREE.SphereGeometry(0.055, 16, 12),
@@ -568,6 +586,7 @@ export function PendulumScene({
           },
         }}
       />
+      <ViewportOriginLegend />
     </Box>
   )
 }
