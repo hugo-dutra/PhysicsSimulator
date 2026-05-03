@@ -583,7 +583,63 @@ describe('kinematics physics engine', () => {
     expect(sample.appliedForceArmMeters).toBeCloseTo(
       parameters.appliedForceArmMeters,
     )
+    expect(sample.angleRadians).toBeCloseTo(0)
+    expect(sample.leftKineticEnergyJoules).toBeCloseTo(0)
+    expect(sample.rightKineticEnergyJoules).toBeCloseTo(0)
+    expect(sample.kineticEnergyJoules).toBeCloseTo(0)
+    expect(sample.leftGravitationalPotentialEnergyJoules).toBeCloseTo(0)
+    expect(sample.rightGravitationalPotentialEnergyJoules).toBeCloseTo(0)
+    expect(sample.gravitationalPotentialEnergyJoules).toBeCloseTo(0)
+    expect(sample.totalEnergyJoules).toBeCloseTo(0)
     expect(result.warnings).toHaveLength(0)
+  })
+
+  it('animates an imbalanced lever from the torque-derived angular acceleration', () => {
+    const parameters: TorqueLeversCenterMassParameters = {
+      appliedForceArmMeters: 1.5,
+      appliedForceNewtons: 0,
+      gravityMetersPerSecondSquared: 9.81,
+      leftArmMeters: 1.1,
+      leftMassKilograms: 1,
+      rightArmMeters: 1.5,
+      rightMassKilograms: 2.4,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 2,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'torque-levers-center-mass',
+    })
+    const firstSample = result.samples[0]
+    const laterSample = result.samples[20]
+
+    expect(firstSample.angleRadians).toBeCloseTo(0)
+    expect(laterSample.netTorqueNewtonMeters).toBeLessThan(0)
+    expect(laterSample.angularAccelerationRadiansPerSecondSquared)
+      .toBeLessThan(0)
+    expect(laterSample.angleRadians).toBeLessThan(firstSample.angleRadians)
+    expect(laterSample.angularVelocityRadiansPerSecond).toBeLessThan(0)
+    expect(laterSample.leftKineticEnergyJoules).toBeGreaterThan(0)
+    expect(laterSample.rightKineticEnergyJoules).toBeGreaterThan(0)
+    expect(laterSample.kineticEnergyJoules).toBeCloseTo(
+      laterSample.leftKineticEnergyJoules +
+        laterSample.rightKineticEnergyJoules,
+    )
+    expect(laterSample.leftGravitationalPotentialEnergyJoules)
+      .toBeGreaterThan(0)
+    expect(laterSample.rightGravitationalPotentialEnergyJoules)
+      .toBeLessThan(0)
+    expect(laterSample.gravitationalPotentialEnergyJoules).toBeCloseTo(
+      laterSample.leftGravitationalPotentialEnergyJoules +
+        laterSample.rightGravitationalPotentialEnergyJoules,
+    )
+    expect(laterSample.potentialEnergyJoules).toBeCloseTo(
+      laterSample.gravitationalPotentialEnergyJoules,
+    )
+    expect(laterSample.totalEnergyJoules).toBeCloseTo(
+      laterSample.kineticEnergyJoules + laterSample.potentialEnergyJoules,
+    )
+    expect(result.warnings[0]?.code).toBe('LEVER_ROTATIONAL_IMBALANCE')
   })
 
   it('computes rigid body angular motion and damping losses', () => {

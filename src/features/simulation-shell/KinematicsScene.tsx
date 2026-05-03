@@ -81,7 +81,11 @@ type SceneObjects = {
   leverAppliedForceMarker: THREE.Mesh
   leverCenterOfMassMarker: THREE.Mesh
   leverLeftMass: THREE.Mesh
+  leverPivotCapBack: THREE.Mesh
+  leverPivotCapFront: THREE.Mesh
+  leverPivotPin: THREE.Mesh
   leverRightMass: THREE.Mesh
+  leverSupportHoleShadow: THREE.Mesh
   leverSupport: THREE.Mesh
   pulley: THREE.Mesh
   supportBar: THREE.Mesh
@@ -204,9 +208,16 @@ const minCameraRadiusScale = 0.4
 const maxCameraRadiusScale = 2.4
 const workEnergyTrackHalfWidth = 0.28
 const workEnergySleeperCount = 15
-const leverPivotHeight = 0.36
-const leverSupportHeight = 0.52
-const leverSupportRadius = 0.38
+const leverPivotHeight = 0.78
+const leverSupportHeight = 0.74
+const leverSupportBaseWidth = 1.05
+const leverSupportDepth = 0.52
+const leverSupportPivotCapDepth = 0.05
+const leverSupportPivotCapRadius = 0.115
+const leverSupportPivotHoleRadius = 0.055
+const leverSupportPivotPinRadius = 0.055
+const leverSupportPivotPinInsetFromTop = 0.12
+const leverSupportPivotHoleX = 0
 const leverBoardDepth = 0.16
 const leverBoardThickness = 0.085
 
@@ -601,20 +612,65 @@ export function KinematicsScene({
         roughness: 0.45,
       }),
     )
-    const leverSupport = new THREE.Mesh(
-      new THREE.ConeGeometry(leverSupportRadius, leverSupportHeight, 4),
+    const leverPivotPin = new THREE.Mesh(
+      new THREE.CylinderGeometry(
+        leverSupportPivotPinRadius,
+        leverSupportPivotPinRadius,
+        leverSupportDepth + leverSupportPivotCapDepth * 2,
+        24,
+      ),
       new THREE.MeshStandardMaterial({
-        color: 0xe6e8ec,
-        metalness: 0.14,
-        roughness: 0.52,
+        color: 0xd7d9dd,
+        metalness: 0.24,
+        roughness: 0.38,
+      }),
+    )
+    const leverPivotCapGeometry = new THREE.CylinderGeometry(
+      leverSupportPivotCapRadius,
+      leverSupportPivotCapRadius,
+      leverSupportPivotCapDepth,
+      32,
+    )
+    const leverPivotCapMaterial = new THREE.MeshStandardMaterial({
+      color: 0xbfc3c9,
+      metalness: 0.28,
+      roughness: 0.36,
+    })
+    const leverPivotCapFront = new THREE.Mesh(
+      leverPivotCapGeometry,
+      leverPivotCapMaterial,
+    )
+    const leverPivotCapBack = new THREE.Mesh(
+      leverPivotCapGeometry.clone(),
+      leverPivotCapMaterial.clone(),
+    )
+    const leverSupportHoleShadow = new THREE.Mesh(
+      new THREE.CircleGeometry(leverSupportPivotHoleRadius * 0.72, 28),
+      new THREE.MeshBasicMaterial({
+        color: 0x0f1115,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.92,
+      }),
+    )
+    const leverSupport = new THREE.Mesh(
+      createLeverSupportGeometry(),
+      new THREE.MeshStandardMaterial({
+        color: 0xcfd3d8,
+        metalness: 0.16,
+        roughness: 0.5,
       }),
     )
 
-    leverSupport.rotation.x = Math.PI / 2
     scene.add(leverLeftMass)
     scene.add(leverRightMass)
     scene.add(leverAppliedForceMarker)
     scene.add(leverCenterOfMassMarker)
+    scene.add(leverPivotPin)
+    scene.add(leverPivotCapFront)
+    scene.add(leverPivotCapBack)
+    scene.add(leverSupportHoleShadow)
     scene.add(leverSupport)
 
     const pulley = new THREE.Mesh(
@@ -738,7 +794,11 @@ export function KinematicsScene({
       leverAppliedForceMarker,
       leverCenterOfMassMarker,
       leverLeftMass,
+      leverPivotCapBack,
+      leverPivotCapFront,
+      leverPivotPin,
       leverRightMass,
+      leverSupportHoleShadow,
       leverSupport,
       pulley,
       supportBar,
@@ -1002,7 +1062,11 @@ function updateConstrainedBodyObjects(
   objects.leverAppliedForceMarker.visible = isTorqueLever
   objects.leverCenterOfMassMarker.visible = isTorqueLever
   objects.leverLeftMass.visible = isTorqueLever
+  objects.leverPivotCapBack.visible = isTorqueLever
+  objects.leverPivotCapFront.visible = isTorqueLever
+  objects.leverPivotPin.visible = isTorqueLever
   objects.leverRightMass.visible = isTorqueLever
+  objects.leverSupportHoleShadow.visible = isTorqueLever
   objects.leverSupport.visible = isTorqueLever
 
   if (isOrbit) {
@@ -1172,12 +1236,89 @@ function updateTorqueLeverObjects(
     .addScaledVector(normal, leverBoardThickness * 0.5 + markerRadius + 0.022)
   objects.leverCenterOfMassMarker.scale.setScalar(markerRadius)
 
+  const supportTopZ = pivot.z + leverSupportPivotPinInsetFromTop
+  const pivotAxleZ = supportTopZ - leverSupportPivotPinInsetFromTop
+
   objects.leverSupport.position.set(
     pivot.x,
     pivot.y,
-    pivot.z - leverBoardThickness * 0.5 - leverSupportHeight * 0.5,
+    supportTopZ - leverSupportHeight,
   )
-  objects.leverSupport.rotation.set(Math.PI / 2, 0, Math.PI / 4)
+  objects.leverSupport.rotation.set(0, 0, 0)
+
+  objects.leverPivotPin.position.set(
+    pivot.x,
+    pivot.y,
+    pivotAxleZ,
+  )
+  objects.leverPivotPin.rotation.set(0, 0, 0)
+
+  objects.leverPivotCapFront.position.set(
+    pivot.x,
+    pivot.y - leverSupportDepth / 2 - leverSupportPivotCapDepth / 2,
+    pivotAxleZ,
+  )
+  objects.leverPivotCapFront.rotation.set(0, 0, 0)
+
+  objects.leverPivotCapBack.position.set(
+    pivot.x,
+    pivot.y + leverSupportDepth / 2 + leverSupportPivotCapDepth / 2,
+    pivotAxleZ,
+  )
+  objects.leverPivotCapBack.rotation.set(0, 0, 0)
+
+  objects.leverSupportHoleShadow.position.set(
+    pivot.x + leverSupportPivotHoleX,
+    pivot.y - leverSupportDepth / 2 - 0.002,
+    pivotAxleZ,
+  )
+  objects.leverSupportHoleShadow.rotation.set(Math.PI / 2, 0, 0)
+}
+
+function createLeverSupportGeometry() {
+  const shape = new THREE.Shape([
+    new THREE.Vector2(-leverSupportBaseWidth / 2, 0),
+    new THREE.Vector2(leverSupportBaseWidth / 2, 0),
+    new THREE.Vector2(0, leverSupportHeight),
+  ])
+
+  const openingBaseWidth = leverSupportBaseWidth * 0.52
+  const openingBaseZ = leverSupportHeight * 0.11
+  const openingApexZ = leverSupportHeight * 0.63
+  const triangularOpening = new THREE.Path()
+
+  triangularOpening.moveTo(-openingBaseWidth / 2, openingBaseZ)
+  triangularOpening.lineTo(0, openingApexZ)
+  triangularOpening.lineTo(openingBaseWidth / 2, openingBaseZ)
+  triangularOpening.lineTo(-openingBaseWidth / 2, openingBaseZ)
+  shape.holes.push(triangularOpening)
+
+  const pivotHole = new THREE.Path()
+  pivotHole.absellipse(
+    leverSupportPivotHoleX,
+    leverSupportHeight - leverSupportPivotPinInsetFromTop,
+    leverSupportPivotHoleRadius,
+    leverSupportPivotHoleRadius,
+    0,
+    Math.PI * 2,
+    true,
+  )
+  shape.holes.push(pivotHole)
+
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    bevelEnabled: true,
+    bevelSegments: 2,
+    bevelSize: 0.018,
+    bevelThickness: 0.02,
+    curveSegments: 24,
+    depth: leverSupportDepth,
+  })
+
+  geometry.rotateX(Math.PI / 2)
+  geometry.translate(0, leverSupportDepth / 2, 0)
+  geometry.computeVertexNormals()
+
+  return geometry
 }
 
 function updateLeverMassObject({

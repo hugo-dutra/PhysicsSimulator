@@ -1965,3 +1965,158 @@ Validacao:
 - Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
 - Executado `npm run test`; 74 testes passaram.
 - Smoke visual em Chrome headless em `http://127.0.0.1:5203/` confirmou heading da simulacao, canvas da gangorra e legenda compacta de vetores; captura em `artifacts/torque-lever-seesaw-smoke.png`.
+
+## 2026-05-03 - Suporte trapezoidal para a gangorra de torque
+
+Pedido reportado:
+
+- Em `Mecanica > Estatica > Torque, alavancas e centro de massa`, o apoio da gangorra ainda parecia generico. Foi pedido um suporte mais coerente com a referencia enviada: base trapezoidal robusta, abertura triangular e furo superior.
+
+Ajuste:
+
+- O renderer Three.js trocou o cone/piramide simples do apoio por uma geometria extrudada trapezoidal com bevel, abertura triangular vazada e furo circular visivel.
+- A cena ganhou um pino discreto no ponto de apoio e um sombreado no furo para manter a leitura da referencia no angulo de camera padrao.
+- Refinamento posterior deixou o suporte mais pontudo, com topo mais estreito, altura maior e abertura triangular mais vertical.
+- Refinamento final trocou o topo estreito por um apice triangular real, alinhando um eixo cilindrico maior no pivo da gangorra, com tampas laterais visiveis como no exemplo de referencia.
+- A barra, massas, marcadores, vetores e leitura do centro de massa continuam usando os mesmos samples e pontos fisicos existentes.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a mudanca e visual/didatica no renderer. Parametros, regimes, samples, graficos, tabela, formulas, teoria e warnings permanecem inalterados e sincronizados pela mesma fonte fisica.
+
+Documentacao:
+
+- Atualizado este registro de progresso. Nenhum guide estrutural mudou porque nao houve alteracao de produto, contrato, modelo fisico, dados ou roadmap.
+
+Validacao:
+
+- Executado `npm run test -- KinematicsScene.test.ts`; 3 testes passaram.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Smoke visual em Chrome headless em `http://127.0.0.1:5173/` confirmou heading da simulacao, canvas nao branco e suporte visivel; capturas em `artifacts/torque-support-full-smoke.png` e `artifacts/torque-support-canvas-smoke.png`.
+- Smoke visual do refinamento pontudo gerou `artifacts/torque-support-pointed-full-smoke.png` e `artifacts/torque-support-pointed-canvas-smoke.png`.
+- Smoke visual do apice triangular com eixo no pivo gerou `artifacts/torque-support-sharp-apex-axle-full-smoke.png` e `artifacts/torque-support-sharp-apex-axle-canvas-smoke.png`.
+
+## 2026-05-03 - Animacao da gangorra de torque
+
+Status: feito.
+
+Pedido reportado:
+
+- Em `Mecanica > Estatica > Torque, alavancas e centro de massa`, a cena ficava parada mesmo com playback rodando e torque resultante diferente de zero.
+
+Ajuste:
+
+- O motor de `torque-levers-center-mass` deixou de emitir `angleRadians` constante.
+- O sample agora deriva o angulo visual da aceleracao angular `alpha = tau / I` ao longo do tempo, com escala didatica e limite de inclinacao para manter a gangorra legivel no suporte.
+- A velocidade angular exibida foi alinhada com essa evolucao visual enquanto a barra ainda nao atingiu o limite didatico.
+- Adicionado teste de regressao garantindo que uma alavanca desequilibrada sai de `angleRadians = 0` e inclina no sentido do torque resultante.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: parametros, torque resultante, momento de inercia, centro de massa, vetores, graficos, tabela, formulas e warnings continuam derivados dos mesmos samples do motor. O renderer apenas consome o `angleRadians` atualizado.
+
+Documentacao:
+
+- Atualizado este registro de progresso. Nenhum guide estrutural mudou porque nao houve mudanca de escopo, contrato de fixture, roadmap ou formulas declaradas.
+
+Validacao:
+
+- Executado `npm run test -- kinematics.test.ts`; 24 testes passaram.
+- Executado `npm run test`; 75 testes passaram.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Tentativa de smoke visual por Chrome headless selecionou a simulacao correta e confirmou runtime em playback, mas a captura direta do canvas WebGL saiu preta no ambiente headless; a validacao visual manual no navegador local ainda e recomendada.
+
+## 2026-05-03 - Defaults simetricos para gangorra de torque
+
+Status: feito.
+
+Pedido reportado:
+
+- Ajustar apenas os valores iniciais de massa e braco da gangorra para os dois lados ficarem iguais e a simulacao abrir em equilibrio.
+
+Ajuste:
+
+- O fixture `mechanics-torque-levers-center-mass.json` agora inicia com massa esquerda e direita iguais a `2 kg`.
+- Os bracos esquerdo e direito iniciam iguais a `1,5 m`.
+- A forca aplicada inicial foi zerada para nao introduzir torque externo no estado inicial.
+- Os `defaultValue` dos parametros foram alinhados aos novos defaults para manter painel de controle e estado inicial consistentes.
+- Adicionado teste de registro garantindo que os defaults da gangorra abrem com torque resultante, centro de massa e angulo iguais a zero.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a mudanca afeta apenas os parametros iniciais do fixture. O motor continua calculando torque, centro de massa, vetores, graficos, tabela, formulas e warnings a partir dos mesmos samples.
+
+Documentacao:
+
+- Atualizado este registro de progresso. Nenhum guide estrutural mudou porque nao houve mudanca de contrato, modelo fisico, roadmap ou comportamento geral da simulacao.
+
+Validacao:
+
+- Executado `npm run test -- catalog.test.ts`; 9 testes passaram.
+- Executado `npm run test -- kinematics.test.ts`; 24 testes passaram.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+
+## 2026-05-03 - Energia por corpo na gangorra de torque
+
+Status: feito.
+
+Pedido reportado:
+
+- Em `Mecanica > Estatica > Torque, alavancas e centro de massa`, o grafico de energia deveria detalhar energia cinetica e potencial gravitacional de cada um dos corpos da gangorra.
+
+Ajuste:
+
+- O sample de `torque-levers-center-mass` agora calcula energia cinetica esquerda/direita por `K_i = 1/2 m_i (omega r_i)^2`.
+- O sample tambem calcula potencial gravitacional esquerda/direita por `U_g = m_i g z_i`, usando o nivel do apoio como zero.
+- A energia cinetica total da simulacao passa a somar as energias cineticas dos dois corpos, e a energia potencial/total exibida deriva da mesma decomposicao.
+- O grafico `Energia por tempo` da gangorra passou a mostrar cinco series: cinetica esquerda, cinetica direita, potencial gravitacional esquerda, potencial gravitacional direita e energia mecanica das massas.
+- O fixture ganhou formulas declaradas para energia cinetica por massa pontual e potencial gravitacional por corpo.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: os novos campos sao gerados no motor numerico e reaproveitados por graficos, formulas e contrato de sample. O estado inicial equilibrado permanece com torque, angulo, energias cineticas e potenciais zeradas no nivel do apoio.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/06-data-and-api.md` e `guides/08-api-contracts.md` para declarar energia mecanica por corpo na gangorra e os novos campos de `KinematicsSample`.
+
+Validacao:
+
+- Executado `npm run test -- kinematics.test.ts kinematicsChartConfigs.test.ts`; 25 testes passaram.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm run test`; 77 testes passaram.
+
+## 2026-05-03 - Promocao de tres simulacoes para pronto
+
+Status: feito.
+
+Pedido reportado:
+
+- Marcar como feitos os tres itens destacados no catalogo: `Movimento circular uniforme`, `Equilibrio de particula` e `Torque, alavancas e centro de massa`.
+
+Ajuste:
+
+- O fixture `catalog.json` promoveu `uniform-circular-motion`, `particle-equilibrium` e `torque-levers-center-mass` de `analysis` para `ready`.
+- Os guias de produto, dados e catalogo planejado foram atualizados para refletir que essas tres simulacoes agora aparecem como `pronto`.
+- Os testes de catalogo foram atualizados para 13 simulacoes `ready` e 5 simulacoes `analysis`.
+- Os testes da sidebar foram ajustados para a regra existente: subareas apenas com itens `ready` iniciam recolhidas, enquanto subareas com `analysis` iniciam abertas.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a promocao usa simulacoes ja implementadas, sincronizadas e validadas em ciclos anteriores. A promocao foi solicitada apos revisao manual do dono do projeto.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/06-data-and-api.md` e `guides/09-simulation-catalog-plan.md`.
+
+Validacao:
+
+- Executado `npm run test -- catalog.test.ts`; 9 testes passaram.
+- Executado `npm run test -- App.test.tsx`; 8 testes passaram.
+- Executado `npm run test`; 77 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build:pages`; passou com o aviso conhecido de chunk acima de 500 kB.

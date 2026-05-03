@@ -218,6 +218,8 @@ export type KinematicsSample = {
   kineticEnergyJoules: number
   kineticEnergyLostJoules: number
   leftArmMeters: number
+  leftGravitationalPotentialEnergyJoules: number
+  leftKineticEnergyJoules: number
   maxStaticFrictionNewtons: number
   momentOfInertiaKilogramMetersSquared: number
   momentumKilogramMetersPerSecond: number
@@ -232,6 +234,8 @@ export type KinematicsSample = {
   pressurePascals: number
   primaryRadiusMeters: number
   rightArmMeters: number
+  rightGravitationalPotentialEnergyJoules: number
+  rightKineticEnergyJoules: number
   secondaryPressurePascals: number
   secondaryCrossSectionAreaSquareMeters: number
   secondarySpeedMetersPerSecond: number
@@ -371,6 +375,8 @@ const sampleNumericKeys = [
   'impulseNewtonSeconds',
   'kineticEnergyJoules',
   'kineticEnergyLostJoules',
+  'leftGravitationalPotentialEnergyJoules',
+  'leftKineticEnergyJoules',
   'maxStaticFrictionNewtons',
   'momentOfInertiaKilogramMetersSquared',
   'momentumKilogramMetersPerSecond',
@@ -384,6 +390,8 @@ const sampleNumericKeys = [
   'potentialEnergyJoules',
   'pressurePascals',
   'primaryRadiusMeters',
+  'rightGravitationalPotentialEnergyJoules',
+  'rightKineticEnergyJoules',
   'secondaryCrossSectionAreaSquareMeters',
   'secondaryPressurePascals',
   'secondaryRadiusMeters',
@@ -420,6 +428,8 @@ const massSpringVisualNaturalLengthMeters = 1.15
 const uniformlyAcceleratedGroundTolerance = 1e-9
 const rollingInertiaFactor = 0.5
 const torqueToleranceNewtonMeters = 0.05
+const torqueLeverMaxDisplayAngleRadians = 0.35
+const torqueLeverVisualTimeScale = 0.28
 
 export function isKinematicsSimulationId(
   simulationId: string,
@@ -3045,10 +3055,45 @@ function computeTorqueLeversCenterMassSample(
     parameters.rightMassKilograms * parameters.rightArmMeters ** 2
   const angularAccelerationRadiansPerSecondSquared =
     netTorqueNewtonMeters / momentOfInertiaKilogramMetersSquared
-  const angleRadians =
-    clamp(angularAccelerationRadiansPerSecondSquared * 0.08, -0.35, 0.35)
+  const visualTimeSeconds = Math.max(0, timeSeconds) * torqueLeverVisualTimeScale
+  const rawAngleRadians =
+    0.5 * angularAccelerationRadiansPerSecondSquared * visualTimeSeconds ** 2
+  const angleRadians = clamp(
+    rawAngleRadians,
+    -torqueLeverMaxDisplayAngleRadians,
+    torqueLeverMaxDisplayAngleRadians,
+  )
+  const hasReachedDisplayLimit =
+    Math.abs(rawAngleRadians) >= torqueLeverMaxDisplayAngleRadians
   const angularVelocityRadiansPerSecond =
-    angularAccelerationRadiansPerSecondSquared * timeSeconds
+    hasReachedDisplayLimit
+      ? 0
+      : angularAccelerationRadiansPerSecondSquared *
+        visualTimeSeconds *
+        torqueLeverVisualTimeScale
+  const leftHeightMeters = -parameters.leftArmMeters * Math.sin(angleRadians)
+  const rightHeightMeters = parameters.rightArmMeters * Math.sin(angleRadians)
+  const leftSpeedMetersPerSecond =
+    Math.abs(angularVelocityRadiansPerSecond) * parameters.leftArmMeters
+  const rightSpeedMetersPerSecond =
+    Math.abs(angularVelocityRadiansPerSecond) * parameters.rightArmMeters
+  const leftKineticEnergyJoules =
+    0.5 * parameters.leftMassKilograms * leftSpeedMetersPerSecond ** 2
+  const rightKineticEnergyJoules =
+    0.5 * parameters.rightMassKilograms * rightSpeedMetersPerSecond ** 2
+  const kineticEnergyJoules =
+    leftKineticEnergyJoules + rightKineticEnergyJoules
+  const leftGravitationalPotentialEnergyJoules =
+    parameters.leftMassKilograms *
+    parameters.gravityMetersPerSecondSquared *
+    leftHeightMeters
+  const rightGravitationalPotentialEnergyJoules =
+    parameters.rightMassKilograms *
+    parameters.gravityMetersPerSecondSquared *
+    rightHeightMeters
+  const gravitationalPotentialEnergyJoules =
+    leftGravitationalPotentialEnergyJoules +
+    rightGravitationalPotentialEnergyJoules
 
   return buildSample({
     angleRadians,
@@ -3063,18 +3108,25 @@ function computeTorqueLeversCenterMassSample(
     forceTwoNewtons: rightWeightNewtons,
     forceTwoXNewtons: 0,
     forceTwoZNewtons: -rightWeightNewtons,
+    gravitationalPotentialEnergyJoules,
+    kineticEnergyJoules,
+    leftGravitationalPotentialEnergyJoules,
+    leftKineticEnergyJoules,
     momentOfInertiaKilogramMetersSquared,
     netForceNewtons: Math.abs(
       parameters.appliedForceNewtons - leftWeightNewtons - rightWeightNewtons,
     ),
     netTorqueNewtonMeters,
     positionMeters: centerOfMassMeters,
+    potentialEnergyJoules: gravitationalPotentialEnergyJoules,
     appliedForceArmMeters: parameters.appliedForceArmMeters,
     leftArmMeters: parameters.leftArmMeters,
+    rightGravitationalPotentialEnergyJoules,
     rightArmMeters: parameters.rightArmMeters,
+    rightKineticEnergyJoules,
     speedMetersPerSecond: Math.abs(angularVelocityRadiansPerSecond),
     timeSeconds,
-    totalEnergyJoules: Math.abs(netTorqueNewtonMeters * angleRadians),
+    totalEnergyJoules: kineticEnergyJoules + gravitationalPotentialEnergyJoules,
     velocityMetersPerSecond: angularVelocityRadiansPerSecond,
     xMeters: centerOfMassMeters,
     zMeters: 0,
@@ -3205,6 +3257,9 @@ function buildSample(
     kineticEnergyJoules,
     kineticEnergyLostJoules: sample.kineticEnergyLostJoules ?? 0,
     leftArmMeters: sample.leftArmMeters ?? 0,
+    leftGravitationalPotentialEnergyJoules:
+      sample.leftGravitationalPotentialEnergyJoules ?? 0,
+    leftKineticEnergyJoules: sample.leftKineticEnergyJoules ?? 0,
     maxStaticFrictionNewtons: sample.maxStaticFrictionNewtons ?? 0,
     momentOfInertiaKilogramMetersSquared:
       sample.momentOfInertiaKilogramMetersSquared ?? 0,
@@ -3223,6 +3278,9 @@ function buildSample(
     pressurePascals: sample.pressurePascals ?? 0,
     primaryRadiusMeters: sample.primaryRadiusMeters ?? 0,
     rightArmMeters: sample.rightArmMeters ?? 0,
+    rightGravitationalPotentialEnergyJoules:
+      sample.rightGravitationalPotentialEnergyJoules ?? 0,
+    rightKineticEnergyJoules: sample.rightKineticEnergyJoules ?? 0,
     secondaryCrossSectionAreaSquareMeters:
       sample.secondaryCrossSectionAreaSquareMeters ?? 0,
     secondaryPressurePascals: sample.secondaryPressurePascals ?? 0,

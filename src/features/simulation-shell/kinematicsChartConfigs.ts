@@ -994,6 +994,45 @@ export function buildKinematicsChartConfigs(
                   y: samples.map((sample) => sample.totalEnergyJoules),
                 },
               ]
+          : simulationId === 'torque-levers-center-mass'
+            ? [
+                {
+                  lineColor: themeTokens.vector,
+                  name: 'Energia cinetica do corpo esquerdo (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.leftKineticEnergyJoules),
+                },
+                {
+                  lineColor: themeTokens.teal,
+                  name: 'Energia cinetica do corpo direito (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.rightKineticEnergyJoules),
+                },
+                {
+                  lineColor: themeTokens.warning,
+                  name: 'Potencial gravitacional do corpo esquerdo (J)',
+                  x: time,
+                  y: samples.map(
+                    (sample) =>
+                      sample.leftGravitationalPotentialEnergyJoules,
+                  ),
+                },
+                {
+                  lineColor: themeTokens.danger,
+                  name: 'Potencial gravitacional do corpo direito (J)',
+                  x: time,
+                  y: samples.map(
+                    (sample) =>
+                      sample.rightGravitationalPotentialEnergyJoules,
+                  ),
+                },
+                {
+                  lineColor: themeTokens.cyan,
+                  name: 'Energia mecanica das massas (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.totalEnergyJoules),
+                },
+              ]
           : simulationId === 'rigid-body-rotation'
             ? [
                 {

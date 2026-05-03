@@ -241,6 +241,8 @@ type KinematicsSample = {
   elasticPotentialEnergyJoules: number;
   fluidPressurePascals: number;
   gravitationalPotentialEnergyJoules: number;
+  leftGravitationalPotentialEnergyJoules: number;
+  rightGravitationalPotentialEnergyJoules: number;
   pressurePascals: number;
   springForceNewtons: number;
   secondaryPressurePascals: number;
@@ -274,6 +276,8 @@ type KinematicsSample = {
   momentumXKilogramMetersPerSecond: number;
   momentumZKilogramMetersPerSecond: number;
   kineticEnergyLostJoules: number;
+  leftKineticEnergyJoules: number;
+  rightKineticEnergyJoules: number;
   centerOfMassMeters: number;
   momentOfInertiaKilogramMetersSquared: number;
   kineticEnergyJoules: number;

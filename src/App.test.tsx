@@ -25,6 +25,9 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /Massa-mola vertical/i }),
     ).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
+    )
     expect(
       screen.getByRole('button', { name: /Movimento retilineo uniforme/i }),
     ).toBeInTheDocument()
@@ -48,6 +51,9 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /Colisoes 1D e 2D/i }),
     ).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Estatica/i }),
+    )
     expect(
       screen.getByRole('button', { name: /Equilibrio de particula/i }),
     ).toBeInTheDocument()
@@ -579,7 +585,7 @@ describe('App', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
-    ).toHaveAttribute('aria-expanded', 'true')
+    ).toHaveAttribute('aria-expanded', 'false')
     expect(
       screen.getByRole('button', { name: /Alternar subarea Dinamica/i }),
     ).toHaveAttribute('aria-expanded', 'false')
@@ -587,6 +593,9 @@ describe('App', () => {
       screen.getByRole('button', {
         name: /Alternar subarea Energia e momento/i,
       }),
+    ).toHaveAttribute('aria-expanded', 'false')
+    expect(
+      screen.getByRole('button', { name: /Alternar subarea Estatica/i }),
     ).toHaveAttribute('aria-expanded', 'false')
     expect(
       screen.getByRole('button', { name: /Alternar subarea Rotacao/i }),
@@ -599,6 +608,9 @@ describe('App', () => {
     ).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getAllByText(/^analise$/i).length).toBeGreaterThan(0)
     expect(screen.getAllByText(/^pronto$/i).length).toBeGreaterThan(0)
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
+    )
     expect(
       screen.getByRole('button', { name: /Movimento retilineo uniforme/i }),
     ).toBeInTheDocument()
@@ -792,6 +804,10 @@ describe('App', () => {
       },
     ]
 
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
+    )
+
     kinematicsCases.forEach(({ title, chart, control }) => {
       fireEvent.click(screen.getByRole('button', { name: title }))
 
@@ -927,6 +943,10 @@ describe('App', () => {
         control: /Vazao \(m\^3\/s\)/i,
       },
     ]
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Estatica/i }),
+    )
 
     nextMechanicsCases.forEach(({ title, chart, control }) => {
       fireEvent.click(screen.getByRole('button', { name: title }))

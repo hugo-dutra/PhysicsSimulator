@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  computeKinematicsSample,
+  toKinematicsParameters,
+} from '../lib/physics/kinematics'
+import {
   activeSimulation,
   findSimulation,
   getAreaForSimulation,
@@ -30,10 +34,10 @@ describe('simulation registry', () => {
     expect(allSimulations).toHaveLength(51)
     expect(
       allSimulations.filter((item) => item.status === 'analysis'),
-    ).toHaveLength(8)
+    ).toHaveLength(5)
     expect(
       allSimulations.filter((item) => item.status === 'ready'),
-    ).toHaveLength(10)
+    ).toHaveLength(13)
     expect(allSimulations.some((item) => item.status === 'planned')).toBe(true)
     expect(findSimulation('inclined-plane-friction').status).toBe('ready')
     expect(findSimulation('projectile-motion').status).toBe('ready')
@@ -132,6 +136,9 @@ describe('simulation registry', () => {
       'work-energy-track',
       'collisions-1d-2d',
       'mass-spring',
+      'particle-equilibrium',
+      'torque-levers-center-mass',
+      'uniform-circular-motion',
     ] as const
 
     readyKinematicsSimulationIds.forEach((simulationId) => {
@@ -159,11 +166,8 @@ describe('simulation registry', () => {
       'continuity-bernoulli',
       'gravitational-field-orbits',
       'hydrostatics-buoyancy',
-      'particle-equilibrium',
       'rigid-body-rotation',
       'rolling-without-slipping',
-      'torque-levers-center-mass',
-      'uniform-circular-motion',
     ] as const
 
     kinematicsSimulationIds.forEach((simulationId) => {
@@ -184,6 +188,31 @@ describe('simulation registry', () => {
       expect(fixture.limits.length).toBeGreaterThan(0)
       expect(fixture.formulas.length).toBeGreaterThan(0)
     })
+  })
+
+  it('starts torque levers balanced with equal default masses and arms', () => {
+    const fixture = kinematicsFixtures['torque-levers-center-mass']
+    const defaultParameters = fixture.defaultParameters
+    const parameters = toKinematicsParameters(
+      'torque-levers-center-mass',
+      defaultParameters,
+    )
+    const sample = computeKinematicsSample(
+      'torque-levers-center-mass',
+      parameters,
+      0,
+    )
+
+    expect(defaultParameters.leftMassKilograms).toBe(
+      defaultParameters.rightMassKilograms,
+    )
+    expect(defaultParameters.leftArmMeters).toBe(
+      defaultParameters.rightArmMeters,
+    )
+    expect(defaultParameters.appliedForceNewtons).toBe(0)
+    expect(sample.netTorqueNewtonMeters).toBeCloseTo(0)
+    expect(sample.centerOfMassMeters).toBeCloseTo(0)
+    expect(sample.angleRadians).toBeCloseTo(0)
   })
 
   it('requires help descriptions for every runnable simulation parameter', () => {
