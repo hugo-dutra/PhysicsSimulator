@@ -113,9 +113,39 @@
   ],
   "limits": [
     "O movimento e unidimensional e a aceleracao permanece constante durante todo o ciclo.",
-    "A queda livre nao inclui resistencia do ar, colisao com solo ou empuxo.",
+    "Na queda livre a fase em MUV vale ate o corpo alcancar o plano z = 0; depois disso o sample fica apoiado no plano de referencia sem simular ressalto, deformacao ou impulso de colisao.",
+    "A queda livre nao inclui resistencia do ar nem empuxo.",
     "O eixo vertical usa valores positivos para cima e negativos para baixo.",
     "A energia exibida e cinetica; energia potencial gravitacional fica fora deste primeiro modelo de MUV."
+  ],
+  "regimes": [
+    {
+      "id": "constant-acceleration",
+      "label": "MUV antes do contato",
+      "condition": "Enquanto z(t) > 0 ou quando nao ha cruzamento descendente do plano.",
+      "transitionLimit": "z(t) = 0 com velocidade vertical descendente.",
+      "sampleFields": [
+        "positionMeters",
+        "zMeters",
+        "velocityMetersPerSecond",
+        "accelerationZMetersPerSecondSquared",
+        "isGrounded"
+      ]
+    },
+    {
+      "id": "grounded-on-plane",
+      "label": "Apoiado no plano de referencia",
+      "condition": "Depois que o corpo cruza o plano z = 0 em queda.",
+      "transitionLimit": "O contato didatico zera velocidade e aceleracao exibidas no sample.",
+      "sampleFields": [
+        "positionMeters",
+        "zMeters",
+        "velocityMetersPerSecond",
+        "accelerationZMetersPerSecondSquared",
+        "isGrounded"
+      ],
+      "warningCode": "MUV_REACHES_GROUND_PLANE"
+    }
   ],
   "formulas": [
     {
@@ -141,7 +171,7 @@
         }
       ],
       "usedWhen": "Usar em movimentos retilineos com aceleracao constante, incluindo queda livre ideal.",
-      "notUsedWhen": "Nao usar quando a aceleracao varia com velocidade, posicao ou tempo.",
+      "notUsedWhen": "Nao usar depois que o sample entra no regime apoiado no plano z = 0, nem quando a aceleracao varia com velocidade, posicao ou tempo.",
       "parameterIds": [
         "initialPositionMeters",
         "initialVelocityMetersPerSecond",
@@ -170,7 +200,7 @@
         }
       ],
       "usedWhen": "Usar para ler mudancas lineares de velocidade com aceleracao constante.",
-      "notUsedWhen": "Nao representa arrasto nem aceleracoes dependentes do estado.",
+      "notUsedWhen": "Nao representa arrasto, aceleracoes dependentes do estado nem o trecho apoiado no plano apos o contato.",
       "parameterIds": [
         "initialVelocityMetersPerSecond",
         "accelerationMetersPerSecondSquared"
@@ -192,7 +222,7 @@
         }
       ],
       "usedWhen": "Usar para comparar a inclinacao do grafico de velocidade e a curvatura da posicao.",
-      "notUsedWhen": "Nao usar para trajetorias curvas ou forcas variaveis.",
+      "notUsedWhen": "Nao usar para trajetorias curvas, forcas variaveis ou depois que o corpo esta apoiado no plano de referencia.",
       "parameterIds": ["accelerationMetersPerSecondSquared"],
       "sampleFields": [
         "accelerationMetersPerSecondSquared",
@@ -219,7 +249,7 @@
         }
       ],
       "usedWhen": "Usar para observar como a energia cinetica cresce com o modulo da velocidade.",
-      "notUsedWhen": "Nao inclui perdas, potencial gravitacional ou colisao com solo.",
+      "notUsedWhen": "Nao inclui perdas, potencial gravitacional nem o impulso de colisao; apos o contato didatico com o plano, a energia cinetica exibida fica zerada.",
       "parameterIds": ["massKilograms"],
       "sampleFields": ["kineticEnergyJoules", "totalEnergyJoules"],
       "relatedChartIds": ["energy-time"]

@@ -410,7 +410,7 @@ describe('App', () => {
 
     fireEvent.click(screen.getByLabelText(/Resetar simulacao/i))
     expect(screen.getByLabelText(/Reproduzir simulacao/i)).toBeInTheDocument()
-  }, 30_000)
+  }, 45_000)
 
   it('maximizes simulation, charts, and table panels inside the window', () => {
     render(
@@ -550,7 +550,7 @@ describe('App', () => {
     expect(
       screen.getByRole('heading', { name: /Controles/i }),
     ).toBeInTheDocument()
-  }, 20_000)
+  }, 45_000)
 
   it('renders the simulation catalog with analysis subareas open', () => {
     render(

@@ -1852,33 +1852,6 @@ Validacao:
 - Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
 - Executado `git diff --check`; sem erros, apenas avisos esperados de normalizacao LF/CRLF no Windows.
 
-## 2026-05-03 - Estabilizacao de eixos em graficos constantes
-
-Pedido reportado:
-
-- Varios graficos que deveriam mostrar valores constantes apareciam com picos/serrilhado visual, como velocidade tangencial constante no movimento circular uniforme.
-
-Ajuste:
-
-- O helper compartilhado `deriveYRange` agora trata spans microscopicos de ponto flutuante como serie constante, usando margem proporcional ao modulo da grandeza em vez de amplificar ruido numerico.
-- Valores nao finitos sao ignorados no calculo do eixo Y para evitar escala invalida em graficos live-canvas.
-- Adicionado teste de regressao para serie constante com ruido numerico em `LiveLineChart.test.ts`.
-
-Gate de fidelidade:
-
-- Aplicado o `Simulation Fidelity Adjustment Guide`: a correcao nao altera samples, regimes, cena, tabela ou formulas; apenas estabiliza a escala visual dos graficos para representar corretamente grandezas constantes derivadas da mesma fonte fisica.
-
-Documentacao:
-
-- Nenhum guide estrutural atualizado; o contrato fisico e de produto nao mudou.
-
-Validacao:
-
-- Executado `npm run test -- LiveLineChart.test.ts`; 3 testes passaram.
-- Executado `npm run test`; 72 testes passaram.
-- Executado `npm run lint`; passou.
-- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
-
 ## 2026-05-03 - Massa-mola vertical marcada como ready
 
 Pedido reportado:
@@ -1906,3 +1879,60 @@ Validacao:
 - Executado `npm run lint`; passou.
 - Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
 - Executado `git diff --check`; sem erros, apenas avisos esperados de normalizacao LF/CRLF no Windows.
+
+## 2026-05-03 - Estabilizacao de eixos em graficos constantes
+
+Pedido reportado:
+
+- Varios graficos que deveriam mostrar valores constantes apareciam com picos/serrilhado visual, como velocidade tangencial constante no movimento circular uniforme.
+
+Ajuste:
+
+- O helper compartilhado `deriveYRange` agora trata spans microscopicos de ponto flutuante como serie constante, usando margem proporcional ao modulo da grandeza em vez de amplificar ruido numerico.
+- Valores nao finitos sao ignorados no calculo do eixo Y para evitar escala invalida em graficos live-canvas.
+- Adicionado teste de regressao para serie constante com ruido numerico em `LiveLineChart.test.ts`.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a correcao nao altera samples, regimes, cena, tabela ou formulas; apenas estabiliza a escala visual dos graficos para representar corretamente grandezas constantes derivadas da mesma fonte fisica.
+
+Documentacao:
+
+- Nenhum guide estrutural atualizado; o contrato fisico e de produto nao mudou.
+
+Validacao:
+
+- Executado `npm run test -- LiveLineChart.test.ts`; 3 testes passaram.
+- Executado `npm run test`; 72 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+
+## 2026-05-03 - MUV/queda livre apoiada no plano e grade com fundo
+
+Pedido reportado:
+
+- No MUV/queda livre, o corpo atravessava o plano de referencia e continuava caindo para baixo, prejudicando a leitura visual.
+- O grid do plano estava completamente transparente; foi pedido um fundo com alfa mantendo as linhas visiveis.
+
+Ajuste:
+
+- O motor de `uniformly-accelerated-motion` agora detecta cruzamento descendente do plano `z = 0`; depois do contato didatico, o sample fica apoiado no plano, com posicao `0`, velocidade `0`, aceleracao `0` e `isGrounded = true`.
+- O fixture e a teoria declaram o novo regime, deixam claro que a formula de MUV vale antes do contato e que o contato nao simula impulso, deformacao ou ressalto.
+- O renderer Three.js de Cinematica adiciona um plano de fundo translucido sob o `GridHelper`, com as linhas da grade renderizadas por cima.
+- Os smoke tests de UI mais pesados tiveram seus timeouts ajustados para o tempo observado no ambiente, sem alterar as assercoes.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: parametros, regimes, samples, cena, graficos, tabela, formulas, teoria, warning e testes foram conferidos para manter uma unica fonte de samples.
+
+Documentacao:
+
+- Atualizados o fixture `mechanics-uniformly-accelerated-motion.json`, a teoria local da simulacao e este registro de progresso. Nenhum guide estrutural mudou.
+
+Validacao:
+
+- Executado `npm test -- --run src/lib/physics/kinematics.test.ts src/features/simulation-shell/KinematicsScene.test.ts`; 25 testes passaram.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm test`; 73 testes passaram.
+- Smoke visual com Playwright em desktop e mobile confirmou o MUV em `grounded=true` e gerou `artifacts/muv-ground-plane-desktop.png` e `artifacts/muv-ground-plane-mobile.png`.

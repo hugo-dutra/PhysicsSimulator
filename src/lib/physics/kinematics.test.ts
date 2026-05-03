@@ -70,6 +70,33 @@ describe('kinematics physics engine', () => {
     expect(lastSample?.accelerationZMetersPerSecondSquared).toBeCloseTo(-9.81)
   })
 
+  it('keeps free fall supported on the ground plane after contact', () => {
+    const parameters: UniformlyAcceleratedMotionParameters = {
+      accelerationMetersPerSecondSquared: -9.81,
+      initialPositionMeters: 16,
+      initialVelocityMetersPerSecond: 0,
+      massKilograms: 1,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 4,
+      parameters,
+      sampleRateHz: 120,
+      simulationId: 'uniformly-accelerated-motion',
+    })
+    const lastSample = result.samples.at(-1)
+
+    expect(result.warnings).toContainEqual({
+      code: 'MUV_REACHES_GROUND_PLANE',
+      message:
+        'O corpo alcanca o plano z = 0 durante o ciclo; depois disso o sample fica apoiado no plano de referencia.',
+    })
+    expect(lastSample?.isGrounded).toBe(true)
+    expect(lastSample?.positionMeters).toBeCloseTo(0)
+    expect(lastSample?.zMeters).toBeCloseTo(0)
+    expect(lastSample?.velocityMetersPerSecond).toBeCloseTo(0)
+    expect(lastSample?.accelerationZMetersPerSecondSquared).toBeCloseTo(0)
+  })
+
   it('conserves projectile mechanical energy while the projectile is in flight', () => {
     const parameters: ProjectileMotionParameters = {
       gravityMetersPerSecondSquared: 9.81,

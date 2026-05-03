@@ -12,7 +12,7 @@ import {
 } from './KinematicsSceneProjection'
 
 describe('KinematicsScene projection helpers', () => {
-  it('keeps long MUV and free-fall trajectories legible in the viewport', () => {
+  it('keeps MUV and free-fall trajectories ending on the ground plane', () => {
     const parameters: UniformlyAcceleratedMotionParameters = {
       accelerationMetersPerSecondSquared: -9.81,
       initialPositionMeters: 16,
@@ -42,11 +42,12 @@ describe('KinematicsScene projection helpers', () => {
     const lastPosition = toKinematicsScenePosition(lastSample, projection)
 
     expect(projection.horizontalPlane).toBe(false)
-    expect(projection.positionScale).toBeLessThan(0.1)
+    expect(projection.positionScale).toBe(1)
     expect(firstPosition.y).toBeCloseTo(0)
     expect(lastPosition.y).toBeCloseTo(0)
     expect(firstPosition.z).toBeGreaterThan(lastPosition.z)
-    expect(Math.abs(firstPosition.z - lastPosition.z)).toBeLessThanOrEqual(32)
+    expect(lastPosition.z).toBeCloseTo(0)
+    expect(result.samples.every((sample) => sample.zMeters >= 0)).toBe(true)
   })
 
   it('projects uniform circular motion onto the horizontal plane', () => {

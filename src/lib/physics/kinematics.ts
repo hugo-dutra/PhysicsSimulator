@@ -414,6 +414,7 @@ const highEccentricityWarningThreshold = 0.65
 const hydrostaticFloatToleranceNewtons = 1e-6
 const massSpringDampingTolerance = 1e-9
 const massSpringVisualNaturalLengthMeters = 1.15
+const uniformlyAcceleratedGroundTolerance = 1e-9
 const rollingInertiaFactor = 0.5
 const torqueToleranceNewtonMeters = 0.05
 
@@ -2654,14 +2655,28 @@ function computeUniformlyAcceleratedMotionSample(
   parameters: UniformlyAcceleratedMotionParameters,
   timeSeconds: number,
 ): KinematicsSample {
+  const groundContactTimeSeconds =
+    getUniformlyAcceleratedGroundContactTime(parameters)
+  const isGrounded =
+    groundContactTimeSeconds !== null &&
+    timeSeconds > groundContactTimeSeconds
+  const activeTimeSeconds = isGrounded
+    ? groundContactTimeSeconds
+    : timeSeconds
   const zMeters =
     parameters.initialPositionMeters +
-    parameters.initialVelocityMetersPerSecond * timeSeconds +
-    0.5 * parameters.accelerationMetersPerSecondSquared * timeSeconds ** 2
+    parameters.initialVelocityMetersPerSecond * activeTimeSeconds +
+    0.5 *
+      parameters.accelerationMetersPerSecondSquared *
+      activeTimeSeconds ** 2
   const velocityZMetersPerSecond =
-    parameters.initialVelocityMetersPerSecond +
-    parameters.accelerationMetersPerSecondSquared * timeSeconds
-  const displacementMeters = zMeters - parameters.initialPositionMeters
+    isGrounded
+      ? 0
+      : parameters.initialVelocityMetersPerSecond +
+        parameters.accelerationMetersPerSecondSquared * activeTimeSeconds
+  const displayZMeters =
+    groundContactTimeSeconds !== null ? Math.max(0, zMeters) : zMeters
+  const displacementMeters = displayZMeters - parameters.initialPositionMeters
   const speedMetersPerSecond = Math.abs(velocityZMetersPerSecond)
   const kineticEnergyJoules =
     0.5 *
@@ -2670,21 +2685,75 @@ function computeUniformlyAcceleratedMotionSample(
     speedMetersPerSecond
 
   return buildSample({
-    accelerationMetersPerSecondSquared: Math.abs(
-      parameters.accelerationMetersPerSecondSquared,
-    ),
-    accelerationZMetersPerSecondSquared:
-      parameters.accelerationMetersPerSecondSquared,
+    accelerationMetersPerSecondSquared: isGrounded
+      ? 0
+      : Math.abs(parameters.accelerationMetersPerSecondSquared),
+    accelerationZMetersPerSecondSquared: isGrounded
+      ? 0
+      : parameters.accelerationMetersPerSecondSquared,
     displacementMeters,
+    isGrounded,
     kineticEnergyJoules,
-    positionMeters: zMeters,
+    positionMeters: displayZMeters,
     speedMetersPerSecond,
     timeSeconds,
     velocityMetersPerSecond: velocityZMetersPerSecond,
     velocityZMetersPerSecond,
     xMeters: 0,
-    zMeters,
+    zMeters: displayZMeters,
   })
+}
+
+function getUniformlyAcceleratedGroundContactTime(
+  parameters: UniformlyAcceleratedMotionParameters,
+) {
+  const initialPositionMeters = parameters.initialPositionMeters
+  const initialVelocityMetersPerSecond =
+    parameters.initialVelocityMetersPerSecond
+  const accelerationMetersPerSecondSquared =
+    parameters.accelerationMetersPerSecondSquared
+
+  if (initialPositionMeters <= 0) {
+    return null
+  }
+
+  if (
+    Math.abs(accelerationMetersPerSecondSquared) <=
+    uniformlyAcceleratedGroundTolerance
+  ) {
+    return initialVelocityMetersPerSecond < 0
+      ? initialPositionMeters / -initialVelocityMetersPerSecond
+      : null
+  }
+
+  const discriminant =
+    initialVelocityMetersPerSecond ** 2 -
+    2 * accelerationMetersPerSecondSquared * initialPositionMeters
+
+  if (discriminant < 0) {
+    return null
+  }
+
+  const squareRootDiscriminant = Math.sqrt(discriminant)
+  const roots = [
+    (-initialVelocityMetersPerSecond - squareRootDiscriminant) /
+      accelerationMetersPerSecondSquared,
+    (-initialVelocityMetersPerSecond + squareRootDiscriminant) /
+      accelerationMetersPerSecondSquared,
+  ]
+
+  return (
+    roots
+      .filter((root) => root >= 0)
+      .filter((root) => {
+        const velocityAtRoot =
+          initialVelocityMetersPerSecond +
+          accelerationMetersPerSecondSquared * root
+
+        return velocityAtRoot <= uniformlyAcceleratedGroundTolerance
+      })
+      .sort((left, right) => left - right)[0] ?? null
+  )
 }
 
 function computeProjectileMotionSample(
@@ -3430,6 +3499,27 @@ function getKinematicsWarnings(
     }
 
     return warnings
+  }
+
+  if (simulationId === 'uniformly-accelerated-motion') {
+    const groundContactTimeSeconds = getUniformlyAcceleratedGroundContactTime(
+      parameters as UniformlyAcceleratedMotionParameters,
+    )
+
+    if (
+      groundContactTimeSeconds !== null &&
+      durationSeconds > groundContactTimeSeconds
+    ) {
+      return [
+        {
+          code: 'MUV_REACHES_GROUND_PLANE',
+          message:
+            'O corpo alcanca o plano z = 0 durante o ciclo; depois disso o sample fica apoiado no plano de referencia.',
+        },
+      ]
+    }
+
+    return []
   }
 
   if (simulationId !== 'projectile-motion') {

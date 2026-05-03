@@ -458,12 +458,28 @@ export function KinematicsScene({
     scene.add(keyLight)
 
     const gridSize = Math.max(5, bounds.span * 1.25)
+    const gridBackground = new THREE.Mesh(
+      new THREE.PlaneGeometry(gridSize, gridSize),
+      new THREE.MeshBasicMaterial({
+        color: 0x171a21,
+        depthWrite: false,
+        opacity: 0.34,
+        side: THREE.DoubleSide,
+        transparent: true,
+      }),
+    )
     const grid = new THREE.GridHelper(gridSize, 10, 0x2a2f3a, 0x20242d)
+
+    gridBackground.position.set(bounds.centerX, bounds.centerY, -0.018)
+    gridBackground.renderOrder = 0
+    scene.add(gridBackground)
 
     grid.rotation.x = Math.PI / 2
     grid.position.set(bounds.centerX, bounds.centerY, 0)
     grid.material.transparent = true
     grid.material.opacity = 0.38
+    grid.material.depthWrite = false
+    grid.renderOrder = 1
     scene.add(grid)
     scene.add(
       createOriginAxesMarker({
