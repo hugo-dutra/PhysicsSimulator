@@ -1,41 +1,47 @@
 # Trabalho e energia em trilho
 
-Esta simulacao usa um trilho reto inclinado para conectar trabalho, energia cinetica, energia potencial gravitacional e dissipacao por atrito em uma unica linha de tempo.
+Esta simulacao usa uma rampa de skate em formato de U para comparar energia cinetica, energia potencial gravitacional, energia mecanica total e perda acumulada.
 
 ## Modelo usado
 
-O trabalho de uma forca constante paralela ao movimento e
+A guia da rampa e aproximada por uma parabola:
 
 $$
-W=F\Delta s
+h(x)=H\left(\frac{x}{a}\right)^2
 $$
 
-A energia cinetica e
+em que `H` e a altura das bordas e `a` e a meia largura da rampa. A energia potencial gravitacional vem dessa altura:
+
+$$
+U_g=mgh(x)
+$$
+
+A energia cinetica usa a rapidez tangencial na guia:
 
 $$
 K=\frac{1}{2}mv^2
 $$
 
-A energia potencial gravitacional e
+No regime sem perdas, a energia mecanica
 
 $$
-U_g=mgh
+E=K+U_g
 $$
 
-Com atrito cinetico constante, a parcela termica didatica acumulada e
+permanece aproximadamente constante. Quando a perda por ciclo e maior que zero, o motor aplica um amortecimento equivalente e a energia mecanica total diminui. A parcela perdida acumulada e resumida por
 
 $$
-E_{termica}=F_{at}\Delta s
+p=100\frac{E_0-E}{E_0}
 $$
-
-O grafico de energia mostra o balanco `K + U_g + E_termica - W_aplicado`, que deve permanecer aproximadamente constante enquanto o corpo nao atinge o limite visual.
 
 ## Como interpretar
 
-Sem atrito e sem forca aplicada, a queda de energia potencial aparece como aumento de energia cinetica. Com atrito, parte dessa energia vai para a parcela termica. Com forca aplicada positiva, o trabalho externo injeta energia no sistema.
+Com perda igual a `0%`, o corpo desce para o fundo do U convertendo `U_g` em `K` e sobe do outro lado convertendo `K` de volta em `U_g`. O grafico de energia total deve ficar praticamente horizontal.
 
-A cena mostra o trilho como uma bancada de laboratorio: o corpo acompanha a posicao calculada no sample, o rastro quente sobre o trilho cresce com `E_termica` e o painel compacto do viewport resume `K`, `U_g`, `E_termica`, `W_aplicado` e o saldo do balanco. Essas leituras sao as mesmas usadas nos graficos, na tabela e nas formulas.
+Com perda maior que zero, a amplitude diminui ciclo apos ciclo. A energia perdida aparece como `E_perdida`, e o painel do viewport mostra o percentual acumulado para conferir se o regime dissipativo esta ativo.
+
+O controle de altura relativa permite tres leituras didaticas: positivo solta o corpo acima da linha da rampa antes do contato, zero inicia na guia, e negativo usa uma energia inicial equivalente a um ponto mais baixo do U.
 
 ## Limites do modelo
 
-O trilho real foi reduzido a uma rampa reta. Nao ha rolamento, rotacao, deformacao, mola, curva real nem colisao resolvida no fim do trilho. A forca aplicada e o atrito permanecem constantes no trecho.
+A half-pipe real foi reduzida a uma parabola suave. O corpo e guiado como particula; rolamento, rotacao, perda de contato depois de entrar na guia, som, calor real e colisao com bordas nao entram no modelo. A perda percentual e um amortecimento energetico equivalente, util para comparar graficos, nao uma medida microscopica de atrito.

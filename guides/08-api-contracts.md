@@ -61,7 +61,7 @@ type SimulationParameter = {
 };
 ```
 
-`description` e obrigatoria para todo parametro fisico e para todo `runtimeParameter`. Ela alimenta a tooltip com icone de interrogacao no painel de controles e deve explicar o que a variavel representa, como ela participa do modelo e qual efeito esperado ao aumentar, diminuir ou zerar o valor quando isso for valido.
+`description` e obrigatoria para todo parametro fisico e para todo `runtimeParameter`. Ela alimenta a tooltip com icone de interrogacao no painel de controles e deve explicar o que a variavel representa, como ela participa do modelo e qual efeito esperado ao aumentar, diminuir ou zerar o valor quando isso for valido. Controles globais de runtime, como velocidade de passagem do tempo `0..1`, seguem o mesmo formato de ajuda mesmo quando nao pertencem a uma fixture especifica.
 
 ## Contrato `FormulaReference`
 
@@ -132,6 +132,8 @@ type SimulationEngine<TParams, TState, TSample> = {
 };
 ```
 
+`durationSeconds` representa o horizonte calculado inicial de samples entregue ao renderer, graficos e tabela. O playback visual deve manter um contador continuo enquanto estiver em play, estender ou calcular samples futuros quando necessario e so voltar o relogio da interface para zero quando o usuario acionar reset. A escala visual de tempo e aplicada sobre o delta do runtime: `1` e tempo normal, valores intermediarios desaceleram a leitura continua, e `0` pausa sem alterar os samples calculados.
+
 ## Contrato temporario de fixture de simulacao
 
 ```ts
@@ -198,13 +200,14 @@ type InclinedPlaneSample = {
 
 ## Exemplo de sample de Cinematica
 
-O nome historico `KinematicsSample` cobre hoje o motor analitico compartilhado de Cinematica, Dinamica, Energia/momento, Estatica, Rotacao, Gravitacao e Fluidos basicos. Campos sem uso em uma simulacao ficam zerados, mas toda grandeza exibida em cena, grafico, tabela ou formula deve vir do sample.
+O nome historico `KinematicsSample` cobre hoje o motor analitico compartilhado de Cinematica, Dinamica, Energia/momento, Estatica, Rotacao, Gravitacao, Fluidos basicos e a oscilacao massa-mola vertical. Campos sem uso em uma simulacao ficam zerados, mas toda grandeza exibida em cena, grafico, tabela ou formula deve vir do sample.
 
 ```ts
 type KinematicsSample = {
   timeSeconds: number;
   positionMeters: number;
   displacementMeters: number;
+  energyLossPercent: number;
   xMeters: number;
   zMeters: number;
   primaryRadiusMeters: number;
@@ -232,8 +235,11 @@ type KinematicsSample = {
   gravitationalFieldNewtonsPerKilogram: number;
   maxStaticFrictionNewtons: number;
   frictionForceNewtons: number;
+  elasticPotentialEnergyJoules: number;
   fluidPressurePascals: number;
+  gravitationalPotentialEnergyJoules: number;
   pressurePascals: number;
+  springForceNewtons: number;
   secondaryPressurePascals: number;
   flowRateCubicMetersPerSecond: number;
   crossSectionAreaSquareMeters: number;

@@ -64,6 +64,7 @@ import {
   getKinematicsVectorOverlays,
   isKinematicsSimulationId,
   toKinematicsParameters,
+  type KinematicsParameters,
   type KinematicsSample,
   type KinematicsSimulationId,
   type KinematicsVectorOverlay,
@@ -83,6 +84,7 @@ import {
 import gravitationalFieldOrbitsTheory from '../../content/simulations/mechanics/gravitational-field-orbits/theory.md?raw'
 import hydrostaticsBuoyancyTheory from '../../content/simulations/mechanics/hydrostatics-buoyancy/theory.md?raw'
 import inclinedPlaneTheory from '../../content/simulations/mechanics/inclined-plane-friction/theory.md?raw'
+import massSpringTheory from '../../content/simulations/mechanics/mass-spring/theory.md?raw'
 import particleEquilibriumTheory from '../../content/simulations/mechanics/particle-equilibrium/theory.md?raw'
 import pendulumTheory from '../../content/simulations/mechanics/pendulum/theory.md?raw'
 import projectileMotionTheory from '../../content/simulations/mechanics/projectile-motion/theory.md?raw'
@@ -94,6 +96,7 @@ import uniformLinearMotionTheory from '../../content/simulations/mechanics/unifo
 import uniformlyAcceleratedMotionTheory from '../../content/simulations/mechanics/uniformly-accelerated-motion/theory.md?raw'
 import workEnergyTrackTheory from '../../content/simulations/mechanics/work-energy-track/theory.md?raw'
 import { themeTokens } from '../../theme/appTheme'
+import { normalizePlaybackRate } from '../../lib/rendering/visualRuntime'
 import { ChevronSection } from './ChevronSection'
 import { FormulaGuide } from './FormulaGuide'
 import { InclinedPlaneCharts } from './InclinedPlaneCharts'
@@ -121,9 +124,8 @@ import { PendulumScene, type PendulumFrameStats } from './PendulumScene'
 import {
   appendLiveSample,
   getMovingWindowRange,
-  getSampleIndexForTime,
   readFirstSample,
-  selectRecentSamples,
+  selectRecentSamplesByTime,
   selectStableRows,
 } from './sampleWindow'
 import { TheoryAppendix } from './TheoryAppendix'
@@ -181,6 +183,7 @@ const kinematicsTheoryById = {
   'continuity-bernoulli': continuityBernoulliTheory,
   'gravitational-field-orbits': gravitationalFieldOrbitsTheory,
   'hydrostatics-buoyancy': hydrostaticsBuoyancyTheory,
+  'mass-spring': massSpringTheory,
   'particle-equilibrium': particleEquilibriumTheory,
   'projectile-motion': projectileMotionTheory,
   'rigid-body-rotation': rigidBodyRotationTheory,
@@ -193,9 +196,29 @@ const kinematicsTheoryById = {
 } satisfies Record<KinematicsSimulationId, string>
 
 const customPresetId = 'custom'
-const playbackRate = 0.6
+const defaultPlaybackRate = 1
+const playbackRateParameter = {
+  id: 'playbackRate',
+  label: 'Velocidade do tempo',
+  description:
+    'Escala o tempo da simulacao sem recalcular a fisica. Em 1x o experimento roda no tempo normal; reduzir desacelera a leitura continua de cena, graficos e tabela; em 0x o relogio fica parado como pausa.',
+  unit: 'x',
+  kind: 'number',
+  min: 0,
+  max: 1,
+  step: 0.05,
+  defaultValue: defaultPlaybackRate,
+} satisfies SimulationParameter
 const sampleTableRowCount = 9
 const maximizedSampleTableRowCount = 18
+const floatingControlsPanelWidthPx = 360
+const floatingControlsMobileInsetPx = 12
+const floatingControlsDesktopInsetPx = 16
+const floatingControlsDesktopReservePx =
+  floatingControlsPanelWidthPx + floatingControlsDesktopInsetPx * 2
+const floatingControlsMobileBottomReserve = `calc(min(78svh, 720px) + ${
+  floatingControlsMobileInsetPx * 2
+}px)`
 const sampleTableColumnIds = [
   'time',
   'angle',
@@ -424,6 +447,32 @@ const kinematicsVectorLegendItemsById = {
       description: 'diferenca vertical entre empuxo e peso',
     },
   ],
+  'mass-spring': [
+    {
+      id: 'velocity',
+      label: 'Velocidade',
+      color: themeTokens.cyan,
+      description: 'velocidade vertical da esfera em torno do equilibrio',
+    },
+    {
+      id: 'acceleration',
+      label: 'Aceleracao',
+      color: themeTokens.warning,
+      description: 'aceleracao vertical gerada pela resultante elastica',
+    },
+    {
+      id: 'tension',
+      label: 'Forca elastica',
+      color: themeTokens.vector,
+      description: 'forca da mola sobre a esfera, oposta a deformacao',
+    },
+    {
+      id: 'weight',
+      label: 'Peso',
+      color: themeTokens.danger,
+      description: 'forca gravitacional constante que desloca o equilibrio',
+    },
+  ],
   'particle-equilibrium': [
     {
       id: 'forceOne',
@@ -607,25 +656,25 @@ const kinematicsVectorLegendItemsById = {
       id: 'velocity',
       label: 'Velocidade',
       color: themeTokens.cyan,
-      description: 'velocidade do corpo ao longo do trilho',
+      description: 'velocidade tangente ao U, assinada pelo sentido horizontal',
     },
     {
       id: 'acceleration',
       label: 'Aceleracao',
       color: themeTokens.warning,
-      description: 'resultante tangencial entre gravidade, atrito e forca aplicada',
+      description: 'aceleracao tangencial gerada pela gravidade e pela perda ativa',
     },
     {
       id: 'friction',
-      label: 'Atrito',
+      label: 'Perda',
       color: themeTokens.danger,
-      description: 'forca dissipativa oposta ao movimento no trilho',
+      description: 'forca dissipativa equivalente quando ha perda de energia',
     },
     {
-      id: 'appliedForce',
-      label: 'Forca aplicada',
-      color: themeTokens.teal,
-      description: 'forca externa constante projetada no trilho',
+      id: 'normal',
+      label: 'Normal',
+      color: themeTokens.vector,
+      description: 'forca de contato que mantem o corpo guiado pela rampa em U',
     },
   ],
 } satisfies Record<KinematicsSimulationId, KinematicsVectorLegendItem[]>
@@ -708,6 +757,7 @@ export function SimulationShell() {
       ) as Record<KinematicsSimulationId, string>,
     )
   const [isPlaying, setIsPlaying] = useState(true)
+  const [playbackRate, setPlaybackRate] = useState(defaultPlaybackRate)
   const [playbackResetVersion, setPlaybackResetVersion] = useState(0)
   const [overlays, setOverlays] = useState<OverlayState>({
     energy: true,
@@ -736,10 +786,7 @@ export function SimulationShell() {
     'chartWindowSeconds',
     pendulumFixture.chartWindowSeconds,
   )
-  const pendulumEffectiveChartWindowSeconds = Math.min(
-    pendulumChartWindowSeconds,
-    pendulumDurationSeconds,
-  )
+  const pendulumEffectiveChartWindowSeconds = pendulumChartWindowSeconds
   const pendulumTimeline = useMemo(
     () =>
       computePendulumTimeline({
@@ -763,10 +810,8 @@ export function SimulationShell() {
     'chartWindowSeconds',
     inclinedPlaneFixture.chartWindowSeconds,
   )
-  const inclinedPlaneEffectiveChartWindowSeconds = Math.min(
-    inclinedPlaneChartWindowSeconds,
-    inclinedPlaneDurationSeconds,
-  )
+  const inclinedPlaneEffectiveChartWindowSeconds =
+    inclinedPlaneChartWindowSeconds
   const inclinedPlaneTimeline = useMemo(
     () =>
       computeInclinedPlaneTimeline({
@@ -802,10 +847,8 @@ export function SimulationShell() {
     'chartWindowSeconds',
     selectedKinematicsFixture.chartWindowSeconds,
   )
-  const selectedKinematicsEffectiveChartWindowSeconds = Math.min(
-    selectedKinematicsChartWindowSeconds,
-    selectedKinematicsDurationSeconds,
-  )
+  const selectedKinematicsEffectiveChartWindowSeconds =
+    selectedKinematicsChartWindowSeconds
   const selectedKinematicsTimeline = useMemo(
     () =>
       computeKinematicsTimeline({
@@ -858,6 +901,7 @@ export function SimulationShell() {
       ? selectedKinematicsTimeline
       : pendulumTimeline
   const energyRatio = readEnergyRatio(selectedTimeline.samples)
+  const isPlaybackAdvancing = isPlaying && playbackRate > 0
 
   const handleSimulationSelect = (simulationId: RunnableSimulationId) => {
     setSelectedSimulationId(simulationId)
@@ -999,6 +1043,10 @@ export function SimulationShell() {
     setIsPlaying((current) => !current)
   }
 
+  const handlePlaybackRateChange = (nextValue: number) => {
+    setPlaybackRate(normalizePlaybackRate(nextValue))
+  }
+
   const handleOverlayChange =
     (overlayId: keyof OverlayState) =>
     (_event: ChangeEvent<HTMLInputElement>, checked: boolean) => {
@@ -1067,7 +1115,19 @@ export function SimulationShell() {
         />
       </Box>
 
-      <Box sx={{ minWidth: 0 }}>
+      <Box
+        sx={{
+          minWidth: 0,
+          pb: {
+            xs: floatingControlsMobileBottomReserve,
+            md: 0,
+          },
+          pr: {
+            xs: 0,
+            md: `${floatingControlsDesktopReservePx}px`,
+          },
+        }}
+      >
         <Box
           component="header"
           sx={{
@@ -1087,43 +1147,6 @@ export function SimulationShell() {
             </Typography>
             <Typography variant="h1">{selectedSimulation.title}</Typography>
           </Box>
-          <Stack
-            direction="row"
-            sx={{
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 1,
-            }}
-          >
-            <Button
-              aria-label={
-                isPlaying ? 'Pausar animacao' : 'Reproduzir animacao'
-              }
-              color="primary"
-              onClick={handlePlaybackToggle}
-              size="small"
-              startIcon={
-                isPlaying ? (
-                  <Pause aria-hidden size={16} />
-                ) : (
-                  <Play aria-hidden size={16} />
-                )
-              }
-              variant="contained"
-            >
-              {isPlaying ? 'Pausar animacao' : 'Reproduzir animacao'}
-            </Button>
-            <Chip
-              label={selectedSimulation.technologyPlan?.engine ?? 'custom'}
-              size="small"
-              variant="outlined"
-            />
-            <Chip
-              color={getStatusChipColor(selectedSimulation.status)}
-              label={getStatusLabel(selectedSimulation.status)}
-              size="small"
-            />
-          </Stack>
         </Box>
 
         <Box
@@ -1132,7 +1155,7 @@ export function SimulationShell() {
             gap: 2,
             gridTemplateColumns: {
               xs: '1fr',
-              xl: isPanelMaximized ? '1fr' : 'minmax(0, 1fr) 340px',
+              xl: '1fr',
             },
             p: isPanelMaximized ? { xs: 1, md: 1.5 } : { xs: 2, md: 3 },
           }}
@@ -1142,14 +1165,14 @@ export function SimulationShell() {
               <InclinedPlaneRuntime
                 chartWindowSeconds={inclinedPlaneEffectiveChartWindowSeconds}
                 durationSeconds={inclinedPlaneDurationSeconds}
-                isPlaying={isPlaying}
+                isPlaying={isPlaybackAdvancing}
                 maximizedPanel={maximizedPanel}
                 onMaximizedPanelToggle={handleMaximizedPanelToggle}
                 onOutputPanelToggle={handleOutputPanelToggle}
-                onPlaybackToggle={handlePlaybackToggle}
                 outputPanels={outputPanels}
                 overlays={overlays}
                 parameters={inclinedPlaneParameters}
+                playbackRate={playbackRate}
                 resetVersion={playbackResetVersion}
                 samples={inclinedPlaneTimeline.samples}
               />
@@ -1159,14 +1182,15 @@ export function SimulationShell() {
                   selectedKinematicsEffectiveChartWindowSeconds
                 }
                 durationSeconds={selectedKinematicsDurationSeconds}
-                isPlaying={isPlaying}
+                isPlaying={isPlaybackAdvancing}
                 key={selectedKinematicsSimulationId}
                 maximizedPanel={maximizedPanel}
                 onMaximizedPanelToggle={handleMaximizedPanelToggle}
                 onOutputPanelToggle={handleOutputPanelToggle}
-                onPlaybackToggle={handlePlaybackToggle}
                 outputPanels={outputPanels}
                 overlays={overlays}
+                parameters={selectedKinematicsParameters}
+                playbackRate={playbackRate}
                 resetVersion={playbackResetVersion}
                 samples={selectedKinematicsTimeline.samples}
                 simulationId={selectedKinematicsSimulationId}
@@ -1175,14 +1199,14 @@ export function SimulationShell() {
               <PendulumRuntime
                 chartWindowSeconds={pendulumEffectiveChartWindowSeconds}
                 durationSeconds={pendulumDurationSeconds}
-                isPlaying={isPlaying}
+                isPlaying={isPlaybackAdvancing}
                 maximizedPanel={maximizedPanel}
                 onMaximizedPanelToggle={handleMaximizedPanelToggle}
-                onPlaybackToggle={handlePlaybackToggle}
                 onOutputPanelToggle={handleOutputPanelToggle}
                 overlays={overlays}
                 outputPanels={outputPanels}
                 parameters={pendulumParameters}
+                playbackRate={playbackRate}
                 resetVersion={playbackResetVersion}
                 samples={pendulumTimeline.samples}
               />
@@ -1229,30 +1253,33 @@ export function SimulationShell() {
             ) : null}
           </Stack>
 
-          {isPanelMaximized ? null : (
-            <SimulationControlsPanel
-              durationSeconds={selectedDurationSeconds}
-              effectiveChartWindowSeconds={selectedEffectiveChartWindowSeconds}
-              energyRatio={energyRatio}
-              fixture={selectedFixture}
-              isPlaying={isPlaying}
-              onOverlayChange={handleOverlayChange}
-              onParameterChange={handleParameterChange}
-              onPlaybackToggle={handlePlaybackToggle}
-              onPresetChange={handlePresetChange}
-              onReset={handleReset}
-              onRuntimeParameterChange={handleRuntimeParameterChange}
-              outputPanels={outputPanels}
-              overlays={overlays}
-              parameterValues={selectedParameterValues}
-              renderLabel="Three.js rAF"
-              runtimeValues={selectedRuntimeValues}
-              sampleCount={selectedTimeline.samples.length}
-              sampleRateHz={selectedFixture.sampleRateHz}
-              selectedPresetId={selectedPresetId}
-              warningsCount={selectedTimeline.warnings.length}
-            />
-          )}
+          <SimulationControlsPanel
+            durationSeconds={selectedDurationSeconds}
+            effectiveChartWindowSeconds={selectedEffectiveChartWindowSeconds}
+            energyRatio={energyRatio}
+            engineLabel={selectedSimulation.technologyPlan?.engine ?? 'custom'}
+            fixture={selectedFixture}
+            isPlaying={isPlaying}
+            isPlaybackAdvancing={isPlaybackAdvancing}
+            onOverlayChange={handleOverlayChange}
+            onParameterChange={handleParameterChange}
+            onPlaybackRateChange={handlePlaybackRateChange}
+            onPlaybackToggle={handlePlaybackToggle}
+            onPresetChange={handlePresetChange}
+            onReset={handleReset}
+            onRuntimeParameterChange={handleRuntimeParameterChange}
+            outputPanels={outputPanels}
+            overlays={overlays}
+            parameterValues={selectedParameterValues}
+            playbackRate={playbackRate}
+            renderLabel="Three.js rAF"
+            runtimeValues={selectedRuntimeValues}
+            sampleCount={selectedTimeline.samples.length}
+            sampleRateHz={selectedFixture.sampleRateHz}
+            selectedPresetId={selectedPresetId}
+            simulationStatus={selectedSimulation.status}
+            warningsCount={selectedTimeline.warnings.length}
+          />
         </Box>
       </Box>
     </Box>
@@ -1263,10 +1290,13 @@ function SimulationControlsPanel({
   durationSeconds,
   effectiveChartWindowSeconds,
   energyRatio,
+  engineLabel,
   fixture,
   isPlaying,
+  isPlaybackAdvancing,
   onOverlayChange,
   onParameterChange,
+  onPlaybackRateChange,
   onPlaybackToggle,
   onPresetChange,
   onReset,
@@ -1274,22 +1304,27 @@ function SimulationControlsPanel({
   outputPanels,
   overlays,
   parameterValues,
+  playbackRate,
   renderLabel,
   runtimeValues,
   sampleCount,
   sampleRateHz,
   selectedPresetId,
+  simulationStatus,
   warningsCount,
 }: {
   durationSeconds: number
   effectiveChartWindowSeconds: number
   energyRatio: number
+  engineLabel: string
   fixture: SimulationFixture
   isPlaying: boolean
+  isPlaybackAdvancing: boolean
   onOverlayChange: (
     overlayId: keyof OverlayState,
   ) => (_event: ChangeEvent<HTMLInputElement>, checked: boolean) => void
   onParameterChange: (parameter: SimulationParameter, nextValue: number) => void
+  onPlaybackRateChange: (nextValue: number) => void
   onPlaybackToggle: () => void
   onPresetChange: (presetId: string) => void
   onReset: () => void
@@ -1300,71 +1335,135 @@ function SimulationControlsPanel({
   outputPanels: OutputPanelState
   overlays: OverlayState
   parameterValues: Record<string, ParameterValue>
+  playbackRate: number
   renderLabel: string
   runtimeValues: Record<string, ParameterValue>
   sampleCount: number
   sampleRateHz: number
   selectedPresetId: string
+  simulationStatus: SimulationStatus
   warningsCount: number
 }) {
+  const playbackStatusLabel = isPlaybackAdvancing
+    ? 'rodando'
+    : playbackRate === 0 && isPlaying
+      ? 'pausado (0x)'
+      : 'pausado'
+
   return (
     <Box
+      aria-label="Controles flutuantes da simulacao"
       component="section"
       sx={{
         border: `1px solid ${themeTokens.border}`,
         borderRadius: 1,
-        bgcolor: alpha(themeTokens.panel, 0.55),
+        bgcolor: alpha(themeTokens.panel, 0.88),
+        backdropFilter: 'blur(16px)',
+        bottom: {
+          xs: floatingControlsMobileInsetPx,
+          md: floatingControlsDesktopInsetPx,
+        },
+        boxShadow: `0 18px 42px ${alpha('#000000', 0.46)}`,
+        maxHeight: { xs: 'min(78svh, 720px)', md: 'calc(100svh - 32px)' },
         minWidth: 0,
+        overflowY: 'auto',
         p: 1.5,
+        position: 'fixed',
+        right: {
+          xs: floatingControlsMobileInsetPx,
+          md: floatingControlsDesktopInsetPx,
+        },
+        width: {
+          xs: `calc(100vw - ${floatingControlsMobileInsetPx * 2}px)`,
+          sm: floatingControlsPanelWidthPx,
+        },
+        zIndex: 1200,
       }}
     >
       <Stack spacing={2}>
         <Stack
-          direction="row"
-          spacing={1}
           sx={{
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            gap: 1,
           }}
         >
-          <Box>
-            <Typography variant="h2">Controles</Typography>
-            <Typography color="text.secondary" variant="body2">
-              ciclo {formatNumber(durationSeconds, 's')} | janela{' '}
-              {formatNumber(effectiveChartWindowSeconds, 's')}
-            </Typography>
-          </Box>
-          <Stack direction="row" spacing={0.75}>
-            <Chip
-              color={isPlaying ? 'primary' : 'default'}
-              label={isPlaying ? 'rodando' : 'pausado'}
-              size="small"
-              variant={isPlaying ? 'filled' : 'outlined'}
-            />
-            <Tooltip title={isPlaying ? 'Pausar' : 'Reproduzir'}>
-              <IconButton
-                aria-label="Alternar reproducao da simulacao"
-                color="primary"
-                onClick={onPlaybackToggle}
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: 'flex-start',
+              gap: 1,
+              justifyContent: 'space-between',
+            }}
+          >
+            <Box>
+              <Typography variant="h2">Controles</Typography>
+              <Typography color="text.secondary" variant="body2">
+                contador continuo | janela{' '}
+                {formatNumber(effectiveChartWindowSeconds, 's')}
+              </Typography>
+            </Box>
+            <Stack
+              direction="row"
+              sx={{
+                flexWrap: 'wrap',
+                gap: 0.75,
+                justifyContent: 'flex-end',
+              }}
+            >
+              <Chip
+                color={isPlaybackAdvancing ? 'primary' : 'default'}
+                label={playbackStatusLabel}
                 size="small"
-              >
-                {isPlaying ? (
-                  <Pause aria-hidden size={18} />
+                variant={isPlaybackAdvancing ? 'filled' : 'outlined'}
+              />
+              <Chip label={engineLabel} size="small" variant="outlined" />
+              <Chip
+                color={getStatusChipColor(simulationStatus)}
+                label={getStatusLabel(simulationStatus)}
+                size="small"
+              />
+            </Stack>
+          </Stack>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              aria-label={
+                isPlaying ? 'Pausar simulacao' : 'Reproduzir simulacao'
+              }
+              color="primary"
+              fullWidth
+              onClick={onPlaybackToggle}
+              size="small"
+              startIcon={
+                isPlaying ? (
+                  <Pause aria-hidden size={16} />
                 ) : (
-                  <Play aria-hidden size={18} />
-                )}
-              </IconButton>
-            </Tooltip>
+                  <Play aria-hidden size={16} />
+                )
+              }
+              variant="contained"
+            >
+              {isPlaying ? 'Pausar animacao' : 'Reproduzir animacao'}
+            </Button>
             <Tooltip title="Resetar">
               <IconButton
                 aria-label="Resetar simulacao"
                 onClick={onReset}
                 size="small"
+                sx={{
+                  border: `1px solid ${themeTokens.border}`,
+                  flex: '0 0 auto',
+                }}
               >
                 <RotateCcw aria-hidden size={18} />
               </IconButton>
             </Tooltip>
           </Stack>
+
+          <Box>
+            <Typography color="text.secondary" variant="body2">
+              horizonte calculado {formatNumber(durationSeconds, 's')}
+            </Typography>
+          </Box>
         </Stack>
 
         <TextField
@@ -1387,11 +1486,17 @@ function SimulationControlsPanel({
 
         <Box>
           <Typography sx={{ mb: 0.75 }} variant="h2">
-            Tempo e janela
+            Tempo continuo e janela
           </Typography>
           <Stack spacing={1.5}>
+            <PlaybackSpeedControl
+              onChange={onPlaybackRateChange}
+              parameter={playbackRateParameter}
+              value={playbackRate}
+            />
             {fixture.runtimeParameters.map((parameter) => {
               const value = readNumericParameter(runtimeValues, parameter)
+              const renderedParameter = formatRuntimeParameter(parameter)
 
               return (
                 <ParameterControl
@@ -1399,7 +1504,7 @@ function SimulationControlsPanel({
                   onChange={(nextValue) => {
                     onRuntimeParameterChange(parameter, nextValue)
                   }}
-                  parameter={parameter}
+                  parameter={renderedParameter}
                   value={value}
                 />
               )
@@ -1472,7 +1577,7 @@ function SimulationControlsPanel({
             <Metric label="samples" value={String(sampleCount)} />
             <Metric
               label="playback"
-              value={`${compactNumber.format(playbackRate)}x`}
+              value={formatPlaybackRate(playbackRate)}
             />
             <Metric label="sample rate" value={`${sampleRateHz} Hz`} />
             <Metric
@@ -1822,10 +1927,10 @@ function PendulumRuntime({
   maximizedPanel,
   onMaximizedPanelToggle,
   onOutputPanelToggle,
-  onPlaybackToggle,
   overlays,
   outputPanels,
   parameters,
+  playbackRate,
   resetVersion,
   samples,
 }: {
@@ -1835,10 +1940,10 @@ function PendulumRuntime({
   maximizedPanel: MaximizedPanelId | null
   onMaximizedPanelToggle: (panelId: MaximizedPanelId) => void
   onOutputPanelToggle: (panelId: keyof OutputPanelState) => void
-  onPlaybackToggle: () => void
   overlays: OverlayState
   outputPanels: OutputPanelState
   parameters: PendulumParameters
+  playbackRate: number
   resetVersion: number
   samples: PendulumSample[]
 }) {
@@ -1847,6 +1952,9 @@ function PendulumRuntime({
     [samples],
   )
   const [liveSample, setLiveSample] = useState<PendulumSample>(firstSample)
+  const [liveSamples, setLiveSamples] = useState<PendulumSample[]>([
+    firstSample,
+  ])
   const [frameStats, setFrameStats] =
     useState<PendulumFrameStats>(initialFrameStats)
   const [focusedChartId, setFocusedChartId] =
@@ -1855,6 +1963,9 @@ function PendulumRuntime({
   const handleSampleChange = useCallback(
     (sample: PendulumSample, stats: PendulumFrameStats) => {
       setLiveSample(sample)
+      setLiveSamples((currentSamples) =>
+        appendLiveSample(currentSamples, sample),
+      )
       setFrameStats(stats)
     },
     [],
@@ -1878,11 +1989,6 @@ function PendulumRuntime({
   const shouldShowTable = !hasMaximizedPanel || isTableMaximized
   const shouldHideSimulationCard = hasMaximizedPanel && !isSimulationMaximized
   const canFocusChartInSimulation = !shouldHideSimulationCard
-  const currentSampleIndex = getSampleIndexForTime(
-    samples,
-    durationSeconds,
-    liveSample.timeSeconds,
-  )
   const activeFocusedChartId =
     focusedChartId === 'energy' && !overlays.energy ? null : focusedChartId
   const hasFocusedChart = activeFocusedChartId !== null
@@ -1894,13 +2000,18 @@ function PendulumRuntime({
         return []
       }
 
-      return selectRecentSamples(
-        samples,
-        currentSampleIndex,
+      return selectRecentSamplesByTime(
+        liveSamples,
+        liveSample.timeSeconds,
         chartWindowSeconds,
       )
     },
-    [chartWindowSeconds, currentSampleIndex, needsSampleWindow, samples],
+    [
+      chartWindowSeconds,
+      liveSamples,
+      liveSample.timeSeconds,
+      needsSampleWindow,
+    ],
   )
   const xAxisRange = useMemo<[number, number]>(
     () => {
@@ -2025,26 +2136,6 @@ function PendulumRuntime({
             <Typography color="text.secondary" variant="body2">
               t = {formatNumber(liveSample.timeSeconds, 's')}
             </Typography>
-            <Button
-              aria-label={
-                isPlaying
-                  ? 'Pausar simulacao no viewport'
-                  : 'Reproduzir simulacao no viewport'
-              }
-              color="primary"
-              onClick={onPlaybackToggle}
-              size="small"
-              startIcon={
-                isPlaying ? (
-                  <Pause aria-hidden size={16} />
-                ) : (
-                  <Play aria-hidden size={16} />
-                )
-              }
-              variant="outlined"
-            >
-              {isPlaying ? 'Pausar' : 'Reproduzir'}
-            </Button>
             <Tooltip
               title={isSimulationMaximized ? 'Minimizar' : 'Maximizar'}
             >
@@ -2171,6 +2262,7 @@ function PendulumRuntime({
                 title={focusedChart.title}
                 traces={focusedChart.traces}
                 xAxisRange={xAxisRange}
+                yAxisMode={focusedChart.yAxisMode}
                 yAxisTitle={focusedChart.yAxisTitle}
               />
             </Box>
@@ -2220,7 +2312,7 @@ function PendulumRuntime({
           }}
           subtitle={
             tableExpanded
-              ? `${samples.length} amostras em ${formatNumber(
+              ? `${samples.length} amostras no horizonte ${formatNumber(
                   durationSeconds,
                   's',
                 )} | janela ${formatNumber(chartWindowSeconds, 's')}`
@@ -2340,10 +2432,10 @@ function InclinedPlaneRuntime({
   maximizedPanel,
   onMaximizedPanelToggle,
   onOutputPanelToggle,
-  onPlaybackToggle,
   outputPanels,
   overlays,
   parameters,
+  playbackRate,
   resetVersion,
   samples,
 }: {
@@ -2353,10 +2445,10 @@ function InclinedPlaneRuntime({
   maximizedPanel: MaximizedPanelId | null
   onMaximizedPanelToggle: (panelId: MaximizedPanelId) => void
   onOutputPanelToggle: (panelId: keyof OutputPanelState) => void
-  onPlaybackToggle: () => void
   outputPanels: OutputPanelState
   overlays: OverlayState
   parameters: InclinedPlaneParameters
+  playbackRate: number
   resetVersion: number
   samples: InclinedPlaneSample[]
 }) {
@@ -2366,6 +2458,9 @@ function InclinedPlaneRuntime({
   )
   const [liveSample, setLiveSample] =
     useState<InclinedPlaneSample>(firstSample)
+  const [liveSamples, setLiveSamples] = useState<InclinedPlaneSample[]>([
+    firstSample,
+  ])
   const [frameStats, setFrameStats] =
     useState<InclinedPlaneFrameStats>(initialInclinedPlaneFrameStats)
   const [focusedChartId, setFocusedChartId] =
@@ -2374,6 +2469,9 @@ function InclinedPlaneRuntime({
   const handleSampleChange = useCallback(
     (sample: InclinedPlaneSample, stats: InclinedPlaneFrameStats) => {
       setLiveSample(sample)
+      setLiveSamples((currentSamples) =>
+        appendLiveSample(currentSamples, sample),
+      )
       setFrameStats(stats)
     },
     [],
@@ -2400,11 +2498,6 @@ function InclinedPlaneRuntime({
   const shouldShowTable = !hasMaximizedPanel || isTableMaximized
   const shouldHideSimulationCard = hasMaximizedPanel && !isSimulationMaximized
   const canFocusChartInSimulation = !shouldHideSimulationCard
-  const currentSampleIndex = getSampleIndexForTime(
-    samples,
-    durationSeconds,
-    liveSample.timeSeconds,
-  )
   const activeFocusedChartId =
     focusedChartId === 'energy' && !overlays.energy ? null : focusedChartId
   const hasFocusedChart = activeFocusedChartId !== null
@@ -2416,13 +2509,18 @@ function InclinedPlaneRuntime({
         return []
       }
 
-      return selectRecentSamples(
-        samples,
-        currentSampleIndex,
+      return selectRecentSamplesByTime(
+        liveSamples,
+        liveSample.timeSeconds,
         chartWindowSeconds,
       )
     },
-    [chartWindowSeconds, currentSampleIndex, needsSampleWindow, samples],
+    [
+      chartWindowSeconds,
+      liveSamples,
+      liveSample.timeSeconds,
+      needsSampleWindow,
+    ],
   )
   const xAxisRange = useMemo<[number, number]>(
     () => {
@@ -2546,26 +2644,6 @@ function InclinedPlaneRuntime({
             <Typography color="text.secondary" variant="body2">
               t = {formatNumber(liveSample.timeSeconds, 's')}
             </Typography>
-            <Button
-              aria-label={
-                isPlaying
-                  ? 'Pausar simulacao no viewport'
-                  : 'Reproduzir simulacao no viewport'
-              }
-              color="primary"
-              onClick={onPlaybackToggle}
-              size="small"
-              startIcon={
-                isPlaying ? (
-                  <Pause aria-hidden size={16} />
-                ) : (
-                  <Play aria-hidden size={16} />
-                )
-              }
-              variant="outlined"
-            >
-              {isPlaying ? 'Pausar' : 'Reproduzir'}
-            </Button>
             <Tooltip
               title={isSimulationMaximized ? 'Minimizar' : 'Maximizar'}
             >
@@ -2692,6 +2770,7 @@ function InclinedPlaneRuntime({
                 title={focusedChart.title}
                 traces={focusedChart.traces}
                 xAxisRange={xAxisRange}
+                yAxisMode={focusedChart.yAxisMode}
                 yAxisTitle={focusedChart.yAxisTitle}
               />
             </Box>
@@ -2741,7 +2820,7 @@ function InclinedPlaneRuntime({
           }}
           subtitle={
             tableExpanded
-              ? `${samples.length} amostras em ${formatNumber(
+              ? `${samples.length} amostras no horizonte ${formatNumber(
                   durationSeconds,
                   's',
                 )} | janela ${formatNumber(chartWindowSeconds, 's')}`
@@ -2852,9 +2931,10 @@ function KinematicsRuntime({
   maximizedPanel,
   onMaximizedPanelToggle,
   onOutputPanelToggle,
-  onPlaybackToggle,
   outputPanels,
   overlays,
+  parameters,
+  playbackRate,
   resetVersion,
   samples,
   simulationId,
@@ -2865,9 +2945,10 @@ function KinematicsRuntime({
   maximizedPanel: MaximizedPanelId | null
   onMaximizedPanelToggle: (panelId: MaximizedPanelId) => void
   onOutputPanelToggle: (panelId: keyof OutputPanelState) => void
-  onPlaybackToggle: () => void
   outputPanels: OutputPanelState
   overlays: OverlayState
+  parameters: KinematicsParameters
+  playbackRate: number
   resetVersion: number
   samples: KinematicsSample[]
   simulationId: KinematicsSimulationId
@@ -2878,6 +2959,9 @@ function KinematicsRuntime({
   )
   const [liveSample, setLiveSample] =
     useState<KinematicsSample>(firstSample)
+  const [liveSamples, setLiveSamples] = useState<KinematicsSample[]>([
+    firstSample,
+  ])
   const [frameStats, setFrameStats] =
     useState<KinematicsFrameStats>(initialKinematicsFrameStats)
   const [focusedChartId, setFocusedChartId] =
@@ -2886,6 +2970,9 @@ function KinematicsRuntime({
   const handleSampleChange = useCallback(
     (sample: KinematicsSample, stats: KinematicsFrameStats) => {
       setLiveSample(sample)
+      setLiveSamples((currentSamples) =>
+        appendLiveSample(currentSamples, sample),
+      )
       setFrameStats(stats)
     },
     [],
@@ -2912,11 +2999,6 @@ function KinematicsRuntime({
   const shouldShowTable = !hasMaximizedPanel || isTableMaximized
   const shouldHideSimulationCard = hasMaximizedPanel && !isSimulationMaximized
   const canFocusChartInSimulation = !shouldHideSimulationCard
-  const currentSampleIndex = getSampleIndexForTime(
-    samples,
-    durationSeconds,
-    liveSample.timeSeconds,
-  )
   const activeFocusedChartId =
     focusedChartId === 'energy' && !overlays.energy ? null : focusedChartId
   const hasFocusedChart = activeFocusedChartId !== null
@@ -2928,13 +3010,18 @@ function KinematicsRuntime({
         return []
       }
 
-      return selectRecentSamples(
-        samples,
-        currentSampleIndex,
+      return selectRecentSamplesByTime(
+        liveSamples,
+        liveSample.timeSeconds,
         chartWindowSeconds,
       )
     },
-    [chartWindowSeconds, currentSampleIndex, needsSampleWindow, samples],
+    [
+      chartWindowSeconds,
+      liveSamples,
+      liveSample.timeSeconds,
+      needsSampleWindow,
+    ],
   )
   const xAxisRange = useMemo<[number, number]>(
     () => {
@@ -3067,26 +3154,6 @@ function KinematicsRuntime({
             <Typography color="text.secondary" variant="body2">
               t = {formatNumber(liveSample.timeSeconds, 's')}
             </Typography>
-            <Button
-              aria-label={
-                isPlaying
-                  ? 'Pausar simulacao no viewport'
-                  : 'Reproduzir simulacao no viewport'
-              }
-              color="primary"
-              onClick={onPlaybackToggle}
-              size="small"
-              startIcon={
-                isPlaying ? (
-                  <Pause aria-hidden size={16} />
-                ) : (
-                  <Play aria-hidden size={16} />
-                )
-              }
-              variant="outlined"
-            >
-              {isPlaying ? 'Pausar' : 'Reproduzir'}
-            </Button>
             <Tooltip
               title={isSimulationMaximized ? 'Minimizar' : 'Maximizar'}
             >
@@ -3158,6 +3225,7 @@ function KinematicsRuntime({
               isPlaying={isPlaying}
               maximized={isSimulationMaximized}
               onSampleChange={handleSampleChange}
+              parameters={parameters}
               playbackRate={playbackRate}
               resetVersion={resetVersion}
               samples={samples}
@@ -3191,6 +3259,7 @@ function KinematicsRuntime({
                 title={focusedChart.title}
                 traces={focusedChart.traces}
                 xAxisRange={xAxisRange}
+                yAxisMode={focusedChart.yAxisMode}
                 yAxisTitle={focusedChart.yAxisTitle}
               />
             </Box>
@@ -3241,7 +3310,7 @@ function KinematicsRuntime({
           }}
           subtitle={
             tableExpanded
-              ? `${samples.length} amostras em ${formatNumber(
+              ? `${samples.length} amostras no horizonte ${formatNumber(
                   durationSeconds,
                   's',
                 )} | janela ${formatNumber(chartWindowSeconds, 's')}`
@@ -3467,6 +3536,29 @@ function buildKinematicsReadoutMetrics({
     ]
   }
 
+  if (simulationId === 'mass-spring') {
+    return [
+      {
+        label: 'Deslocamento',
+        value: formatNumber(sample.positionMeters, 'm'),
+      },
+      {
+        label: 'Velocidade',
+        value: formatNumber(sample.velocityMetersPerSecond, 'm/s'),
+      },
+      {
+        label: 'Aceleracao',
+        value: formatNumber(sample.accelerationMetersPerSecondSquared, 'm/s^2'),
+      },
+      {
+        label: 'Forca elastica',
+        value: formatNumber(sample.springForceNewtons, 'N'),
+      },
+      ...energyMetric,
+      frameMetric,
+    ]
+  }
+
   if (simulationId === 'particle-equilibrium') {
     return [
       {
@@ -3478,6 +3570,33 @@ function buildKinematicsReadoutMetrics({
         value: formatNumber(sample.accelerationMetersPerSecondSquared, 'm/s^2'),
       },
       { label: 'Deslocamento', value: formatNumber(sample.displacementMeters, 'm') },
+      ...energyMetric,
+      frameMetric,
+    ]
+  }
+
+  if (simulationId === 'work-energy-track') {
+    return [
+      {
+        label: 'Posicao horizontal',
+        value: formatNumber(sample.positionMeters, 'm'),
+      },
+      {
+        label: 'Altura',
+        value: formatNumber(sample.zMeters, 'm'),
+      },
+      {
+        label: 'Velocidade',
+        value: formatNumber(sample.velocityMetersPerSecond, 'm/s'),
+      },
+      {
+        label: 'Aceleracao',
+        value: formatNumber(sample.accelerationMetersPerSecondSquared, 'm/s^2'),
+      },
+      {
+        label: 'Perda',
+        value: `${compactNumber.format(sample.energyLossPercent)}%`,
+      },
       ...energyMetric,
       frameMetric,
     ]
@@ -3574,6 +3693,153 @@ function buildKinematicsReadoutMetrics({
     ...energyMetric,
     frameMetric,
   ]
+}
+
+function formatRuntimeParameter(parameter: SimulationParameter) {
+  if (parameter.id !== 'durationSeconds') {
+    return parameter
+  }
+
+  return {
+    ...parameter,
+    label: 'Horizonte calculado',
+    description:
+      'Quantidade de segundos pre-calculada pelo motor para samples, graficos e tabela. O contador da interface avanca continuamente; aumentar este horizonte oferece mais amostras por volta visual, e diminuir concentra a leitura em menos segundos.',
+  }
+}
+
+function PlaybackSpeedControl({
+  onChange,
+  parameter,
+  value,
+}: {
+  onChange: (value: number) => void
+  parameter: SimulationParameter
+  value: number
+}) {
+  const [draftValue, setDraftValue] = useState(value)
+  const parameterLabel = parameter.unit
+    ? `${parameter.label} (${parameter.unit})`
+    : parameter.label
+
+  const applyValue = (nextValue: number) => {
+    if (!Number.isFinite(nextValue)) {
+      setDraftValue(value)
+      return
+    }
+
+    const clampedValue = clampToParameterRange(nextValue, parameter)
+
+    setDraftValue(clampedValue)
+    onChange(clampedValue)
+  }
+
+  const sliderValue = Number.isFinite(draftValue) ? draftValue : value
+
+  return (
+    <Box>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: 'center',
+          mb: 0.5,
+        }}
+      >
+        <Typography variant="body2">{parameter.label}</Typography>
+        <Tooltip
+          arrow
+          placement="top"
+          title={
+            <Box sx={{ maxWidth: 280 }}>
+              <Typography sx={{ fontWeight: 700 }} variant="body2">
+                {parameterLabel}
+              </Typography>
+              <Typography sx={{ mt: 0.5 }} variant="body2">
+                {parameter.description}
+              </Typography>
+              <Typography
+                color="text.secondary"
+                component="p"
+                sx={{ mt: 0.75 }}
+                variant="caption"
+              >
+                {formatParameterRange(parameter)}
+              </Typography>
+            </Box>
+          }
+        >
+          <IconButton
+            aria-label={`Ajuda: ${parameter.label}`}
+            size="small"
+            sx={{
+              bgcolor: alpha(themeTokens.teal, 0.12),
+              border: `1px solid ${alpha(themeTokens.teal, 0.75)}`,
+              color: 'primary.main',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              height: 22,
+              lineHeight: 1,
+              width: 22,
+              '&:hover': {
+                bgcolor: alpha(themeTokens.teal, 0.22),
+                borderColor: themeTokens.teal,
+              },
+            }}
+          >
+            ?
+          </IconButton>
+        </Tooltip>
+        <Chip label={formatPlaybackRate(value)} size="small" variant="outlined" />
+      </Stack>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={1}
+        sx={{ alignItems: { xs: 'stretch', sm: 'center' } }}
+      >
+        <Slider
+          aria-label={parameter.label}
+          max={parameter.max}
+          min={parameter.min}
+          onChange={(_event, nextValue) => {
+            applyValue(Array.isArray(nextValue) ? nextValue[0] : nextValue)
+          }}
+          onChangeCommitted={(_event, nextValue) => {
+            applyValue(Array.isArray(nextValue) ? nextValue[0] : nextValue)
+          }}
+          size="small"
+          step={parameter.step}
+          sx={{ flex: 1 }}
+          value={sliderValue}
+        />
+        <TextField
+          label={parameterLabel}
+          onBlur={() => {
+            applyValue(draftValue)
+          }}
+          onChange={(event) => {
+            setDraftValue(Number(event.target.value))
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              applyValue(draftValue)
+            }
+          }}
+          size="small"
+          slotProps={{
+            htmlInput: {
+              max: parameter.max,
+              min: parameter.min,
+              step: parameter.step,
+            },
+          }}
+          sx={{ width: { xs: '100%', sm: 132 } }}
+          type="number"
+          value={draftValue}
+        />
+      </Stack>
+    </Box>
+  )
 }
 
 function ParameterControl({
@@ -4073,13 +4339,8 @@ function WorkEnergyTrackHud({ sample }: { sample: KinematicsSample }) {
     },
     {
       color: themeTokens.danger,
-      label: 'Et',
+      label: 'Eperd',
       value: sample.thermalEnergyJoules,
-    },
-    {
-      color: themeTokens.teal,
-      label: 'W',
-      value: sample.appliedWorkJoules,
     },
   ]
   const maxMagnitude = Math.max(
@@ -4119,7 +4380,7 @@ function WorkEnergyTrackHud({ sample }: { sample: KinematicsSample }) {
             sx={{
               columnGap: 0.75,
               display: 'grid',
-              gridTemplateColumns: '26px minmax(0, 1fr) 72px',
+              gridTemplateColumns: '42px minmax(0, 1fr) 72px',
               minWidth: 0,
               rowGap: 0.25,
             }}
@@ -4171,10 +4432,26 @@ function WorkEnergyTrackHud({ sample }: { sample: KinematicsSample }) {
         }}
       >
         <Typography color="text.secondary" variant="caption">
-          saldo
+          E total
         </Typography>
         <Typography sx={{ fontWeight: 800 }} variant="caption">
           {formatNumber(sample.totalEnergyJoules, 'J')}
+        </Typography>
+      </Stack>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          minWidth: 0,
+        }}
+      >
+        <Typography color="text.secondary" variant="caption">
+          perda
+        </Typography>
+        <Typography sx={{ fontWeight: 800 }} variant="caption">
+          {compactNumber.format(sample.energyLossPercent)}%
         </Typography>
       </Stack>
     </Box>
@@ -4346,4 +4623,8 @@ function formatNumber(value: number, unit = '') {
   const suffix = unit ? ` ${unit}` : ''
 
   return `${compactNumber.format(value)}${suffix}`
+}
+
+function formatPlaybackRate(value: number) {
+  return `${compactNumber.format(normalizePlaybackRate(value))}x`
 }

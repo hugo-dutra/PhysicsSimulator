@@ -19,6 +19,12 @@ describe('App', () => {
       screen.getByRole('heading', { name: /Pendulo simples/i }),
     ).toBeInTheDocument()
     expect(screen.getByText(/Catalogo local/i)).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Oscilacoes/i }),
+    )
+    expect(
+      screen.getByRole('button', { name: /Massa-mola vertical/i }),
+    ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Movimento retilineo uniforme/i }),
     ).toBeInTheDocument()
@@ -117,10 +123,10 @@ describe('App', () => {
       screen.getByRole('heading', { name: /Tabela de amostras/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: /Tempo e janela/i }),
+      screen.getByRole('heading', { name: /Tempo continuo e janela/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /Ajuda: Tempo do ciclo/i }),
+      screen.getByRole('button', { name: /Ajuda: Horizonte calculado/i }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Ajuda: Comprimento/i }),
@@ -215,6 +221,27 @@ describe('App', () => {
     expect(
       screen.getByText(/^Energia mecanica total \(J\)$/i),
     ).toBeInTheDocument()
+    const kineticEnergyLegendToggle = screen.getByRole('button', {
+      name: /Desligar serie Energia cinetica \(J\) no grafico Energia mecanica/i,
+    })
+
+    expect(kineticEnergyLegendToggle).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(kineticEnergyLegendToggle)
+    expect(
+      screen.getByRole('button', {
+        name: /Ligar serie Energia cinetica \(J\) no grafico Energia mecanica/i,
+      }),
+    ).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Ligar serie Energia cinetica \(J\) no grafico Energia mecanica/i,
+      }),
+    )
+    expect(
+      screen.getByRole('button', {
+        name: /Desligar serie Energia cinetica \(J\) no grafico Energia mecanica/i,
+      }),
+    ).toHaveAttribute('aria-pressed', 'true')
 
     fireEvent.click(
       screen.getByRole('button', {
@@ -251,9 +278,35 @@ describe('App', () => {
     ).toHaveAttribute('aria-pressed', 'false')
 
     expect(
-      screen.getByRole('button', { name: /Pausar animacao/i }),
+      screen.getByRole('button', { name: /Pausar simulacao/i }),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/Pausar simulacao/i)).toBeInTheDocument()
+    expect(screen.getByText(/rodando/i)).toBeInTheDocument()
+
+    const playbackSpeedInput = screen.getByLabelText(
+      /Velocidade do tempo \(x\)/i,
+    )
+
+    expect(playbackSpeedInput).toHaveValue(1)
+    fireEvent.change(playbackSpeedInput, {
+      target: { value: '0.25' },
+    })
+    expect(playbackSpeedInput).toHaveValue(0.25)
+    fireEvent.blur(playbackSpeedInput)
+    expect(screen.getAllByText(/0,25x/i).length).toBeGreaterThan(0)
+
+    fireEvent.change(playbackSpeedInput, {
+      target: { value: '0' },
+    })
+    expect(playbackSpeedInput).toHaveValue(0)
+    fireEvent.blur(playbackSpeedInput)
+    expect(screen.getByText(/pausado \(0x\)/i)).toBeInTheDocument()
+
+    fireEvent.change(playbackSpeedInput, {
+      target: { value: '1' },
+    })
+    expect(playbackSpeedInput).toHaveValue(1)
+    fireEvent.blur(playbackSpeedInput)
     expect(screen.getByText(/rodando/i)).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText(/Pausar simulacao/i))
@@ -270,7 +323,7 @@ describe('App', () => {
       energyChart,
     )
 
-    const durationInput = screen.getByLabelText(/Tempo do ciclo \(s\)/i)
+    const durationInput = screen.getByLabelText(/Horizonte calculado \(s\)/i)
     const chartWindowInput = screen.getByLabelText(/Janela do grafico \(s\)/i)
 
     fireEvent.change(durationInput, {
@@ -379,8 +432,8 @@ describe('App', () => {
       screen.queryByRole('heading', { name: /Tabela de amostras/i }),
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('heading', { name: /Controles/i }),
-    ).not.toBeInTheDocument()
+      screen.getByRole('heading', { name: /Controles/i }),
+    ).toBeInTheDocument()
 
     fireEvent.click(
       screen.getByRole('button', { name: /Minimizar simulacao/i }),
@@ -409,8 +462,8 @@ describe('App', () => {
       screen.queryByRole('heading', { name: /Tabela de amostras/i }),
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('heading', { name: /Controles/i }),
-    ).not.toBeInTheDocument()
+      screen.getByRole('heading', { name: /Controles/i }),
+    ).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /Minimizar Graficos/i }))
     expect(
@@ -435,8 +488,8 @@ describe('App', () => {
       screen.queryByRole('heading', { name: /Graficos/i }),
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('heading', { name: /Controles/i }),
-    ).not.toBeInTheDocument()
+      screen.getByRole('heading', { name: /Controles/i }),
+    ).toBeInTheDocument()
 
     fireEvent.click(
       screen.getByRole('button', { name: /Minimizar Tabela de amostras/i }),
@@ -464,8 +517,8 @@ describe('App', () => {
       }),
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('heading', { name: /Controles/i }),
-    ).not.toBeInTheDocument()
+      screen.getByRole('heading', { name: /Controles/i }),
+    ).toBeInTheDocument()
 
     fireEvent.click(
       screen.getByRole('button', { name: /Minimizar Guia de formulas/i }),
@@ -485,8 +538,8 @@ describe('App', () => {
       screen.queryByRole('heading', { name: /Graficos/i }),
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('heading', { name: /Controles/i }),
-    ).not.toBeInTheDocument()
+      screen.getByRole('heading', { name: /Controles/i }),
+    ).toBeInTheDocument()
 
     fireEvent.click(
       screen.getByRole('button', { name: /Minimizar Apendice teorico/i }),
@@ -517,6 +570,12 @@ describe('App', () => {
     ).toHaveAttribute('aria-expanded', 'false')
     expect(
       screen.getByRole('heading', { name: /Pendulo simples/i }),
+    ).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Oscilacoes/i }),
+    )
+    expect(
+      screen.getByRole('button', { name: /Massa-mola vertical/i }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
@@ -568,6 +627,66 @@ describe('App', () => {
     )
     expect(screen.getByText(/Circuito RLC/i)).toBeInTheDocument()
     expect(screen.getByText(/Fasores e potencia AC/i)).toBeInTheDocument()
+  }, 20_000)
+
+  it('opens the vertical mass-spring simulation in mechanics oscillations', () => {
+    render(
+      <ThemeProvider theme={appTheme}>
+        <App />
+      </ThemeProvider>,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Oscilacoes/i }),
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: /Massa-mola vertical/i }),
+    )
+
+    expect(
+      screen.getByRole('heading', { name: /Massa-mola vertical/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Mecanica > Oscilacoes > Massa-mola vertical/i),
+    ).toBeInTheDocument()
+    const viewport = screen.getByLabelText(/Kinematics numerical viewport/i)
+    const animationVectorLegend = within(viewport).getByLabelText(
+      /Legenda compacta dos vetores na animacao/i,
+    )
+
+    expect(viewport).toBeInTheDocument()
+    expect(screen.getByLabelText(/Cena 3D do massa-mola vertical/i))
+      .toHaveAccessibleName(/por cima e por baixo.*Shift \+ scroll para zoom/i)
+    expect(within(animationVectorLegend).getByText(/^Forca elastica \(N\)$/i))
+      .toBeInTheDocument()
+    expect(within(animationVectorLegend).getByText(/^Peso \(N\)$/i))
+      .toBeInTheDocument()
+    expect(screen.getAllByLabelText(/Constante elastica \(N\/m\)/i).length)
+      .toBeGreaterThan(0)
+    expect(
+      screen.getByRole('button', { name: /Ajuda: Constante elastica/i }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
+    expect(
+      screen.getByRole('img', {
+        name: /Forca elastica, peso e resultante/i,
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('img', { name: /Energia por tempo/i }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Abrir Guia de formulas/i }),
+    )
+    expect(screen.getByText(/Lei de Hooke e forca elastica/i))
+      .toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Abrir Apendice teorico/i }),
+    )
+    expect(screen.getByText(/SPRING_DAMPING_ACTIVE/i)).toBeInTheDocument()
   }, 20_000)
 
   it('opens the inclined plane simulation through the shared shell', () => {
@@ -746,7 +865,7 @@ describe('App', () => {
     expect(
       screen.getByRole('heading', { name: /Trabalho e energia em trilho/i }),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText(/Forca aplicada \(N\)/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Perda por ciclo \(%\)/i)).toBeInTheDocument()
     const workEnergyViewport = screen.getByLabelText(
       /Kinematics numerical viewport/i,
     )
@@ -756,13 +875,13 @@ describe('App', () => {
 
     expect(within(energyBalanceHud).getByText(/^K$/i)).toBeInTheDocument()
     expect(within(energyBalanceHud).getByText(/^Ug$/i)).toBeInTheDocument()
-    expect(within(energyBalanceHud).getByText(/^Et$/i)).toBeInTheDocument()
-    expect(within(energyBalanceHud).getByText(/^W$/i)).toBeInTheDocument()
-    expect(within(energyBalanceHud).getByText(/^saldo$/i)).toBeInTheDocument()
+    expect(within(energyBalanceHud).getByText(/^Eperd$/i)).toBeInTheDocument()
+    expect(within(energyBalanceHud).getByText(/^E total$/i)).toBeInTheDocument()
+    expect(within(energyBalanceHud).getByText(/^perda$/i)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
     expect(
-      screen.getByRole('img', { name: /Trabalho e dissipacao por tempo/i }),
+      screen.getByRole('img', { name: /Dissipacao e perda acumulada/i }),
     ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Recolher Graficos/i }))
 

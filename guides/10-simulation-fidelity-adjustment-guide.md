@@ -27,7 +27,7 @@ Para cada simulacao funcional, conferir:
 - Parametros: todo controle fisico e de runtime declara unidade quando houver, minimo, maximo, passo, valor padrao e `description` para a tooltip de interrogacao. A descricao deve dizer o que a variavel e, como entra no modelo e o que muda ao alterar o valor. Valores fisicamente validos como `mu = 0`, velocidade inicial zero ou forca aplicada zero nao devem ser bloqueados por conveniencia visual.
 - Modelo: o motor declara quais equacoes usa, quais aproximacoes assume e quais regimes existem.
 - Regimes: quando uma condicao deixa de ser satisfeita, o motor troca de regime em vez de continuar a animacao ideal. Exemplos: corpo sai da curva se `m v^2 / r > mu m g`; bloco para se a energia/velocidade zera; massa de Atwood para no fim do curso visual.
-- Samples: graficos, tabela, vetores, metricas e formulas usam os mesmos campos do sample. Grandezas exibidas nao podem ser recalculadas soltas na UI.
+- Samples: graficos, tabela, vetores, metricas e formulas usam os mesmos campos do sample. Grandezas exibidas nao podem ser recalculadas soltas na UI. Controles de runtime como velocidade de passagem do tempo podem desacelerar ou pausar a leitura, mas nao podem trocar a fonte fisica nem gerar samples alternativos.
 - Cena: linhas, massas, vetores e trajetorias devem seguir o sample. Linhas de referencia sao aceitaveis, mas precisam ser visualmente secundarias e nao podem contradizer o movimento real.
 - Graficos: comparar demanda fisica, limite disponivel e valor real quando houver saturacao. Exemplo: na curva, mostrar forca centripeta requerida, atrito maximo e atrito lateral usado.
 - Avisos: quando um limite e excedido, `warnings` deve explicar o regime aplicado, nao apenas contar um erro.
@@ -53,10 +53,10 @@ Simulacoes de trabalho, energia e dissipacao em trilhos devem parecer uma bancad
 - O trilho/guia fica fixo e coerente com a geometria declarada pelo modelo.
 - O corpo didatico fica alinhado ao trilho e usa volume simples, como bloco ou carrinho.
 - Marcas de distancia, altura ou fim de curso sao referencias secundarias, sem substituir o movimento real calculado.
-- Rastros de calor, dissipacao ou trabalho so podem crescer a partir de campos do sample, como `thermalEnergyJoules` e `appliedWorkJoules`.
-- Painel compacto de energia dentro do viewport pode resumir `K`, `U_g`, energia termica, trabalho aplicado e saldo, desde que leia os mesmos campos usados pelos graficos, tabela e formulas.
+- Rastros de calor, dissipacao, perda ou trabalho so podem crescer a partir de campos do sample, como `thermalEnergyJoules`, `energyLossPercent` e `appliedWorkJoules`.
+- Painel compacto de energia dentro do viewport pode resumir `K`, `U_g`, energia termica/perdida, trabalho aplicado quando existir e energia mecanica total, desde que leia os mesmos campos usados pelos graficos, tabela e formulas.
 
-Aplicacao imediata: `Mecanica > Energia e momento > Trabalho e energia em trilho` deve mostrar trilho 3D inclinado, corpo alinhado ao trilho, rastro termico por dissipacao e balanco energetico derivado de `KinematicsSample`.
+Aplicacao imediata: `Mecanica > Energia e momento > Trabalho e energia em trilho` deve mostrar uma rampa em U fixa, corpo alinhado a tangente local da guia, rastro de perda por dissipacao e painel de energia/perda percentual derivados de `KinematicsSample`.
 
 ## Guia visual para molas verticais
 
@@ -69,7 +69,7 @@ Sistemas massa-mola verticais devem parecer um diagrama fisico pendurado, nao um
 - Vetores de peso, forca elastica, velocidade e aceleracao devem acompanhar a massa esferica e usar a mesma fonte de sample dos graficos e tabela.
 - Se houver amortecimento ou limite geometrico de extensao/compressao, o motor deve declarar o regime e a cena deve refletir esse estado.
 
-Aplicacao imediata: `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical` deve mostrar uma mola presa no topo, oscilando no eixo vertical com massa esferica na extremidade inferior.
+Aplicacao imediata: `Mecanica > Oscilacoes > Massa-mola vertical` deve mostrar uma mola presa no topo, oscilando no eixo vertical com massa esferica na extremidade inferior.
 
 ## Guia para perda de restricao
 

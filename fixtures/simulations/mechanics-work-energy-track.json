@@ -6,8 +6,8 @@
   "runtimeParameters": [
     {
       "id": "durationSeconds",
-      "label": "Tempo do ciclo",
-      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline e os samples; diminuir concentra a animacao em menos segundos.",
+      "label": "Horizonte calculado",
+      "description": "Horizonte de tempo pre-calculado pelo motor para samples, graficos e tabela. O contador da interface avanca continuamente sem reiniciar no fim do horizonte; aumentar oferece mais amostras pre-calculadas para consulta, e diminuir concentra a leitura em menos segundos.",
       "unit": "s",
       "kind": "number",
       "min": 6,
@@ -30,17 +30,18 @@
   "defaultParameters": {
     "massKilograms": 1.4,
     "trackLengthMeters": 7,
-    "heightDropMeters": 2.2,
-    "initialSpeedMetersPerSecond": 0.4,
-    "frictionCoefficient": 0.12,
-    "appliedForceNewtons": 0,
+    "heightDropMeters": 2.4,
+    "initialPositionMeters": -2.7,
+    "initialHeightOffsetMeters": 0,
+    "initialSpeedMetersPerSecond": 0.2,
+    "energyLossPercent": 0,
     "gravityMetersPerSecondSquared": 9.81
   },
   "parameters": [
     {
       "id": "massKilograms",
       "label": "Massa",
-      "description": "Massa do corpo didatico. Pode mudar peso, energia, momento ou aceleracao conforme o modelo; em alguns modelos ideais a trajetoria nao depende dela.",
+      "description": "Massa do corpo didatico. Ela escala as energias K e Ug; no modelo ideal da rampa em U, a trajetoria nao muda ao variar a massa.",
       "unit": "kg",
       "kind": "number",
       "min": 0.2,
@@ -50,62 +51,74 @@
     },
     {
       "id": "trackLengthMeters",
-      "label": "Comprimento do trilho",
-      "description": "Comprimento do trilho. Aumentar prolonga o percurso de trabalho, atrito e queda distribuida; diminuir concentra o evento.",
+      "label": "Largura da rampa",
+      "description": "Largura horizontal total da rampa em U. Aumentar deixa a curva mais aberta e alonga o periodo; diminuir torna o U mais fechado e a oscilacao mais rapida.",
       "unit": "m",
       "kind": "number",
-      "min": 6,
-      "max": 15,
+      "min": 7,
+      "max": 14,
       "step": 0.1,
       "defaultValue": 7
     },
     {
       "id": "heightDropMeters",
-      "label": "Desnivel vertical",
-      "description": "Desnivel vertical disponivel no trilho. Aumentar libera mais energia potencial; diminuir reduz a conversao para velocidade.",
+      "label": "Altura das bordas",
+      "description": "Altura das bordas em relacao ao fundo do U. Aumentar eleva a energia potencial disponivel e intensifica a aceleracao para o centro.",
       "unit": "m",
       "kind": "number",
-      "min": 0.2,
-      "max": 5.5,
+      "min": 1,
+      "max": 5,
       "step": 0.1,
-      "defaultValue": 2.2
+      "defaultValue": 2.4
+    },
+    {
+      "id": "initialPositionMeters",
+      "label": "Posicao inicial",
+      "description": "Posicao horizontal inicial em relacao ao centro do U. Valores negativos iniciam no lado esquerdo, positivos no lado direito, e zero inicia no fundo.",
+      "unit": "m",
+      "kind": "number",
+      "min": -3.5,
+      "max": 3.5,
+      "step": 0.05,
+      "defaultValue": -2.7
+    },
+    {
+      "id": "initialHeightOffsetMeters",
+      "label": "Altura relativa",
+      "description": "Deslocamento vertical inicial em relacao a linha da rampa no ponto escolhido. Positivo solta o corpo acima da guia antes do contato, zero inicia na guia, e negativo usa uma energia inicial equivalente a um ponto mais baixo do U.",
+      "unit": "m",
+      "kind": "number",
+      "min": -1,
+      "max": 1,
+      "step": 0.05,
+      "defaultValue": 0
     },
     {
       "id": "initialSpeedMetersPerSecond",
-      "label": "Velocidade inicial",
-      "description": "Rapidez inicial no trilho. Aumentar eleva a energia cinetica inicial; zerar deixa o movimento depender das forcas do modelo.",
+      "label": "Rapidez inicial",
+      "description": "Rapidez inicial tangencial na direcao do centro da rampa. Aumentar eleva K inicial; zerar deixa o movimento depender apenas da energia potencial inicial.",
       "unit": "m/s",
       "kind": "number",
       "min": 0,
-      "max": 8,
+      "max": 6,
       "step": 0.05,
-      "defaultValue": 0.4
+      "defaultValue": 0.2
     },
     {
-      "id": "frictionCoefficient",
-      "label": "Coeficiente de atrito",
-      "description": "Coeficiente adimensional de atrito. Aumentar eleva a forca resistente ou aderencia disponivel; zerar remove atrito quando o modelo permite.",
+      "id": "energyLossPercent",
+      "label": "Perda por ciclo",
+      "description": "Percentual aproximado de energia mecanica perdido a cada ciclo de ida e volta. Zerar produz o regime conservativo; aumentar faz a energia total mecanica diminuir e acumula E_perdida.",
+      "unit": "%",
       "kind": "number",
       "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "defaultValue": 0.12
-    },
-    {
-      "id": "appliedForceNewtons",
-      "label": "Forca aplicada",
-      "description": "Forca externa aplicada no sistema. Aumentar no sentido positivo injeta trabalho ou torque; valores negativos atuam no sentido oposto.",
-      "unit": "N",
-      "kind": "number",
-      "min": -10,
-      "max": 25,
-      "step": 0.1,
+      "max": 40,
+      "step": 0.5,
       "defaultValue": 0
     },
     {
       "id": "gravityMetersPerSecondSquared",
       "label": "Gravidade",
-      "description": "Aceleracao gravitacional usada no modelo. Aumentar intensifica pesos, quedas, tensoes e energias potenciais; diminuir suaviza esses efeitos.",
+      "description": "Aceleracao gravitacional usada no modelo. Aumentar intensifica a conversao entre energia potencial e cinetica; diminuir torna o movimento mais lento.",
       "unit": "m/s^2",
       "kind": "number",
       "min": 1,
@@ -116,86 +129,142 @@
   ],
   "presets": [
     {
-      "id": "conservative-drop",
-      "label": "Trilho quase conservativo",
+      "id": "conservative-u-ramp",
+      "label": "U conservativo",
       "parameters": {
         "massKilograms": 1.4,
         "trackLengthMeters": 7,
-        "heightDropMeters": 2.2,
-        "initialSpeedMetersPerSecond": 0.4,
-        "frictionCoefficient": 0.03,
-        "appliedForceNewtons": 0,
-        "gravityMetersPerSecondSquared": 9.81
-      }
-    },
-    {
-      "id": "friction-dissipation",
-      "label": "Dissipacao por atrito",
-      "parameters": {
-        "massKilograms": 1.4,
-        "trackLengthMeters": 7,
-        "heightDropMeters": 2.2,
-        "initialSpeedMetersPerSecond": 0.4,
-        "frictionCoefficient": 0.22,
-        "appliedForceNewtons": 0,
-        "gravityMetersPerSecondSquared": 9.81
-      }
-    },
-    {
-      "id": "external-work",
-      "label": "Trabalho externo",
-      "parameters": {
-        "massKilograms": 1.4,
-        "trackLengthMeters": 7,
-        "heightDropMeters": 1.2,
+        "heightDropMeters": 2.4,
+        "initialPositionMeters": -2.7,
+        "initialHeightOffsetMeters": 0,
         "initialSpeedMetersPerSecond": 0.2,
-        "frictionCoefficient": 0.18,
-        "appliedForceNewtons": 6,
+        "energyLossPercent": 0,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    },
+    {
+      "id": "lossy-halfpipe",
+      "label": "Com perda de energia",
+      "parameters": {
+        "massKilograms": 1.4,
+        "trackLengthMeters": 7,
+        "heightDropMeters": 2.4,
+        "initialPositionMeters": -2.7,
+        "initialHeightOffsetMeters": 0,
+        "initialSpeedMetersPerSecond": 0.2,
+        "energyLossPercent": 12,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    },
+    {
+      "id": "above-ramp-release",
+      "label": "Solto acima da rampa",
+      "parameters": {
+        "massKilograms": 1.4,
+        "trackLengthMeters": 7,
+        "heightDropMeters": 2.4,
+        "initialPositionMeters": -2.2,
+        "initialHeightOffsetMeters": 0.5,
+        "initialSpeedMetersPerSecond": 0,
+        "energyLossPercent": 8,
+        "gravityMetersPerSecondSquared": 9.81
+      }
+    },
+    {
+      "id": "below-reference",
+      "label": "Um pouco abaixo",
+      "parameters": {
+        "massKilograms": 1.4,
+        "trackLengthMeters": 7,
+        "heightDropMeters": 2.4,
+        "initialPositionMeters": -2.7,
+        "initialHeightOffsetMeters": -0.45,
+        "initialSpeedMetersPerSecond": 0.1,
+        "energyLossPercent": 0,
         "gravityMetersPerSecondSquared": 9.81
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "conservative-halfpipe",
+      "label": "Rampa em U conservativa",
+      "condition": "energyLossPercent = 0",
+      "transitionLimit": "Perda por ciclo maior que zero ativa dissipacao.",
+      "sampleFields": [
+        "kineticEnergyJoules",
+        "potentialEnergyJoules",
+        "totalEnergyJoules"
+      ]
+    },
+    {
+      "id": "dissipative-halfpipe",
+      "label": "Rampa em U com perda",
+      "condition": "energyLossPercent > 0",
+      "transitionLimit": "A energia mecanica decai por amortecimento equivalente.",
+      "sampleFields": [
+        "kineticEnergyJoules",
+        "potentialEnergyJoules",
+        "thermalEnergyJoules",
+        "energyLossPercent",
+        "totalEnergyJoules"
+      ],
+      "warningCode": "HALFPIPE_ENERGY_LOSS_ACTIVE"
+    },
+    {
+      "id": "vertical-release",
+      "label": "Soltura vertical antes do contato",
+      "condition": "initialHeightOffsetMeters > 0",
+      "transitionLimit": "Apos tocar a guia, o corpo passa ao movimento restrito no U.",
+      "sampleFields": [
+        "isGrounded",
+        "zMeters",
+        "velocityZMetersPerSecond",
+        "kineticEnergyJoules"
+      ],
+      "warningCode": "HALFPIPE_VERTICAL_RELEASE"
+    }
+  ],
   "limits": [
-    "O trilho e aproximado por uma rampa reta para destacar trabalho e energia.",
-    "O corpo e pontual; rolamento, rotacao, deformacao e colisao no fim do trilho nao entram no modelo.",
-    "Atrito cinetico usa coeficiente constante e transforma energia mecanica em parcela termica didatica.",
-    "A forca aplicada age ao longo do trilho e permanece constante durante o ciclo."
+    "A rampa em U e modelada como uma parabola h(x)=H(x/a)^2, com fundo no centro e bordas na altura H.",
+    "O corpo e pontual/guiado; rolamento, rotacao, perda de contato apos entrar na guia e colisao com bordas nao entram no modelo.",
+    "Perdas sao representadas por amortecimento energetico equivalente, informado em percentual aproximado por ciclo, nao por temperatura real.",
+    "Altura relativa positiva mostra uma queda vertical antes do contato; altura relativa negativa e projetada para uma energia inicial fisicamente possivel mais baixa no U."
   ],
   "formulas": [
     {
-      "id": "work-definition",
-      "title": "Trabalho de uma forca constante",
-      "expressionLatex": "W=F\\Delta s",
-      "description": "Calcula o trabalho da forca aplicada ao longo do deslocamento no trilho.",
+      "id": "halfpipe-height",
+      "title": "Geometria da rampa em U",
+      "expressionLatex": "h(x)=H\\left(\\frac{x}{a}\\right)^2",
+      "description": "Define a altura da guia parabolica a partir da posicao horizontal.",
       "variables": [
         {
-          "symbol": "W",
-          "label": "trabalho",
-          "unit": "J"
+          "symbol": "h",
+          "label": "altura da rampa",
+          "unit": "m"
         },
         {
-          "symbol": "F",
-          "label": "forca aplicada",
-          "unit": "N"
+          "symbol": "H",
+          "label": "altura das bordas",
+          "unit": "m"
         },
         {
-          "symbol": "\\Delta s",
-          "label": "deslocamento no trilho",
+          "symbol": "a",
+          "label": "meia largura da rampa",
           "unit": "m"
         }
       ],
-      "usedWhen": "Usar quando a forca e aproximadamente constante e paralela ao deslocamento.",
-      "notUsedWhen": "Nao usar diretamente para forcas variaveis ou inclinadas sem projetar no deslocamento.",
-      "parameterIds": ["appliedForceNewtons"],
-      "sampleFields": ["appliedWorkJoules", "positionMeters"],
-      "relatedChartIds": ["work-time"],
-      "relatedVectorIds": ["appliedForce"]
+      "usedWhen": "Usar para relacionar posicao horizontal e energia potencial gravitacional.",
+      "notUsedWhen": "Nao representa uma half-pipe real com transicoes circulares ou bordas verticais.",
+      "parameterIds": ["trackLengthMeters", "heightDropMeters"],
+      "sampleFields": ["xMeters", "zMeters"],
+      "relatedChartIds": ["position-time"]
     },
     {
       "id": "kinetic-energy-track",
       "title": "Energia cinetica",
       "expressionLatex": "K=\\frac{1}{2}mv^2",
-      "description": "Representa a energia associada a rapidez do corpo no trilho.",
+      "description": "Representa a energia associada a rapidez tangencial do corpo na rampa.",
       "variables": [
         {
           "symbol": "K",
@@ -206,20 +275,25 @@
           "symbol": "m",
           "label": "massa",
           "unit": "kg"
+        },
+        {
+          "symbol": "v",
+          "label": "rapidez tangencial",
+          "unit": "m/s"
         }
       ],
-      "usedWhen": "Usar para comparar como trabalho e queda gravitacional alteram a rapidez.",
-      "notUsedWhen": "Nao inclui energia de rotacao ou deformacao.",
+      "usedWhen": "Usar para acompanhar a conversao entre altura gravitacional e velocidade no U.",
+      "notUsedWhen": "Nao inclui energia de rotacao do carrinho ou deformacoes.",
       "parameterIds": ["massKilograms", "initialSpeedMetersPerSecond"],
       "sampleFields": ["kineticEnergyJoules", "speedMetersPerSecond"],
-      "relatedChartIds": ["energy-time"],
+      "relatedChartIds": ["velocity-time", "energy-time"],
       "relatedVectorIds": ["velocity"]
     },
     {
       "id": "potential-energy-track",
       "title": "Energia potencial gravitacional",
-      "expressionLatex": "U_g=mgh",
-      "description": "Calcula a energia potencial pela altura atual do corpo no trilho.",
+      "expressionLatex": "U_g=mgh(x)",
+      "description": "Calcula a energia potencial pela altura atual na rampa em U.",
       "variables": [
         {
           "symbol": "U_g",
@@ -227,13 +301,13 @@
           "unit": "J"
         },
         {
-          "symbol": "h",
-          "label": "altura",
-          "unit": "m"
+          "symbol": "g",
+          "label": "gravidade",
+          "unit": "m/s^2"
         }
       ],
-      "usedWhen": "Usar quando a gravidade e aproximadamente uniforme e ha uma referencia de altura.",
-      "notUsedWhen": "Nao descreve campos gravitacionais variaveis ou trilhos com energia elastica.",
+      "usedWhen": "Usar enquanto a gravidade e uniforme e a referencia de altura e o fundo do U.",
+      "notUsedWhen": "Nao descreve campos gravitacionais variaveis ou uma rampa deformavel.",
       "parameterIds": [
         "massKilograms",
         "gravityMetersPerSecondSquared",
@@ -243,56 +317,54 @@
       "relatedChartIds": ["energy-time"]
     },
     {
-      "id": "thermal-dissipation-track",
-      "title": "Dissipacao por atrito",
-      "expressionLatex": "E_{termica}=F_{at}\\Delta s",
-      "description": "Acumula a energia mecanica transformada em parcela termica didatica pelo atrito.",
+      "id": "mechanical-energy-halfpipe",
+      "title": "Energia mecanica total",
+      "expressionLatex": "E=K+U_g",
+      "description": "Soma energia cinetica e potencial gravitacional. Sem perdas, permanece constante; com perdas, diminui.",
       "variables": [
         {
-          "symbol": "F_{at}",
-          "label": "forca de atrito",
-          "unit": "N"
-        },
-        {
-          "symbol": "E_{termica}",
-          "label": "energia dissipada",
+          "symbol": "E",
+          "label": "energia mecanica",
           "unit": "J"
         }
       ],
-      "usedWhen": "Usar para ver como o atrito reduz a energia mecanica disponivel.",
-      "notUsedWhen": "Nao representa temperatura real, som ou desgaste do material.",
-      "parameterIds": ["frictionCoefficient"],
-      "sampleFields": ["thermalEnergyJoules", "frictionForceNewtons"],
-      "relatedChartIds": ["work-time", "energy-time"],
-      "relatedVectorIds": ["friction"]
-    },
-    {
-      "id": "energy-balance-track",
-      "title": "Balanco trabalho-energia",
-      "expressionLatex": "K+U_g+E_{termica}-W_{aplicado}=constante",
-      "description": "Fecha o balanco entre energia mecanica, dissipacao e trabalho externo.",
-      "variables": [
-        {
-          "symbol": "W_{aplicado}",
-          "label": "trabalho externo",
-          "unit": "J"
-        }
-      ],
-      "usedWhen": "Usar para conferir a coerencia entre graficos de energia e trabalho.",
-      "notUsedWhen": "Nao substitui um modelo com forcas variaveis ou trilho curvo real.",
-      "parameterIds": [
-        "appliedForceNewtons",
-        "frictionCoefficient",
-        "heightDropMeters"
-      ],
+      "usedWhen": "Usar para comparar o regime conservativo com o regime dissipativo.",
+      "notUsedWhen": "Nao inclui a energia perdida acumulada; essa aparece separada como E_perdida.",
+      "parameterIds": ["energyLossPercent"],
       "sampleFields": [
         "kineticEnergyJoules",
         "potentialEnergyJoules",
-        "thermalEnergyJoules",
-        "appliedWorkJoules",
         "totalEnergyJoules"
       ],
-      "relatedChartIds": ["energy-time", "work-time"]
+      "relatedChartIds": ["energy-time"]
+    },
+    {
+      "id": "energy-loss-percent",
+      "title": "Percentual de perda acumulada",
+      "expressionLatex": "p=100\\frac{E_0-E}{E_0}",
+      "description": "Confere quanto da energia mecanica inicial ja foi dissipado no modelo.",
+      "variables": [
+        {
+          "symbol": "p",
+          "label": "perda acumulada",
+          "unit": "%"
+        },
+        {
+          "symbol": "E_0",
+          "label": "energia mecanica inicial",
+          "unit": "J"
+        }
+      ],
+      "usedWhen": "Usar quando a perda por ciclo for maior que zero ou para confirmar que o caso ideal continua em zero por cento.",
+      "notUsedWhen": "Nao mede calor real, som ou atrito microscopico.",
+      "parameterIds": ["energyLossPercent"],
+      "sampleFields": [
+        "thermalEnergyJoules",
+        "energyLossPercent",
+        "totalEnergyJoules"
+      ],
+      "relatedChartIds": ["loss-time", "energy-time"],
+      "relatedVectorIds": ["friction"]
     }
   ]
 }

@@ -1,6 +1,6 @@
 import type { PendulumSample } from '../../lib/physics/pendulum'
 import { themeTokens } from '../../theme/appTheme'
-import type { ChartTrace } from './LiveLineChart'
+import type { ChartTrace, ChartYAxisMode } from './LiveLineChartModel'
 
 export type PendulumChartId =
   | 'acceleration'
@@ -13,6 +13,7 @@ export type PendulumChartConfig = {
   id: PendulumChartId
   title: string
   traces: ChartTrace[]
+  yAxisMode?: ChartYAxisMode
   yAxisTitle: string
 }
 
@@ -126,6 +127,7 @@ export function buildPendulumChartConfigs(
           lineColor: themeTokens.cyan,
         },
       ],
+      yAxisMode: 'zero-centered',
       yAxisTitle: 'Energia mecanica (joules)',
     })
   }

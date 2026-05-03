@@ -10,6 +10,7 @@ import {
   type GravitationalFieldOrbitsParameters,
   type HydrostaticsBuoyancyParameters,
   type KinematicsSimulationId,
+  type MassSpringParameters,
   type ParticleEquilibriumParameters,
   type ProjectileMotionParameters,
   type RigidBodyRotationParameters,
@@ -137,6 +138,61 @@ describe('kinematics physics engine', () => {
     expect(sample.secondaryZMeters + sample.zMeters).toBeCloseTo(4)
   })
 
+  it('computes vertical mass-spring equilibrium, forces, and energy', () => {
+    const parameters: MassSpringParameters = {
+      dampingPerSecond: 0,
+      gravityMetersPerSecondSquared: 9.81,
+      initialDisplacementMeters: 0.25,
+      initialVelocityMetersPerSecond: 0,
+      massKilograms: 0.6,
+      springConstantNewtonsPerMeter: 24,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 2,
+      parameters,
+      sampleRateHz: 120,
+      simulationId: 'mass-spring',
+    })
+    const firstSample = result.samples[0]
+    const initialEnergy = firstSample.totalEnergyJoules
+    const maxEnergyDrift = Math.max(
+      ...result.samples.map((sample) =>
+        Math.abs(sample.totalEnergyJoules - initialEnergy),
+      ),
+    )
+
+    expect(firstSample.secondaryRadiusMeters).toBeCloseTo(
+      (parameters.massKilograms *
+        parameters.gravityMetersPerSecondSquared) /
+        parameters.springConstantNewtonsPerMeter,
+    )
+    expect(firstSample.weightNewtons).toBeCloseTo(5.886)
+    expect(firstSample.springForceNewtons).toBeCloseTo(11.886)
+    expect(firstSample.netForceNewtons).toBeCloseTo(-6)
+    expect(maxEnergyDrift / initialEnergy).toBeLessThan(1e-10)
+    expect(result.warnings).toHaveLength(0)
+  })
+
+  it('warns when mass-spring damping dissipates oscillator energy', () => {
+    const parameters: MassSpringParameters = {
+      dampingPerSecond: 0.2,
+      gravityMetersPerSecondSquared: 9.81,
+      initialDisplacementMeters: 0.25,
+      initialVelocityMetersPerSecond: 0,
+      massKilograms: 0.6,
+      springConstantNewtonsPerMeter: 24,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 5,
+      parameters,
+      sampleRateHz: 120,
+      simulationId: 'mass-spring',
+    })
+
+    expect(result.samples.at(-1)?.thermalEnergyJoules).toBeGreaterThan(0)
+    expect(result.warnings[0]?.code).toBe('SPRING_DAMPING_ACTIVE')
+  })
+
   it('flags centripetal grip demand against available friction', () => {
     const parameters: CentripetalForceCurveParameters = {
       frictionCoefficient: 0.4,
@@ -187,29 +243,67 @@ describe('kinematics physics engine', () => {
     expect(result.warnings[0]?.code).toBe('CENTRIPETAL_GRIP_LIMIT_EXCEEDED')
   })
 
-  it('balances work, potential energy, kinetic energy, and dissipation on a track', () => {
+  it('conserves mechanical energy in the ideal U-ramp regime', () => {
     const parameters: WorkEnergyTrackParameters = {
-      appliedForceNewtons: 2,
-      frictionCoefficient: 0.1,
+      energyLossPercent: 0,
       gravityMetersPerSecondSquared: 9.81,
-      heightDropMeters: 2,
-      initialSpeedMetersPerSecond: 0.5,
+      heightDropMeters: 2.4,
+      initialHeightOffsetMeters: 0,
+      initialPositionMeters: -2.4,
+      initialSpeedMetersPerSecond: 0,
       massKilograms: 1,
-      trackLengthMeters: 8,
+      trackLengthMeters: 7,
     }
     const result = computeKinematicsTimeline({
-      durationSeconds: 1,
+      durationSeconds: 6,
       parameters,
-      sampleRateHz: 20,
+      sampleRateHz: 120,
+      simulationId: 'work-energy-track',
+    })
+    const initialEnergy = result.samples[0].totalEnergyJoules
+    const maxDrift = Math.max(
+      ...result.samples.map((sample) =>
+        Math.abs(sample.totalEnergyJoules - initialEnergy),
+      ),
+    )
+
+    expect(result.samples.some((sample) => sample.positionMeters > 0))
+      .toBe(true)
+    expect(maxDrift / initialEnergy).toBeLessThan(1e-10)
+    expect(result.samples.at(-1)?.energyLossPercent).toBeCloseTo(0)
+    expect(result.warnings).toHaveLength(0)
+  })
+
+  it('dissipates U-ramp mechanical energy and reports accumulated loss percentage', () => {
+    const parameters: WorkEnergyTrackParameters = {
+      energyLossPercent: 15,
+      gravityMetersPerSecondSquared: 9.81,
+      heightDropMeters: 2.4,
+      initialHeightOffsetMeters: 0.4,
+      initialPositionMeters: -2.2,
+      initialSpeedMetersPerSecond: 0,
+      massKilograms: 1,
+      trackLengthMeters: 7,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 8,
+      parameters,
+      sampleRateHz: 120,
       simulationId: 'work-energy-track',
     })
     const initialEnergy = result.samples[0].totalEnergyJoules
     const lastSample = result.samples.at(-1)
 
-    expect(lastSample?.positionMeters).toBeGreaterThan(0)
-    expect(lastSample?.appliedWorkJoules).toBeGreaterThan(0)
+    expect(result.samples[0].isGrounded).toBe(false)
+    expect(lastSample?.totalEnergyJoules).toBeLessThan(initialEnergy)
     expect(lastSample?.thermalEnergyJoules).toBeGreaterThan(0)
-    expect(lastSample?.totalEnergyJoules).toBeCloseTo(initialEnergy, 4)
+    expect(lastSample?.energyLossPercent).toBeGreaterThan(0)
+    expect(result.warnings.map((warning) => warning.code)).toContain(
+      'HALFPIPE_ENERGY_LOSS_ACTIVE',
+    )
+    expect(result.warnings.map((warning) => warning.code)).toContain(
+      'HALFPIPE_VERTICAL_RELEASE',
+    )
   })
 
   it('couples translation, rotation, and friction in rolling motion', () => {
@@ -490,6 +584,7 @@ describe('kinematics physics engine', () => {
       'continuity-bernoulli',
       'gravitational-field-orbits',
       'hydrostatics-buoyancy',
+      'mass-spring',
       'particle-equilibrium',
       'rolling-without-slipping',
       'uniform-linear-motion',
@@ -625,6 +720,15 @@ function readFixtureLikeParameters(
         objectDensityKilogramsPerCubicMeter: 650,
         objectVolumeCubicMeters: 0.08,
       }
+    case 'mass-spring':
+      return {
+        dampingPerSecond: 0,
+        gravityMetersPerSecondSquared: 9.81,
+        initialDisplacementMeters: 0.2,
+        initialVelocityMetersPerSecond: 0,
+        massKilograms: 0.6,
+        springConstantNewtonsPerMeter: 24,
+      }
     case 'particle-equilibrium':
       return {
         forceOneAngleDegrees: 0,
@@ -687,13 +791,14 @@ function readFixtureLikeParameters(
       }
     case 'work-energy-track':
       return {
-        appliedForceNewtons: 0,
-        frictionCoefficient: 0.08,
+        energyLossPercent: 8,
         gravityMetersPerSecondSquared: 9.81,
-        heightDropMeters: 1.5,
+        heightDropMeters: 2.4,
+        initialHeightOffsetMeters: 0,
+        initialPositionMeters: -2.4,
         initialSpeedMetersPerSecond: 0.2,
         massKilograms: 1,
-        trackLengthMeters: 6,
+        trackLengthMeters: 7,
       }
   }
 }

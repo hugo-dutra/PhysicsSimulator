@@ -1,6 +1,6 @@
 import type { InclinedPlaneSample } from '../../lib/physics/inclinedPlane'
 import { themeTokens } from '../../theme/appTheme'
-import type { ChartTrace } from './LiveLineChart'
+import type { ChartTrace, ChartYAxisMode } from './LiveLineChartModel'
 
 export type InclinedPlaneChartId =
   | 'acceleration'
@@ -13,6 +13,7 @@ export type InclinedPlaneChartConfig = {
   id: InclinedPlaneChartId
   title: string
   traces: ChartTrace[]
+  yAxisMode?: ChartYAxisMode
   yAxisTitle: string
 }
 
@@ -136,6 +137,7 @@ export function buildInclinedPlaneChartConfigs(
           y: samples.map((sample) => sample.totalEnergyJoules),
         },
       ],
+      yAxisMode: 'zero-centered',
       yAxisTitle: 'Energia (joules)',
     },
   ]

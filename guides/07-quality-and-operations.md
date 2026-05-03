@@ -27,7 +27,7 @@ npm run test:e2e
 - Testes unitarios para o integrador do pendulo.
 - Testes unitarios para o modelo analitico/numerico por trechos do plano inclinado com atrito.
 - Testes unitarios para o motor analitico compartilhado de Cinematica, cobrindo MRU, MUV/queda livre, lancamento obliquo e MCU.
-- Testes unitarios para os modelos analiticos compartilhados de Dinamica/Energia/Estatica/Rotacao/Gravitacao/Fluidos, cobrindo Maquina de Atwood, forca centripeta em curva, trabalho/energia em trilho, colisoes 1D/2D, equilibrio de particula, torque/alavancas/centro de massa, rotacao de corpo rigido, rolamento, campo gravitacional/orbitas, hidrostatica/empuxo e continuidade/Bernoulli.
+- Testes unitarios para os modelos analiticos compartilhados de Dinamica/Energia/Estatica/Rotacao/Gravitacao/Fluidos/Oscilacoes, cobrindo massa-mola vertical, Maquina de Atwood, forca centripeta em curva, trabalho/energia em trilho, colisoes 1D/2D, equilibrio de particula, torque/alavancas/centro de massa, rotacao de corpo rigido, rolamento, campo gravitacional/orbitas, hidrostatica/empuxo e continuidade/Bernoulli.
 - Testes de invariantes fisicos dentro do modelo declarado.
 - Testes de validacao de parametros e unidades.
 - Testes de valores limite fisicamente validos, como atrito zero, forca aplicada zero e velocidades iniciais nulas quando o modelo permitir.
@@ -74,13 +74,14 @@ Depois da prova do core, cada nova simulacao promovida para `analysis` ou `ready
 - Vetores devem acompanhar o movimento.
 - Quando uma simulacao declara perda de restricao, a cena deve mostrar a trajetoria real calculada pelo motor e deixar a guia ideal apenas como referencia secundaria.
 - Na massa-mola vertical, o suporte superior deve permanecer fixo, a mola deve deformar de acordo com a posicao vertical calculada e a massa esferica deve acompanhar o mesmo sample usado por graficos, tabela, formulas e vetores.
-- Em `Trabalho e energia em trilho`, o smoke visual deve confirmar que o corpo aparece como bloco/carrinho alinhado ao trilho, que o trilho 3D tem referencia de altura/distancia, que o rastro termico acompanha a dissipacao do sample e que o painel compacto de `K`, `U_g`, `E_termica`, `W_aplicado` e saldo aparece no viewport quando energia esta ligada.
+- Em `Trabalho e energia em trilho`, o smoke visual deve confirmar que o corpo aparece como bloco/carrinho alinhado a tangente da rampa em U, que a guia 3D tem referencia de altura/distancia, que o rastro acompanha a dissipacao do sample e que o painel compacto de `K`, `U_g`, `E_perdida`, energia total mecanica e percentual de perda aparece no viewport quando energia esta ligada.
 - Quando a simulacao tiver parametros-limite relevantes, o smoke visual ou teste proporcional deve cobrir pelo menos um caso-limite didatico, nao apenas o preset nominal.
 - Vetores devem ter legenda visivel com cor, modulo atual e significado fisico.
 - Metricas instantaneas e legenda detalhada de vetores devem aparecer acima do canvas do viewport.
 - A animacao deve exibir legenda compacta dos vetores principais no canto superior direito, com traco na cor do vetor, grandeza representada e unidade abreviada quando houver.
 - Graficos devem atualizar quando parametros mudam.
 - Graficos devem exibir valores numericos do eixo Y e legendas de series com grandezas por extenso; unidades podem usar simbolos fisicos abreviados.
+- Clicar em cada item da legenda do grafico deve alternar a visibilidade daquela serie sem desmontar o grafico inteiro nem alterar samples, tabela, cena ou formulas.
 - Graficos derivados de velocidade linear e aceleracao devem seguir a mesma janela temporal e a mesma fonte de samples dos demais graficos.
 - O olho de cada grafico deve mover o grafico para o slot lateral do viewport, manter a curva sincronizada com a simulacao e remover o slot ao acionar novamente.
 - Graficos com janela movel devem manter apenas os ultimos N segundos visiveis depois que o tempo atual ultrapassar a largura do plot.
@@ -91,7 +92,7 @@ Depois da prova do core, cada nova simulacao promovida para `analysis` ou `ready
 - O modo maximizado de viewport, graficos, tabela, formulas e apendice teorico deve mostrar apenas o painel em foco dentro da janela e voltar ao layout anterior ao minimizar.
 - A sidebar deve permitir expandir areas e subareas planejadas sem confundir itens planejados com simulacoes em analise ou prontas.
 - A sidebar deve iniciar abertas apenas as subareas com simulacoes em `analysis`; subareas somente `ready` ou `planned` devem iniciar recolhidas.
-- A sidebar deve permitir trocar entre pendulo simples, plano inclinado com atrito, as simulacoes de Cinematica prontas ou em analise, Maquina de Atwood, forca centripeta em curva, trabalho/energia em trilho, colisoes 1D/2D, equilibrio de particula, torque/alavancas/centro de massa e rotacao de corpo rigido sem abandonar o shell compartilhado.
+- A sidebar deve permitir trocar entre pendulo simples, massa-mola vertical, plano inclinado com atrito, as simulacoes de Cinematica prontas ou em analise, Maquina de Atwood, forca centripeta em curva, trabalho/energia em trilho, colisoes 1D/2D, equilibrio de particula, torque/alavancas/centro de massa e rotacao de corpo rigido sem abandonar o shell compartilhado.
 - A tabela de amostras nao deve variar sua altura durante playback por mudar a quantidade de linhas.
 - Formulas devem permanecer legiveis e indicar quando usar cada equacao.
 - Layout nao deve quebrar em desktop comum.

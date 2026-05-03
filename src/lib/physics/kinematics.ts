@@ -5,6 +5,7 @@ export type KinematicsSimulationId =
   | 'continuity-bernoulli'
   | 'gravitational-field-orbits'
   | 'hydrostatics-buoyancy'
+  | 'mass-spring'
   | 'particle-equilibrium'
   | 'projectile-motion'
   | 'rigid-body-rotation'
@@ -64,6 +65,15 @@ export type GravitationalFieldOrbitsParameters = {
   satelliteMassKilograms: number
 }
 
+export type MassSpringParameters = {
+  dampingPerSecond: number
+  gravityMetersPerSecondSquared: number
+  initialDisplacementMeters: number
+  initialVelocityMetersPerSecond: number
+  massKilograms: number
+  springConstantNewtonsPerMeter: number
+}
+
 export type HydrostaticsBuoyancyParameters = {
   depthMeters: number
   fluidDensityKilogramsPerCubicMeter: number
@@ -111,10 +121,11 @@ export type UniformCircularMotionParameters = {
 }
 
 export type WorkEnergyTrackParameters = {
-  appliedForceNewtons: number
-  frictionCoefficient: number
+  energyLossPercent: number
   gravityMetersPerSecondSquared: number
   heightDropMeters: number
+  initialHeightOffsetMeters: number
+  initialPositionMeters: number
   initialSpeedMetersPerSecond: number
   massKilograms: number
   trackLengthMeters: number
@@ -155,6 +166,7 @@ export type KinematicsParameters =
   | ContinuityBernoulliParameters
   | GravitationalFieldOrbitsParameters
   | HydrostaticsBuoyancyParameters
+  | MassSpringParameters
   | ParticleEquilibriumParameters
   | ProjectileMotionParameters
   | RigidBodyRotationParameters
@@ -182,6 +194,8 @@ export type KinematicsSample = {
   centripetalAccelerationMetersPerSecondSquared: number
   crossSectionAreaSquareMeters: number
   displacementMeters: number
+  energyLossPercent: number
+  elasticPotentialEnergyJoules: number
   frequencyHertz: number
   flowRateCubicMetersPerSecond: number
   forceOneNewtons: number
@@ -196,6 +210,7 @@ export type KinematicsSample = {
   frictionForceNewtons: number
   fluidPressurePascals: number
   gravitationalFieldNewtonsPerKilogram: number
+  gravitationalPotentialEnergyJoules: number
   gripRatio: number
   impulseNewtonSeconds: number
   isGrounded: boolean
@@ -224,6 +239,7 @@ export type KinematicsSample = {
   secondaryXMeters: number
   secondaryZMeters: number
   speedMetersPerSecond: number
+  springForceNewtons: number
   submergedFraction: number
   tensionNewtons: number
   thermalEnergyJoules: number
@@ -302,6 +318,7 @@ const kinematicsSimulationIds = [
   'continuity-bernoulli',
   'gravitational-field-orbits',
   'hydrostatics-buoyancy',
+  'mass-spring',
   'particle-equilibrium',
   'rigid-body-rotation',
   'rolling-without-slipping',
@@ -330,6 +347,8 @@ const sampleNumericKeys = [
   'centripetalAccelerationMetersPerSecondSquared',
   'crossSectionAreaSquareMeters',
   'displacementMeters',
+  'energyLossPercent',
+  'elasticPotentialEnergyJoules',
   'frequencyHertz',
   'flowRateCubicMetersPerSecond',
   'forceOneNewtons',
@@ -344,6 +363,7 @@ const sampleNumericKeys = [
   'frictionForceNewtons',
   'fluidPressurePascals',
   'gravitationalFieldNewtonsPerKilogram',
+  'gravitationalPotentialEnergyJoules',
   'gripRatio',
   'impulseNewtonSeconds',
   'kineticEnergyJoules',
@@ -371,6 +391,7 @@ const sampleNumericKeys = [
   'secondaryXMeters',
   'secondaryZMeters',
   'speedMetersPerSecond',
+  'springForceNewtons',
   'submergedFraction',
   'tensionNewtons',
   'thermalEnergyJoules',
@@ -391,6 +412,8 @@ const equilibriumForceToleranceNewtons = 0.05
 const gravitationalConstant = 6.6743e-11
 const highEccentricityWarningThreshold = 0.65
 const hydrostaticFloatToleranceNewtons = 1e-6
+const massSpringDampingTolerance = 1e-9
+const massSpringVisualNaturalLengthMeters = 1.15
 const rollingInertiaFactor = 0.5
 const torqueToleranceNewtonMeters = 0.05
 
@@ -536,6 +559,31 @@ export function toKinematicsParameters(
       validateHydrostaticsBuoyancyParameters(parameters)
       return parameters
     }
+    case 'mass-spring': {
+      const parameters: MassSpringParameters = {
+        dampingPerSecond: readNumber(values, 'dampingPerSecond'),
+        gravityMetersPerSecondSquared: readNumber(
+          values,
+          'gravityMetersPerSecondSquared',
+        ),
+        initialDisplacementMeters: readNumber(
+          values,
+          'initialDisplacementMeters',
+        ),
+        initialVelocityMetersPerSecond: readNumber(
+          values,
+          'initialVelocityMetersPerSecond',
+        ),
+        massKilograms: readNumber(values, 'massKilograms'),
+        springConstantNewtonsPerMeter: readNumber(
+          values,
+          'springConstantNewtonsPerMeter',
+        ),
+      }
+
+      validateMassSpringParameters(parameters)
+      return parameters
+    }
     case 'particle-equilibrium': {
       const parameters: ParticleEquilibriumParameters = {
         forceOneAngleDegrees: readNumber(values, 'forceOneAngleDegrees'),
@@ -669,13 +717,17 @@ export function toKinematicsParameters(
     }
     case 'work-energy-track': {
       const parameters: WorkEnergyTrackParameters = {
-        appliedForceNewtons: readNumber(values, 'appliedForceNewtons'),
-        frictionCoefficient: readNumber(values, 'frictionCoefficient'),
+        energyLossPercent: readNumber(values, 'energyLossPercent'),
         gravityMetersPerSecondSquared: readNumber(
           values,
           'gravityMetersPerSecondSquared',
         ),
         heightDropMeters: readNumber(values, 'heightDropMeters'),
+        initialHeightOffsetMeters: readNumber(
+          values,
+          'initialHeightOffsetMeters',
+        ),
+        initialPositionMeters: readNumber(values, 'initialPositionMeters'),
         initialSpeedMetersPerSecond: readNumber(
           values,
           'initialSpeedMetersPerSecond',
@@ -698,6 +750,25 @@ export function computeKinematicsTimeline({
 }: KinematicsTimelineInput): KinematicsTimelineResult {
   validateTimelineInput(durationSeconds, sampleRateHz)
   validateKinematicsParameters(simulationId, parameters)
+
+  if (simulationId === 'work-energy-track') {
+    const result = computeWorkEnergyTrackSamples({
+      durationSeconds,
+      parameters: parameters as WorkEnergyTrackParameters,
+      sampleRateHz,
+    })
+    const initialState = result.samples[0]
+
+    if (!initialState) {
+      throw new Error('Kinematics timeline must contain at least one sample.')
+    }
+
+    return {
+      initialState,
+      samples: result.samples,
+      warnings: getKinematicsWarnings(simulationId, parameters, durationSeconds),
+    }
+  }
 
   const sampleIntervalSeconds = 1 / sampleRateHz
   const sampleCount = Math.floor(durationSeconds * sampleRateHz) + 1
@@ -764,6 +835,11 @@ export function computeKinematicsSample(
     case 'hydrostatics-buoyancy':
       return computeHydrostaticsBuoyancySample(
         parameters as HydrostaticsBuoyancyParameters,
+        timeSeconds,
+      )
+    case 'mass-spring':
+      return computeMassSpringSample(
+        parameters as MassSpringParameters,
         timeSeconds,
       )
     case 'particle-equilibrium':
@@ -1022,6 +1098,57 @@ export function getKinematicsVectorOverlays(
     ]
   }
 
+  if (simulationId === 'mass-spring') {
+    const velocityDirection = Math.sign(sample.velocityMetersPerSecond)
+    const accelerationDirection = Math.sign(
+      sample.accelerationMetersPerSecondSquared,
+    )
+    const springDirection = sample.springForceNewtons >= 0 ? 1 : -1
+
+    return [
+      {
+        direction: {
+          x: 0,
+          z: -velocityDirection,
+        },
+        id: 'velocity',
+        label: 'Velocidade da esfera',
+        magnitude: sample.speedMetersPerSecond,
+        unit: 'm/s',
+      },
+      {
+        direction: {
+          x: 0,
+          z: -accelerationDirection,
+        },
+        id: 'acceleration',
+        label: 'Aceleracao da esfera',
+        magnitude: Math.abs(sample.accelerationMetersPerSecondSquared),
+        unit: 'm/s^2',
+      },
+      {
+        direction: {
+          x: 0,
+          z: springDirection,
+        },
+        id: 'tension',
+        label: 'Forca elastica',
+        magnitude: Math.abs(sample.springForceNewtons),
+        unit: 'N',
+      },
+      {
+        direction: {
+          x: 0,
+          z: -1,
+        },
+        id: 'weight',
+        label: 'Peso',
+        magnitude: sample.weightNewtons,
+        unit: 'N',
+      },
+    ]
+  }
+
   if (simulationId === 'particle-equilibrium') {
     return [
       {
@@ -1205,18 +1332,18 @@ export function getKinematicsVectorOverlays(
           z: -sample.velocityZMetersPerSecond,
         }),
         id: 'friction',
-        label: 'Atrito',
+        label: 'Perda dissipativa',
         magnitude: sample.frictionForceNewtons,
         unit: 'N',
       },
       {
         direction: normalizeVector({
-          x: sample.velocityXMetersPerSecond,
-          z: sample.velocityZMetersPerSecond,
+          x: -sample.xMeters,
+          z: sample.primaryRadiusMeters,
         }),
-        id: 'appliedForce',
-        label: 'Forca aplicada',
-        magnitude: Math.abs(sample.appliedForceNewtons),
+        id: 'normal',
+        label: 'Normal da rampa',
+        magnitude: sample.normalForceNewtons,
         unit: 'N',
       },
     ]
@@ -1715,6 +1842,89 @@ function computeHydrostaticsBuoyancySample(
   })
 }
 
+function computeMassSpringSample(
+  parameters: MassSpringParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const naturalAngularFrequency =
+    Math.sqrt(parameters.springConstantNewtonsPerMeter / parameters.massKilograms)
+  const motion = solveDampedHarmonicMotion({
+    dampingPerSecond: parameters.dampingPerSecond,
+    initialDisplacementMeters: parameters.initialDisplacementMeters,
+    initialVelocityMetersPerSecond: parameters.initialVelocityMetersPerSecond,
+    naturalAngularFrequency,
+    timeSeconds,
+  })
+  const equilibriumExtensionMeters =
+    (parameters.massKilograms *
+      parameters.gravityMetersPerSecondSquared) /
+    parameters.springConstantNewtonsPerMeter
+  const totalSpringExtensionMeters =
+    equilibriumExtensionMeters + motion.displacementMeters
+  const springForceNewtons =
+    parameters.springConstantNewtonsPerMeter * totalSpringExtensionMeters
+  const weightNewtons =
+    parameters.massKilograms * parameters.gravityMetersPerSecondSquared
+  const kineticEnergyJoules =
+    0.5 *
+    parameters.massKilograms *
+    motion.velocityMetersPerSecond ** 2
+  const oscillatorPotentialEnergyJoules =
+    0.5 *
+    parameters.springConstantNewtonsPerMeter *
+    motion.displacementMeters ** 2
+  const initialOscillatorEnergyJoules =
+    0.5 *
+      parameters.massKilograms *
+      parameters.initialVelocityMetersPerSecond ** 2 +
+    0.5 *
+      parameters.springConstantNewtonsPerMeter *
+      parameters.initialDisplacementMeters ** 2
+  const mechanicalEnergyJoules =
+    kineticEnergyJoules + oscillatorPotentialEnergyJoules
+  const thermalEnergyJoules =
+    parameters.dampingPerSecond > 0
+      ? Math.max(0, initialOscillatorEnergyJoules - mechanicalEnergyJoules)
+      : 0
+  const periodSeconds = (2 * Math.PI) / naturalAngularFrequency
+
+  return buildSample({
+    accelerationMetersPerSecondSquared:
+      motion.accelerationMetersPerSecondSquared,
+    accelerationZMetersPerSecondSquared:
+      -motion.accelerationMetersPerSecondSquared,
+    displacementMeters: motion.displacementMeters,
+    elasticPotentialEnergyJoules:
+      0.5 *
+      parameters.springConstantNewtonsPerMeter *
+      totalSpringExtensionMeters ** 2,
+    frequencyHertz: 1 / periodSeconds,
+    gravitationalPotentialEnergyJoules:
+      -weightNewtons * totalSpringExtensionMeters,
+    kineticEnergyJoules,
+    netForceNewtons:
+      parameters.massKilograms * motion.accelerationMetersPerSecondSquared,
+    periodSeconds,
+    positionMeters: motion.displacementMeters,
+    potentialEnergyJoules: oscillatorPotentialEnergyJoules,
+    primaryRadiusMeters:
+      massSpringVisualNaturalLengthMeters + equilibriumExtensionMeters,
+    secondaryRadiusMeters: equilibriumExtensionMeters,
+    speedMetersPerSecond: Math.abs(motion.velocityMetersPerSecond),
+    springForceNewtons,
+    tensionNewtons: Math.abs(springForceNewtons),
+    thermalEnergyJoules,
+    timeSeconds,
+    totalEnergyJoules:
+      mechanicalEnergyJoules + thermalEnergyJoules,
+    velocityMetersPerSecond: motion.velocityMetersPerSecond,
+    velocityZMetersPerSecond: -motion.velocityMetersPerSecond,
+    weightNewtons,
+    xMeters: 0,
+    zMeters: -motion.displacementMeters,
+  })
+}
+
 function computeParticleEquilibriumSample(
   parameters: ParticleEquilibriumParameters,
   timeSeconds: number,
@@ -1779,6 +1989,122 @@ function computeParticleEquilibriumSample(
   })
 }
 
+function solveDampedHarmonicMotion({
+  dampingPerSecond,
+  initialDisplacementMeters,
+  initialVelocityMetersPerSecond,
+  naturalAngularFrequency,
+  timeSeconds,
+}: {
+  dampingPerSecond: number
+  initialDisplacementMeters: number
+  initialVelocityMetersPerSecond: number
+  naturalAngularFrequency: number
+  timeSeconds: number
+}) {
+  const omega0Squared = naturalAngularFrequency ** 2
+
+  if (dampingPerSecond <= massSpringDampingTolerance) {
+    const cosine = Math.cos(naturalAngularFrequency * timeSeconds)
+    const sine = Math.sin(naturalAngularFrequency * timeSeconds)
+    const displacementMeters =
+      initialDisplacementMeters * cosine +
+      (initialVelocityMetersPerSecond / naturalAngularFrequency) * sine
+    const velocityMetersPerSecond =
+      -initialDisplacementMeters * naturalAngularFrequency * sine +
+      initialVelocityMetersPerSecond * cosine
+
+    return {
+      accelerationMetersPerSecondSquared:
+        -omega0Squared * displacementMeters,
+      displacementMeters,
+      velocityMetersPerSecond,
+    }
+  }
+
+  const criticalDampingPerSecond = 2 * naturalAngularFrequency
+
+  if (
+    dampingPerSecond <
+    criticalDampingPerSecond - massSpringDampingTolerance
+  ) {
+    const decayRate = dampingPerSecond / 2
+    const dampedAngularFrequency = Math.sqrt(
+      omega0Squared - decayRate ** 2,
+    )
+    const coefficientA = initialDisplacementMeters
+    const coefficientB =
+      (initialVelocityMetersPerSecond +
+        decayRate * initialDisplacementMeters) /
+      dampedAngularFrequency
+    const decay = Math.exp(-decayRate * timeSeconds)
+    const cosine = Math.cos(dampedAngularFrequency * timeSeconds)
+    const sine = Math.sin(dampedAngularFrequency * timeSeconds)
+    const carrier = coefficientA * cosine + coefficientB * sine
+    const carrierDerivative =
+      -coefficientA * dampedAngularFrequency * sine +
+      coefficientB * dampedAngularFrequency * cosine
+    const displacementMeters = decay * carrier
+    const velocityMetersPerSecond =
+      decay * (carrierDerivative - decayRate * carrier)
+
+    return {
+      accelerationMetersPerSecondSquared:
+        -dampingPerSecond * velocityMetersPerSecond -
+        omega0Squared * displacementMeters,
+      displacementMeters,
+      velocityMetersPerSecond,
+    }
+  }
+
+  if (
+    Math.abs(dampingPerSecond - criticalDampingPerSecond) <=
+    massSpringDampingTolerance
+  ) {
+    const coefficientA = initialDisplacementMeters
+    const coefficientB =
+      initialVelocityMetersPerSecond +
+      naturalAngularFrequency * initialDisplacementMeters
+    const decay = Math.exp(-naturalAngularFrequency * timeSeconds)
+    const carrier = coefficientA + coefficientB * timeSeconds
+    const displacementMeters = decay * carrier
+    const velocityMetersPerSecond =
+      decay *
+      (coefficientB - naturalAngularFrequency * carrier)
+
+    return {
+      accelerationMetersPerSecondSquared:
+        -dampingPerSecond * velocityMetersPerSecond -
+        omega0Squared * displacementMeters,
+      displacementMeters,
+      velocityMetersPerSecond,
+    }
+  }
+
+  const root = Math.sqrt(dampingPerSecond ** 2 - 4 * omega0Squared)
+  const rateOne = (-dampingPerSecond + root) / 2
+  const rateTwo = (-dampingPerSecond - root) / 2
+  const coefficientOne =
+    (initialVelocityMetersPerSecond -
+      rateTwo * initialDisplacementMeters) /
+    (rateOne - rateTwo)
+  const coefficientTwo = initialDisplacementMeters - coefficientOne
+  const displacementMeters =
+    coefficientOne * Math.exp(rateOne * timeSeconds) +
+    coefficientTwo * Math.exp(rateTwo * timeSeconds)
+  const velocityMetersPerSecond =
+    coefficientOne * rateOne * Math.exp(rateOne * timeSeconds) +
+    coefficientTwo * rateTwo * Math.exp(rateTwo * timeSeconds)
+
+  return {
+    accelerationMetersPerSecondSquared:
+      -dampingPerSecond * velocityMetersPerSecond -
+      omega0Squared * displacementMeters,
+    displacementMeters,
+    velocityMetersPerSecond,
+  }
+}
+
 export function interpolateKinematicsSample(
   start: KinematicsSample,
   end: KinematicsSample,
@@ -1827,81 +2153,501 @@ function computeWorkEnergyTrackSample(
   parameters: WorkEnergyTrackParameters,
   timeSeconds: number,
 ): KinematicsSample {
-  const trackAngleRadians = Math.asin(
-    parameters.heightDropMeters / parameters.trackLengthMeters,
-  )
-  const normalForceNewtons =
-    parameters.massKilograms *
-    parameters.gravityMetersPerSecondSquared *
-    Math.cos(trackAngleRadians)
-  const frictionForceNewtons = parameters.frictionCoefficient * normalForceNewtons
-  const accelerationMetersPerSecondSquared =
-    parameters.gravityMetersPerSecondSquared * Math.sin(trackAngleRadians) +
-    parameters.appliedForceNewtons / parameters.massKilograms -
-    parameters.frictionCoefficient *
-      parameters.gravityMetersPerSecondSquared *
-      Math.cos(trackAngleRadians)
-  const motion = computeForwardSegmentMotion({
-    accelerationMetersPerSecondSquared,
-    initialVelocityMetersPerSecond: parameters.initialSpeedMetersPerSecond,
-    maxPositionMeters: parameters.trackLengthMeters,
-    timeSeconds,
+  const result = computeWorkEnergyTrackSamples({
+    durationSeconds: timeSeconds,
+    parameters,
+    sampleRateHz: 240,
   })
-  const xMeters = motion.positionMeters * Math.cos(trackAngleRadians)
+  const sample = result.samples.at(-1)
+
+  if (!sample) {
+    throw new Error('Work-energy half-pipe sample could not be computed.')
+  }
+
+  return sample
+}
+
+type WorkEnergyTrackSetup = {
+  contactTimeSeconds: number
+  dampingPerSecond: number
+  halfWidthMeters: number
+  initialEnergyJoules: number
+  initialReferenceXMeters: number
+  initialTrackXMeters: number
+  initialTrackVelocityXMetersPerSecond: number
+  rimHeightMeters: number
+}
+
+type WorkEnergyTrackState = {
+  thermalEnergyJoules: number
+  velocityXMetersPerSecond: number
+  xMeters: number
+}
+
+function computeWorkEnergyTrackSamples({
+  durationSeconds,
+  parameters,
+  sampleRateHz,
+}: {
+  durationSeconds: number
+  parameters: WorkEnergyTrackParameters
+  sampleRateHz: number
+}) {
+  const setup = createWorkEnergyTrackSetup(parameters)
+  const sampleIntervalSeconds = 1 / sampleRateHz
+  const sampleCount = Math.floor(durationSeconds * sampleRateHz) + 1
+  const samples: KinematicsSample[] = []
+  const state: WorkEnergyTrackState = {
+    thermalEnergyJoules: 0,
+    velocityXMetersPerSecond: setup.initialTrackVelocityXMetersPerSecond,
+    xMeters: setup.initialTrackXMeters,
+  }
+  let integratedTrackTimeSeconds = 0
+
+  for (let index = 0; index < sampleCount; index += 1) {
+    const timeSeconds = index * sampleIntervalSeconds
+
+    if (timeSeconds < setup.contactTimeSeconds) {
+      samples.push(buildWorkEnergyFreeFallSample(parameters, setup, timeSeconds))
+      continue
+    }
+
+    const targetTrackTimeSeconds = timeSeconds - setup.contactTimeSeconds
+
+    integrateWorkEnergyTrackState({
+      parameters,
+      setup,
+      state,
+      targetTrackTimeSeconds,
+      trackTimeSeconds: integratedTrackTimeSeconds,
+    })
+    integratedTrackTimeSeconds = targetTrackTimeSeconds
+    samples.push(
+      buildWorkEnergyTrackConstrainedSample({
+        parameters,
+        setup,
+        state,
+        timeSeconds,
+      }),
+    )
+  }
+
+  return { samples }
+}
+
+function createWorkEnergyTrackSetup(
+  parameters: WorkEnergyTrackParameters,
+): WorkEnergyTrackSetup {
+  const halfWidthMeters = parameters.trackLengthMeters / 2
+  const initialReferenceXMeters = clamp(
+    parameters.initialPositionMeters,
+    -halfWidthMeters,
+    halfWidthMeters,
+  )
+  const referenceHeightMeters = computeWorkEnergyTrackHeightMeters(
+    initialReferenceXMeters,
+    halfWidthMeters,
+    parameters.heightDropMeters,
+  )
+  const startsAboveTrack = parameters.initialHeightOffsetMeters > 0
+  const contactTimeSeconds = startsAboveTrack
+    ? Math.sqrt(
+        (2 * parameters.initialHeightOffsetMeters) /
+          parameters.gravityMetersPerSecondSquared,
+      )
+    : 0
+  const effectiveReleaseHeightMeters = startsAboveTrack
+    ? referenceHeightMeters
+    : clamp(
+        referenceHeightMeters + parameters.initialHeightOffsetMeters,
+        0,
+        parameters.heightDropMeters,
+      )
+  const initialTrackXMeters = startsAboveTrack
+    ? initialReferenceXMeters
+    : getWorkEnergyTrackXForHeight({
+        fallbackSign: initialReferenceXMeters < 0 ? -1 : 1,
+        halfWidthMeters,
+        heightMeters: effectiveReleaseHeightMeters,
+        rimHeightMeters: parameters.heightDropMeters,
+      })
+  const contactSlope = computeWorkEnergyTrackSlope(
+    initialTrackXMeters,
+    halfWidthMeters,
+    parameters.heightDropMeters,
+  )
+  const inwardDirection =
+    initialTrackXMeters > 0 ? -1 : initialTrackXMeters < 0 ? 1 : 1
+  const releaseSpeedMetersPerSecond = startsAboveTrack
+    ? Math.sqrt(
+        parameters.initialSpeedMetersPerSecond ** 2 +
+          2 *
+            parameters.gravityMetersPerSecondSquared *
+            parameters.initialHeightOffsetMeters,
+      )
+    : parameters.initialSpeedMetersPerSecond
+  const metric = 1 + contactSlope ** 2
+  const initialTrackVelocityXMetersPerSecond =
+    (inwardDirection * releaseSpeedMetersPerSecond) / Math.sqrt(metric)
+  const initialEnergyJoules =
+    0.5 * parameters.massKilograms * releaseSpeedMetersPerSecond ** 2 +
+    parameters.massKilograms *
+      parameters.gravityMetersPerSecondSquared *
+      effectiveReleaseHeightMeters
+  const naturalPeriodSeconds =
+    (2 * Math.PI) /
+    Math.sqrt(
+      (2 *
+        parameters.gravityMetersPerSecondSquared *
+        parameters.heightDropMeters) /
+        halfWidthMeters ** 2,
+    )
+  const retainedEnergyRatio = 1 - parameters.energyLossPercent / 100
+  const dampingPerSecond =
+    parameters.energyLossPercent <= 0
+      ? 0
+      : -Math.log(Math.max(0.01, retainedEnergyRatio)) / naturalPeriodSeconds
+
+  return {
+    contactTimeSeconds,
+    dampingPerSecond,
+    halfWidthMeters,
+    initialEnergyJoules,
+    initialReferenceXMeters,
+    initialTrackXMeters,
+    initialTrackVelocityXMetersPerSecond,
+    rimHeightMeters: parameters.heightDropMeters,
+  }
+}
+
+function buildWorkEnergyFreeFallSample(
+  parameters: WorkEnergyTrackParameters,
+  setup: WorkEnergyTrackSetup,
+  timeSeconds: number,
+) {
+  const referenceHeightMeters = computeWorkEnergyTrackHeightMeters(
+    setup.initialReferenceXMeters,
+    setup.halfWidthMeters,
+    setup.rimHeightMeters,
+  )
   const zMeters =
-    parameters.heightDropMeters -
-    motion.positionMeters * Math.sin(trackAngleRadians)
-  const speedMetersPerSecond = Math.max(0, motion.velocityMetersPerSecond)
+    referenceHeightMeters +
+    parameters.initialHeightOffsetMeters -
+    0.5 * parameters.gravityMetersPerSecondSquared * timeSeconds ** 2
+  const velocityZMetersPerSecond =
+    -parameters.gravityMetersPerSecondSquared * timeSeconds
+  const speedMetersPerSecond = Math.hypot(
+    parameters.initialSpeedMetersPerSecond,
+    velocityZMetersPerSecond,
+  )
   const kineticEnergyJoules =
     0.5 * parameters.massKilograms * speedMetersPerSecond ** 2
   const potentialEnergyJoules =
     parameters.massKilograms *
     parameters.gravityMetersPerSecondSquared *
     Math.max(0, zMeters)
-  const thermalEnergyJoules = frictionForceNewtons * motion.positionMeters
-  const appliedWorkJoules =
-    parameters.appliedForceNewtons * motion.positionMeters
-  const balanceEnergyJoules =
-    kineticEnergyJoules +
-    potentialEnergyJoules +
-    thermalEnergyJoules -
-    appliedWorkJoules
-  const directionScale = speedMetersPerSecond > 0 ? 1 : 0
 
   return buildSample({
     accelerationMetersPerSecondSquared:
-      motion.accelerationMetersPerSecondSquared,
-    accelerationXMetersPerSecondSquared:
-      motion.accelerationMetersPerSecondSquared *
-      Math.cos(trackAngleRadians),
+      -parameters.gravityMetersPerSecondSquared,
     accelerationZMetersPerSecondSquared:
-      -motion.accelerationMetersPerSecondSquared *
-      Math.sin(trackAngleRadians),
-    appliedForceNewtons: parameters.appliedForceNewtons,
-    appliedWorkJoules,
-    displacementMeters: motion.positionMeters,
-    frictionForceNewtons,
+      -parameters.gravityMetersPerSecondSquared,
+    displacementMeters: 0,
+    energyLossPercent: 0,
+    isGrounded: false,
     kineticEnergyJoules,
-    netForceNewtons:
-      parameters.massKilograms * motion.accelerationMetersPerSecondSquared,
-    normalForceNewtons,
-    positionMeters: motion.positionMeters,
+    kineticEnergyLostJoules: 0,
+    positionMeters: setup.initialReferenceXMeters,
     potentialEnergyJoules,
+    primaryRadiusMeters: setup.halfWidthMeters,
+    secondaryRadiusMeters: setup.rimHeightMeters,
     speedMetersPerSecond,
-    thermalEnergyJoules,
+    thermalEnergyJoules: 0,
     timeSeconds,
-    totalEnergyJoules: balanceEnergyJoules,
-    velocityMetersPerSecond: speedMetersPerSecond,
-    velocityXMetersPerSecond:
-      speedMetersPerSecond * Math.cos(trackAngleRadians) * directionScale,
-    velocityZMetersPerSecond:
-      -speedMetersPerSecond * Math.sin(trackAngleRadians) * directionScale,
+    totalEnergyJoules: kineticEnergyJoules + potentialEnergyJoules,
+    velocityMetersPerSecond: velocityZMetersPerSecond,
+    velocityZMetersPerSecond,
     weightNewtons:
       parameters.massKilograms *
       parameters.gravityMetersPerSecondSquared,
-    xMeters,
-    zMeters: Math.max(0, zMeters),
+    xMeters: setup.initialReferenceXMeters,
+    zMeters,
   })
+}
+
+function integrateWorkEnergyTrackState({
+  parameters,
+  setup,
+  state,
+  targetTrackTimeSeconds,
+  trackTimeSeconds,
+}: {
+  parameters: WorkEnergyTrackParameters
+  setup: WorkEnergyTrackSetup
+  state: WorkEnergyTrackState
+  targetTrackTimeSeconds: number
+  trackTimeSeconds: number
+}) {
+  const maxStepSeconds = 1 / 720
+  let currentTimeSeconds = trackTimeSeconds
+
+  while (currentTimeSeconds < targetTrackTimeSeconds - 1e-12) {
+    const deltaTimeSeconds = Math.min(
+      maxStepSeconds,
+      targetTrackTimeSeconds - currentTimeSeconds,
+    )
+    const accelerationXMetersPerSecondSquared =
+      computeWorkEnergyTrackAccelerationX(parameters, setup, state)
+
+    state.velocityXMetersPerSecond +=
+      accelerationXMetersPerSecondSquared * deltaTimeSeconds
+    state.xMeters += state.velocityXMetersPerSecond * deltaTimeSeconds
+
+    const slope = computeWorkEnergyTrackSlope(
+      state.xMeters,
+      setup.halfWidthMeters,
+      setup.rimHeightMeters,
+    )
+    const speedMetersPerSecond =
+      Math.abs(state.velocityXMetersPerSecond) * Math.sqrt(1 + slope ** 2)
+
+    state.thermalEnergyJoules +=
+      parameters.massKilograms *
+      setup.dampingPerSecond *
+      speedMetersPerSecond ** 2 *
+      deltaTimeSeconds
+
+    if (setup.dampingPerSecond === 0) {
+      correctConservativeWorkEnergyState(parameters, setup, state)
+    }
+
+    currentTimeSeconds += deltaTimeSeconds
+  }
+}
+
+function buildWorkEnergyTrackConstrainedSample({
+  parameters,
+  setup,
+  state,
+  timeSeconds,
+}: {
+  parameters: WorkEnergyTrackParameters
+  setup: WorkEnergyTrackSetup
+  state: WorkEnergyTrackState
+  timeSeconds: number
+}) {
+  const slope = computeWorkEnergyTrackSlope(
+    state.xMeters,
+    setup.halfWidthMeters,
+    setup.rimHeightMeters,
+  )
+  const curvature = computeWorkEnergyTrackCurvature(
+    setup.halfWidthMeters,
+    setup.rimHeightMeters,
+  )
+  const heightMeters = computeWorkEnergyTrackHeightMeters(
+    state.xMeters,
+    setup.halfWidthMeters,
+    setup.rimHeightMeters,
+  )
+  const accelerationXMetersPerSecondSquared =
+    computeWorkEnergyTrackAccelerationX(parameters, setup, state)
+  const velocityZMetersPerSecond = slope * state.velocityXMetersPerSecond
+  const accelerationZMetersPerSecondSquared =
+    curvature * state.velocityXMetersPerSecond ** 2 +
+    slope * accelerationXMetersPerSecondSquared
+  const speedMetersPerSecond =
+    Math.abs(state.velocityXMetersPerSecond) * Math.sqrt(1 + slope ** 2)
+  const kineticEnergyJoules =
+    0.5 * parameters.massKilograms * speedMetersPerSecond ** 2
+  const potentialEnergyJoules =
+    parameters.massKilograms *
+    parameters.gravityMetersPerSecondSquared *
+    heightMeters
+  const totalEnergyJoules =
+    setup.dampingPerSecond === 0
+      ? setup.initialEnergyJoules
+      : kineticEnergyJoules + potentialEnergyJoules
+  const energyLossJoules = Math.max(
+    0,
+    Math.min(setup.initialEnergyJoules, state.thermalEnergyJoules),
+  )
+  const energyLossPercent =
+    setup.initialEnergyJoules > 0
+      ? (energyLossJoules / setup.initialEnergyJoules) * 100
+      : 0
+  const metric = Math.sqrt(1 + slope ** 2)
+  const tangentialAccelerationMetersPerSecondSquared =
+    (accelerationXMetersPerSecondSquared +
+      slope * accelerationZMetersPerSecondSquared) /
+    metric
+  const dampingForceNewtons =
+    parameters.massKilograms * setup.dampingPerSecond * speedMetersPerSecond
+  const normalForceNewtons =
+    parameters.massKilograms *
+    Math.max(
+      0,
+      parameters.gravityMetersPerSecondSquared / metric +
+        (speedMetersPerSecond ** 2 *
+          Math.abs(curvature / (1 + slope ** 2) ** 1.5)),
+    )
+
+  return buildSample({
+    accelerationMetersPerSecondSquared:
+      tangentialAccelerationMetersPerSecondSquared,
+    accelerationXMetersPerSecondSquared,
+    accelerationZMetersPerSecondSquared,
+    displacementMeters: state.xMeters - setup.initialTrackXMeters,
+    energyLossPercent,
+    frictionForceNewtons: dampingForceNewtons,
+    isGrounded: true,
+    kineticEnergyJoules,
+    kineticEnergyLostJoules: energyLossJoules,
+    netForceNewtons:
+      parameters.massKilograms *
+      tangentialAccelerationMetersPerSecondSquared,
+    normalForceNewtons,
+    positionMeters: state.xMeters,
+    potentialEnergyJoules,
+    primaryRadiusMeters: setup.halfWidthMeters,
+    secondaryRadiusMeters: setup.rimHeightMeters,
+    speedMetersPerSecond,
+    thermalEnergyJoules: energyLossJoules,
+    timeSeconds,
+    totalEnergyJoules,
+    velocityMetersPerSecond:
+      Math.sign(state.velocityXMetersPerSecond) * speedMetersPerSecond,
+    velocityXMetersPerSecond: state.velocityXMetersPerSecond,
+    velocityZMetersPerSecond,
+    weightNewtons:
+      parameters.massKilograms *
+      parameters.gravityMetersPerSecondSquared,
+    xMeters: state.xMeters,
+    zMeters: heightMeters,
+  })
+}
+
+function computeWorkEnergyTrackAccelerationX(
+  parameters: WorkEnergyTrackParameters,
+  setup: WorkEnergyTrackSetup,
+  state: WorkEnergyTrackState,
+) {
+  const slope = computeWorkEnergyTrackSlope(
+    state.xMeters,
+    setup.halfWidthMeters,
+    setup.rimHeightMeters,
+  )
+  const curvature = computeWorkEnergyTrackCurvature(
+    setup.halfWidthMeters,
+    setup.rimHeightMeters,
+  )
+  const metric = 1 + slope ** 2
+
+  return (
+    -slope * curvature * state.velocityXMetersPerSecond ** 2 -
+    parameters.gravityMetersPerSecondSquared * slope -
+    setup.dampingPerSecond * state.velocityXMetersPerSecond * metric
+  ) / metric
+}
+
+function correctConservativeWorkEnergyState(
+  parameters: WorkEnergyTrackParameters,
+  setup: WorkEnergyTrackSetup,
+  state: WorkEnergyTrackState,
+) {
+  const slope = computeWorkEnergyTrackSlope(
+    state.xMeters,
+    setup.halfWidthMeters,
+    setup.rimHeightMeters,
+  )
+  const heightMeters = computeWorkEnergyTrackHeightMeters(
+    state.xMeters,
+    setup.halfWidthMeters,
+    setup.rimHeightMeters,
+  )
+  const potentialEnergyJoules =
+    parameters.massKilograms *
+    parameters.gravityMetersPerSecondSquared *
+    heightMeters
+  const targetKineticEnergyJoules = setup.initialEnergyJoules - potentialEnergyJoules
+
+  if (targetKineticEnergyJoules <= 0) {
+    state.xMeters = getWorkEnergyTrackXForHeight({
+      fallbackSign: state.xMeters < 0 ? -1 : 1,
+      halfWidthMeters: setup.halfWidthMeters,
+      heightMeters:
+        setup.initialEnergyJoules /
+        (parameters.massKilograms * parameters.gravityMetersPerSecondSquared),
+      rimHeightMeters: setup.rimHeightMeters,
+    })
+    state.velocityXMetersPerSecond = 0
+    return
+  }
+
+  const speedMetersPerSecond = Math.sqrt(
+    (2 * targetKineticEnergyJoules) / parameters.massKilograms,
+  )
+  const direction = Math.sign(state.velocityXMetersPerSecond) || -Math.sign(state.xMeters) || 1
+
+  state.velocityXMetersPerSecond =
+    (direction * speedMetersPerSecond) / Math.sqrt(1 + slope ** 2)
+}
+
+function computeWorkEnergyTrackHeightMeters(
+  xMeters: number,
+  halfWidthMeters: number,
+  rimHeightMeters: number,
+) {
+  if (halfWidthMeters === 0) {
+    return 0
+  }
+
+  return rimHeightMeters * (xMeters / halfWidthMeters) ** 2
+}
+
+function computeWorkEnergyTrackSlope(
+  xMeters: number,
+  halfWidthMeters: number,
+  rimHeightMeters: number,
+) {
+  if (halfWidthMeters === 0) {
+    return 0
+  }
+
+  return (2 * rimHeightMeters * xMeters) / halfWidthMeters ** 2
+}
+
+function computeWorkEnergyTrackCurvature(
+  halfWidthMeters: number,
+  rimHeightMeters: number,
+) {
+  if (halfWidthMeters === 0) {
+    return 0
+  }
+
+  return (2 * rimHeightMeters) / halfWidthMeters ** 2
+}
+
+function getWorkEnergyTrackXForHeight({
+  fallbackSign,
+  halfWidthMeters,
+  heightMeters,
+  rimHeightMeters,
+}: {
+  fallbackSign: number
+  halfWidthMeters: number
+  heightMeters: number
+  rimHeightMeters: number
+}) {
+  if (rimHeightMeters <= 0) {
+    return 0
+  }
+
+  return (
+    (fallbackSign < 0 ? -1 : 1) *
+    halfWidthMeters *
+    Math.sqrt(clamp(heightMeters / rimHeightMeters, 0, 1))
+  )
 }
 
 function computeUniformlyAcceleratedMotionSample(
@@ -2357,6 +3103,8 @@ function buildSample(
       sample.centripetalAccelerationMetersPerSecondSquared ?? 0,
     crossSectionAreaSquareMeters: sample.crossSectionAreaSquareMeters ?? 0,
     displacementMeters: sample.displacementMeters ?? 0,
+    energyLossPercent: sample.energyLossPercent ?? 0,
+    elasticPotentialEnergyJoules: sample.elasticPotentialEnergyJoules ?? 0,
     frequencyHertz: sample.frequencyHertz ?? 0,
     flowRateCubicMetersPerSecond:
       sample.flowRateCubicMetersPerSecond ?? 0,
@@ -2373,6 +3121,8 @@ function buildSample(
     fluidPressurePascals: sample.fluidPressurePascals ?? 0,
     gravitationalFieldNewtonsPerKilogram:
       sample.gravitationalFieldNewtonsPerKilogram ?? 0,
+    gravitationalPotentialEnergyJoules:
+      sample.gravitationalPotentialEnergyJoules ?? 0,
     gripRatio: sample.gripRatio ?? 0,
     impulseNewtonSeconds: sample.impulseNewtonSeconds ?? 0,
     isGrounded: sample.isGrounded ?? false,
@@ -2409,6 +3159,7 @@ function buildSample(
     secondaryXMeters: sample.secondaryXMeters ?? 0,
     secondaryZMeters: sample.secondaryZMeters ?? 0,
     speedMetersPerSecond: sample.speedMetersPerSecond ?? 0,
+    springForceNewtons: sample.springForceNewtons ?? 0,
     submergedFraction: sample.submergedFraction ?? 0,
     tensionNewtons: sample.tensionNewtons ?? 0,
     thermalEnergyJoules: sample.thermalEnergyJoules ?? 0,
@@ -2489,7 +3240,7 @@ function getKinematicsWarnings(
         {
           code: 'COLLISION_AFTER_CYCLE',
           message:
-            'O contato ocorreria depois do tempo do ciclo; a timeline mostra apenas a aproximacao.',
+            'O contato ocorreria depois do horizonte calculado; a timeline mostra apenas a aproximacao.',
         },
       ]
     }
@@ -2554,6 +3305,22 @@ function getKinematicsWarnings(
           code: 'OBJECT_SINKS',
           message:
             'O peso supera o empuxo maximo; o corpo fica totalmente submerso e acelera para baixo no modelo ideal.',
+        },
+      ]
+    }
+
+    return []
+  }
+
+  if (simulationId === 'mass-spring') {
+    const springParameters = parameters as MassSpringParameters
+
+    if (springParameters.dampingPerSecond > 0) {
+      return [
+        {
+          code: 'SPRING_DAMPING_ACTIVE',
+          message:
+            'O amortecimento linear esta ativo; a amplitude diminui e a energia dissipada aparece nos samples.',
         },
       ]
     }
@@ -2636,19 +3403,33 @@ function getKinematicsWarnings(
 
   if (simulationId === 'work-energy-track') {
     const trackParameters = parameters as WorkEnergyTrackParameters
-    const lastSample = computeWorkEnergyTrackSample(trackParameters, durationSeconds)
+    const warnings: SimulationWarning[] = []
 
-    if (lastSample.positionMeters >= trackParameters.trackLengthMeters) {
-      return [
-        {
-          code: 'TRACK_END_REACHED',
-          message:
-            'O corpo chega ao fim do trilho durante o ciclo e permanece no limite visual.',
-        },
-      ]
+    if (trackParameters.initialHeightOffsetMeters > 0) {
+      warnings.push({
+        code: 'HALFPIPE_VERTICAL_RELEASE',
+        message:
+          'O corpo inicia acima da linha da rampa; o sample mostra queda vertical ate o contato com a guia em U.',
+      })
     }
 
-    return []
+    if (trackParameters.initialHeightOffsetMeters < 0) {
+      warnings.push({
+        code: 'HALFPIPE_BELOW_REFERENCE_RELEASE',
+        message:
+          'A altura inicial fica abaixo do ponto de referencia; o motor projeta a energia inicial para um ponto fisicamente possivel mais baixo na rampa em U.',
+      })
+    }
+
+    if (trackParameters.energyLossPercent > 0) {
+      warnings.push({
+        code: 'HALFPIPE_ENERGY_LOSS_ACTIVE',
+        message:
+          'A perda percentual por ciclo esta ativa; a energia mecanica total diminui e o percentual acumulado aparece no sample.',
+      })
+    }
+
+    return warnings
   }
 
   if (simulationId !== 'projectile-motion') {
@@ -2702,6 +3483,9 @@ function validateKinematicsParameters(
       validateHydrostaticsBuoyancyParameters(
         parameters as HydrostaticsBuoyancyParameters,
       )
+      return
+    case 'mass-spring':
+      validateMassSpringParameters(parameters as MassSpringParameters)
       return
     case 'particle-equilibrium':
       validateParticleEquilibriumParameters(
@@ -2890,6 +3674,27 @@ function validateHydrostaticsBuoyancyParameters(
   assertFinitePositive('objectVolumeCubicMeters', parameters.objectVolumeCubicMeters)
 }
 
+function validateMassSpringParameters(parameters: MassSpringParameters) {
+  assertFiniteNonNegative('dampingPerSecond', parameters.dampingPerSecond)
+  assertFinitePositive(
+    'gravityMetersPerSecondSquared',
+    parameters.gravityMetersPerSecondSquared,
+  )
+  assertFinite(
+    'initialDisplacementMeters',
+    parameters.initialDisplacementMeters,
+  )
+  assertFinite(
+    'initialVelocityMetersPerSecond',
+    parameters.initialVelocityMetersPerSecond,
+  )
+  assertFinitePositive('massKilograms', parameters.massKilograms)
+  assertFinitePositive(
+    'springConstantNewtonsPerMeter',
+    parameters.springConstantNewtonsPerMeter,
+  )
+}
+
 function validateParticleEquilibriumParameters(
   parameters: ParticleEquilibriumParameters,
 ) {
@@ -3049,27 +3854,42 @@ function validateUniformCircularMotionParameters(
 }
 
 function validateWorkEnergyTrackParameters(parameters: WorkEnergyTrackParameters) {
-  assertFinite('appliedForceNewtons', parameters.appliedForceNewtons)
-  assertFinite('frictionCoefficient', parameters.frictionCoefficient)
+  assertFinite('energyLossPercent', parameters.energyLossPercent)
   assertFinitePositive(
     'gravityMetersPerSecondSquared',
     parameters.gravityMetersPerSecondSquared,
   )
   assertFinitePositive('heightDropMeters', parameters.heightDropMeters)
+  assertFinite('initialHeightOffsetMeters', parameters.initialHeightOffsetMeters)
+  assertFinite('initialPositionMeters', parameters.initialPositionMeters)
   assertFinite('initialSpeedMetersPerSecond', parameters.initialSpeedMetersPerSecond)
   assertFinitePositive('massKilograms', parameters.massKilograms)
   assertFinitePositive('trackLengthMeters', parameters.trackLengthMeters)
 
-  if (parameters.frictionCoefficient < 0) {
-    throw new Error('frictionCoefficient must be non-negative.')
+  if (parameters.energyLossPercent < 0 || parameters.energyLossPercent > 40) {
+    throw new Error('energyLossPercent must be between 0 and 40.')
   }
 
   if (parameters.initialSpeedMetersPerSecond < 0) {
     throw new Error('initialSpeedMetersPerSecond must be non-negative.')
   }
 
-  if (parameters.heightDropMeters > parameters.trackLengthMeters) {
-    throw new Error('heightDropMeters must not exceed trackLengthMeters.')
+  if (
+    Math.abs(parameters.initialPositionMeters) >
+    parameters.trackLengthMeters / 2
+  ) {
+    throw new Error(
+      'initialPositionMeters must stay inside the half-pipe width.',
+    )
+  }
+
+  if (
+    parameters.initialHeightOffsetMeters < -parameters.heightDropMeters ||
+    parameters.initialHeightOffsetMeters > parameters.heightDropMeters
+  ) {
+    throw new Error(
+      'initialHeightOffsetMeters must stay within one rim height above or below the reference point.',
+    )
   }
 }
 

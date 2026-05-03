@@ -100,6 +100,7 @@ export const PendulumCharts = memo(function PendulumCharts({
               title={chart.title}
               traces={chart.traces}
               xAxisRange={xAxisRange}
+              yAxisMode={chart.yAxisMode}
               yAxisTitle={chart.yAxisTitle}
             />
           ))}

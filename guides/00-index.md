@@ -18,6 +18,7 @@ Leia este arquivo primeiro antes de alterar produto, arquitetura, roadmap ou imp
 - `08-api-contracts.md`: contratos conceituais para simulacoes e integracao de UI.
 - `09-simulation-catalog-plan.md`: plano curricular das simulacoes de fisica basica, tecnologias e ordem de implementacao.
 - `10-simulation-fidelity-adjustment-guide.md`: guia obrigatorio para auditar e ajustar simulacoes, evitando que uma simulacao `analysis` ou `ready` vire apenas animacao parametrizada.
+- `11-deployment.md`: processo de build e deploy estatico no GitHub Pages usando repositorio publico separado para o artefato.
 - `issues.md`: riscos, premissas abertas, decisoes pendentes e gaps.
 
 ## Como escolher o que ler
@@ -29,6 +30,7 @@ Leia este arquivo primeiro antes de alterar produto, arquitetura, roadmap ou imp
 - Para mexer em renderizacao, animacao ou performance visual: leia `03-architecture.md`, `04-rules-and-constraints.md` e `07-quality-and-operations.md`.
 - Para alterar dados, fixtures ou contratos: leia `06-data-and-api.md` e `08-api-contracts.md`.
 - Para revisar se uma simulacao e fisica de verdade, ou se uma task pode ser marcada como pronta, leia `10-simulation-fidelity-adjustment-guide.md`, alem dos guides de arquitetura, regras, dados e qualidade.
+- Para publicar o frontend: leia `07-quality-and-operations.md` e `11-deployment.md`.
 
 ## Ambiente padrao
 

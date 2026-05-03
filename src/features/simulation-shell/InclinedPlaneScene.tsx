@@ -9,15 +9,18 @@ import { Box } from '@mui/material'
 import * as THREE from 'three'
 import {
   getInclinedPlaneVectorOverlays,
+  stepInclinedPlane,
+  toInclinedPlaneSample,
   type InclinedPlaneParameters,
   type InclinedPlaneSample,
+  type InclinedPlaneState,
   type InclinedPlaneVectorOverlay,
 } from '../../lib/physics/inclinedPlane'
 import {
   cancelAnimationFrameSafe,
   createFrameStatsWindow,
-  readInterpolatedTimelineFrame,
   requestAnimationFrameSafe,
+  scalePlaybackDelta,
   updateFrameStatsWindow,
   type FrameStats,
 } from '../../lib/rendering/visualRuntime'
@@ -151,17 +154,27 @@ export function InclinedPlaneScene({
   })
   const dragStateRef = useRef<DragState | null>(null)
   const statsWindowRef = useRef(createFrameStatsWindow())
+  const liveStateRef = useRef<InclinedPlaneState>(
+    readInitialInclinedPlaneState(samples),
+  )
+  const initialMechanicalEnergyRef = useRef(readInitialMechanicalEnergy(samples))
+  const traceSamplesRef = useRef<InclinedPlaneSample[]>([
+    toInclinedPlaneSample(
+      readInitialInclinedPlaneState(samples),
+      parameters,
+      readInitialMechanicalEnergy(samples),
+    ),
+  ])
 
   const renderCurrentFrame = useCallback((notify = false) => {
     const objects = objectsRef.current
     const runtime = runtimeRef.current
-    const frame = readInterpolatedTimelineFrame(
-      runtime.samples,
-      runtime.durationSeconds,
-      elapsedSecondsRef.current,
-      interpolateSample,
+    const sample = toInclinedPlaneSample(
+      liveStateRef.current,
+      runtime.parameters,
+      initialMechanicalEnergyRef.current,
     )
-    const sample = frame.sample
+    appendTraceSample(traceSamplesRef.current, sample, traceFadeSeconds)
 
     if (!objects || !sample) {
       return
@@ -171,15 +184,21 @@ export function InclinedPlaneScene({
       objects,
       parameters: runtime.parameters,
       sample,
-      sampleIndex: frame.sampleIndex,
-      samples: runtime.samples,
+      sampleIndex: traceSamplesRef.current.length - 1,
+      samples: traceSamplesRef.current,
       showTrace: runtime.showTrace,
       showVectors: runtime.showVectors,
     })
     objects.renderer.render(objects.scene, objects.camera)
 
     if (notify) {
-      runtime.onSampleChange(sample, statsWindowRef.current.stats)
+      runtime.onSampleChange(
+        {
+          ...sample,
+          timeSeconds: elapsedSecondsRef.current,
+        },
+        statsWindowRef.current.stats,
+      )
     }
   }, [])
 
@@ -511,6 +530,15 @@ export function InclinedPlaneScene({
     lastFrameTimeRef.current = null
     lastReadoutTimeRef.current = 0
     statsWindowRef.current = createFrameStatsWindow()
+    liveStateRef.current = readInitialInclinedPlaneState(samples)
+    initialMechanicalEnergyRef.current = readInitialMechanicalEnergy(samples)
+    traceSamplesRef.current = [
+      toInclinedPlaneSample(
+        liveStateRef.current,
+        runtimeRef.current.parameters,
+        initialMechanicalEnergyRef.current,
+      ),
+    ]
     renderCurrentFrame(true)
   }, [renderCurrentFrame, resetVersion, samples])
 
@@ -537,14 +565,20 @@ export function InclinedPlaneScene({
         maxFrameDeltaSeconds,
         Math.max(0, (timestamp - lastFrameTime) / 1000),
       )
+      const playbackDeltaSeconds = scalePlaybackDelta(
+        deltaSeconds,
+        runtime.playbackRate,
+      )
       const nextElapsedSeconds =
-        elapsedSecondsRef.current + deltaSeconds * runtime.playbackRate
+        elapsedSecondsRef.current + playbackDeltaSeconds
 
       lastFrameTimeRef.current = timestamp
-      elapsedSecondsRef.current =
-        nextElapsedSeconds >= runtime.durationSeconds
-          ? nextElapsedSeconds % runtime.durationSeconds
-          : nextElapsedSeconds
+      elapsedSecondsRef.current = nextElapsedSeconds
+      liveStateRef.current = advanceInclinedPlaneLiveState(
+        liveStateRef.current,
+        playbackDeltaSeconds,
+        runtime.parameters,
+      )
 
       updateFrameStatsWindow(statsWindowRef.current, timestamp, deltaSeconds)
       renderCurrentFrame(timestamp - lastReadoutTimeRef.current >= readoutIntervalMs)
@@ -766,80 +800,82 @@ function writeTracePoint(
   objects.traceColors[colorIndex + 3] = opacity
 }
 
-function interpolateSample(
-  start: InclinedPlaneSample,
-  end: InclinedPlaneSample,
-  ratio: number,
-): InclinedPlaneSample {
-  return {
-    accelerationMetersPerSecondSquared: interpolate(
-      start.accelerationMetersPerSecondSquared,
-      end.accelerationMetersPerSecondSquared,
-      ratio,
-    ),
-    frictionForceNewtons: interpolate(
-      start.frictionForceNewtons,
-      end.frictionForceNewtons,
-      ratio,
-    ),
-    frictionMagnitudeNewtons: interpolate(
-      start.frictionMagnitudeNewtons,
-      end.frictionMagnitudeNewtons,
-      ratio,
-    ),
-    heightMeters: interpolate(start.heightMeters, end.heightMeters, ratio),
-    isMoving: start.isMoving || end.isMoving,
-    kineticEnergyJoules: interpolate(
-      start.kineticEnergyJoules,
-      end.kineticEnergyJoules,
-      ratio,
-    ),
-    netForceNewtons: interpolate(start.netForceNewtons, end.netForceNewtons, ratio),
-    normalForceNewtons: interpolate(
-      start.normalForceNewtons,
-      end.normalForceNewtons,
-      ratio,
-    ),
-    positionMeters: interpolate(start.positionMeters, end.positionMeters, ratio),
-    potentialEnergyJoules: interpolate(
-      start.potentialEnergyJoules,
-      end.potentialEnergyJoules,
-      ratio,
-    ),
-    thermalEnergyJoules: interpolate(
-      start.thermalEnergyJoules,
-      end.thermalEnergyJoules,
-      ratio,
-    ),
-    timeSeconds: interpolate(start.timeSeconds, end.timeSeconds, ratio),
-    totalEnergyJoules: interpolate(
-      start.totalEnergyJoules,
-      end.totalEnergyJoules,
-      ratio,
-    ),
-    velocityMetersPerSecond: interpolate(
-      start.velocityMetersPerSecond,
-      end.velocityMetersPerSecond,
-      ratio,
-    ),
-    weightParallelNewtons: interpolate(
-      start.weightParallelNewtons,
-      end.weightParallelNewtons,
-      ratio,
-    ),
-    xMeters: interpolate(start.xMeters, end.xMeters, ratio),
-    zMeters: interpolate(start.zMeters, end.zMeters, ratio),
-  }
-}
-
-function interpolate(start: number, end: number, ratio: number) {
-  return start + (end - start) * ratio
-}
-
 function getVectorDisplayLength(vector: InclinedPlaneVectorOverlay) {
   const scale = vector.id === 'velocity' ? 0.28 : 0.055
 
   return Math.min(0.92, Math.max(0.16, vector.magnitude * scale))
+}
+
+function readInitialInclinedPlaneState(
+  samples: InclinedPlaneSample[],
+): InclinedPlaneState {
+  const firstSample = samples[0]
+
+  if (!firstSample) {
+    throw new Error('Inclined plane timeline must contain at least one sample.')
+  }
+
+  return {
+    positionMeters: firstSample.positionMeters,
+    timeSeconds: 0,
+    velocityMetersPerSecond: firstSample.velocityMetersPerSecond,
+  }
+}
+
+function readInitialMechanicalEnergy(samples: InclinedPlaneSample[]) {
+  const firstSample = samples[0]
+
+  if (!firstSample) {
+    throw new Error('Inclined plane timeline must contain at least one sample.')
+  }
+
+  return firstSample.totalEnergyJoules
+}
+
+function advanceInclinedPlaneLiveState(
+  state: InclinedPlaneState,
+  deltaTimeSeconds: number,
+  parameters: InclinedPlaneParameters,
+) {
+  if (deltaTimeSeconds <= 0) {
+    return state
+  }
+
+  const maxIntegratorStepSeconds = 1 / 180
+  let nextState = state
+  let remainingSeconds = deltaTimeSeconds
+
+  while (remainingSeconds > 1e-9) {
+    const stepSeconds = Math.min(maxIntegratorStepSeconds, remainingSeconds)
+
+    nextState = stepInclinedPlane(nextState, stepSeconds, parameters)
+    remainingSeconds -= stepSeconds
+  }
+
+  return nextState
+}
+
+function appendTraceSample(
+  samples: InclinedPlaneSample[],
+  sample: InclinedPlaneSample,
+  historySeconds: number,
+) {
+  const lastSample = samples.at(-1)
+
+  if (!lastSample || sample.timeSeconds > lastSample.timeSeconds + 0.0001) {
+    samples.push(sample)
+  } else if (lastSample) {
+    samples[samples.length - 1] = sample
+  }
+
+  const oldestVisibleTimeSeconds = Math.max(0, sample.timeSeconds - historySeconds)
+
+  while (
+    samples.length > 1 &&
+    samples[1].timeSeconds < oldestVisibleTimeSeconds
+  ) {
+    samples.shift()
+  }
 }
 
 function toScenePosition(

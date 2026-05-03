@@ -26,7 +26,7 @@ A aplicacao deve agrupar simulacoes por area do conhecimento em uma sidebar:
 - Oscilacoes e Ondas, com Oscilacoes, Ondas mecanicas, Som e Optica basica.
 - Eletromagnetismo, com Eletrostatica, Circuitos, Magnetismo, Inducao e Ondas eletromagneticas.
 
-No core inicial, `Mecanica > Pendulo simples` provou a experiencia completa e, apos teste manual do dono do projeto, fica como `ready`. Na Fase 2, `Mecanica > Dinamica > Plano inclinado com atrito` tambem ficou funcional para validar reuso do shell, controles, graficos, tabela, formulas e teoria; apos aprovacao manual, fica como `ready`. Na Fase 3, as primeiras simulacoes de Cinematica (`Movimento retilineo uniforme`, `Movimento uniformemente variado e queda livre`, `Lancamento obliquo` e `Movimento circular uniforme`) foram implementadas usando o mesmo shell e um motor analitico compartilhado. Apos aprovacao manual, MRU, MUV/queda livre e lancamento obliquo ficam como `ready`, enquanto MCU permanece em `analysis`. O lote seguinte implementou `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho`; apos aprovacao manual, as tres ficam como `ready`. O terceiro lote implementou `Colisoes 1D e 2D`, `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido`, reutilizando a cena 2.5D/3D, graficos live-canvas, tabela, formulas e teoria. Apos aprovacao manual, `Colisoes 1D e 2D` fica como `ready`, enquanto `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido` permanecem em `analysis`. O quarto lote implementou `Rolamento sem escorregamento`, `Campo gravitacional e orbitas`, `Hidrostatica e empuxo` e `Continuidade e Bernoulli` como `analysis`, aguardando teste manual antes de qualquer promocao para `ready`. As demais areas podem aparecer como itens planejados, desde que nao confundam com simulacoes prontas.
+No core inicial, `Mecanica > Pendulo simples` provou a experiencia completa e, apos teste manual do dono do projeto, fica como `ready`. Na Fase 2, `Mecanica > Dinamica > Plano inclinado com atrito` tambem ficou funcional para validar reuso do shell, controles, graficos, tabela, formulas e teoria; apos aprovacao manual, fica como `ready`. Na Fase 3, as primeiras simulacoes de Cinematica (`Movimento retilineo uniforme`, `Movimento uniformemente variado e queda livre`, `Lancamento obliquo` e `Movimento circular uniforme`) foram implementadas usando o mesmo shell e um motor analitico compartilhado. Apos aprovacao manual, MRU, MUV/queda livre e lancamento obliquo ficam como `ready`, enquanto MCU permanece em `analysis`. O lote seguinte implementou `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho`; apos aprovacao manual, Atwood, forca centripeta e `Trabalho e energia em trilho` ficam como `ready`, com `Trabalho e energia em trilho` validada no cenario de rampa em U com perda percentual. O terceiro lote implementou `Colisoes 1D e 2D`, `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido`, reutilizando a cena 2.5D/3D, graficos live-canvas, tabela, formulas e teoria. Apos aprovacao manual, `Colisoes 1D e 2D` fica como `ready`, enquanto `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido` permanecem em `analysis`. O quarto lote implementou `Rolamento sem escorregamento`, `Campo gravitacional e orbitas`, `Hidrostatica e empuxo` e `Continuidade e Bernoulli` como `analysis`, aguardando teste manual antes de qualquer promocao para `ready`. A simulacao `Mecanica > Oscilacoes > Massa-mola vertical` foi antecipada nessa subarea e, apos aprovacao manual, fica como `ready` junto do pendulo. As demais areas podem aparecer como itens planejados, desde que nao confundam com simulacoes prontas.
 Mesmo quando ainda estiverem planejadas, as simulacoes do catalogo curricular devem aparecer na sidebar em menus navegaveis de area e subarea, com status claro de `planejado`, `analise` ou `pronto`.
 
 ## Catalogo curricular planejado
@@ -40,7 +40,7 @@ O catalogo detalhado de simulacoes fica em `09-simulation-catalog-plan.md`. A ex
 - filtros ou agrupamentos por area, nivel e tipo de modelo quando o catalogo crescer.
 
 Itens planejados podem aparecer na sidebar como bloqueados, desabilitados ou marcados como `planejado`. Eles nao devem parecer clicaveis como simulacoes completas enquanto nao tiverem motor, visualizacao, graficos, tabela, formulas e teoria.
-A sidebar deve ser organizada como arvore compacta: area principal expansivel, subarea expansivel e simulacoes como folhas marcadas por status. Subareas que contenham ao menos uma simulacao `analysis` iniciam abertas para destacar o que precisa de teste; subareas que contenham apenas simulacoes `ready` ou `planned` iniciam recolhidas. O fixture local de catalogo deve conter todas as simulacoes planejadas em `09-simulation-catalog-plan.md`; no estado atual, pendulo simples, MRU, MUV/queda livre, lancamento obliquo, plano inclinado com atrito, Maquina de Atwood, Forca centripeta em curva, Trabalho e energia em trilho e Colisoes 1D e 2D aparecem como `ready`, enquanto MCU, Equilibrio de particula, Torque/alavancas/centro de massa, Rotacao de corpo rigido, Rolamento sem escorregamento, Campo gravitacional e orbitas, Hidrostatica e empuxo e Continuidade e Bernoulli aparecem como `analysis`.
+A sidebar deve ser organizada como arvore compacta: area principal expansivel, subarea expansivel e simulacoes como folhas marcadas por status. Subareas que contenham ao menos uma simulacao `analysis` iniciam abertas para destacar o que precisa de teste; subareas que contenham apenas simulacoes `ready` ou `planned` iniciam recolhidas. O fixture local de catalogo deve conter todas as simulacoes planejadas em `09-simulation-catalog-plan.md`; no estado atual, pendulo simples, massa-mola vertical, MRU, MUV/queda livre, lancamento obliquo, plano inclinado com atrito, Maquina de Atwood, Forca centripeta em curva, Trabalho e energia em trilho e Colisoes 1D e 2D aparecem como `ready`, enquanto MCU, Equilibrio de particula, Torque/alavancas/centro de massa, Rotacao de corpo rigido, Rolamento sem escorregamento, Campo gravitacional e orbitas, Hidrostatica e empuxo e Continuidade e Bernoulli aparecem como `analysis`.
 Antes de uma simulacao aparecer como `analysis`, virar `ready` ou continuar em um desses estados depois de uma mudanca, ela precisa passar pelo `Simulation Fidelity Adjustment Guide`: o modelo declarado deve gerar os samples, os regimes fisicos precisam mudar o estado real quando um limite for atingido, e cena, graficos, tabela, formulas, teoria e warnings devem refletir essa mesma fonte. A promocao de `analysis` para `ready` fica reservada ao teste manual do dono do projeto.
 
 ## Tela da simulacao
@@ -50,7 +50,7 @@ Layout recomendado:
 - Sidebar fixa ou recolhivel com areas e simulacoes.
 - Topbar compacta com nome da area, nome da simulacao e acoes globais.
 - Area central com viewport/canvas da simulacao.
-- Painel lateral de parametros com sliders, inputs numericos, toggles e presets.
+- Card flutuante de parametros no canto inferior direito, fixo durante a rolagem, com sliders, inputs numericos, toggles, presets, play/pause, reset, velocidade de passagem do tempo e status da simulacao.
 - Todo controle de variavel fisica ou de runtime deve exibir um icone de interrogacao junto ao rotulo. Ao passar o mouse ou focar o icone, a tooltip deve explicar o que a variavel representa, como ela entra no modelo e o que acontece quando o valor aumenta, diminui ou zera quando isso for fisicamente valido.
 - Bloco chevron de graficos sincronizados, recolhivel pelo proprio cabecalho.
 - Bloco chevron de tabela de amostras, recolhivel pelo proprio cabecalho.
@@ -75,7 +75,7 @@ Layout recomendado:
 - Angulo inicial.
 - Velocidade angular inicial.
 - Amortecimento.
-- Tempo maximo do ciclo de simulacao.
+- Horizonte calculado de samples, com contador de playback continuo.
 - Janela temporal dos graficos em segundos, exibindo as amostras recentes.
 - Toggle de vetores.
 - Toggle de trilha.
@@ -95,7 +95,7 @@ Layout recomendado:
 - Deslocamento inicial em relacao ao equilibrio.
 - Velocidade inicial.
 - Amortecimento opcional, mantendo o caso ideal sem amortecimento como regime base.
-- Tempo maximo do ciclo de simulacao.
+- Horizonte calculado de samples, com contador de playback continuo.
 - Janela temporal dos graficos.
 - Toggles de vetores, trilha e energia.
 - Blocos chevron, grafico em foco e maximizacao com o mesmo comportamento do pendulo.
@@ -112,7 +112,7 @@ Layout recomendado:
 - Posicao inicial.
 - Velocidade inicial.
 - Comprimento do plano.
-- Tempo maximo do ciclo de simulacao.
+- Horizonte calculado de samples, com contador de playback continuo.
 - Janela temporal dos graficos.
 - Toggles de vetores, trilha e energia.
 - Blocos chevron e maximizacao com o mesmo comportamento do pendulo.
@@ -122,7 +122,7 @@ Layout recomendado:
 - Play/pause.
 - Reset.
 - Presets de demonstracao.
-- Tempo maximo do ciclo de simulacao.
+- Horizonte calculado de samples, com contador de playback continuo.
 - Janela temporal dos graficos.
 - Toggles de vetores, trilha e energia.
 - MRU: posicao inicial, velocidade e massa.
@@ -136,12 +136,12 @@ Layout recomendado:
 - Play/pause.
 - Reset.
 - Presets de demonstracao.
-- Tempo maximo do ciclo de simulacao.
+- Horizonte calculado de samples, com contador de playback continuo.
 - Janela temporal dos graficos.
 - Toggles de vetores, trilha e energia.
 - Maquina de Atwood: massa 1, massa 2, gravidade, deslocamento inicial, velocidade inicial e curso vertical.
 - Forca centripeta em curva: massa, raio da curva, velocidade tangencial, coeficiente de atrito e gravidade.
-- Trabalho e energia em trilho: massa, comprimento do trilho, desnivel vertical, velocidade inicial, atrito, forca aplicada e gravidade.
+- Trabalho e energia em trilho: massa, largura da rampa em U, altura das bordas, posicao inicial, altura relativa inicial, velocidade inicial, perda percentual por ciclo e gravidade.
 - Blocos chevron, grafico em foco e maximizacao com o mesmo comportamento das simulacoes anteriores.
 
 ## Controles esperados no terceiro lote de Mecanica
@@ -149,7 +149,7 @@ Layout recomendado:
 - Play/pause.
 - Reset.
 - Presets de demonstracao.
-- Tempo maximo do ciclo de simulacao.
+- Horizonte calculado de samples, com contador de playback continuo.
 - Janela temporal dos graficos.
 - Toggles de vetores, trilha e energia.
 - Colisoes 1D e 2D: massas, raios das esferas, velocidades normal e tangencial dos corpos, angulo de impacto obliquo, coeficiente de restituicao e separacao inicial.
@@ -167,7 +167,7 @@ Layout recomendado:
 - Play/pause.
 - Reset.
 - Presets de demonstracao por subarea.
-- Tempo maximo do ciclo de simulacao.
+- Horizonte calculado de samples, com contador de playback continuo.
 - Janela temporal dos graficos.
 - Toggles de vetores, trilha e energia quando o modelo tiver energia mecanica relevante.
 - Rolamento sem escorregamento: massa, raio, comprimento do trilho, angulo do plano, velocidade inicial, coeficiente de atrito e gravidade.
@@ -187,11 +187,12 @@ Layout recomendado:
 - Grafico de aceleracao por tempo, exibindo componentes tangencial, radial e modulo total.
 - Grafico de energia cinetica, potencial e total com a mesma janela movel.
 - Graficos devem mostrar valores numericos na escala do eixo Y e legendas de series com nomes fisicos claros. A grandeza fisica nao deve ser abreviada, mas a unidade pode usar simbolo padrao entre parenteses, como `rad/s`, `m/s`, `m/s^2` ou `J`.
+- Cada item da legenda de serie do grafico deve ser clicavel para ligar ou desligar aquela serie sem recalcular samples nem alterar a cena, tabela ou formulas.
 - Um grafico por vez pode ser destacado no slot direito do viewport para comparar a curva com o evento visual da simulacao, sempre usando a mesma janela temporal e a mesma fonte de samples do bloco de graficos.
 - Tabela com tempo, angulo, velocidade angular, velocidade linear, aceleracoes, posicao e energia, mantendo quantidade fixa de linhas visiveis para evitar oscilacao de layout durante o playback.
 - No plano inclinado, graficos e tabela devem expor posicao no plano, altura, velocidade, aceleracao, normal, atrito, resultante, energia cinetica, potencial, termica e total.
 - Nas simulacoes de Cinematica, a cena Three.js reutilizavel deve expor corpo, trajetoria, vetores principais e tabela/graficos derivados do mesmo sample analitico. MRU mostra posicao/deslocamento/velocidade; MUV mostra posicao/velocidade/aceleracao; lancamento obliquo mostra posicao horizontal, altura, componentes de velocidade, gravidade e energia em voo; MCU mostra angulo, arco, velocidade tangencial, aceleracao centripeta, periodo, frequencia e energia cinetica.
-- Nas simulacoes seguintes de Mecanica, a cena compartilhada deve expor corpo principal, trajetoria e vetores derivados do mesmo sample. Atwood mostra massas acopladas, tensao, peso, aceleracao e energia; forca centripeta em curva mostra velocidade tangencial, resultante centripeta, atrito maximo, limite de aderencia e saida da curva quando os parametros tornam a aderencia impossivel; trabalho e energia em trilho usa uma bancada visual de energia com trilho 3D inclinado, dormentes, regua de altura, corpo didatico alinhado ao trilho, rastro termico derivado de `E_termica` e painel compacto de balanco `K`, `U_g`, `E_termica`, `W_aplicado` e saldo, todos alimentados pelo mesmo sample de posicao, trabalho, dissipacao e energia; colisoes mostram dois corpos, velocidades, momento total, impulso e perda de energia quando `e < 1`; equilibrio de particula mostra forcas aplicadas, resultante e aceleracao quando o equilibrio falha; torque/alavancas mostra pesos, forca aplicada, centro de massa e torque resultante; rotacao de corpo rigido mostra angulo, velocidade angular, aceleracao angular, torque, inercia e energia rotacional; rolamento mostra roda, velocidade linear/angular, atrito requerido, aderencia e escorregamento; gravitacao mostra orbita, corpo central, campo, forca e energia orbital; hidrostatica mostra pressao, empuxo, peso, fracao submersa e afundamento; Bernoulli mostra vazao, areas, velocidades e pressoes de entrada/garganta.
+- Nas simulacoes seguintes de Mecanica, a cena compartilhada deve expor corpo principal, trajetoria e vetores derivados do mesmo sample. Atwood mostra massas acopladas, tensao, peso, aceleracao e energia; forca centripeta em curva mostra velocidade tangencial, resultante centripeta, atrito maximo, limite de aderencia e saida da curva quando os parametros tornam a aderencia impossivel; trabalho e energia em trilho usa uma rampa de skate em U parabolica, corpo didatico alinhado a tangente local, rastro de perda derivado de `thermalEnergyJoules` e painel compacto com `K`, `U_g`, `E_perdida`, energia total mecanica e percentual de perda, todos alimentados pelo mesmo sample de posicao, aceleracao, dissipacao e energia; colisoes mostram dois corpos, velocidades, momento total, impulso e perda de energia quando `e < 1`; equilibrio de particula mostra forcas aplicadas, resultante e aceleracao quando o equilibrio falha; torque/alavancas mostra pesos, forca aplicada, centro de massa e torque resultante; rotacao de corpo rigido mostra angulo, velocidade angular, aceleracao angular, torque, inercia e energia rotacional; rolamento mostra roda, velocidade linear/angular, atrito requerido, aderencia e escorregamento; gravitacao mostra orbita, corpo central, campo, forca e energia orbital; hidrostatica mostra pressao, empuxo, peso, fracao submersa e afundamento; Bernoulli mostra vazao, areas, velocidades e pressoes de entrada/garganta.
 - Formulas do processo analisado, com variaveis, unidades, condicoes de uso e exemplo curto.
 - Apendice teorico com equacoes, unidades, contexto de uso e limites da aproximacao.
 
@@ -246,7 +247,7 @@ No segundo lote de Mecanica, o guia deve cobrir pelo menos:
 
 - Maquina de Atwood: aceleracao do sistema, tensao no fio, posicao com aceleracao constante e energia mecanica ideal.
 - Forca centripeta em curva: aceleracao centripeta, forca centripeta requerida, limite de atrito estatico e velocidade critica.
-- Trabalho e energia em trilho: trabalho de forca constante, energia cinetica, energia potencial gravitacional, dissipacao por atrito e balanco trabalho-energia.
+- Trabalho e energia em trilho: geometria da rampa em U, energia cinetica, energia potencial gravitacional, energia mecanica total e percentual de perda acumulada.
 
 No terceiro lote de Mecanica, o guia deve cobrir pelo menos:
 
@@ -270,7 +271,7 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 
 ## Criterios de aceite do MVP
 
-- O usuario consegue abrir `Mecanica > Pendulo simples` pela sidebar.
+- O usuario consegue abrir `Mecanica > Pendulo simples` e `Mecanica > Oscilacoes > Massa-mola vertical` pela sidebar.
 - O usuario consegue abrir `Mecanica > Dinamica > Plano inclinado com atrito` pela sidebar como segunda simulacao pronta.
 - O usuario consegue abrir as quatro primeiras simulacoes de `Mecanica > Cinematica` pela sidebar e ver cena, vetores, graficos, tabela, formulas e teoria sincronizados.
 - O usuario consegue abrir `Mecanica > Dinamica > Maquina de Atwood`, `Mecanica > Dinamica > Forca centripeta em curva` e `Mecanica > Energia e momento > Trabalho e energia em trilho` pela sidebar com a mesma sincronizacao.
@@ -282,10 +283,12 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 - O canvas exibe referencia de origem da grade com eixos X, Y e Z coloridos/translucidos no canto inferior esquerdo do plano e legenda fixa no canto superior esquerdo.
 - Alterar controles muda a simulacao e regenera dados derivados.
 - Todo parametro visivel em controles, inclusive tempo de ciclo e janela de grafico, possui legenda via tooltip de interrogacao derivada do contrato `SimulationParameter.description`.
-- Alterar o tempo do ciclo muda a duracao maxima antes do playback reiniciar.
+- Alterar o horizonte calculado muda quantos segundos de samples ficam pre-calculados ou estendidos em blocos; o playback continua avancando enquanto estiver em play e so volta a `t = 0` quando o usuario aciona reset.
+- Alterar a velocidade de passagem do tempo entre `1x` e `0x` desacelera cena, leituras, graficos e tabela pela mesma fonte de samples; em `0x`, o runtime fica pausado sem resetar o tempo nem trocar de regime fisico.
 - Alterar a janela dos graficos muda quantos segundos recentes ficam visiveis.
 - Graficos e tabela refletem os mesmos samples quando suas saidas estao ligadas.
 - Graficos exibem escala numerica no eixo Y e legendas textuais completas para a grandeza de cada serie; apenas as unidades podem aparecer abreviadas por simbolo fisico padrao.
+- Clicar em um item da legenda de serie liga ou desliga apenas aquela curva no grafico, preservando a mesma fonte de samples e a sincronizacao com cena, tabela e formulas.
 - O clique no olho de um grafico move esse grafico para um slot lateral no viewport; clicar novamente no olho do grafico em foco remove o slot e restaura o grafico no bloco original.
 - Graficos, tabela, formulas e teoria podem ser recolhidos por chevron; quando um bloco pesado esta recolhido, seu conteudo deve ser desmontado e seu processamento suspenso.
 - Esses blocos chevron iniciam fechados por padrao e precisam alternar aberto/fechado ao clicar no cabecalho.
@@ -302,5 +305,5 @@ Na fase core, dados de catalogo, parametros, presets e texto teorico podem vir d
 - Nao precisa salvar simulacoes do usuario.
 - Nao precisa compartilhar links configurados.
 - Nao precisa autenticar usuarios.
-- O core inicial nao precisava ter mais de uma simulacao funcional; apos a Fase 3, o shell mantem pendulo, plano inclinado, quatro simulacoes analiticas de Cinematica e onze simulacoes mecanicas adicionais como funcionais.
+- O core inicial nao precisava ter mais de uma simulacao funcional; apos a Fase 3 e a antecipacao do massa-mola, o shell mantem pendulo, plano inclinado, quatro simulacoes analiticas de Cinematica e doze simulacoes mecanicas adicionais como funcionais.
 - Nao precisa de simulacao fisica de alta fidelidade alem do modelo declarado.

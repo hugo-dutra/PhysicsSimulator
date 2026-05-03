@@ -1,0 +1,347 @@
+{
+  "simulationId": "mass-spring",
+  "durationSeconds": 24,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 10,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Horizonte calculado",
+      "description": "Horizonte de tempo pre-calculado pelo motor para samples, graficos e tabela. Aumentar cobre mais ciclos da mola; diminuir concentra a leitura nos primeiros segundos.",
+      "unit": "s",
+      "kind": "number",
+      "min": 8,
+      "max": 90,
+      "step": 1,
+      "defaultValue": 24
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais oscilacoes passadas; diminuir destaca o estado instantaneo da esfera.",
+      "unit": "s",
+      "kind": "number",
+      "min": 4,
+      "max": 45,
+      "step": 1,
+      "defaultValue": 10
+    }
+  ],
+  "defaultParameters": {
+    "massKilograms": 0.6,
+    "springConstantNewtonsPerMeter": 24,
+    "gravityMetersPerSecondSquared": 9.81,
+    "initialDisplacementMeters": 0.25,
+    "initialVelocityMetersPerSecond": 0,
+    "dampingPerSecond": 0
+  },
+  "parameters": [
+    {
+      "id": "massKilograms",
+      "label": "Massa da esfera",
+      "description": "Massa presa a extremidade inferior da mola. Aumentar aumenta o peso, desloca mais o equilibrio estatico e alonga o periodo; diminuir torna a oscilacao mais rapida.",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.05,
+      "max": 3,
+      "step": 0.05,
+      "defaultValue": 0.6
+    },
+    {
+      "id": "springConstantNewtonsPerMeter",
+      "label": "Constante elastica",
+      "description": "Rigidez k da mola na lei de Hooke. Aumentar reduz o deslocamento estatico mg/k e diminui o periodo; diminuir deixa a mola mais longa e lenta.",
+      "unit": "N/m",
+      "kind": "number",
+      "min": 4,
+      "max": 120,
+      "step": 1,
+      "defaultValue": 24
+    },
+    {
+      "id": "gravityMetersPerSecondSquared",
+      "label": "Gravidade",
+      "description": "Aceleracao gravitacional usada para calcular peso e equilibrio estatico. Aumentar desloca a posicao de repouso para baixo; diminuir aproxima a massa do comprimento natural visual.",
+      "unit": "m/s^2",
+      "kind": "number",
+      "min": 1,
+      "max": 25,
+      "step": 0.01,
+      "defaultValue": 9.81
+    },
+    {
+      "id": "initialDisplacementMeters",
+      "label": "Deslocamento inicial",
+      "description": "Deslocamento inicial medido a partir do equilibrio estatico, positivo para baixo. Zerar inicia a esfera no equilibrio; aumentar amplia a amplitude inicial.",
+      "unit": "m",
+      "kind": "number",
+      "min": -0.6,
+      "max": 0.8,
+      "step": 0.01,
+      "defaultValue": 0.25
+    },
+    {
+      "id": "initialVelocityMetersPerSecond",
+      "label": "Velocidade inicial",
+      "description": "Velocidade inicial da esfera em torno do equilibrio, positiva para baixo. Zerar faz a soltura partir apenas do deslocamento; valores diferentes mudam fase e energia cinetica.",
+      "unit": "m/s",
+      "kind": "number",
+      "min": -3,
+      "max": 3,
+      "step": 0.02,
+      "defaultValue": 0
+    },
+    {
+      "id": "dampingPerSecond",
+      "label": "Amortecimento",
+      "description": "Termo linear de amortecimento aplicado a velocidade vertical. Zerar mantem o oscilador ideal sem perda; aumentar dissipa energia e reduz a amplitude ao longo do tempo.",
+      "unit": "s^-1",
+      "kind": "number",
+      "min": 0,
+      "max": 2.5,
+      "step": 0.01,
+      "defaultValue": 0
+    }
+  ],
+  "presets": [
+    {
+      "id": "ideal-release",
+      "label": "Soltura ideal",
+      "parameters": {
+        "massKilograms": 0.6,
+        "springConstantNewtonsPerMeter": 24,
+        "gravityMetersPerSecondSquared": 9.81,
+        "initialDisplacementMeters": 0.25,
+        "initialVelocityMetersPerSecond": 0,
+        "dampingPerSecond": 0
+      }
+    },
+    {
+      "id": "damped-heavy",
+      "label": "Mais massa amortecida",
+      "parameters": {
+        "massKilograms": 1.1,
+        "springConstantNewtonsPerMeter": 18,
+        "gravityMetersPerSecondSquared": 9.81,
+        "initialDisplacementMeters": 0.35,
+        "initialVelocityMetersPerSecond": 0,
+        "dampingPerSecond": 0.18
+      }
+    },
+    {
+      "id": "equilibrium-kick",
+      "label": "Impulso no equilibrio",
+      "parameters": {
+        "massKilograms": 0.45,
+        "springConstantNewtonsPerMeter": 36,
+        "gravityMetersPerSecondSquared": 9.81,
+        "initialDisplacementMeters": 0,
+        "initialVelocityMetersPerSecond": -1.2,
+        "dampingPerSecond": 0
+      }
+    }
+  ],
+  "limits": [
+    "Modelo unidimensional vertical com mola ideal linear e massa esferica pontual.",
+    "A coordenada principal e o deslocamento em relacao ao equilibrio estatico; a gravidade aparece deslocando esse equilibrio por mg/k.",
+    "O caso sem amortecimento conserva a energia do oscilador em torno do equilibrio.",
+    "Amortecimento e linear na velocidade; nao ha massa da mola, colisao com suporte, fim de curso, resistencia do ar turbulenta ou plasticidade."
+  ],
+  "formulas": [
+    {
+      "id": "hooke-law",
+      "title": "Lei de Hooke e forca elastica",
+      "expressionLatex": "F_e = -k\\Delta\\ell",
+      "description": "A forca elastica se opoe a deformacao total da mola e e desenhada como vetor preso a esfera.",
+      "variables": [
+        {
+          "symbol": "F_e",
+          "label": "forca elastica",
+          "unit": "N"
+        },
+        {
+          "symbol": "k",
+          "label": "constante elastica",
+          "unit": "N/m"
+        },
+        {
+          "symbol": "\\Delta\\ell",
+          "label": "deformacao total",
+          "unit": "m"
+        }
+      ],
+      "usedWhen": "Usar para interpretar a mola ideal enquanto a deformacao permanece dentro do regime linear declarado.",
+      "notUsedWhen": "Nao modela fim de curso, mola com massa, deformacao plastica ou contato com o suporte.",
+      "parameterIds": [
+        "springConstantNewtonsPerMeter",
+        "massKilograms",
+        "gravityMetersPerSecondSquared",
+        "initialDisplacementMeters"
+      ],
+      "sampleFields": [
+        "springForceNewtons",
+        "tensionNewtons",
+        "weightNewtons"
+      ],
+      "relatedChartIds": ["forces-time"],
+      "relatedVectorIds": ["tension", "weight"],
+      "example": "Com m = 0,6 kg, k = 24 N/m e g = 9,81 m/s^2, o equilibrio desloca a mola por mg/k = 0,245 m."
+    },
+    {
+      "id": "static-equilibrium",
+      "title": "Equilibrio estatico",
+      "expressionLatex": "\\Delta\\ell_0 = \\frac{mg}{k}",
+      "description": "A gravidade desloca a posicao de repouso, mas a oscilacao analisada acontece em torno desse novo equilibrio.",
+      "variables": [
+        {
+          "symbol": "\\Delta\\ell_0",
+          "label": "alongamento de equilibrio",
+          "unit": "m"
+        },
+        {
+          "symbol": "m",
+          "label": "massa",
+          "unit": "kg"
+        },
+        {
+          "symbol": "g",
+          "label": "gravidade",
+          "unit": "m/s^2"
+        },
+        {
+          "symbol": "k",
+          "label": "constante elastica",
+          "unit": "N/m"
+        }
+      ],
+      "usedWhen": "Usar para localizar a linha de equilibrio secundaria desenhada no viewport.",
+      "notUsedWhen": "Nao e uma segunda origem dinamica independente; graficos e tabela continuam vindo do mesmo sample.",
+      "parameterIds": [
+        "massKilograms",
+        "gravityMetersPerSecondSquared",
+        "springConstantNewtonsPerMeter"
+      ],
+      "sampleFields": ["secondaryRadiusMeters", "positionMeters"],
+      "relatedChartIds": ["position-time"],
+      "example": "Dobrar a massa dobra o alongamento estatico se k e g ficarem constantes."
+    },
+    {
+      "id": "oscillator-equation",
+      "title": "Oscilador em torno do equilibrio",
+      "expressionLatex": "\\ddot{x} + b\\dot{x} + \\frac{k}{m}x = 0",
+      "description": "Depois de absorver mg/k no equilibrio, o movimento vertical vira um oscilador harmonico com amortecimento linear opcional.",
+      "variables": [
+        {
+          "symbol": "x",
+          "label": "deslocamento relativo ao equilibrio",
+          "unit": "m"
+        },
+        {
+          "symbol": "\\dot{x}",
+          "label": "velocidade vertical",
+          "unit": "m/s"
+        },
+        {
+          "symbol": "\\ddot{x}",
+          "label": "aceleracao vertical",
+          "unit": "m/s^2"
+        },
+        {
+          "symbol": "b",
+          "label": "amortecimento",
+          "unit": "s^-1"
+        }
+      ],
+      "usedWhen": "Usar para os graficos de deslocamento, velocidade e aceleracao do massa-mola vertical.",
+      "notUsedWhen": "Nao inclui excitacao externa, atrito seco ou oscilacao lateral da mola.",
+      "parameterIds": [
+        "massKilograms",
+        "springConstantNewtonsPerMeter",
+        "initialDisplacementMeters",
+        "initialVelocityMetersPerSecond",
+        "dampingPerSecond"
+      ],
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared"
+      ],
+      "relatedChartIds": [
+        "position-time",
+        "velocity-time",
+        "acceleration-time"
+      ],
+      "relatedVectorIds": ["velocity", "acceleration"],
+      "example": "Se x inicial for zero mas v inicial for diferente de zero, a esfera cruza o equilibrio com energia cinetica maxima."
+    },
+    {
+      "id": "ideal-period",
+      "title": "Periodo ideal",
+      "expressionLatex": "T = 2\\pi\\sqrt{\\frac{m}{k}}",
+      "description": "Periodo do oscilador ideal sem amortecimento, independente da gravidade quando o movimento e medido a partir do equilibrio.",
+      "variables": [
+        {
+          "symbol": "T",
+          "label": "periodo",
+          "unit": "s"
+        },
+        {
+          "symbol": "m",
+          "label": "massa",
+          "unit": "kg"
+        },
+        {
+          "symbol": "k",
+          "label": "constante elastica",
+          "unit": "N/m"
+        }
+      ],
+      "usedWhen": "Usar para estimar a repeticao do ciclo no preset ideal ou com amortecimento baixo.",
+      "notUsedWhen": "Com amortecimento forte, a leitura dominante passa a ser o decaimento e nao um ciclo periodico puro.",
+      "parameterIds": ["massKilograms", "springConstantNewtonsPerMeter"],
+      "sampleFields": ["periodSeconds", "frequencyHertz"],
+      "relatedChartIds": ["position-time"],
+      "example": "Aumentar k encurta T; aumentar m alonga T."
+    },
+    {
+      "id": "energy-balance",
+      "title": "Energia mecanica",
+      "expressionLatex": "K = \\frac{1}{2}mv^2,\\quad U = \\frac{1}{2}kx^2,\\quad E = K + U",
+      "description": "A energia total exibida e a energia do oscilador em torno do equilibrio; o fixture tambem expoe energia elastica e gravitacional absolutas para formulas.",
+      "variables": [
+        {
+          "symbol": "K",
+          "label": "energia cinetica",
+          "unit": "J"
+        },
+        {
+          "symbol": "U",
+          "label": "potencial efetiva",
+          "unit": "J"
+        },
+        {
+          "symbol": "E",
+          "label": "energia mecanica",
+          "unit": "J"
+        }
+      ],
+      "usedWhen": "Usar para comparar conservacao no regime ideal e dissipacao quando b e maior que zero.",
+      "notUsedWhen": "Nao representa aquecimento real da mola; a energia dissipada e um acumulado didatico do amortecimento linear.",
+      "parameterIds": [
+        "massKilograms",
+        "springConstantNewtonsPerMeter",
+        "dampingPerSecond"
+      ],
+      "sampleFields": [
+        "kineticEnergyJoules",
+        "potentialEnergyJoules",
+        "elasticPotentialEnergyJoules",
+        "gravitationalPotentialEnergyJoules",
+        "thermalEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "relatedChartIds": ["energy-time"],
+      "example": "Com b = 0, K e U trocam energia e E permanece constante; com b > 0, E decai e E_t aumenta."
+    }
+  ]
+}

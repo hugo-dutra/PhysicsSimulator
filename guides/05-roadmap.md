@@ -121,11 +121,11 @@ Criterio de saida:
 
 Objetivo: validar sistemas periodicos, propagacao de ondas, som e optica basica com modelos visuais leves.
 
-Primeira fatia recomendada desta fase: `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical`, aproveitando o aprendizado do pendulo para outro oscilador harmonico simples. A cena deve seguir a referencia visual proposta: suporte fixo no topo, mola helicoidal pendurada, massa esferica presa na extremidade inferior e oscilacao vertical em torno da posicao de equilibrio.
+Primeira fatia visual antecipada: `Mecanica > Oscilacoes > Massa-mola vertical`, aproveitando o aprendizado do pendulo para outro oscilador harmonico simples no ponto da sidebar onde o usuario pediu. A cena segue a referencia visual proposta: suporte fixo no topo, mola helicoidal pendurada, massa esferica presa na extremidade inferior e oscilacao vertical em torno da posicao de equilibrio. A area `Oscilacoes e Ondas` segue reservada para os proximos osciladores acoplados, ondas, som e optica.
 
 Tasks:
 
-- `[ ]` Implementar `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical`, com suporte superior fixo, mola helicoidal, massa esferica, vetores e energia sincronizados.
+- `[x]` Implementar `Mecanica > Oscilacoes > Massa-mola vertical`, com suporte superior fixo, mola helicoidal, massa esferica, vetores e energia sincronizados.
 - `[ ]` Implementar `Oscilacoes e Ondas > Oscilacoes > Oscilador amortecido`.
 - `[ ]` Implementar `Oscilacoes e Ondas > Oscilacoes > Oscilador forcado e ressonancia`.
 - `[ ]` Implementar `Oscilacoes e Ondas > Oscilacoes > Osciladores acoplados`.

@@ -5,6 +5,7 @@ import {
   getMovingWindowRange,
   getSampleIndexForTime,
   readFirstSample,
+  selectContinuousRecentSamples,
   selectRecentSamples,
   selectStableRows,
 } from './sampleWindow'
@@ -17,12 +18,26 @@ describe('sample window helpers', () => {
       .toEqual([4, 5, 6, 7])
   })
 
+  it('selects recent samples from the continuous playback history', () => {
+    const samples = createSamples(0, 12)
+
+    expect(
+      selectContinuousRecentSamples(samples, 12, 4, 10).map(
+        (sample) => sample.timeSeconds,
+      ),
+    ).toEqual([8, 9, 10, 11, 12])
+  })
+
   it('keeps the window anchored at zero before the plot is full', () => {
     expect(getMovingWindowRange(3, 8, 30)).toEqual([0, 8])
   })
 
   it('moves the range once the current time passes the visible window', () => {
     expect(getMovingWindowRange(18, 8, 30)).toEqual([10, 18])
+  })
+
+  it('keeps the chart window independent from the calculated horizon', () => {
+    expect(getMovingWindowRange(25, 12, 6)).toEqual([13, 25])
   })
 
   it('reads the first sample or fails with the timeline label', () => {
@@ -48,10 +63,21 @@ describe('sample window helpers', () => {
 
     expect(
       appendLiveSample(samples, { ...samples[2], timeSeconds: 2.00005 }),
-    ).toBe(samples)
+    ).toEqual([{ ...samples[0] }, { ...samples[1] }, {
+      ...samples[2],
+      timeSeconds: 2.00005,
+    }])
     expect(appendLiveSample(samples, { ...samples[2], timeSeconds: 3 })).toEqual([
       ...samples,
       { ...samples[2], timeSeconds: 3 },
+    ])
+  })
+
+  it('starts a new live history when playback time rolls back to reset', () => {
+    const samples = createSamples(0, 3)
+
+    expect(appendLiveSample(samples, { ...samples[0], timeSeconds: 0 })).toEqual([
+      { ...samples[0], timeSeconds: 0 },
     ])
   })
 

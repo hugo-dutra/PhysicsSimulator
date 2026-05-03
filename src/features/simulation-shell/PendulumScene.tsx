@@ -9,15 +9,18 @@ import { Box } from '@mui/material'
 import * as THREE from 'three'
 import {
   getPendulumVectorOverlays,
+  stepPendulum,
+  toPendulumSample,
   type PendulumParameters,
   type PendulumSample,
+  type PendulumState,
   type PendulumVectorOverlay,
 } from '../../lib/physics/pendulum'
 import {
   cancelAnimationFrameSafe,
   createFrameStatsWindow,
-  readInterpolatedTimelineFrame,
   requestAnimationFrameSafe,
+  scalePlaybackDelta,
   updateFrameStatsWindow,
   type FrameStats,
 } from '../../lib/rendering/visualRuntime'
@@ -144,17 +147,16 @@ export function PendulumScene({
   })
   const dragStateRef = useRef<DragState | null>(null)
   const statsWindowRef = useRef(createFrameStatsWindow())
+  const liveStateRef = useRef<PendulumState>(readInitialPendulumState(samples))
+  const traceSamplesRef = useRef<PendulumSample[]>([
+    toPendulumSample(readInitialPendulumState(samples), parameters),
+  ])
 
   const renderCurrentFrame = useCallback((notify = false) => {
     const objects = objectsRef.current
     const runtime = runtimeRef.current
-    const frame = readInterpolatedTimelineFrame(
-      runtime.samples,
-      runtime.durationSeconds,
-      elapsedSecondsRef.current,
-      interpolateSample,
-    )
-    const sample = frame.sample
+    const sample = toPendulumSample(liveStateRef.current, runtime.parameters)
+    appendTraceSample(traceSamplesRef.current, sample, traceFadeSeconds)
 
     if (!objects || !sample) {
       return
@@ -164,15 +166,21 @@ export function PendulumScene({
       objects,
       parameters: runtime.parameters,
       sample,
-      sampleIndex: frame.sampleIndex,
-      samples: runtime.samples,
+      sampleIndex: traceSamplesRef.current.length - 1,
+      samples: traceSamplesRef.current,
       showTrace: runtime.showTrace,
       showVectors: runtime.showVectors,
     })
     objects.renderer.render(objects.scene, objects.camera)
 
     if (notify) {
-      runtime.onSampleChange(sample, statsWindowRef.current.stats)
+      runtime.onSampleChange(
+        {
+          ...sample,
+          timeSeconds: elapsedSecondsRef.current,
+        },
+        statsWindowRef.current.stats,
+      )
     }
   }, [])
 
@@ -496,6 +504,10 @@ export function PendulumScene({
     lastFrameTimeRef.current = null
     lastReadoutTimeRef.current = 0
     statsWindowRef.current = createFrameStatsWindow()
+    liveStateRef.current = readInitialPendulumState(samples)
+    traceSamplesRef.current = [
+      toPendulumSample(liveStateRef.current, runtimeRef.current.parameters),
+    ]
     renderCurrentFrame(true)
   }, [renderCurrentFrame, resetVersion, samples])
 
@@ -522,14 +534,20 @@ export function PendulumScene({
         maxFrameDeltaSeconds,
         Math.max(0, (timestamp - lastFrameTime) / 1000),
       )
+      const playbackDeltaSeconds = scalePlaybackDelta(
+        deltaSeconds,
+        runtime.playbackRate,
+      )
       const nextElapsedSeconds =
-        elapsedSecondsRef.current + deltaSeconds * runtime.playbackRate
+        elapsedSecondsRef.current + playbackDeltaSeconds
 
       lastFrameTimeRef.current = timestamp
-      elapsedSecondsRef.current =
-        nextElapsedSeconds >= runtime.durationSeconds
-          ? nextElapsedSeconds % runtime.durationSeconds
-          : nextElapsedSeconds
+      elapsedSecondsRef.current = nextElapsedSeconds
+      liveStateRef.current = advancePendulumLiveState(
+        liveStateRef.current,
+        playbackDeltaSeconds,
+        runtime.parameters,
+      )
 
       updateFrameStatsWindow(statsWindowRef.current, timestamp, deltaSeconds)
       renderCurrentFrame(timestamp - lastReadoutTimeRef.current >= readoutIntervalMs)
@@ -743,72 +761,71 @@ function writeTracePoint(
   objects.traceColors[colorIndex + 3] = opacity
 }
 
-function interpolateSample(
-  start: PendulumSample,
-  end: PendulumSample,
-  ratio: number,
-): PendulumSample {
-  return {
-    timeSeconds: interpolate(start.timeSeconds, end.timeSeconds, ratio),
-    angleRadians: interpolate(start.angleRadians, end.angleRadians, ratio),
-    angularVelocityRadiansPerSecond: interpolate(
-      start.angularVelocityRadiansPerSecond,
-      end.angularVelocityRadiansPerSecond,
-      ratio,
-    ),
-    angularAccelerationRadiansPerSecondSquared: interpolate(
-      start.angularAccelerationRadiansPerSecondSquared,
-      end.angularAccelerationRadiansPerSecondSquared,
-      ratio,
-    ),
-    linearVelocityMetersPerSecond: interpolate(
-      start.linearVelocityMetersPerSecond,
-      end.linearVelocityMetersPerSecond,
-      ratio,
-    ),
-    tangentialAccelerationMetersPerSecondSquared: interpolate(
-      start.tangentialAccelerationMetersPerSecondSquared,
-      end.tangentialAccelerationMetersPerSecondSquared,
-      ratio,
-    ),
-    radialAccelerationMetersPerSecondSquared: interpolate(
-      start.radialAccelerationMetersPerSecondSquared,
-      end.radialAccelerationMetersPerSecondSquared,
-      ratio,
-    ),
-    totalAccelerationMetersPerSecondSquared: interpolate(
-      start.totalAccelerationMetersPerSecondSquared,
-      end.totalAccelerationMetersPerSecondSquared,
-      ratio,
-    ),
-    xMeters: interpolate(start.xMeters, end.xMeters, ratio),
-    yMeters: interpolate(start.yMeters, end.yMeters, ratio),
-    kineticEnergyJoules: interpolate(
-      start.kineticEnergyJoules,
-      end.kineticEnergyJoules,
-      ratio,
-    ),
-    potentialEnergyJoules: interpolate(
-      start.potentialEnergyJoules,
-      end.potentialEnergyJoules,
-      ratio,
-    ),
-    totalEnergyJoules: interpolate(
-      start.totalEnergyJoules,
-      end.totalEnergyJoules,
-      ratio,
-    ),
-  }
-}
-
-function interpolate(start: number, end: number, ratio: number) {
-  return start + (end - start) * ratio
-}
-
 function getVectorDisplayLength(vector: PendulumVectorOverlay) {
   const scale = vector.id === 'velocity' ? 0.34 : 0.11
 
   return Math.min(0.82, Math.max(0.16, vector.magnitude * scale))
+}
+
+function readInitialPendulumState(samples: PendulumSample[]): PendulumState {
+  const firstSample = samples[0]
+
+  if (!firstSample) {
+    throw new Error('Pendulum timeline must contain at least one sample.')
+  }
+
+  return {
+    angleRadians: firstSample.angleRadians,
+    angularVelocityRadiansPerSecond:
+      firstSample.angularVelocityRadiansPerSecond,
+    timeSeconds: 0,
+  }
+}
+
+function advancePendulumLiveState(
+  state: PendulumState,
+  deltaTimeSeconds: number,
+  parameters: PendulumParameters,
+) {
+  if (deltaTimeSeconds <= 0) {
+    return state
+  }
+
+  const maxIntegratorStepSeconds = 1 / 180
+  let nextState = state
+  let remainingSeconds = deltaTimeSeconds
+
+  while (remainingSeconds > 1e-9) {
+    const stepSeconds = Math.min(maxIntegratorStepSeconds, remainingSeconds)
+
+    nextState = stepPendulum(nextState, stepSeconds, parameters)
+    remainingSeconds -= stepSeconds
+  }
+
+  return nextState
+}
+
+function appendTraceSample(
+  samples: PendulumSample[],
+  sample: PendulumSample,
+  historySeconds: number,
+) {
+  const lastSample = samples.at(-1)
+
+  if (!lastSample || sample.timeSeconds > lastSample.timeSeconds + 0.0001) {
+    samples.push(sample)
+  } else if (lastSample) {
+    samples[samples.length - 1] = sample
+  }
+
+  const oldestVisibleTimeSeconds = Math.max(0, sample.timeSeconds - historySeconds)
+
+  while (
+    samples.length > 1 &&
+    samples[1].timeSeconds < oldestVisibleTimeSeconds
+  ) {
+    samples.shift()
+  }
 }
 
 function toScenePosition(sample: Pick<PendulumSample, 'xMeters' | 'yMeters'>) {

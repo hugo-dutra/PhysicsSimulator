@@ -1,26 +1,35 @@
-import { memo, useEffect, useId, useRef, type ReactNode } from 'react'
+import {
+  memo,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import { Box, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { themeTokens } from '../../theme/appTheme'
-
-export type ChartTrace = {
-  x: number[]
-  y: number[]
-  name: string
-  lineColor: string
-}
+import {
+  deriveYRange,
+  type ChartTrace,
+  type ChartYAxisMode,
+} from './LiveLineChartModel'
 
 type LiveLineChartProps = {
   action?: ReactNode
   title: string
   xAxisRange?: [number, number]
+  yAxisMode?: ChartYAxisMode
   yAxisTitle: string
   traces: ChartTrace[]
 }
 
 type RenderInput = {
+  allTraces: ChartTrace[]
   traces: ChartTrace[]
   xAxisRange?: [number, number]
+  yAxisMode: ChartYAxisMode
   yAxisTitle: string
 }
 
@@ -51,17 +60,30 @@ export const LiveLineChart = memo(function LiveLineChart({
   title,
   traces,
   xAxisRange,
+  yAxisMode = 'auto',
   yAxisTitle,
 }: LiveLineChartProps) {
   const chartId = useId()
+  const [hiddenTraceNames, setHiddenTraceNames] = useState<Set<string>>(
+    () => new Set(),
+  )
+  const activeHiddenTraceNames = useMemo(() => {
+    const traceNames = new Set(traces.map((trace) => trace.name))
+
+    return new Set([...hiddenTraceNames].filter((name) => traceNames.has(name)))
+  }, [hiddenTraceNames, traces])
+  const visibleTraces = useMemo(
+    () => traces.filter((trace) => !activeHiddenTraceNames.has(trace.name)),
+    [activeHiddenTraceNames, traces],
+  )
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const inputRef = useRef<RenderInput>({
-    traces,
+    allTraces: traces,
+    traces: visibleTraces,
     xAxisRange,
+    yAxisMode,
     yAxisTitle,
   })
-  const drawnHeadTimeRef = useRef<number | null>(null)
-  const drawnRangeRef = useRef<[number, number] | null>(null)
   const canvasSizeRef = useRef<CanvasSize>({
     height: chartHeight,
     pixelRatio: 1,
@@ -70,11 +92,27 @@ export const LiveLineChart = memo(function LiveLineChart({
 
   useEffect(() => {
     inputRef.current = {
-      traces,
+      allTraces: traces,
+      traces: visibleTraces,
       xAxisRange,
+      yAxisMode,
       yAxisTitle,
     }
-  }, [traces, xAxisRange, yAxisTitle])
+  }, [traces, visibleTraces, xAxisRange, yAxisMode, yAxisTitle])
+
+  const handleTraceToggle = (traceName: string) => {
+    setHiddenTraceNames((current) => {
+      const next = new Set(current)
+
+      if (next.has(traceName)) {
+        next.delete(traceName)
+      } else {
+        next.add(traceName)
+      }
+
+      return next
+    })
+  }
 
   useEffect(() => {
     if (import.meta.env.MODE === 'test') {
@@ -89,8 +127,6 @@ export const LiveLineChart = memo(function LiveLineChart({
     }
 
     let frameId = 0
-    let lastTimestamp = window.performance.now()
-
     const resizeCanvas = () => {
       const bounds = canvas.getBoundingClientRect()
       const pixelRatio = Math.min(2, window.devicePixelRatio || 1)
@@ -115,34 +151,18 @@ export const LiveLineChart = memo(function LiveLineChart({
 
     observer?.observe(canvas)
 
-    const renderFrame = (timestamp: number) => {
-      const deltaSeconds = Math.min(
-        0.12,
-        Math.max(0, (timestamp - lastTimestamp) / 1000),
-      )
-
-      lastTimestamp = timestamp
-
+    const renderFrame = () => {
       const input = inputRef.current
-      const targetRange = normalizeRange(
-        input.xAxisRange ?? deriveXRange(input.traces),
+      const xAxisRange = normalizeRange(
+        input.xAxisRange ?? deriveXRange(input.allTraces),
       )
-      const targetHeadTime = readLatestTime(input.traces)
-      const drawnRange = advanceRange(drawnRangeRef.current, targetRange)
-      const drawnHeadTime = advanceHeadTime(
-        drawnHeadTimeRef.current,
-        targetHeadTime,
-        deltaSeconds,
-        targetRange,
-      )
-
-      drawnRangeRef.current = drawnRange
-      drawnHeadTimeRef.current = drawnHeadTime
+      const headTime = readLatestTime(input.allTraces)
 
       drawChart(context, canvasSizeRef.current, {
-        headTime: drawnHeadTime,
+        headTime,
         traces: input.traces,
-        xAxisRange: drawnRange,
+        xAxisRange,
+        yAxisMode: input.yAxisMode,
         yAxisTitle: input.yAxisTitle,
       })
 
@@ -183,8 +203,15 @@ export const LiveLineChart = memo(function LiveLineChart({
         </Typography>
         {action}
       </Stack>
+      {traces.length > 0 ? (
+        <ChartLegend
+          chartTitle={title}
+          hiddenTraceNames={activeHiddenTraceNames}
+          onTraceToggle={handleTraceToggle}
+          traces={traces}
+        />
+      ) : null}
       <Box aria-labelledby={chartId} role="img">
-        {traces.length > 0 ? <ChartLegend traces={traces} /> : null}
         <Box sx={{ height: chartHeight, minWidth: 0 }}>
           <canvas
             ref={canvasRef}
@@ -203,7 +230,13 @@ export const LiveLineChart = memo(function LiveLineChart({
 function drawChart(
   context: CanvasRenderingContext2D,
   size: CanvasSize,
-  input: RenderInput & { headTime: number; xAxisRange: [number, number] },
+  input: {
+    headTime: number
+    traces: ChartTrace[]
+    xAxisRange: [number, number]
+    yAxisMode: ChartYAxisMode
+    yAxisTitle: string
+  },
 ) {
   context.setTransform(size.pixelRatio, 0, 0, size.pixelRatio, 0, 0)
   context.clearRect(0, 0, size.width, size.height)
@@ -216,12 +249,17 @@ function drawChart(
     x: plotPadding.left,
     y: plotPadding.top,
   }
-  const yRange = deriveYRange(input.traces, input.xAxisRange)
+  const yRange = deriveYRange(
+    input.traces,
+    input.xAxisRange,
+    input.yAxisMode,
+  )
   const scale = createScale(plot, input.xAxisRange, yRange)
 
   context.fillStyle = themeTokens.background
   context.fillRect(plot.x, plot.y, plot.width, plot.height)
   drawGrid(context, plot, input.xAxisRange, yRange)
+  drawZeroAxis(context, plot, yRange, scale.y)
 
   context.save()
   context.beginPath()
@@ -341,17 +379,8 @@ function drawTraces(
     context.moveTo(scale.x(points[0].x), scale.y(points[0].y))
 
     for (let index = 1; index < points.length; index += 1) {
-      const previous = points[index - 1]
       const point = points[index]
-      const controlX = (scale.x(previous.x) + scale.x(point.x)) / 2
-      const controlY = (scale.y(previous.y) + scale.y(point.y)) / 2
-
-      context.quadraticCurveTo(
-        scale.x(previous.x),
-        scale.y(previous.y),
-        controlX,
-        controlY,
-      )
+      context.lineTo(scale.x(point.x), scale.y(point.y))
     }
 
     const lastPoint = points.at(-1)
@@ -365,6 +394,26 @@ function drawTraces(
       context.fill()
     }
   })
+}
+
+function drawZeroAxis(
+  context: CanvasRenderingContext2D,
+  plot: { height: number; width: number; x: number; y: number },
+  yRange: [number, number],
+  yScale: (value: number) => number,
+) {
+  if (yRange[0] > 0 || yRange[1] < 0) {
+    return
+  }
+
+  const y = yScale(0)
+
+  context.strokeStyle = alpha(themeTokens.text, 0.22)
+  context.lineWidth = 1
+  context.beginPath()
+  context.moveTo(plot.x, y)
+  context.lineTo(plot.x + plot.width, y)
+  context.stroke()
 }
 
 function createScale(
@@ -418,49 +467,6 @@ function readVisiblePoints(trace: ChartTrace, minX: number, maxX: number) {
   return points
 }
 
-function advanceHeadTime(
-  currentHeadTime: number | null,
-  targetHeadTime: number,
-  deltaSeconds: number,
-  xRange: [number, number],
-) {
-  if (currentHeadTime === null || targetHeadTime < currentHeadTime) {
-    return targetHeadTime
-  }
-
-  const gap = targetHeadTime - currentHeadTime
-
-  if (gap < 0.001) {
-    return targetHeadTime
-  }
-
-  const windowSeconds = Math.max(0.001, xRange[1] - xRange[0])
-  const catchupSeconds = Math.min(0.09, Math.max(0.035, windowSeconds / 240))
-  const speed = Math.max(0.4, gap / catchupSeconds)
-
-  return currentHeadTime + Math.min(gap, speed * deltaSeconds)
-}
-
-function advanceRange(
-  currentRange: [number, number] | null,
-  targetRange: [number, number],
-): [number, number] {
-  if (!currentRange) {
-    return targetRange
-  }
-
-  return [
-    approach(currentRange[0], targetRange[0], 0.22),
-    approach(currentRange[1], targetRange[1], 0.22),
-  ]
-}
-
-function approach(current: number, target: number, ratio: number) {
-  const next = current + (target - current) * ratio
-
-  return Math.abs(next - target) < 0.001 ? target : next
-}
-
 function deriveXRange(traces: ChartTrace[]): [number, number] {
   const values = traces.flatMap((trace) => trace.x)
 
@@ -469,30 +475,6 @@ function deriveXRange(traces: ChartTrace[]): [number, number] {
   }
 
   return [Math.min(...values), Math.max(...values)]
-}
-
-function deriveYRange(
-  traces: ChartTrace[],
-  xAxisRange: [number, number],
-): [number, number] {
-  const values = traces.flatMap((trace) =>
-    trace.y.filter((_, index) => {
-      const x = trace.x[index]
-
-      return x >= xAxisRange[0] && x <= xAxisRange[1]
-    }),
-  )
-
-  if (values.length === 0) {
-    return [-1, 1]
-  }
-
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const span = max - min || Math.max(1, Math.abs(max))
-  const padding = span * 0.12
-
-  return [min - padding, max + padding]
 }
 
 function normalizeRange(range: [number, number]): [number, number] {
@@ -529,7 +511,17 @@ function interpolateAtX(
   return startY + (endY - startY) * ratio
 }
 
-function ChartLegend({ traces }: { traces: ChartTrace[] }) {
+function ChartLegend({
+  chartTitle,
+  hiddenTraceNames,
+  onTraceToggle,
+  traces,
+}: {
+  chartTitle: string
+  hiddenTraceNames: Set<string>
+  onTraceToggle: (traceName: string) => void
+  traces: ChartTrace[]
+}) {
   return (
     <Box
       sx={{
@@ -543,18 +535,53 @@ function ChartLegend({ traces }: { traces: ChartTrace[] }) {
     >
       {traces.map((trace) => (
         <Box
+          aria-label={`${
+            hiddenTraceNames.has(trace.name) ? 'Ligar' : 'Desligar'
+          } serie ${trace.name} no grafico ${chartTitle}`}
+          aria-pressed={!hiddenTraceNames.has(trace.name)}
+          component="button"
           key={trace.name}
+          onClick={() => {
+            onTraceToggle(trace.name)
+          }}
           sx={{
             alignItems: 'center',
+            bgcolor: 'transparent',
+            border: `1px solid ${
+              hiddenTraceNames.has(trace.name)
+                ? alpha(themeTokens.border, 0.72)
+                : 'transparent'
+            }`,
+            borderRadius: 1,
+            color: 'inherit',
+            cursor: 'pointer',
             display: 'inline-flex',
+            font: 'inherit',
             gap: 0.75,
             minWidth: 0,
+            opacity: hiddenTraceNames.has(trace.name) ? 0.52 : 1,
+            px: 0.5,
+            py: 0.25,
+            textAlign: 'left',
+            transition: 'border-color 120ms ease, opacity 120ms ease',
+            '&:focus-visible': {
+              outline: `2px solid ${alpha(themeTokens.teal, 0.72)}`,
+              outlineOffset: 2,
+            },
+            '&:hover': {
+              borderColor: alpha(themeTokens.teal, 0.5),
+              opacity: 1,
+            },
           }}
+          type="button"
         >
           <Box
             aria-hidden
             sx={{
-              bgcolor: trace.lineColor,
+              bgcolor: hiddenTraceNames.has(trace.name)
+                ? 'transparent'
+                : trace.lineColor,
+              border: `1px solid ${trace.lineColor}`,
               borderRadius: 999,
               flex: '0 0 auto',
               height: 3,

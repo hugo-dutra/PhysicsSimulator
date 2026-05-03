@@ -39,7 +39,7 @@
 - `fixtures/simulations/catalog.json` deve listar todas as simulacoes planejadas do catalogo curricular; simulacoes com motor, cena, graficos, tabela, formulas, teoria e validacao ficam como `analysis` ate teste manual, e so depois podem virar `ready`.
 - A sidebar inicia abertas apenas as subareas com simulacoes em `analysis`; subareas apenas `ready` ou `planned` iniciam fechadas.
 - `Mecanica > Pendulo simples` fica como `ready` apos teste manual do dono do projeto.
-- A primeira fatia planejada de `Oscilacoes e Ondas` sera `Oscilacoes > Massa-mola vertical`: suporte superior fixo, mola helicoidal, massa esferica e oscilacao vertical em torno do equilibrio.
+- A fatia de `Massa-mola vertical` foi antecipada em `Mecanica > Oscilacoes` e marcada como `ready` apos aprovacao manual: suporte superior fixo, mola helicoidal, massa esferica e oscilacao vertical em torno do equilibrio.
 - Tabelas sincronizadas em playback devem manter quantidade fixa de linhas visiveis para evitar piscadas e deslocamento de layout; slots sem amostra podem aparecer vazios ate haver dados suficientes.
 - O pendulo simples deve expor, alem da velocidade angular, velocidade linear tangencial e aceleracoes tangencial/radial/total em graficos e tabela, calculadas no sample do motor.
 - Vetores exibidos na cena devem ter legenda visivel com cor, modulo atual e significado fisico.
@@ -50,20 +50,21 @@
 - `Mecanica > Dinamica > Plano inclinado com atrito` e a segunda simulacao `ready`, com fixture local, motor deterministico por regimes, cena Three.js, graficos live-canvas, tabela, formulas e teoria no mesmo shell.
 - O runtime visual reutilizavel fica em `src/lib/rendering/visualRuntime.ts` e centraliza agendamento de frames, interpolacao de timeline e metricas simples, mantendo cada renderer dono dos seus objetos e buffers.
 - `Mecanica > Cinematica` iniciou a Fase 3 com quatro simulacoes executaveis. Apos aprovacao manual, `Movimento retilineo uniforme`, `Movimento uniformemente variado e queda livre` e `Lancamento obliquo` ficam como `ready`; `Movimento circular uniforme` permanece em `analysis`. Todas usam motor analitico compartilhado, cena Three.js 2.5D, live-canvas, tabela, formulas, teoria e fixtures locais.
-- O segundo lote da Fase 3 mantem `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho` como `ready`. Todas reutilizam o motor analitico compartilhado com campos extras de forca, tensao, atrito, trabalho, dissipacao e limites de modelo.
+- O segundo lote da Fase 3 mantem `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho` como `ready`; `Trabalho e energia em trilho` foi aprovada manualmente apos ser alterada para rampa em U com perda percentual. Todas reutilizam o motor analitico compartilhado com campos extras de forca, tensao, atrito, trabalho, dissipacao, percentual de perda e limites de modelo.
 - O terceiro lote da Fase 3 mantem `Colisoes 1D e 2D` como `ready`; `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido` permanecem em `analysis`, ampliando o motor compartilhado com momento linear, impulso, componentes de forca, centro de massa, torque, momento de inercia e grandezas angulares.
 - O quarto lote da Fase 3 mantem `Rolamento sem escorregamento`, `Campo gravitacional e orbitas`, `Hidrostatica e empuxo` e `Continuidade e Bernoulli` em `analysis`, ampliando o motor compartilhado com aderencia/escorregamento, campo gravitacional, pressao, vazao, empuxo, fracao submersa e warnings de limite de modelo.
+- `Mecanica > Oscilacoes > Massa-mola vertical` fica como `ready`, ampliando o motor compartilhado com equilibrio estatico `mg/k`, forca elastica, energia elastica/gravitacional, mola helicoidal sincronizada e warning de amortecimento.
 - Simulacoes `analysis` ou `ready` devem ser auditadas pelo guia `10-simulation-fidelity-adjustment-guide.md`: parametros fisicamente validos em zero nao devem ser bloqueados por conveniencia visual, falhas de restricao devem trocar o regime no motor, e toda task futura de simulacao deve registrar essa auditoria antes de ser considerada pronta.
 - Em `Forca centripeta em curva`, atrito zero e valido. Quando `v^2/r > mu g`, o corpo deixa a curva ideal; com `mu = 0`, sai pela tangente em linha reta.
 - Em `Maquina de Atwood`, a representacao visual deve seguir o formato didatico de suporte fixo, polia fixa, fio passando pelo arco superior e massas em blocos alinhadas aos trechos verticais.
-- Em `Trabalho e energia em trilho`, a representacao visual deve seguir o formato de bancada de energia: trilho 3D inclinado, corpo alinhado ao trilho, rastro termico e painel compacto de balanco energetico derivados de `KinematicsSample`, sem inventar energia fora do motor.
+- Em `Trabalho e energia em trilho`, a representacao visual deve seguir o formato de bancada de energia: rampa em U fixa, corpo alinhado a tangente local, rastro de perda e painel compacto de energia/perda derivados de `KinematicsSample`, sem inventar energia fora do motor.
 
 ## Decisoes pendentes
 
 - Definir se a aplicacao deve ser apenas web ou tambem empacotavel como desktop no futuro.
 - Definir estrategia final de testes e2e apos inicializar o frontend.
 - Definir criterios objetivos para quando PixiJS, Rapier, Matter.js, D3.js ou Manim deixam de ser opcionais e entram no bundle.
-- Definir se, apos validar manualmente as simulacoes mecanicas em `analysis`, a proxima fatia deve ir para `Oscilacoes e Ondas > Massa-mola vertical` ou revisar/promover mecanica restante para `ready`.
+- Definir se, apos validar manualmente as simulacoes mecanicas em `analysis`, a proxima fatia deve ir para `Oscilacoes e Ondas` propriamente dita ou revisar/promover mecanica restante para `ready`.
 
 ## Gaps deixados para depois
 

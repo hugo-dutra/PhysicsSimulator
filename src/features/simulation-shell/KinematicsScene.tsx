@@ -2,14 +2,18 @@ import {
   useCallback,
   useEffect,
   useRef,
+  type MutableRefObject,
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
 } from 'react'
 import { Box } from '@mui/material'
 import * as THREE from 'three'
 import {
+  computeKinematicsSample,
+  computeKinematicsTimeline,
   getKinematicsVectorOverlays,
   interpolateKinematicsSample,
+  type KinematicsParameters,
   type KinematicsSample,
   type KinematicsSimulationId,
   type KinematicsVectorOverlay,
@@ -19,6 +23,7 @@ import {
   createFrameStatsWindow,
   readInterpolatedTimelineFrame,
   requestAnimationFrameSafe,
+  scalePlaybackDelta,
   updateFrameStatsWindow,
   type FrameStats,
 } from '../../lib/rendering/visualRuntime'
@@ -48,6 +53,7 @@ type KinematicsSceneProps = {
   isPlaying: boolean
   maximized?: boolean
   onSampleChange: (sample: KinematicsSample, stats: KinematicsFrameStats) => void
+  parameters: KinematicsParameters
   playbackRate: number
   resetVersion: number
   samples: KinematicsSample[]
@@ -71,6 +77,7 @@ type SceneObjects = {
   scene: THREE.Scene
   sceneProjection: KinematicsSceneProjection
   secondaryBody: THREE.Mesh
+  bodyRadius: number
   pulley: THREE.Mesh
   supportBar: THREE.Mesh
   supportStem: THREE.Mesh
@@ -89,7 +96,9 @@ type SceneObjects = {
 type RuntimeProps = {
   durationSeconds: number
   onSampleChange: (sample: KinematicsSample, stats: KinematicsFrameStats) => void
+  parameters: KinematicsParameters
   playbackRate: number
+  sampleRateHz: number
   samples: KinematicsSample[]
   showTrace: boolean
   showVectors: boolean
@@ -103,12 +112,9 @@ type DragState = {
 }
 
 type WorkEnergyTrackSceneProfile = {
-  direction: THREE.Vector3
-  end: THREE.Vector3
-  length: number
-  normal: THREE.Vector3
-  pitchRadians: number
-  start: THREE.Vector3
+  halfWidthMeters: number
+  positionScale: number
+  rimHeightMeters: number
 }
 
 const vectorColors: Record<KinematicsVectorOverlay['id'], number> = {
@@ -158,8 +164,10 @@ const vectorIds = [
 ] as const
 const bodySize = 0.22
 const atwoodPulleyRadius = 0.34
-const atwoodRopePointCapacity = 48
+const atwoodRopePointCapacity = 96
 const atwoodRopeArcSegments = 28
+const massSpringCoilSegments = 72
+const massSpringCoilTurns = 9
 const maxPathPoints = 360
 const maxTracePoints = 120
 const traceFadeSeconds = 2.4
@@ -197,6 +205,7 @@ export function KinematicsScene({
   isPlaying,
   maximized = false,
   onSampleChange,
+  parameters,
   playbackRate,
   resetVersion,
   samples,
@@ -209,7 +218,9 @@ export function KinematicsScene({
   const runtimeRef = useRef<RuntimeProps>({
     durationSeconds,
     onSampleChange,
+    parameters,
     playbackRate,
+    sampleRateHz: readSampleRateHz(samples),
     samples,
     showTrace,
     showVectors,
@@ -225,17 +236,19 @@ export function KinematicsScene({
   })
   const dragStateRef = useRef<DragState | null>(null)
   const statsWindowRef = useRef(createFrameStatsWindow())
+  const timelineSamplesRef = useRef<KinematicsSample[]>(samples)
+  const traceSamplesRef = useRef<KinematicsSample[]>([readFirstKinematicsSample(samples)])
 
   const renderCurrentFrame = useCallback((notify = false) => {
     const objects = objectsRef.current
     const runtime = runtimeRef.current
-    const frame = readInterpolatedTimelineFrame(
-      runtime.samples,
-      runtime.durationSeconds,
+    const frame = readContinuousKinematicsFrame(
+      runtime,
+      timelineSamplesRef,
       elapsedSecondsRef.current,
-      interpolateKinematicsSample,
     )
     const sample = frame.sample
+    appendTraceSample(traceSamplesRef.current, sample, traceFadeSeconds)
 
     if (!objects || !sample) {
       return
@@ -244,8 +257,8 @@ export function KinematicsScene({
     updateKinematicsObjects({
       objects,
       sample,
-      sampleIndex: frame.sampleIndex,
-      samples: runtime.samples,
+      sampleIndex: traceSamplesRef.current.length - 1,
+      samples: traceSamplesRef.current,
       showTrace: runtime.showTrace,
       showVectors: runtime.showVectors,
       simulationId: runtime.simulationId,
@@ -253,7 +266,13 @@ export function KinematicsScene({
     objects.renderer.render(objects.scene, objects.camera)
 
     if (notify) {
-      runtime.onSampleChange(sample, statsWindowRef.current.stats)
+      runtime.onSampleChange(
+        {
+          ...sample,
+          timeSeconds: elapsedSecondsRef.current,
+        },
+        statsWindowRef.current.stats,
+      )
     }
   }, [])
 
@@ -361,7 +380,9 @@ export function KinematicsScene({
     runtimeRef.current = {
       durationSeconds,
       onSampleChange,
+      parameters,
       playbackRate,
+      sampleRateHz: readSampleRateHz(samples),
       samples,
       showTrace,
       showVectors,
@@ -372,6 +393,7 @@ export function KinematicsScene({
   }, [
     durationSeconds,
     onSampleChange,
+    parameters,
     playbackRate,
     renderCurrentFrame,
     samples,
@@ -632,6 +654,7 @@ export function KinematicsScene({
       scene,
       sceneProjection,
       secondaryBody,
+      bodyRadius: sceneBodySize,
       pulley,
       supportBar,
       supportStem,
@@ -646,8 +669,8 @@ export function KinematicsScene({
         1,
         ...samples.map((sample) => sample.thermalEnergyJoules),
       ),
-      workEnergyTrackNormal: workEnergyProfile.normal.clone(),
-      workEnergyTrackPitchRadians: workEnergyProfile.pitchRadians,
+      workEnergyTrackNormal: new THREE.Vector3(0, 0, 1),
+      workEnergyTrackPitchRadians: 0,
     }
 
     cameraPoseRef.current = {
@@ -676,6 +699,8 @@ export function KinematicsScene({
     lastFrameTimeRef.current = null
     lastReadoutTimeRef.current = 0
     statsWindowRef.current = createFrameStatsWindow()
+    timelineSamplesRef.current = samples
+    traceSamplesRef.current = [readFirstKinematicsSample(samples)]
     renderCurrentFrame(true)
   }, [renderCurrentFrame, resetVersion, samples])
 
@@ -702,14 +727,15 @@ export function KinematicsScene({
         maxFrameDeltaSeconds,
         Math.max(0, (timestamp - lastFrameTime) / 1000),
       )
+      const playbackDeltaSeconds = scalePlaybackDelta(
+        deltaSeconds,
+        runtime.playbackRate,
+      )
       const nextElapsedSeconds =
-        elapsedSecondsRef.current + deltaSeconds * runtime.playbackRate
+        elapsedSecondsRef.current + playbackDeltaSeconds
 
       lastFrameTimeRef.current = timestamp
-      elapsedSecondsRef.current =
-        nextElapsedSeconds >= runtime.durationSeconds
-          ? nextElapsedSeconds % runtime.durationSeconds
-          : nextElapsedSeconds
+      elapsedSecondsRef.current = nextElapsedSeconds
 
       updateFrameStatsWindow(statsWindowRef.current, timestamp, deltaSeconds)
       renderCurrentFrame(timestamp - lastReadoutTimeRef.current >= readoutIntervalMs)
@@ -747,7 +773,7 @@ export function KinematicsScene({
       }}
     >
       <Box
-        aria-label="Cena 3D de Cinematica com arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom"
+        aria-label={getKinematicsCanvasAriaLabel(simulationId)}
         component="canvas"
         onPointerCancel={handlePointerEnd}
         onPointerDown={handlePointerDown}
@@ -802,11 +828,13 @@ function updateKinematicsObjects({
   ) {
     objects.body.rotation.z = sample.angleRadians
   } else if (simulationId === 'work-energy-track') {
+    const trackNormal = getWorkEnergyTrackNormal(sample)
+
     objects.body.position.addScaledVector(
-      objects.workEnergyTrackNormal,
+      trackNormal,
       objects.workEnergyBodyLift,
     )
-    objects.body.rotation.y = objects.workEnergyTrackPitchRadians
+    objects.body.rotation.y = getWorkEnergyTrackPitchRadians(sample)
   } else if (simulationId === 'rolling-without-slipping') {
     objects.body.rotation.y = -sample.angleRadians
   }
@@ -848,13 +876,14 @@ function updateConstrainedBodyObjects(
 ) {
   const isAtwood = simulationId === 'atwood-machine'
   const isCollision = simulationId === 'collisions-1d-2d'
+  const isMassSpring = simulationId === 'mass-spring'
   const isOrbit = simulationId === 'gravitational-field-orbits'
 
   objects.secondaryBody.visible = isAtwood || isCollision || isOrbit
   objects.pulley.visible = isAtwood
-  objects.rope.visible = isAtwood
-  objects.supportBar.visible = isAtwood
-  objects.supportStem.visible = isAtwood
+  objects.rope.visible = isAtwood || isMassSpring
+  objects.supportBar.visible = isAtwood || isMassSpring
+  objects.supportStem.visible = isAtwood || isMassSpring
 
   if (isOrbit) {
     objects.secondaryBody.position.set(0, 0, 0)
@@ -885,6 +914,11 @@ function updateConstrainedBodyObjects(
         objects.sceneProjection,
       ),
     )
+    return
+  }
+
+  if (isMassSpring) {
+    updateMassSpringObjects(objects, sample)
     return
   }
 
@@ -960,6 +994,45 @@ function updateConstrainedBodyObjects(
   objects.ropePositionAttribute.needsUpdate = true
 }
 
+function updateMassSpringObjects(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+) {
+  const scale = objects.sceneProjection.positionScale
+  const massPosition = toKinematicsScenePosition(sample, objects.sceneProjection)
+  const bodyRadius = objects.bodyRadius
+  const springTopZ = sample.primaryRadiusMeters * scale
+  const supportZ = springTopZ + Math.max(0.18, bodyRadius * 0.9)
+  const supportWidth = Math.max(1.25, bodyRadius * 5.4)
+  const springBottomZ = Math.min(
+    springTopZ - 0.12,
+    massPosition.z + bodyRadius * 0.82,
+  )
+  const coilRadius = clamp(bodyRadius * 0.66, 0.08, 0.2)
+  const ropePoints = createMassSpringCoilPoints({
+    bottom: new THREE.Vector3(0, 0, springBottomZ),
+    radius: coilRadius,
+    top: new THREE.Vector3(0, 0, springTopZ),
+  })
+
+  objects.body.position.copy(massPosition)
+  objects.body.scale.setScalar(1)
+  objects.supportBar.position.set(0, 0, supportZ)
+  objects.supportBar.scale.set(supportWidth, 0.075, 0.075)
+  objects.supportStem.position.set(0, 0, (springTopZ + supportZ) / 2)
+  objects.supportStem.scale.set(0.075, 0.075, Math.max(0.12, supportZ - springTopZ))
+
+  ropePoints.forEach((point, index) => {
+    const offset = index * 3
+
+    objects.ropePositions[offset] = point.x
+    objects.ropePositions[offset + 1] = point.y
+    objects.ropePositions[offset + 2] = point.z
+  })
+  objects.rope.geometry.setDrawRange(0, ropePoints.length)
+  objects.ropePositionAttribute.needsUpdate = true
+}
+
 function createAtwoodRopePoints({
   leftMassTop,
   pulleyRadius,
@@ -988,6 +1061,35 @@ function createAtwoodRopePoints({
   }
 
   points.push(rightMassTop)
+
+  return points.slice(0, atwoodRopePointCapacity)
+}
+
+function createMassSpringCoilPoints({
+  bottom,
+  radius,
+  top,
+}: {
+  bottom: THREE.Vector3
+  radius: number
+  top: THREE.Vector3
+}) {
+  const points: THREE.Vector3[] = []
+
+  for (let index = 0; index <= massSpringCoilSegments; index += 1) {
+    const ratio = index / massSpringCoilSegments
+    const angle = ratio * Math.PI * 2 * massSpringCoilTurns
+    const endRadius =
+      index === 0 || index === massSpringCoilSegments ? 0 : radius
+
+    points.push(
+      new THREE.Vector3(
+        endRadius * Math.cos(angle),
+        endRadius * Math.sin(angle),
+        lerp(top.z, bottom.z, ratio),
+      ),
+    )
+  }
 
   return points.slice(0, atwoodRopePointCapacity)
 }
@@ -1052,7 +1154,7 @@ function updateTrace(
     const opacity = traceMaxOpacity - ageRatio * (traceMaxOpacity - traceMinOpacity)
 
     if (usesThermalTrace) {
-      position.addScaledVector(objects.workEnergyTrackNormal, 0.045)
+      position.addScaledVector(getWorkEnergyTrackNormal(sample), 0.045)
     }
 
     objects.tracePositions[positionOffset] = position.x
@@ -1070,92 +1172,147 @@ function updateTrace(
   objects.traceColorAttribute.needsUpdate = true
 }
 
+function readContinuousKinematicsFrame(
+  runtime: RuntimeProps,
+  timelineSamplesRef: MutableRefObject<KinematicsSample[]>,
+  elapsedSeconds: number,
+) {
+  const currentTimeSeconds = Math.max(0, elapsedSeconds)
+
+  if (runtime.simulationId !== 'work-energy-track') {
+    return {
+      sample: computeKinematicsSample(
+        runtime.simulationId,
+        runtime.parameters,
+        currentTimeSeconds,
+      ),
+      sampleIndex: 0,
+    }
+  }
+
+  ensureWorkEnergyTimelineCovers(
+    runtime,
+    timelineSamplesRef,
+    currentTimeSeconds,
+  )
+
+  const timelineSamples = timelineSamplesRef.current
+  const timelineDurationSeconds =
+    timelineSamples.at(-1)?.timeSeconds ?? runtime.durationSeconds
+
+  return readInterpolatedTimelineFrame(
+    timelineSamples,
+    timelineDurationSeconds,
+    currentTimeSeconds,
+    interpolateKinematicsSample,
+  )
+}
+
+function ensureWorkEnergyTimelineCovers(
+  runtime: RuntimeProps,
+  timelineSamplesRef: MutableRefObject<KinematicsSample[]>,
+  currentTimeSeconds: number,
+) {
+  const currentSamples = timelineSamplesRef.current
+  const currentTimelineEndSeconds =
+    currentSamples.at(-1)?.timeSeconds ?? runtime.durationSeconds
+
+  if (currentTimeSeconds <= currentTimelineEndSeconds) {
+    return
+  }
+
+  const extensionSeconds = Math.max(4, runtime.durationSeconds)
+  const nextDurationSeconds = Math.max(
+    currentTimeSeconds + extensionSeconds,
+    currentTimelineEndSeconds + extensionSeconds,
+  )
+
+  timelineSamplesRef.current = computeKinematicsTimeline({
+    durationSeconds: nextDurationSeconds,
+    parameters: runtime.parameters,
+    sampleRateHz: runtime.sampleRateHz,
+    simulationId: runtime.simulationId,
+  }).samples
+}
+
+function readFirstKinematicsSample(samples: KinematicsSample[]) {
+  const firstSample = samples[0]
+
+  if (!firstSample) {
+    throw new Error('Kinematics timeline must contain at least one sample.')
+  }
+
+  return firstSample
+}
+
+function appendTraceSample(
+  samples: KinematicsSample[],
+  sample: KinematicsSample,
+  historySeconds: number,
+) {
+  const lastSample = samples.at(-1)
+
+  if (!lastSample || sample.timeSeconds > lastSample.timeSeconds + 0.0001) {
+    samples.push(sample)
+  } else if (lastSample) {
+    samples[samples.length - 1] = sample
+  }
+
+  const oldestVisibleTimeSeconds = Math.max(0, sample.timeSeconds - historySeconds)
+
+  while (
+    samples.length > 1 &&
+    samples[1].timeSeconds < oldestVisibleTimeSeconds
+  ) {
+    samples.shift()
+  }
+}
+
+function readSampleRateHz(samples: KinematicsSample[]) {
+  const firstSample = samples[0]
+  const secondSample = samples[1]
+
+  if (!firstSample || !secondSample) {
+    return 60
+  }
+
+  const intervalSeconds = secondSample.timeSeconds - firstSample.timeSeconds
+
+  return intervalSeconds > 0 ? 1 / intervalSeconds : 60
+}
+
 function createWorkEnergyTrackSceneProfile(
   samples: KinematicsSample[],
   sceneProjection: KinematicsSceneProjection,
 ): WorkEnergyTrackSceneProfile {
   const firstSample = samples[0]
-  const farthestSample =
-    samples.reduce<KinematicsSample | null>((currentFarthest, sample) => {
-      if (!currentFarthest || sample.positionMeters > currentFarthest.positionMeters) {
-        return sample
-      }
-
-      return currentFarthest
-    }, null) ?? firstSample
-  const start = firstSample
-    ? toKinematicsScenePosition(firstSample, sceneProjection)
-    : new THREE.Vector3(0, 0, 0)
-  const end = farthestSample
-    ? toKinematicsScenePosition(farthestSample, sceneProjection)
-    : new THREE.Vector3(1, 0, 0)
-  const direction = end.clone().sub(start)
-  const length = Math.max(1, direction.length())
-
-  if (direction.lengthSq() < 1e-8) {
-    direction.set(1, 0, 0)
-  } else {
-    direction.normalize()
-  }
-
-  const normal = new THREE.Vector3(-direction.z, 0, direction.x)
-
-  if (normal.z < 0) {
-    normal.multiplyScalar(-1)
-  }
 
   return {
-    direction,
-    end,
-    length,
-    normal,
-    pitchRadians: -Math.atan2(direction.z, direction.x),
-    start,
+    halfWidthMeters: firstSample?.primaryRadiusMeters ?? 1,
+    positionScale: sceneProjection.positionScale,
+    rimHeightMeters: firstSample?.secondaryRadiusMeters ?? 1,
   }
 }
 
 function createWorkEnergyTrackReference(profile: WorkEnergyTrackSceneProfile) {
   const group = new THREE.Group()
-  const railLift = profile.normal.clone().multiplyScalar(0.045)
-  const deckLift = profile.normal.clone().multiplyScalar(-0.035)
-  const start = profile.start.clone()
-  const end = profile.end.clone()
-  const center = start.clone().add(end).multiplyScalar(0.5)
   const leftOffset = new THREE.Vector3(0, workEnergyTrackHalfWidth, 0)
   const rightOffset = new THREE.Vector3(0, -workEnergyTrackHalfWidth, 0)
-  const deck = new THREE.Mesh(
-    new THREE.BoxGeometry(
-      profile.length + 0.32,
-      workEnergyTrackHalfWidth * 2.42,
-      0.045,
-    ),
-    new THREE.MeshStandardMaterial({
-      color: 0x20242d,
-      metalness: 0.04,
-      opacity: 0.68,
-      roughness: 0.62,
-      transparent: true,
+  group.add(
+    createWorkEnergyTrackRail({
+      color: 0x38bdf8,
+      offset: leftOffset,
+      opacity: 0.78,
+      profile,
     }),
   )
-
-  deck.position.copy(center).add(deckLift)
-  deck.rotation.y = profile.pitchRadians
-  group.add(deck)
   group.add(
-    createSceneLine(
-      start.clone().add(leftOffset).add(railLift),
-      end.clone().add(leftOffset).add(railLift),
-      0x38bdf8,
-      0.78,
-    ),
-  )
-  group.add(
-    createSceneLine(
-      start.clone().add(rightOffset).add(railLift),
-      end.clone().add(rightOffset).add(railLift),
-      0x2dd4bf,
-      0.82,
-    ),
+    createWorkEnergyTrackRail({
+      color: 0x2dd4bf,
+      offset: rightOffset,
+      opacity: 0.82,
+      profile,
+    }),
   )
 
   const sleeperGeometry = new THREE.BoxGeometry(
@@ -1173,53 +1330,177 @@ function createWorkEnergyTrackReference(profile: WorkEnergyTrackSceneProfile) {
 
   for (let index = 0; index < workEnergySleeperCount; index += 1) {
     const ratio = index / (workEnergySleeperCount - 1)
+    const xMeters = lerp(-profile.halfWidthMeters, profile.halfWidthMeters, ratio)
     const sleeper = new THREE.Mesh(sleeperGeometry, sleeperMaterial)
+    const point = createWorkEnergyTrackPoint(profile, xMeters)
 
     sleeper.position
-      .copy(start)
-      .lerp(end, ratio)
-      .add(profile.normal.clone().multiplyScalar(0.018))
-    sleeper.rotation.y = profile.pitchRadians
+      .copy(point)
+      .add(getWorkEnergyNormalForX(profile, xMeters).multiplyScalar(0.018))
+    sleeper.rotation.y = getWorkEnergyPitchForX(profile, xMeters)
     group.add(sleeper)
   }
 
-  const baseZ = Math.min(start.z, end.z)
   const rulerY = -workEnergyTrackHalfWidth - 0.42
-  const rulerBottom = new THREE.Vector3(start.x, rulerY, baseZ)
-  const rulerTop = new THREE.Vector3(start.x, rulerY, start.z)
+  const rulerX = (-profile.halfWidthMeters - 0.28) * profile.positionScale
+  const rulerBottom = new THREE.Vector3(rulerX, rulerY, 0)
+  const rulerTop = new THREE.Vector3(
+    rulerX,
+    rulerY,
+    profile.rimHeightMeters * profile.positionScale,
+  )
 
   group.add(createSceneLine(rulerBottom, rulerTop, 0xa3e635, 0.44))
 
   for (let index = 0; index <= 4; index += 1) {
     const ratio = index / 4
-    const z = lerp(baseZ, start.z, ratio)
+    const z = profile.rimHeightMeters * profile.positionScale * ratio
 
     group.add(
       createSceneLine(
-        new THREE.Vector3(start.x - 0.1, rulerY, z),
-        new THREE.Vector3(start.x + 0.1, rulerY, z),
+        new THREE.Vector3(rulerX - 0.1, rulerY, z),
+        new THREE.Vector3(rulerX + 0.1, rulerY, z),
         0xa3e635,
         0.34,
       ),
     )
   }
 
-  const endStop = new THREE.Mesh(
-    new THREE.BoxGeometry(0.08, workEnergyTrackHalfWidth * 2.58, 0.36),
-    new THREE.MeshStandardMaterial({
-      color: 0xf43f5e,
-      metalness: 0.06,
-      opacity: 0.72,
-      roughness: 0.48,
+  const stopXMeters = [-profile.halfWidthMeters, profile.halfWidthMeters]
+
+  stopXMeters.forEach((xMeters) => {
+    const endStop = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, workEnergyTrackHalfWidth * 2.58, 0.36),
+      new THREE.MeshStandardMaterial({
+        color: 0xf43f5e,
+        metalness: 0.06,
+        opacity: 0.72,
+        roughness: 0.48,
+        transparent: true,
+      }),
+    )
+
+    endStop.position
+      .copy(createWorkEnergyTrackPoint(profile, xMeters))
+      .add(getWorkEnergyNormalForX(profile, xMeters).multiplyScalar(0.17))
+    endStop.rotation.y = getWorkEnergyPitchForX(profile, xMeters)
+    group.add(endStop)
+  })
+
+  return group
+}
+
+function createWorkEnergyTrackRail({
+  color,
+  offset,
+  opacity,
+  profile,
+}: {
+  color: number
+  offset: THREE.Vector3
+  opacity: number
+  profile: WorkEnergyTrackSceneProfile
+}) {
+  const segments = 96
+  const positions = new Float32Array((segments + 1) * 3)
+
+  for (let index = 0; index <= segments; index += 1) {
+    const ratio = index / segments
+    const xMeters = lerp(-profile.halfWidthMeters, profile.halfWidthMeters, ratio)
+    const point = createWorkEnergyTrackPoint(profile, xMeters)
+      .add(offset)
+      .add(getWorkEnergyNormalForX(profile, xMeters).multiplyScalar(0.045))
+    const positionOffset = index * 3
+
+    positions[positionOffset] = point.x
+    positions[positionOffset + 1] = point.y
+    positions[positionOffset + 2] = point.z
+  }
+
+  const geometry = new THREE.BufferGeometry()
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+
+  return new THREE.Line(
+    geometry,
+    new THREE.LineBasicMaterial({
+      color,
+      opacity,
       transparent: true,
     }),
   )
+}
 
-  endStop.position.copy(end).add(profile.normal.clone().multiplyScalar(0.17))
-  endStop.rotation.y = profile.pitchRadians
-  group.add(endStop)
+function createWorkEnergyTrackPoint(
+  profile: WorkEnergyTrackSceneProfile,
+  xMeters: number,
+) {
+  return new THREE.Vector3(
+    xMeters * profile.positionScale,
+    0,
+    getWorkEnergyHeightForX(profile, xMeters) * profile.positionScale,
+  )
+}
 
-  return group
+function getWorkEnergyHeightForX(
+  profile: WorkEnergyTrackSceneProfile,
+  xMeters: number,
+) {
+  if (profile.halfWidthMeters === 0) {
+    return 0
+  }
+
+  return profile.rimHeightMeters * (xMeters / profile.halfWidthMeters) ** 2
+}
+
+function getWorkEnergySlopeForX(
+  profile: WorkEnergyTrackSceneProfile,
+  xMeters: number,
+) {
+  if (profile.halfWidthMeters === 0) {
+    return 0
+  }
+
+  return (2 * profile.rimHeightMeters * xMeters) / profile.halfWidthMeters ** 2
+}
+
+function getWorkEnergyNormalForX(
+  profile: WorkEnergyTrackSceneProfile,
+  xMeters: number,
+) {
+  return new THREE.Vector3(
+    -getWorkEnergySlopeForX(profile, xMeters),
+    0,
+    1,
+  ).normalize()
+}
+
+function getWorkEnergyPitchForX(
+  profile: WorkEnergyTrackSceneProfile,
+  xMeters: number,
+) {
+  return -Math.atan(getWorkEnergySlopeForX(profile, xMeters))
+}
+
+function getWorkEnergyTrackNormal(sample: KinematicsSample) {
+  const slope = getWorkEnergySampleSlope(sample)
+
+  return new THREE.Vector3(-slope, 0, 1).normalize()
+}
+
+function getWorkEnergyTrackPitchRadians(sample: KinematicsSample) {
+  return -Math.atan(getWorkEnergySampleSlope(sample))
+}
+
+function getWorkEnergySampleSlope(sample: KinematicsSample) {
+  if (sample.primaryRadiusMeters === 0) {
+    return 0
+  }
+
+  return (
+    (2 * sample.secondaryRadiusMeters * sample.xMeters) /
+    sample.primaryRadiusMeters ** 2
+  )
 }
 
 function createSceneLine(
@@ -1252,6 +1533,10 @@ function createReferencePath(
 
   if (simulationId === 'work-energy-track') {
     return createWorkEnergyTrackReference(workEnergyProfile)
+  }
+
+  if (simulationId === 'mass-spring') {
+    return createMassSpringReferencePath(samples, sceneProjection)
   }
 
   if (simulationId === 'collisions-1d-2d') {
@@ -1289,6 +1574,53 @@ function createReferencePath(
   })
 
   return new THREE.Line(geometry, material)
+}
+
+function createMassSpringReferencePath(
+  samples: KinematicsSample[],
+  sceneProjection: KinematicsSceneProjection,
+) {
+  const firstSample = samples[0]
+  const group = new THREE.Group()
+  const scale = sceneProjection.positionScale
+  const springTopZ = (firstSample?.primaryRadiusMeters ?? 1) * scale
+  const equilibriumExtensionZ = (firstSample?.secondaryRadiusMeters ?? 0) * scale
+  const naturalReferenceZ = springTopZ - equilibriumExtensionZ
+  const halfWidth = Math.max(
+    0.55,
+    Math.min(
+      1.25,
+      Math.max(...samples.map((sample) => Math.abs(sample.zMeters * scale))) *
+        1.25,
+    ),
+  )
+
+  group.add(
+    createSceneLine(
+      new THREE.Vector3(-halfWidth, -0.08, 0),
+      new THREE.Vector3(halfWidth, -0.08, 0),
+      0x2dd4bf,
+      0.54,
+    ),
+  )
+  group.add(
+    createSceneLine(
+      new THREE.Vector3(-halfWidth * 0.68, -0.08, naturalReferenceZ),
+      new THREE.Vector3(halfWidth * 0.68, -0.08, naturalReferenceZ),
+      0x818cf8,
+      0.34,
+    ),
+  )
+  group.add(
+    createSceneLine(
+      new THREE.Vector3(0, -0.16, Math.min(0, ...samples.map((sample) => sample.zMeters * scale))),
+      new THREE.Vector3(0, -0.16, springTopZ),
+      0xe6e8ec,
+      0.18,
+    ),
+  )
+
+  return group
 }
 
 function createCollisionReferencePath(
@@ -1471,6 +1803,21 @@ function estimateSceneBounds(
     }
   }
 
+  if (simulationId === 'mass-spring') {
+    const firstSample = samples[0]
+
+    if (firstSample) {
+      const scale = sceneProjection.positionScale
+      const topZ = firstSample.primaryRadiusMeters * scale
+      const minZ = Math.min(0, ...samples.map((sample) => sample.zMeters * scale))
+
+      positions.push(
+        new THREE.Vector3(-0.9, -0.55, minZ - 0.35),
+        new THREE.Vector3(0.9, 0.55, topZ + 0.55),
+      )
+    }
+  }
+
   if (simulationId === 'centripetal-force-curve') {
     const firstSample = samples[0]
     const scale = sceneProjection.positionScale
@@ -1484,6 +1831,21 @@ function estimateSceneBounds(
       new THREE.Vector3(-visibleRadius * 1.35, -visibleRadius * 1.35, 0),
       new THREE.Vector3(visibleRadius * 1.35, visibleRadius * 1.75, 0),
     )
+  }
+
+  if (simulationId === 'work-energy-track') {
+    const firstSample = samples[0]
+
+    if (firstSample) {
+      const scale = sceneProjection.positionScale
+      const halfWidth = firstSample.primaryRadiusMeters * scale
+      const rimHeight = firstSample.secondaryRadiusMeters * scale
+
+      positions.push(
+        new THREE.Vector3(-halfWidth * 1.18, -0.9, 0),
+        new THREE.Vector3(halfWidth * 1.18, 0.9, rimHeight * 1.18),
+      )
+    }
   }
 
   const xs = positions.map((position) => position.x)
@@ -1541,9 +1903,17 @@ function updateOrbitCamera(
 }
 
 function getInitialCameraYawRadians(simulationId: KinematicsSimulationId) {
-  return simulationId === 'atwood-machine'
+  return simulationId === 'atwood-machine' || simulationId === 'mass-spring'
     ? -Math.PI / 2
     : initialCameraYawRadians
+}
+
+function getKinematicsCanvasAriaLabel(simulationId: KinematicsSimulationId) {
+  if (simulationId === 'mass-spring') {
+    return 'Cena 3D do massa-mola vertical com arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom'
+  }
+
+  return 'Cena 3D de Cinematica com arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom'
 }
 
 function normalizeWheelDeltaY(event: ReactWheelEvent<HTMLCanvasElement>) {

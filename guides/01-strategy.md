@@ -20,7 +20,7 @@ Materiais de fisica costumam separar teoria, grafico, tabela e animacao em ferra
 
 ## Proposta de valor
 
-Uma interface moderna, escura e cientifica, com sidebar por areas do conhecimento, simulacoes interativas e um painel lateral de parametros que atualiza visualizacao, graficos, tabelas, vetores e texto teorico de forma coordenada.
+Uma interface moderna, escura e cientifica, com sidebar por areas do conhecimento, simulacoes interativas e um painel flutuante de parametros que permanece disponivel durante a rolagem e atualiza visualizacao, graficos, tabelas, vetores e texto teorico de forma coordenada.
 
 ## Core de viabilidade
 
@@ -63,7 +63,7 @@ Esse escopo deve ser tratado como roadmap planejado, nao como promessa da primei
 ## Hipoteses a validar
 
 - React + MUI + Three.js + adaptadores de grafico entregam uma experiencia rica sem complexidade excessiva; Plotly.js fica para graficos declarativos e canvas/SVG para series progressivas que precisam parecer desenhadas continuamente.
-- Um layout com sidebar, canvas central, controles laterais, graficos, tabela e teoria cabe bem em desktop e permanece usavel em telas menores.
+- Um layout com sidebar, canvas central, controles flutuantes, graficos, tabela e teoria cabe bem em desktop e permanece usavel em telas menores.
 - A primeira simulacao pode definir um contrato reutilizavel para as proximas.
 - A segunda simulacao mecanica, o primeiro lote de Cinematica e o lote seguinte de Dinamica/Energia validam se o mesmo shell, os mesmos blocos de dados e o helper renderer-first reduzem o custo de adicionar novos modelos.
 - Conteudo teorico em MDX/Markdown com KaTeX e suficiente para explicar a fisica, as formulas e seus contextos de uso sem criar um CMS cedo demais.

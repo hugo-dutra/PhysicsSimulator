@@ -14,6 +14,26 @@ export type TimelineFrame<TSample> = {
   sampleIndex: number
 }
 
+type TimedSample = {
+  timeSeconds: number
+}
+
+export function normalizePlaybackRate(playbackRate: number) {
+  if (!Number.isFinite(playbackRate)) {
+    return 0
+  }
+
+  return Math.min(1, Math.max(0, playbackRate))
+}
+
+export function scalePlaybackDelta(deltaSeconds: number, playbackRate: number) {
+  if (!Number.isFinite(deltaSeconds) || deltaSeconds <= 0) {
+    return 0
+  }
+
+  return deltaSeconds * normalizePlaybackRate(playbackRate)
+}
+
 export function createFrameStatsWindow(): FrameStatsWindow {
   return {
     frameCount: 0,
@@ -82,6 +102,33 @@ export function readInterpolatedTimelineFrame<TSample>(
     sample: interpolateSample(samples[lowerIndex], samples[upperIndex], ratio),
     sampleIndex: lowerIndex,
   }
+}
+
+export function readLoopedTimelineFrame<TSample extends TimedSample>(
+  samples: TSample[],
+  durationSeconds: number,
+  elapsedSeconds: number,
+  interpolateSample: (start: TSample, end: TSample, ratio: number) => TSample,
+): TimelineFrame<TSample> {
+  return readInterpolatedTimelineFrame(
+    samples,
+    durationSeconds,
+    getLoopedTimelineTime(elapsedSeconds, durationSeconds),
+    interpolateSample,
+  )
+}
+
+export function getLoopedTimelineTime(
+  elapsedSeconds: number,
+  durationSeconds: number,
+) {
+  if (durationSeconds <= 0 || elapsedSeconds <= durationSeconds) {
+    return Math.max(0, elapsedSeconds)
+  }
+
+  const loopedTimeSeconds = elapsedSeconds % durationSeconds
+
+  return loopedTimeSeconds === 0 ? durationSeconds : loopedTimeSeconds
 }
 
 export function requestAnimationFrameSafe(callback: FrameRequestCallback) {

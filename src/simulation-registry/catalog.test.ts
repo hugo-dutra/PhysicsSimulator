@@ -33,7 +33,7 @@ describe('simulation registry', () => {
     ).toHaveLength(8)
     expect(
       allSimulations.filter((item) => item.status === 'ready'),
-    ).toHaveLength(9)
+    ).toHaveLength(10)
     expect(allSimulations.some((item) => item.status === 'planned')).toBe(true)
     expect(findSimulation('inclined-plane-friction').status).toBe('ready')
     expect(findSimulation('projectile-motion').status).toBe('ready')
@@ -44,9 +44,9 @@ describe('simulation registry', () => {
       simulationCatalog.areas.map((area) => [area.id, area.simulations]),
     )
 
-    expect(simulationsByArea.get('mechanics')).toHaveLength(17)
+    expect(simulationsByArea.get('mechanics')).toHaveLength(18)
     expect(simulationsByArea.get('thermodynamics')).toHaveLength(10)
-    expect(simulationsByArea.get('waves')).toHaveLength(12)
+    expect(simulationsByArea.get('waves')).toHaveLength(11)
     expect(simulationsByArea.get('electromagnetism')).toHaveLength(12)
     expect(findSimulation('continuity-bernoulli').topicPath).toEqual([
       'Mecanica',
@@ -131,6 +131,7 @@ describe('simulation registry', () => {
       'centripetal-force-curve',
       'work-energy-track',
       'collisions-1d-2d',
+      'mass-spring',
     ] as const
 
     readyKinematicsSimulationIds.forEach((simulationId) => {

@@ -1205,6 +1205,123 @@ Validacao:
 - Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
 - Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
 
+## 2026-05-03 - Legendas clicaveis dos graficos
+
+Pedido reportado:
+
+- Permitir que todos os graficos liguem ou desliguem uma serie ao clicar no item correspondente da legenda.
+
+Ajuste:
+
+- `LiveLineChart` passou a tratar cada item de legenda como toggle acessivel por botao, com `aria-pressed` e estado visual ligado/desligado.
+- O canvas desenha apenas as series ligadas, mas mantem intervalo temporal e cursor derivados dos dados completos para preservar a janela movel.
+- O comportamento vale para pendulo, plano inclinado e graficos analiticos compartilhados, porque todos usam o mesmo componente de grafico.
+- Atualizados os guides de produto, regras de UX e qualidade para registrar o novo contrato da legenda.
+
+Gate de fidelidade:
+
+- Nao houve mudanca no motor, samples, parametros, cena, tabela, formulas, teoria ou warnings.
+- A legenda altera apenas a visibilidade da curva no grafico; a fonte unica de samples continua intacta e compartilhada.
+
+Validacao:
+
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm run test -- src/App.test.tsx -t "smoke tests playback"`; 1 teste passou e 6 ficaram filtrados.
+- Executado `npm run test`; falhou em expectativas de catalogo/status e sidebar ja divergentes na arvore atual, fora do ajuste de legenda.
+
+Pedido reportado:
+
+- Alterar `Mecanica > Energia e momento > Trabalho e energia em trilho` para um cenario de rampa em U, similar a uma rampa de skate, com inicio acima, na linha ou um pouco abaixo da rampa e opcao de perda de energia.
+
+Ajuste:
+
+- A fixture local passou a declarar a geometria da rampa em U, massa, posicao inicial horizontal, altura relativa inicial, velocidade inicial, gravidade e perda por ciclo em percentual.
+- O motor numerico especializou `work-energy-track` para integrar o movimento ao longo de uma rampa parabolica `h(x)=H(x/a)^2`, com queda vertical antes do contato quando a altura relativa e positiva e dissipacao opcional quando `perda por ciclo (%) > 0`.
+- Os samples agora sincronizam posicao horizontal, altura, velocidade, aceleracao tangencial, energia cinetica, energia potencial gravitacional, energia mecanica total, energia perdida acumulada e percentual de perda.
+- A cena Three.js passou de trilho inclinado para trilho em U com dormentes, batentes, corpo alinhado a tangente local, vetor normal e rastro de dissipacao.
+- O HUD, os graficos, a tabela e a teoria foram atualizados para analisar velocidade, aceleracao, posicao/altura, `K`, `Ug`, energia total, energia perdida e percentual de perda.
+- A simulacao voltou para `analysis`, aguardando validacao visual/manual antes de ser promovida novamente para `ready`.
+
+Gate de fidelidade:
+
+- `0%` de perda conserva a energia mecanica dentro da tolerancia numerica.
+- Perda maior que zero reduz a energia mecanica e exibe a perda acumulada em joules e em percentual.
+- Altura relativa zero e inicio valido na rampa; altura positiva representa liberacao vertical; altura negativa ajusta o ponto inicial para uma energia menor dentro do dominio fisico da rampa.
+- Cena, graficos, HUD, formulas, teoria, warnings e testes consomem os mesmos samples gerados pelo motor numerico.
+
+Documentacao:
+
+- Atualizados `fixtures/simulations/catalog.json`, `fixtures/simulations/mechanics-work-energy-track.json`, `src/content/simulations/mechanics/work-energy-track/theory.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md`, `guides/09-simulation-catalog-plan.md`, `guides/10-simulation-fidelity-adjustment-guide.md`, `guides/issues.md` e `progress.md`.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/simulation-registry/catalog.test.ts`; 28 testes passaram.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test`; 62 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; falhou por estrutura SDD ausente no repositorio (`README.md`, `.agent/`, `tasks/`, `adr/`), fora do escopo desta mudanca funcional.
+
+Pedido reportado:
+
+- Promover `Mecanica > Energia e momento > Trabalho e energia em trilho` de `analysis` para `ready` apos validacao visual/manual do dono do projeto.
+
+Ajuste:
+
+- `fixtures/simulations/catalog.json` marcou `work-energy-track` como `ready`.
+- A sidebar volta a tratar `Energia e momento` como subarea sem pendencias de analise, iniciando recolhida quando todos os itens dela estao `ready`.
+- Os testes de catalogo voltaram a contar 9 simulacoes `ready` e 8 simulacoes `analysis`, mantendo `uniform-circular-motion` em `analysis`.
+- Guides e issues foram alinhados para registrar a rampa em U de energia como aprovada manualmente e pronta.
+
+Gate de fidelidade:
+
+- A promocao usou a validacao manual do dono do projeto como criterio de passagem de `analysis` para `ready`.
+- A auditoria anterior da rampa em U permanece registrada: parametro de perda zero conserva energia, perda maior que zero reduz energia mecanica, e samples/cena/graficos/HUD/formulas/teoria consomem a mesma fonte.
+
+Documentacao:
+
+- Atualizados `fixtures/simulations/catalog.json`, `src/simulation-registry/catalog.test.ts`, `src/App.test.tsx`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/09-simulation-catalog-plan.md`, `guides/issues.md` e `progress.md`.
+
+Validacao:
+
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts src/App.test.tsx`; 15 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test`; 62 testes passaram.
+
+## 2026-05-03 - Controles flutuantes e contador continuo
+
+Pedido reportado:
+
+- Unificar controles marcados na interface em um card flutuante no canto inferior direito, sempre disponivel durante rolagem.
+- Trocar o tempo que voltava a zero ao fim do ciclo por um contador continuo.
+
+Ajuste:
+
+- O playback/reset/status/engine foi concentrado no card de controles flutuante, fixo no canto inferior direito com altura maxima e rolagem interna.
+- Os botoes duplicados de play/pause do topo e dos viewports foram removidos.
+- O renderer continua usando o horizonte calculado como fonte de samples, mas o contador exibido e os recortes de grafico/tabela passam a usar tempo continuo.
+- `durationSeconds` passou a ser apresentado como `Horizonte calculado` nos fixtures e na UI, sem texto prometendo reinicio do ciclo.
+
+Gate de fidelidade:
+
+- A fonte fisica dos samples nao mudou: cena, graficos, tabela, vetores e formulas continuam consumindo os mesmos samples calculados pelo motor.
+- A mudanca e de playback/visualizacao temporal e de layout de controles; regimes fisicos, parametros fisicos, formulas, teoria e warnings foram preservados.
+
+Documentacao:
+
+- Atualizados `guides/01-strategy.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md` e `guides/08-api-contracts.md` para refletir controles flutuantes, horizonte calculado e contador continuo.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/rendering/visualRuntime.test.ts src/features/simulation-shell/sampleWindow.test.ts --run`; 9 testes passaram.
+- Executado `npm run test -- src/App.test.tsx --run`; 7 testes passaram.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm run test`; 61 testes passaram.
+- Executado `npm run lint` novamente apos adicionar teste do runtime; passou.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; falhou por estrutura SDD ausente pre-existente (`README.md`, `.agent/`, `tasks/`, `adr/`), sem indicar erro especifico nos guides alterados.
+
 ## 2026-05-01 - Referencia de origem nos viewports
 
 Pedido reportado:
@@ -1637,3 +1754,155 @@ Validacao:
 - Executado `npm run lint`; passou.
 - Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
 - Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; resultado `[OK] guides pack looks core-first and complete.`
+
+## 2026-05-03 - Playback continuo e energia conservativa no trilho
+
+Pedido reportado:
+
+- Corrigir a energia mecanica total no caso conservativo sem perda.
+- Remover o reset automatico das simulacoes ao fim do horizonte calculado; o tempo, graficos e tabela devem continuar enquanto o usuario mantiver play e so voltar a zero no reset.
+
+Ajuste:
+
+- Pendulo e plano inclinado passaram a avancar estado vivo pelo renderer com integracao incremental, mantendo cena, vetores e leitura instantanea sem loop de horizonte.
+- Simulacoes analiticas passaram a ler samples pelo tempo continuo; `Trabalho e energia em trilho` estende o horizonte calculado em blocos quando o playback ultrapassa as amostras existentes.
+- Graficos e tabela agora usam historico vivo recente, sem projetar samples antigos em ciclos artificiais.
+- No trilho em U conservativo (`energyLossPercent = 0`), `totalEnergyJoules` fica fixado na energia inicial do modelo, evitando deriva visual da curva de energia mecanica total.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: renderer, graficos, tabela e HUD seguem os mesmos samples vivos; o caso dissipativo continua mostrando energia mecanica decaindo e energia perdida acumulada, enquanto o caso conservativo mantem energia mecanica constante.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/08-api-contracts.md` e descricoes de `durationSeconds` nos fixtures afetados para registrar que o horizonte nao e uma volta visual.
+
+Validacao:
+
+- Executado `npm test -- --run src/features/simulation-shell/sampleWindow.test.ts src/lib/rendering/visualRuntime.test.ts src/lib/physics/kinematics.test.ts src/features/simulation-shell/KinematicsScene.test.ts`; 32 testes passaram.
+- Executado `npm test -- --run src/features/simulation-shell/sampleWindow.test.ts src/App.test.tsx`; 17 testes passaram.
+- Executado `npm test -- --run src/lib/physics/kinematics.test.ts`; 20 testes passaram.
+- Executado `npm run test`; 64 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; falhou porque a estrutura SDD completa ainda nao existe no repo (`README.md`, `.agent/`, `tasks/` e `adr/` ausentes), apesar do frontend validar pelos checks proporcionais.
+
+## 2026-05-03 - Massa-mola vertical em Mecanica
+
+Pedido reportado:
+
+- Adicionar um sistema massa-mola na subarea `Mecanica > Oscilacoes`, ao lado do pendulo simples.
+
+Ajuste:
+
+- `Mecanica > Oscilacoes > Massa-mola vertical` entrou no catalogo como `analysis`, com fixture local, parametros com tooltip, presets, formulas, limites e teoria.
+- O motor analitico compartilhado ganhou `mass-spring`, resolvendo o movimento em torno do equilibrio estatico `mg/k`, com amortecimento linear opcional.
+- O `KinematicsSample` passou a expor forca elastica, energia elastica total, energia gravitacional, dissipacao e referencia de equilibrio para manter cena, graficos, tabela, formulas e vetores sincronizados.
+- A cena Three.js ganhou suporte superior fixo, mola helicoidal vertical, massa esferica, linha de equilibrio e vetores de velocidade, aceleracao, forca elastica e peso.
+- Os graficos cobrem deslocamento, velocidade, aceleracao, forcas e energia; o apendice teorico declara o regime ideal, amortecimento e limites do modelo.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: velocidade inicial zero e amortecimento zero sao validos, o caso ideal conserva energia do oscilador, o amortecimento emite `SPRING_DAMPING_ACTIVE`, e renderer/graficos/tabela/formulas/teoria usam os mesmos samples.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/05-roadmap.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md`, `guides/09-simulation-catalog-plan.md`, `guides/10-simulation-fidelity-adjustment-guide.md` e `guides/issues.md` para registrar a antecipacao do massa-mola em `Mecanica > Oscilacoes`.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts`; 22 testes passaram.
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts`; 8 testes passaram.
+- Executado `npm run test -- src/App.test.tsx`; 8 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test`; 67 testes passaram.
+- Executado `git diff --check`; sem erros, apenas avisos esperados de normalizacao LF/CRLF no Windows.
+- Smoke visual Playwright/Chrome em `http://127.0.0.1:5198/` validou desktop e mobile: canvas nao vazio, mudanca entre frames com playback ativo e resposta ao arraste orbital.
+- Capturas geradas em `artifacts/mass-spring-desktop-a.png`, `artifacts/mass-spring-desktop-b.png`, `artifacts/mass-spring-desktop-orbit.png`, `artifacts/mass-spring-mobile-a.png`, `artifacts/mass-spring-mobile-b.png` e `artifacts/mass-spring-mobile-orbit.png`.
+
+## 2026-05-03 - Controle de velocidade de passagem do tempo
+
+Pedido reportado:
+
+- Adicionar um slider de velocidade do tempo de `1x` ate `0x`, onde `1x` e tempo normal, valores intermediarios permitem camera lenta continua e `0x` equivale a pausa.
+- Manter cena, graficos e tabela suaves, sem avancos em blocos quando a velocidade for reduzida.
+
+Ajuste:
+
+- O playback fixo virou estado global controlado no painel de runtime por `Velocidade do tempo`.
+- `visualRuntime` passou a normalizar a escala `0..1` e aplicar essa escala ao delta do renderer, preservando o ownership do `requestAnimationFrame` nas cenas.
+- Pendulo, plano inclinado e cena cinematica compartilhada agora recebem o playback rate dinamico; quando a escala e `0x`, o shell envia pausa efetiva para o renderer sem resetar tempo, samples ou parametros.
+- A UI exibe o estado `pausado (0x)` quando o usuario deixa a velocidade em zero e mantem o botao play/pause separado da escala de tempo.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a velocidade de passagem do tempo so altera a leitura temporal dos mesmos samples; nao cria samples alternativos, nao muda regimes e nao recalcula fisica solta na UI.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/08-api-contracts.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/rendering/visualRuntime.test.ts`; 3 testes passaram.
+- Executado `npm run test -- src/App.test.tsx`; 8 testes passaram.
+- Executado `npm run test`; 71 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `git diff --check`; sem erros, apenas avisos esperados de normalizacao LF/CRLF no Windows.
+
+## 2026-05-03 - Estabilizacao de eixos em graficos constantes
+
+Pedido reportado:
+
+- Varios graficos que deveriam mostrar valores constantes apareciam com picos/serrilhado visual, como velocidade tangencial constante no movimento circular uniforme.
+
+Ajuste:
+
+- O helper compartilhado `deriveYRange` agora trata spans microscopicos de ponto flutuante como serie constante, usando margem proporcional ao modulo da grandeza em vez de amplificar ruido numerico.
+- Valores nao finitos sao ignorados no calculo do eixo Y para evitar escala invalida em graficos live-canvas.
+- Adicionado teste de regressao para serie constante com ruido numerico em `LiveLineChart.test.ts`.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a correcao nao altera samples, regimes, cena, tabela ou formulas; apenas estabiliza a escala visual dos graficos para representar corretamente grandezas constantes derivadas da mesma fonte fisica.
+
+Documentacao:
+
+- Nenhum guide estrutural atualizado; o contrato fisico e de produto nao mudou.
+
+Validacao:
+
+- Executado `npm run test -- LiveLineChart.test.ts`; 3 testes passaram.
+- Executado `npm run test`; 72 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+
+## 2026-05-03 - Massa-mola vertical marcada como ready
+
+Pedido reportado:
+
+- Antes de commitar e fazer push, marcar o sistema massa-mola como feito.
+
+Ajuste:
+
+- `Mecanica > Oscilacoes > Massa-mola vertical` foi promovida de `analysis` para `ready` no catalogo local.
+- Os testes de catalogo passaram a contar 10 simulacoes `ready` e 8 em `analysis`.
+- A sidebar voltou a iniciar `Oscilacoes` recolhida quando so contem simulacoes prontas; o teste de abertura do massa-mola agora expande a subarea antes de selecionar a simulacao.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a promocao preserva a simulacao ja validada com parametros, regimes, samples, cena, graficos, tabela, formulas, teoria, warning de amortecimento e smoke visual registrados anteriormente.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/09-simulation-catalog-plan.md` e `guides/issues.md`.
+
+Validacao:
+
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts src/App.test.tsx`; 16 testes passaram.
+- Executado `npm run test`; 72 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `git diff --check`; sem erros, apenas avisos esperados de normalizacao LF/CRLF no Windows.

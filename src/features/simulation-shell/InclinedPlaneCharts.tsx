@@ -104,6 +104,7 @@ export const InclinedPlaneCharts = memo(function InclinedPlaneCharts({
               title={chart.title}
               traces={chart.traces}
               xAxisRange={xAxisRange}
+              yAxisMode={chart.yAxisMode}
               yAxisTitle={chart.yAxisTitle}
             />
           ))}

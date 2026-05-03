@@ -3,7 +3,7 @@ import type {
   KinematicsSimulationId,
 } from '../../lib/physics/kinematics'
 import { themeTokens } from '../../theme/appTheme'
-import type { ChartTrace } from './LiveLineChart'
+import type { ChartTrace, ChartYAxisMode } from './LiveLineChartModel'
 
 export type KinematicsChartId =
   | 'acceleration'
@@ -23,6 +23,7 @@ export type KinematicsChartConfig = {
   id: KinematicsChartId
   title: string
   traces: ChartTrace[]
+  yAxisMode?: ChartYAxisMode
   yAxisTitle: string
 }
 
@@ -404,6 +405,81 @@ export function buildKinematicsChartConfigs(
         yAxisTitle: 'Forca (newtons)',
       },
     )
+  } else if (simulationId === 'mass-spring') {
+    charts.push(
+      {
+        id: 'position',
+        title: 'Deslocamento por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Deslocamento relativo ao equilibrio (m)',
+            x: time,
+            y: samples.map((sample) => sample.positionMeters),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Altura da esfera na cena (m)',
+            x: time,
+            y: samples.map((sample) => sample.zMeters),
+          },
+        ],
+        yAxisTitle: 'Posicao (metros)',
+      },
+      {
+        id: 'velocity',
+        title: 'Velocidade por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Velocidade vertical (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.velocityMetersPerSecond),
+          },
+        ],
+        yAxisTitle: 'Velocidade (metros por segundo)',
+      },
+      {
+        id: 'acceleration',
+        title: 'Aceleracao por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.warning,
+            name: 'Aceleracao vertical (m/s^2)',
+            x: time,
+            y: samples.map(
+              (sample) => sample.accelerationMetersPerSecondSquared,
+            ),
+          },
+        ],
+        yAxisTitle: 'Aceleracao (metros por segundo ao quadrado)',
+      },
+      {
+        id: 'forces',
+        title: 'Forca elastica, peso e resultante',
+        traces: [
+          {
+            lineColor: themeTokens.vector,
+            name: 'Forca elastica da mola (N)',
+            x: time,
+            y: samples.map((sample) => sample.springForceNewtons),
+          },
+          {
+            lineColor: themeTokens.danger,
+            name: 'Peso da esfera (N)',
+            x: time,
+            y: samples.map((sample) => sample.weightNewtons),
+          },
+          {
+            lineColor: themeTokens.warning,
+            name: 'Forca resultante vertical (N)',
+            x: time,
+            y: samples.map((sample) => sample.netForceNewtons),
+          },
+        ],
+        yAxisTitle: 'Forca (newtons)',
+      },
+    )
   } else if (simulationId === 'particle-equilibrium') {
     charts.push(
       {
@@ -669,17 +745,17 @@ export function buildKinematicsChartConfigs(
     charts.push(
       {
         id: 'position',
-        title: 'Posicao e altura no trilho por tempo',
+        title: 'Posicao horizontal e altura na rampa em U',
         traces: [
           {
             lineColor: themeTokens.teal,
-            name: 'Posicao no trilho (m)',
+            name: 'Posicao horizontal na rampa (m)',
             x: time,
             y: samples.map((sample) => sample.positionMeters),
           },
           {
             lineColor: themeTokens.cyan,
-            name: 'Altura no trilho (m)',
+            name: 'Altura gravitacional (m)',
             x: time,
             y: samples.map((sample) => sample.zMeters),
           },
@@ -692,7 +768,13 @@ export function buildKinematicsChartConfigs(
         traces: [
           {
             lineColor: themeTokens.cyan,
-            name: 'Velocidade no trilho (m/s)',
+            name: 'Velocidade assinada na rampa (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.velocityMetersPerSecond),
+          },
+          {
+            lineColor: themeTokens.teal,
+            name: 'Rapidez na rampa (m/s)',
             x: time,
             y: samples.map((sample) => sample.speedMetersPerSecond),
           },
@@ -700,23 +782,38 @@ export function buildKinematicsChartConfigs(
         yAxisTitle: 'Velocidade (metros por segundo)',
       },
       {
-        id: 'work',
-        title: 'Trabalho e dissipacao por tempo',
+        id: 'acceleration',
+        title: 'Aceleracao tangencial por tempo',
         traces: [
           {
-            lineColor: themeTokens.teal,
-            name: 'Trabalho aplicado (J)',
-            x: time,
-            y: samples.map((sample) => sample.appliedWorkJoules),
-          },
-          {
             lineColor: themeTokens.warning,
-            name: 'Energia dissipada por atrito (J)',
+            name: 'Aceleracao tangencial (m/s^2)',
+            x: time,
+            y: samples.map(
+              (sample) => sample.accelerationMetersPerSecondSquared,
+            ),
+          },
+        ],
+        yAxisTitle: 'Aceleracao (metros por segundo ao quadrado)',
+      },
+      {
+        id: 'work',
+        title: 'Dissipacao e perda acumulada',
+        traces: [
+          {
+            lineColor: themeTokens.danger,
+            name: 'Energia perdida acumulada (J)',
             x: time,
             y: samples.map((sample) => sample.thermalEnergyJoules),
           },
+          {
+            lineColor: themeTokens.warning,
+            name: 'Perda acumulada (%)',
+            x: time,
+            y: samples.map((sample) => sample.energyLossPercent),
+          },
         ],
-        yAxisTitle: 'Trabalho e energia (joules)',
+        yAxisTitle: 'Dissipacao e percentual',
       },
     )
   } else {
@@ -854,6 +951,49 @@ export function buildKinematicsChartConfigs(
                 y: samples.map((sample) => sample.totalEnergyJoules),
               },
             ]
+          : simulationId === 'mass-spring'
+            ? [
+                {
+                  lineColor: themeTokens.vector,
+                  name: 'Energia cinetica (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.kineticEnergyJoules),
+                },
+                {
+                  lineColor: themeTokens.warning,
+                  name: 'Potencial do oscilador (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.potentialEnergyJoules),
+                },
+                {
+                  lineColor: themeTokens.teal,
+                  name: 'Potencial elastica total (J)',
+                  x: time,
+                  y: samples.map(
+                    (sample) => sample.elasticPotentialEnergyJoules,
+                  ),
+                },
+                {
+                  lineColor: themeTokens.danger,
+                  name: 'Potencial gravitacional (J)',
+                  x: time,
+                  y: samples.map(
+                    (sample) => sample.gravitationalPotentialEnergyJoules,
+                  ),
+                },
+                {
+                  lineColor: '#818CF8',
+                  name: 'Energia dissipada (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.thermalEnergyJoules),
+                },
+                {
+                  lineColor: themeTokens.cyan,
+                  name: 'Energia mecanica rastreada (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.totalEnergyJoules),
+                },
+              ]
           : simulationId === 'rigid-body-rotation'
             ? [
                 {
@@ -912,7 +1052,7 @@ export function buildKinematicsChartConfigs(
                 lineColor: themeTokens.cyan,
                 name:
                   simulationId === 'work-energy-track'
-                    ? 'Balanco energetico total (J)'
+                    ? 'Energia mecanica total (J)'
                     : simulationId === 'rolling-without-slipping'
                       ? 'Energia rastreada total (J)'
                     : 'Energia mecanica total (J)',
@@ -934,6 +1074,7 @@ export function buildKinematicsChartConfigs(
                 y: samples.map((sample) => sample.totalEnergyJoules),
               },
             ],
+      yAxisMode: 'zero-centered',
       yAxisTitle: 'Energia (joules)',
     })
   }

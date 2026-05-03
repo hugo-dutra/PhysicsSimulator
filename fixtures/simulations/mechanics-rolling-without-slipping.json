@@ -6,8 +6,8 @@
   "runtimeParameters": [
     {
       "id": "durationSeconds",
-      "label": "Tempo do ciclo",
-      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a timeline e os samples; diminuir concentra a animacao em menos segundos.",
+      "label": "Horizonte calculado",
+      "description": "Horizonte de tempo pre-calculado pelo motor para samples, graficos e tabela. O contador da interface avanca continuamente sem reiniciar no fim do horizonte; aumentar oferece mais amostras pre-calculadas para consulta, e diminuir concentra a leitura em menos segundos.",
       "unit": "s",
       "kind": "number",
       "min": 6,

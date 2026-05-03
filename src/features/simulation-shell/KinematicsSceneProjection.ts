@@ -76,6 +76,30 @@ function estimateRawSceneBounds(
     }
   }
 
+  if (simulationId === 'work-energy-track') {
+    const firstSample = samples[0]
+    const halfWidthMeters = firstSample?.primaryRadiusMeters ?? 1
+    const rimHeightMeters = firstSample?.secondaryRadiusMeters ?? 1
+
+    return {
+      span: Math.max(1, halfWidthMeters * 2.35, rimHeightMeters * 1.35),
+    }
+  }
+
+  if (simulationId === 'mass-spring') {
+    const firstSample = samples[0]
+    const springTopMeters = firstSample?.primaryRadiusMeters ?? 1
+    const minZ = Math.min(0, ...samples.map((sample) => sample.zMeters))
+    const maxZ = Math.max(
+      springTopMeters,
+      ...samples.map((sample) => sample.zMeters),
+    )
+
+    return {
+      span: Math.max(1, maxZ - minZ, springTopMeters),
+    }
+  }
+
   const xs = samples.flatMap((sample) => [
     sample.xMeters,
     sample.secondaryXMeters,

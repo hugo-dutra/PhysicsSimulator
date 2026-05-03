@@ -6,6 +6,7 @@ import continuityBernoulliFixtureJson from '../../fixtures/simulations/mechanics
 import gravitationalFieldOrbitsFixtureJson from '../../fixtures/simulations/mechanics-gravitational-field-orbits.json'
 import hydrostaticsBuoyancyFixtureJson from '../../fixtures/simulations/mechanics-hydrostatics-buoyancy.json'
 import inclinedPlaneFixtureJson from '../../fixtures/simulations/mechanics-inclined-plane-friction.json'
+import massSpringFixtureJson from '../../fixtures/simulations/mechanics-mass-spring.json'
 import particleEquilibriumFixtureJson from '../../fixtures/simulations/mechanics-particle-equilibrium.json'
 import pendulumFixtureJson from '../../fixtures/simulations/mechanics-pendulum.json'
 import projectileMotionFixtureJson from '../../fixtures/simulations/mechanics-projectile-motion.json'
@@ -41,6 +42,7 @@ export const kinematicsFixtures = {
     gravitationalFieldOrbitsFixtureJson as SimulationFixture,
   'hydrostatics-buoyancy':
     hydrostaticsBuoyancyFixtureJson as SimulationFixture,
+  'mass-spring': massSpringFixtureJson as SimulationFixture,
   'particle-equilibrium': particleEquilibriumFixtureJson as SimulationFixture,
   'projectile-motion': projectileMotionFixtureJson as SimulationFixture,
   'rigid-body-rotation': rigidBodyRotationFixtureJson as SimulationFixture,

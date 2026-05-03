@@ -50,6 +50,68 @@
           ]
         },
         {
+          "id": "mass-spring",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Oscilacoes", "Massa-mola vertical"],
+          "title": "Massa-mola vertical",
+          "status": "ready",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "fixturePath": "fixtures/simulations/mechanics-mass-spring.json",
+          "theoryPath": "src/content/simulations/mechanics/mass-spring/theory.md",
+          "description": "Oscilador massa-mola vertical com suporte fixo, mola helicoidal, esfera, equilibrio estatico e energia sincronizada.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Solucao analitica em torno do equilibrio estatico mg/k, reutilizando o shell compartilhado e cena Three.js especializada."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Deslocamento por tempo",
+              "sampleFields": ["timeSeconds", "positionMeters", "zMeters"]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidade por tempo",
+              "sampleFields": ["timeSeconds", "velocityMetersPerSecond"]
+            },
+            {
+              "id": "acceleration-time",
+              "title": "Aceleracao por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "accelerationMetersPerSecondSquared"
+              ]
+            },
+            {
+              "id": "forces-time",
+              "title": "Forca elastica, peso e resultante",
+              "sampleFields": [
+                "timeSeconds",
+                "springForceNewtons",
+                "weightNewtons",
+                "netForceNewtons"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "potentialEnergyJoules",
+                "elasticPotentialEnergyJoules",
+                "gravitationalPotentialEnergyJoules",
+                "thermalEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
+        },
+        {
           "id": "uniform-linear-motion",
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Cinematica", "Movimento retilineo uniforme"],
@@ -410,26 +472,43 @@
           "renderer": "three",
           "fixturePath": "fixtures/simulations/mechanics-work-energy-track.json",
           "theoryPath": "src/content/simulations/mechanics/work-energy-track/theory.md",
-          "description": "Trabalho, energia cinetica, energia potencial e dissipacao em uma trajetoria.",
+          "description": "Energia cinetica, potencial e perda percentual em uma rampa de skate em U.",
           "technologyPlan": {
             "engine": "custom-analytic",
             "charting": "live-canvas",
             "content": "mdx-katex",
-            "notes": "Modelo de rampa reta por trabalho-energia para validar conservacao, dissipacao e trabalho externo."
+            "notes": "Modelo parabolico de rampa em U com regime conservativo ou perda percentual por ciclo."
           },
           "charts": [
             {
               "id": "position-time",
-              "title": "Posicao e altura no trilho por tempo",
+              "title": "Posicao horizontal e altura na rampa em U",
               "sampleFields": ["timeSeconds", "positionMeters", "zMeters"]
             },
             {
-              "id": "work-time",
-              "title": "Trabalho e dissipacao por tempo",
+              "id": "velocity-time",
+              "title": "Velocidade por tempo",
               "sampleFields": [
                 "timeSeconds",
-                "appliedWorkJoules",
-                "thermalEnergyJoules"
+                "velocityMetersPerSecond",
+                "speedMetersPerSecond"
+              ]
+            },
+            {
+              "id": "acceleration-time",
+              "title": "Aceleracao tangencial por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "accelerationMetersPerSecondSquared"
+              ]
+            },
+            {
+              "id": "loss-time",
+              "title": "Dissipacao e perda acumulada",
+              "sampleFields": [
+                "timeSeconds",
+                "thermalEnergyJoules",
+                "energyLossPercent"
               ]
             },
             {
@@ -947,17 +1026,6 @@
       "label": "Oscilacoes e Ondas",
       "description": "Sistemas periodicos, ondas mecanicas, som e optica basica.",
       "simulations": [
-        {
-          "id": "mass-spring",
-          "areaId": "waves",
-          "topicPath": ["Oscilacoes e Ondas", "Oscilacoes", "Massa-mola"],
-          "title": "Massa-mola",
-          "status": "planned",
-          "level": "introductory",
-          "modelKind": "numerical",
-          "renderer": "three",
-          "description": "Oscilador harmonico linear com massa, constante elastica, energia e fase."
-        },
         {
           "id": "damped-oscillator",
           "areaId": "waves",

@@ -107,6 +107,7 @@ export const KinematicsCharts = memo(function KinematicsCharts({
               title={chart.title}
               traces={chart.traces}
               xAxisRange={xAxisRange}
+              yAxisMode={chart.yAxisMode}
               yAxisTitle={chart.yAxisTitle}
             />
           ))}

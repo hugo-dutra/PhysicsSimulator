@@ -6,8 +6,8 @@
   "runtimeParameters": [
     {
       "id": "durationSeconds",
-      "label": "Tempo do ciclo",
-      "description": "Tempo total calculado antes do ciclo reiniciar. Aumentar alonga a leitura estatica e eventual oscilacao visual do corpo flutuante.",
+      "label": "Horizonte calculado",
+      "description": "Horizonte de tempo pre-calculado pelo motor para samples, graficos e tabela. O contador da interface avanca continuamente; aumentar alonga a leitura estatica e eventual oscilacao visual, e diminuir concentra a leitura em menos segundos.",
       "unit": "s",
       "kind": "number",
       "min": 6,

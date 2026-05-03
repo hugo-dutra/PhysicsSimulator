@@ -25,6 +25,42 @@ export function selectRecentSamples<TSample extends TimedSample>(
   return samples.slice(startIndex, boundedCurrentIndex + 1)
 }
 
+export function selectContinuousRecentSamples<TSample extends TimedSample>(
+  samples: TSample[],
+  currentTimeSeconds: number,
+  windowSeconds: number,
+  durationSeconds: number,
+) {
+  if (durationSeconds <= 0) {
+    return []
+  }
+
+  return selectRecentSamplesByTime(samples, currentTimeSeconds, windowSeconds)
+}
+
+export function selectRecentSamplesByTime<TSample extends TimedSample>(
+  samples: TSample[],
+  currentTimeSeconds: number,
+  windowSeconds: number,
+) {
+  if (samples.length === 0 || windowSeconds <= 0) {
+    return []
+  }
+
+  const boundedCurrentTimeSeconds = Math.max(0, currentTimeSeconds)
+  const windowStartSeconds = Math.max(
+    0,
+    boundedCurrentTimeSeconds - windowSeconds,
+  )
+  const startIndex = findFirstSampleAtOrAfter(samples, windowStartSeconds)
+
+  return samples
+    .slice(startIndex)
+    .filter(
+      (sample) => sample.timeSeconds <= boundedCurrentTimeSeconds + 0.0001,
+    )
+}
+
 export function readFirstSample<TSample>(
   samples: readonly TSample[],
   timelineLabel: string,
@@ -65,8 +101,12 @@ export function appendLiveSample<TSample extends TimedSample>(
     return [liveSample]
   }
 
+  if (liveSample.timeSeconds < lastSample.timeSeconds - 0.0001) {
+    return [liveSample]
+  }
+
   if (liveSample.timeSeconds <= lastSample.timeSeconds + 0.0001) {
-    return samples
+    return [...samples.slice(0, -1), liveSample]
   }
 
   return [...samples, liveSample]
@@ -109,10 +149,9 @@ export function getMovingWindowRange(
   windowSeconds: number,
   durationSeconds: number,
 ): [number, number] {
-  const effectiveWindowSeconds = Math.max(
-    0,
-    Math.min(windowSeconds, durationSeconds),
-  )
+  void durationSeconds
+
+  const effectiveWindowSeconds = Math.max(0, windowSeconds)
 
   if (effectiveWindowSeconds === 0) {
     return [0, 0]

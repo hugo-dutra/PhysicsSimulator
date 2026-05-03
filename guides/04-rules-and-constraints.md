@@ -13,9 +13,10 @@
 - A primeira entrega funcional deve ser `Mecanica > Pendulo simples`.
 - A segunda simulacao funcional da Fase 2 e `Mecanica > Dinamica > Plano inclinado com atrito`, usada para validar reuso antes de expandir o catalogo e promovida para `ready` apos aprovacao manual.
 - O primeiro lote da Fase 3 mantem `Mecanica > Cinematica` com MRU, MUV/queda livre e lancamento obliquo como simulacoes `ready`; MCU permanece em `analysis` ate aprovacao manual. Todas usam motor analitico compartilhado e saidas completas.
-- O segundo lote da Fase 3 mantem `Mecanica > Dinamica > Maquina de Atwood`, `Mecanica > Dinamica > Forca centripeta em curva` e `Mecanica > Energia e momento > Trabalho e energia em trilho` como simulacoes `ready`. Todas usam fixtures locais, formulas, teoria, graficos, tabela e vetores sincronizados.
+- O segundo lote da Fase 3 mantem `Mecanica > Dinamica > Maquina de Atwood`, `Mecanica > Dinamica > Forca centripeta em curva` e `Mecanica > Energia e momento > Trabalho e energia em trilho` como simulacoes `ready`, com a rampa em U de energia aprovada manualmente apos o ajuste de perda percentual. Todas usam fixtures locais, formulas, teoria, graficos, tabela e vetores sincronizados.
 - O terceiro lote da Fase 3 mantem `Mecanica > Energia e momento > Colisoes 1D e 2D` como simulacao `ready`; `Mecanica > Estatica > Equilibrio de particula`, `Mecanica > Estatica > Torque, alavancas e centro de massa` e `Mecanica > Rotacao > Rotacao de corpo rigido` permanecem como simulacoes `analysis`, mantendo motor, cena, graficos, tabela, formulas, teoria, regimes e warnings sincronizados.
 - O quarto lote da Fase 3 mantem `Mecanica > Rotacao > Rolamento sem escorregamento`, `Mecanica > Gravitacao > Campo gravitacional e orbitas`, `Mecanica > Fluidos basicos > Hidrostatica e empuxo` e `Mecanica > Fluidos basicos > Continuidade e Bernoulli` como simulacoes `analysis`, com fixtures, presets por subarea, formulas, teoria, graficos, tabela, vetores e warnings de regime sincronizados.
+- `Mecanica > Oscilacoes > Massa-mola vertical` fica como simulacao `ready` apos aprovacao manual, com suporte fixo, mola helicoidal, massa esferica, equilibrio `mg/k`, vetores, energia e warning de amortecimento sincronizados pelos mesmos samples.
 - A taxonomia principal do catalogo deve usar `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo`; fluidos basicos entram como subarea, nao como prioridade separada antes do core.
 
 ## Regras de fisica
@@ -24,7 +25,8 @@
 - Parametros devem ter minimo, maximo, passo e valor padrao.
 - Parametros fisicos e controles de runtime devem ter `description` obrigatoria para a tooltip de interrogacao, explicando o que a variavel e, como afeta o modelo e o que muda ao aumentar, diminuir ou zerar quando aplicavel.
 - Parametros fisicamente validos em zero, como coeficiente de atrito zero ou forca aplicada zero, nao devem ser bloqueados apenas para manter uma animacao ideal.
-- Controles de runtime, como duracao do ciclo e janela do grafico, tambem devem declarar minimo, maximo, passo e valor padrao.
+- Controles de runtime, como horizonte calculado de samples, janela do grafico e velocidade de passagem do tempo, tambem devem declarar minimo, maximo, passo e valor padrao.
+- O controle de velocidade de passagem do tempo deve ir de `1x` a `0x`; `0x` pausa o relogio visual e valores intermediarios desaceleram cena, graficos e tabela sem trocar a fonte de samples nem criar avancos em blocos.
 - Formulas devem declarar variaveis, unidades, significado fisico, quando usar e quando nao usar.
 - Formulas exibidas devem corresponder ao modelo numerico ou analitico implementado.
 - O modelo numerico ou analitico deve ser deterministico para os mesmos parametros.
@@ -50,7 +52,7 @@
 - O eixo Z deve ser tratado como vertical nas cenas Three.js padrao, para manter consistencia entre simulacoes.
 - Cenas Three.js com grade devem exibir eixos de origem X, Y e Z sempre presentes, coloridos e translucidos, posicionados no canto inferior esquerdo da grade, com legenda fixa no canto superior esquerdo do canvas.
 - Sistemas com mola vertical devem mostrar suporte superior fixo, mola deformando a partir do sample fisico e massa esferica presa na extremidade inferior; a mola nao pode oscilar como decoracao independente da posicao calculada.
-- Sistemas de trabalho e energia em trilhos devem comunicar a restricao fisica como bancada didatica: trilho/guia fixo, corpo alinhado ao trilho, rastro termico derivado de dissipacao real e leitura compacta de balanco energetico derivada do sample; a cena nao deve reduzir energia a uma esfera solta em linha abstrata.
+- Sistemas de trabalho e energia em trilhos devem comunicar a restricao fisica como bancada didatica: trilho/guia fixo e coerente com a geometria declarada, corpo alinhado ao trilho ou a tangente local da rampa em U, rastro termico derivado de dissipacao real e leitura compacta de balanco energetico derivada do sample; a cena nao deve reduzir energia a uma esfera solta em linha abstrata.
 - Blocos de saida pesada, como graficos, tabela, formulas e teoria, devem ser recolhiveis por chevron no proprio cabecalho.
 - Blocos chevron de saida pesada iniciam fechados por padrao e devem abrir/fechar ao clique no cabecalho.
 - Quando um bloco chevron estiver recolhido, a aplicacao deve desmontar o conteudo e suspender calculos/renderizacao derivados daquele bloco.
@@ -63,10 +65,12 @@
 - O canvas e os graficos devem ter dimensoes estaveis para nao causar layout shift.
 - Tabelas em playback devem manter quantidade fixa de linhas visiveis para evitar piscadas e deslocamento do layout.
 - A animacao deve parecer leve: updates de alta frequencia ficam no renderer, e a UI React recebe apenas leituras periodicas.
+- Ajustar a velocidade de passagem do tempo nao deve transferir o loop para o shell React nem causar recalculo pesado por frame; o renderer continua dono do `requestAnimationFrame` e apenas aplica a escala ao delta de tempo.
 - Sliders e inputs que disparam timeline, graficos ou tabela pesados devem evitar recalculo a cada pixel de arraste; confirmar no commit do controle quando necessario.
 - Graficos de series temporais longas devem usar janela temporal configuravel para evitar reescala ou crescimento indefinido de pontos visiveis.
 - Graficos progressivos devem declarar cadencia de update, stride maximo, densidade minima de pontos visiveis e estrategia de desenho continuo para evitar redraw em blocos grandes.
 - Graficos cientificos devem mostrar valores numericos legiveis na escala do eixo Y e nomes completos das grandezas nas legendas das series. Unidades fisicas podem ser abreviadas por simbolo padrao, mas a grandeza nao deve depender de abreviacoes tecnicas como leitura primaria.
+- Itens de legenda dos graficos devem funcionar como toggles de serie: clicar liga ou desliga apenas aquela curva, mantendo eixo temporal, janela movel e samples compartilhados intactos.
 
 ## Restricoes tecnicas
 
