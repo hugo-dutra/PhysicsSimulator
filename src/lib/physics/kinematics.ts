@@ -184,6 +184,7 @@ export type KinematicsSample = {
   angleRadians: number
   angularAccelerationRadiansPerSecondSquared: number
   angularVelocityRadiansPerSecond: number
+  appliedForceArmMeters: number
   appliedForceNewtons: number
   appliedForceXNewtons: number
   appliedForceZNewtons: number
@@ -216,6 +217,7 @@ export type KinematicsSample = {
   isGrounded: boolean
   kineticEnergyJoules: number
   kineticEnergyLostJoules: number
+  leftArmMeters: number
   maxStaticFrictionNewtons: number
   momentOfInertiaKilogramMetersSquared: number
   momentumKilogramMetersPerSecond: number
@@ -229,6 +231,7 @@ export type KinematicsSample = {
   potentialEnergyJoules: number
   pressurePascals: number
   primaryRadiusMeters: number
+  rightArmMeters: number
   secondaryPressurePascals: number
   secondaryCrossSectionAreaSquareMeters: number
   secondarySpeedMetersPerSecond: number
@@ -3066,6 +3069,9 @@ function computeTorqueLeversCenterMassSample(
     ),
     netTorqueNewtonMeters,
     positionMeters: centerOfMassMeters,
+    appliedForceArmMeters: parameters.appliedForceArmMeters,
+    leftArmMeters: parameters.leftArmMeters,
+    rightArmMeters: parameters.rightArmMeters,
     speedMetersPerSecond: Math.abs(angularVelocityRadiansPerSecond),
     timeSeconds,
     totalEnergyJoules: Math.abs(netTorqueNewtonMeters * angleRadians),
@@ -3161,6 +3167,7 @@ function buildSample(
       sample.angularAccelerationRadiansPerSecondSquared ?? 0,
     angularVelocityRadiansPerSecond:
       sample.angularVelocityRadiansPerSecond ?? 0,
+    appliedForceArmMeters: sample.appliedForceArmMeters ?? 0,
     appliedForceNewtons: sample.appliedForceNewtons ?? 0,
     appliedForceXNewtons: sample.appliedForceXNewtons ?? 0,
     appliedForceZNewtons: sample.appliedForceZNewtons ?? 0,
@@ -3197,6 +3204,7 @@ function buildSample(
     isGrounded: sample.isGrounded ?? false,
     kineticEnergyJoules,
     kineticEnergyLostJoules: sample.kineticEnergyLostJoules ?? 0,
+    leftArmMeters: sample.leftArmMeters ?? 0,
     maxStaticFrictionNewtons: sample.maxStaticFrictionNewtons ?? 0,
     momentOfInertiaKilogramMetersSquared:
       sample.momentOfInertiaKilogramMetersSquared ?? 0,
@@ -3214,6 +3222,7 @@ function buildSample(
     potentialEnergyJoules,
     pressurePascals: sample.pressurePascals ?? 0,
     primaryRadiusMeters: sample.primaryRadiusMeters ?? 0,
+    rightArmMeters: sample.rightArmMeters ?? 0,
     secondaryCrossSectionAreaSquareMeters:
       sample.secondaryCrossSectionAreaSquareMeters ?? 0,
     secondaryPressurePascals: sample.secondaryPressurePascals ?? 0,

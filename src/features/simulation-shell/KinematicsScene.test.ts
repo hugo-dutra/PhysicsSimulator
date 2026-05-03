@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   computeKinematicsTimeline,
   getKinematicsVectorOverlays,
+  type TorqueLeversCenterMassParameters,
   type UniformCircularMotionParameters,
   type UniformlyAcceleratedMotionParameters,
 } from '../../lib/physics/kinematics'
@@ -87,5 +88,47 @@ describe('KinematicsScene projection helpers', () => {
     )
     expect(direction.z).toBeCloseTo(0)
     expect(Math.hypot(direction.x, direction.y)).toBeCloseTo(1)
+  })
+
+  it('projects torque levers as a vertical seesaw plane', () => {
+    const parameters: TorqueLeversCenterMassParameters = {
+      appliedForceArmMeters: 1.6,
+      appliedForceNewtons: 3,
+      gravityMetersPerSecondSquared: 9.81,
+      leftArmMeters: 1.2,
+      leftMassKilograms: 2,
+      rightArmMeters: 1.8,
+      rightMassKilograms: 1,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'torque-levers-center-mass',
+    })
+    const sample = result.samples[0]
+    const projection = createKinematicsSceneProjection(
+      result.samples,
+      'torque-levers-center-mass',
+    )
+    const position = toKinematicsScenePosition(sample, projection)
+    const leftWeight = getKinematicsVectorOverlays(
+      sample,
+      'torque-levers-center-mass',
+    ).find((vector) => vector.id === 'forceOne')
+
+    if (!leftWeight) {
+      throw new Error('Expected torque lever weight vector overlay.')
+    }
+
+    const direction = toKinematicsSceneDirection(leftWeight, projection)
+
+    expect(projection.horizontalPlane).toBe(false)
+    expect(position.y).toBeCloseTo(0)
+    expect(position.z).toBeCloseTo(0)
+    expect(sample.leftArmMeters).toBeCloseTo(parameters.leftArmMeters)
+    expect(sample.rightArmMeters).toBeCloseTo(parameters.rightArmMeters)
+    expect(direction.y).toBeCloseTo(0)
+    expect(direction.z).toBeLessThan(0)
   })
 })

@@ -46,6 +46,19 @@ Sistemas com fios, polias, hastes ou trilhos devem parecer diagramas fisicos, na
 
 Aplicacao imediata: a Maquina de Atwood deve mostrar suporte fixo, polia fixa, fio passando pelo arco superior da polia e massas em blocos alinhados aos trechos verticais do fio.
 
+## Guia visual para alavancas e gangorras
+
+Sistemas de torque, alavancas e centro de massa devem parecer uma gangorra ou bancada de alavanca, nao uma barra solta no espaco:
+
+- O ponto de apoio fica fixo e visivel no pivo declarado pelo modelo.
+- A barra gira no plano vertical quando o torque resultante e usado como indicacao didatica de desequilibrio.
+- Massas didaticas ficam apoiadas sobre a barra nos bracos calculados pelo sample.
+- Peso esquerdo, peso direito e forca aplicada nascem dos pontos de aplicacao correspondentes, nao do centro geometrico da cena.
+- O centro de massa aparece como marcador proprio sobre a barra e usa o mesmo `centerOfMassMeters` dos graficos, tabela e formulas.
+- O torque resultante pode ser representado como vetor ou indicacao secundaria, mas nao deve substituir os pesos e bracos que explicam sua origem.
+
+Aplicacao imediata: `Mecanica > Estatica > Torque, alavancas e centro de massa` deve mostrar uma gangorra com apoio fixo, blocos de massa, ponto de forca aplicada, centro de massa e vetores derivados do mesmo sample.
+
 ## Guia visual para trilhos e energia
 
 Simulacoes de trabalho, energia e dissipacao em trilhos devem parecer uma bancada fisica de laboratorio, nao uma particula solta sobre uma linha abstrata:

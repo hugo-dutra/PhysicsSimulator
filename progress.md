@@ -1936,3 +1936,32 @@ Validacao:
 - Executado `npm run lint`; passou.
 - Executado `npm test`; 73 testes passaram.
 - Smoke visual com Playwright em desktop e mobile confirmou o MUV em `grounded=true` e gerou `artifacts/muv-ground-plane-desktop.png` e `artifacts/muv-ground-plane-mobile.png`.
+
+## 2026-05-03 - Gangorra visual para torque e alavancas
+
+Pedido reportado:
+
+- Melhorar `Mecanica > Estatica > Torque, alavancas e centro de massa`, que parecia abstrata demais, usando uma gangorra com massas sobre a barra para tornar o efeito dos parametros mais perceptivel.
+
+Ajuste:
+
+- O sample de torque agora carrega campos explicitos para os bracos esquerdo/direito e o braco da forca aplicada, mantendo a cena alimentada pela mesma fonte numerica usada por graficos, tabela e formulas.
+- A projecao da cena de torque saiu do plano horizontal e passou para um plano vertical de gangorra.
+- O renderer Three.js ganhou apoio fixo, barra dimensionada pelos bracos, blocos de massa sobre a barra, marcador da forca aplicada, marcador de centro de massa e origens de vetores nos pontos fisicos correspondentes.
+- Os guides registram que alavancas/gangorras devem parecer bancada fisica com massas, apoio e vetores derivados do sample, nao uma barra solta no espaco.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: parametros, sample, cena, vetores, graficos, tabela, formulas e teoria continuam sincronizados. A mudanca e visual/didatica; o modelo analitico, regimes e warnings existentes foram preservados.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/06-data-and-api.md`, `guides/08-api-contracts.md`, `guides/10-simulation-fidelity-adjustment-guide.md` e este registro de progresso.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/features/simulation-shell/KinematicsScene.test.ts`; 26 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test`; 74 testes passaram.
+- Smoke visual em Chrome headless em `http://127.0.0.1:5203/` confirmou heading da simulacao, canvas da gangorra e legenda compacta de vetores; captura em `artifacts/torque-lever-seesaw-smoke.png`.

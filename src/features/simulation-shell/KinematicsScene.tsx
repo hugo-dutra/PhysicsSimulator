@@ -78,6 +78,11 @@ type SceneObjects = {
   sceneProjection: KinematicsSceneProjection
   secondaryBody: THREE.Mesh
   bodyRadius: number
+  leverAppliedForceMarker: THREE.Mesh
+  leverCenterOfMassMarker: THREE.Mesh
+  leverLeftMass: THREE.Mesh
+  leverRightMass: THREE.Mesh
+  leverSupport: THREE.Mesh
   pulley: THREE.Mesh
   supportBar: THREE.Mesh
   supportStem: THREE.Mesh
@@ -199,6 +204,11 @@ const minCameraRadiusScale = 0.4
 const maxCameraRadiusScale = 2.4
 const workEnergyTrackHalfWidth = 0.28
 const workEnergySleeperCount = 15
+const leverPivotHeight = 0.36
+const leverSupportHeight = 0.52
+const leverSupportRadius = 0.38
+const leverBoardDepth = 0.16
+const leverBoardThickness = 0.085
 
 export function KinematicsScene({
   durationSeconds,
@@ -516,11 +526,13 @@ export function KinematicsScene({
             )
         : simulationId === 'rigid-body-rotation' ||
             simulationId === 'torque-levers-center-mass'
-          ? new THREE.BoxGeometry(
-              sceneBodySize * 5.2,
-              sceneBodySize * 0.78,
-              sceneBodySize * 0.38,
-            )
+          ? simulationId === 'torque-levers-center-mass'
+            ? new THREE.BoxGeometry(1, 1, 1)
+            : new THREE.BoxGeometry(
+                sceneBodySize * 5.2,
+                sceneBodySize * 0.78,
+                sceneBodySize * 0.38,
+              )
         : simulationId === 'work-energy-track'
           ? new THREE.BoxGeometry(
               sceneBodySize * 1.9,
@@ -552,6 +564,58 @@ export function KinematicsScene({
       }),
     )
     scene.add(secondaryBody)
+
+    const leverLeftMass = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshStandardMaterial({
+        color: 0x2dd4bf,
+        metalness: 0.06,
+        roughness: 0.5,
+      }),
+    )
+    const leverRightMass = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        metalness: 0.06,
+        roughness: 0.5,
+      }),
+    )
+    const leverAppliedForceMarker = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 18, 12),
+      new THREE.MeshStandardMaterial({
+        color: 0xa3e635,
+        emissive: 0x1f3b0a,
+        emissiveIntensity: 0.22,
+        metalness: 0.04,
+        roughness: 0.45,
+      }),
+    )
+    const leverCenterOfMassMarker = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 18, 12),
+      new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        emissive: 0x3b2504,
+        emissiveIntensity: 0.24,
+        metalness: 0.04,
+        roughness: 0.45,
+      }),
+    )
+    const leverSupport = new THREE.Mesh(
+      new THREE.ConeGeometry(leverSupportRadius, leverSupportHeight, 4),
+      new THREE.MeshStandardMaterial({
+        color: 0xe6e8ec,
+        metalness: 0.14,
+        roughness: 0.52,
+      }),
+    )
+
+    leverSupport.rotation.x = Math.PI / 2
+    scene.add(leverLeftMass)
+    scene.add(leverRightMass)
+    scene.add(leverAppliedForceMarker)
+    scene.add(leverCenterOfMassMarker)
+    scene.add(leverSupport)
 
     const pulley = new THREE.Mesh(
       new THREE.TorusGeometry(atwoodPulleyRadius, 0.035, 10, 36),
@@ -671,6 +735,11 @@ export function KinematicsScene({
       sceneProjection,
       secondaryBody,
       bodyRadius: sceneBodySize,
+      leverAppliedForceMarker,
+      leverCenterOfMassMarker,
+      leverLeftMass,
+      leverRightMass,
+      leverSupport,
       pulley,
       supportBar,
       supportStem,
@@ -838,10 +907,7 @@ function updateKinematicsObjects({
   objects.body.position.copy(bodyPosition)
   objects.body.rotation.set(0, 0, 0)
 
-  if (
-    simulationId === 'rigid-body-rotation' ||
-    simulationId === 'torque-levers-center-mass'
-  ) {
+  if (simulationId === 'rigid-body-rotation') {
     objects.body.rotation.z = sample.angleRadians
   } else if (simulationId === 'work-energy-track') {
     const trackNormal = getWorkEnergyTrackNormal(sample)
@@ -874,15 +940,47 @@ function updateKinematicsObjects({
 
     arrow.visible = true
     arrow.position.copy(
-      simulationId === 'collisions-1d-2d' && vector.id === 'secondaryVelocity'
-        ? objects.secondaryBody.position
-        : bodyPosition,
+      getKinematicsVectorOrigin(objects, sample, simulationId, vector.id, bodyPosition),
     )
     arrow.setDirection(direction.normalize())
     arrow.setLength(getVectorDisplayLength(vector), 0.08, 0.045)
   })
 
   updateTrace(objects, samples, sampleIndex, sample, showTrace, simulationId)
+}
+
+function getKinematicsVectorOrigin(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+  simulationId: KinematicsSimulationId,
+  vectorId: KinematicsVectorOverlay['id'],
+  fallbackPosition: THREE.Vector3,
+) {
+  if (simulationId === 'collisions-1d-2d' && vectorId === 'secondaryVelocity') {
+    return objects.secondaryBody.position.clone()
+  }
+
+  if (simulationId === 'torque-levers-center-mass') {
+    if (vectorId === 'forceOne') {
+      return objects.leverLeftMass.position.clone()
+    }
+
+    if (vectorId === 'forceTwo') {
+      return objects.leverRightMass.position.clone()
+    }
+
+    if (vectorId === 'appliedForce') {
+      return objects.leverAppliedForceMarker.position.clone()
+    }
+
+    if (vectorId === 'torque') {
+      const { pivot, normal } = getTorqueLeverBasis(sample)
+
+      return pivot.clone().addScaledVector(normal, 0.34)
+    }
+  }
+
+  return fallbackPosition.clone()
 }
 
 function updateConstrainedBodyObjects(
@@ -894,12 +992,18 @@ function updateConstrainedBodyObjects(
   const isCollision = simulationId === 'collisions-1d-2d'
   const isMassSpring = simulationId === 'mass-spring'
   const isOrbit = simulationId === 'gravitational-field-orbits'
+  const isTorqueLever = simulationId === 'torque-levers-center-mass'
 
   objects.secondaryBody.visible = isAtwood || isCollision || isOrbit
   objects.pulley.visible = isAtwood
   objects.rope.visible = isAtwood || isMassSpring
   objects.supportBar.visible = isAtwood || isMassSpring
   objects.supportStem.visible = isAtwood || isMassSpring
+  objects.leverAppliedForceMarker.visible = isTorqueLever
+  objects.leverCenterOfMassMarker.visible = isTorqueLever
+  objects.leverLeftMass.visible = isTorqueLever
+  objects.leverRightMass.visible = isTorqueLever
+  objects.leverSupport.visible = isTorqueLever
 
   if (isOrbit) {
     objects.secondaryBody.position.set(0, 0, 0)
@@ -935,6 +1039,11 @@ function updateConstrainedBodyObjects(
 
   if (isMassSpring) {
     updateMassSpringObjects(objects, sample)
+    return
+  }
+
+  if (isTorqueLever) {
+    updateTorqueLeverObjects(objects, sample)
     return
   }
 
@@ -1008,6 +1117,110 @@ function updateConstrainedBodyObjects(
   })
   objects.rope.geometry.setDrawRange(0, ropePoints.length)
   objects.ropePositionAttribute.needsUpdate = true
+}
+
+function updateTorqueLeverObjects(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+) {
+  const scale = objects.sceneProjection.positionScale
+  const { axis, normal, pivot } = getTorqueLeverBasis(sample)
+  const leftArm = Math.max(0.08, sample.leftArmMeters * scale)
+  const rightArm = Math.max(0.08, sample.rightArmMeters * scale)
+  const appliedArm = Math.max(0, sample.appliedForceArmMeters * scale)
+  const leftSpan = Math.max(leftArm, 0.28)
+  const rightSpan = Math.max(rightArm, appliedArm, 0.28)
+  const boardLength = leftSpan + rightSpan + 0.16
+  const boardCenterOffset = (rightSpan - leftSpan) / 2
+  const boardCenter = pivot.clone().addScaledVector(axis, boardCenterOffset)
+  const leftMassSize = getLeverMassDisplaySize(objects, sample.forceOneNewtons)
+  const rightMassSize = getLeverMassDisplaySize(objects, sample.forceTwoNewtons)
+  const markerRadius = clamp(objects.bodyRadius * 0.34, 0.055, 0.12)
+
+  objects.body.position.copy(boardCenter)
+  objects.body.rotation.set(0, -sample.angleRadians, 0)
+  objects.body.scale.set(boardLength, leverBoardDepth, leverBoardThickness)
+
+  updateLeverMassObject({
+    axis,
+    distance: -leftArm,
+    massSize: leftMassSize,
+    mesh: objects.leverLeftMass,
+    normal,
+    pivot,
+    sample,
+  })
+  updateLeverMassObject({
+    axis,
+    distance: rightArm,
+    massSize: rightMassSize,
+    mesh: objects.leverRightMass,
+    normal,
+    pivot,
+    sample,
+  })
+
+  objects.leverAppliedForceMarker.position
+    .copy(pivot)
+    .addScaledVector(axis, appliedArm)
+    .addScaledVector(normal, leverBoardThickness * 0.5 + markerRadius + 0.018)
+  objects.leverAppliedForceMarker.scale.setScalar(markerRadius)
+
+  objects.leverCenterOfMassMarker.position
+    .copy(pivot)
+    .addScaledVector(axis, sample.centerOfMassMeters * scale)
+    .addScaledVector(normal, leverBoardThickness * 0.5 + markerRadius + 0.022)
+  objects.leverCenterOfMassMarker.scale.setScalar(markerRadius)
+
+  objects.leverSupport.position.set(
+    pivot.x,
+    pivot.y,
+    pivot.z - leverBoardThickness * 0.5 - leverSupportHeight * 0.5,
+  )
+  objects.leverSupport.rotation.set(Math.PI / 2, 0, Math.PI / 4)
+}
+
+function updateLeverMassObject({
+  axis,
+  distance,
+  massSize,
+  mesh,
+  normal,
+  pivot,
+  sample,
+}: {
+  axis: THREE.Vector3
+  distance: number
+  massSize: number
+  mesh: THREE.Mesh
+  normal: THREE.Vector3
+  pivot: THREE.Vector3
+  sample: KinematicsSample
+}) {
+  mesh.position
+    .copy(pivot)
+    .addScaledVector(axis, distance)
+    .addScaledVector(normal, leverBoardThickness * 0.5 + massSize * 0.42)
+  mesh.rotation.set(0, -sample.angleRadians, 0)
+  mesh.scale.set(massSize * 0.92, massSize * 0.72, massSize * 0.82)
+}
+
+function getTorqueLeverBasis(sample: KinematicsSample) {
+  const angleRadians = sample.angleRadians
+
+  return {
+    axis: new THREE.Vector3(Math.cos(angleRadians), 0, Math.sin(angleRadians)),
+    normal: new THREE.Vector3(-Math.sin(angleRadians), 0, Math.cos(angleRadians)),
+    pivot: new THREE.Vector3(0, 0, leverPivotHeight),
+  }
+}
+
+function getLeverMassDisplaySize(objects: SceneObjects, forceNewtons: number) {
+  return clamp(
+    objects.bodyRadius * (1.25 + Math.sqrt(Math.max(0, forceNewtons)) * 0.12),
+    0.2,
+    0.62,
+  )
 }
 
 function updateMassSpringObjects(
@@ -1559,6 +1772,10 @@ function createReferencePath(
     return createCollisionReferencePath(samples, sceneProjection)
   }
 
+  if (simulationId === 'torque-levers-center-mass') {
+    return createTorqueLeverReferencePath(samples, sceneProjection)
+  }
+
   if (
     simulationId === 'uniform-circular-motion' ||
     simulationId === 'centripetal-force-curve'
@@ -1714,6 +1931,57 @@ function createPathLine({
   )
 }
 
+function createTorqueLeverReferencePath(
+  samples: KinematicsSample[],
+  sceneProjection: KinematicsSceneProjection,
+) {
+  const firstSample = samples[0]
+  const group = new THREE.Group()
+
+  if (!firstSample) {
+    return group
+  }
+
+  const scale = sceneProjection.positionScale
+  const leftArm = firstSample.leftArmMeters * scale
+  const rightArm = firstSample.rightArmMeters * scale
+  const appliedArm = firstSample.appliedForceArmMeters * scale
+  const leftSpan = Math.max(leftArm, 0.28)
+  const rightSpan = Math.max(rightArm, appliedArm, 0.28)
+  const pivot = new THREE.Vector3(0, 0, leverPivotHeight)
+
+  group.add(
+    createSceneLine(
+      pivot.clone().add(new THREE.Vector3(-leftSpan, 0, 0)),
+      pivot.clone().add(new THREE.Vector3(rightSpan, 0, 0)),
+      0xe6e8ec,
+      0.22,
+    ),
+  )
+  group.add(
+    createSceneLine(
+      new THREE.Vector3(0, -0.26, 0),
+      new THREE.Vector3(0, -0.26, leverPivotHeight),
+      0xe6e8ec,
+      0.18,
+    ),
+  )
+  group.add(
+    createSceneLine(
+      new THREE.Vector3(firstSample.centerOfMassMeters * scale, -0.18, 0),
+      new THREE.Vector3(
+        firstSample.centerOfMassMeters * scale,
+        -0.18,
+        leverPivotHeight + 0.22,
+      ),
+      0xf59e0b,
+      0.28,
+    ),
+  )
+
+  return group
+}
+
 function createCircularReferencePath(
   samples: KinematicsSample[],
   simulationId: KinematicsSimulationId,
@@ -1834,6 +2102,25 @@ function estimateSceneBounds(
     }
   }
 
+  if (simulationId === 'torque-levers-center-mass') {
+    const firstSample = samples[0]
+
+    if (firstSample) {
+      const scale = sceneProjection.positionScale
+      const leftSpan = Math.max(firstSample.leftArmMeters * scale, 0.42)
+      const rightSpan = Math.max(
+        firstSample.rightArmMeters * scale,
+        firstSample.appliedForceArmMeters * scale,
+        0.42,
+      )
+
+      positions.push(
+        new THREE.Vector3(-leftSpan - 0.5, -0.62, 0),
+        new THREE.Vector3(rightSpan + 0.5, 0.62, leverPivotHeight + 0.9),
+      )
+    }
+  }
+
   if (simulationId === 'centripetal-force-curve') {
     const firstSample = samples[0]
     const scale = sceneProjection.positionScale
@@ -1927,6 +2214,10 @@ function getInitialCameraYawRadians(simulationId: KinematicsSimulationId) {
 function getKinematicsCanvasAriaLabel(simulationId: KinematicsSimulationId) {
   if (simulationId === 'mass-spring') {
     return 'Cena 3D do massa-mola vertical com arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'torque-levers-center-mass') {
+    return 'Cena 3D da gangorra com massas, apoio fixo, centro de massa e vetores com arraste para orbitar, e Shift + scroll para zoom'
   }
 
   return 'Cena 3D de Cinematica com arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom'

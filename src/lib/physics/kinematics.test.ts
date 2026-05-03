@@ -578,6 +578,11 @@ describe('kinematics physics engine', () => {
 
     expect(sample.netTorqueNewtonMeters).toBeCloseTo(0)
     expect(sample.centerOfMassMeters).toBeCloseTo(0)
+    expect(sample.leftArmMeters).toBeCloseTo(parameters.leftArmMeters)
+    expect(sample.rightArmMeters).toBeCloseTo(parameters.rightArmMeters)
+    expect(sample.appliedForceArmMeters).toBeCloseTo(
+      parameters.appliedForceArmMeters,
+    )
     expect(result.warnings).toHaveLength(0)
   })
 

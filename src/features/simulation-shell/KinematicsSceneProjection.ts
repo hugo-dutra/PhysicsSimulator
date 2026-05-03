@@ -21,7 +21,6 @@ export function createKinematicsSceneProjection(
     simulationId === 'gravitational-field-orbits' ||
     simulationId === 'particle-equilibrium' ||
     simulationId === 'rigid-body-rotation' ||
-    simulationId === 'torque-levers-center-mass' ||
     simulationId === 'uniform-circular-motion' ||
     simulationId === 'centripetal-force-curve'
   const rawBounds = estimateRawSceneBounds(
@@ -97,6 +96,22 @@ function estimateRawSceneBounds(
 
     return {
       span: Math.max(1, maxZ - minZ, springTopMeters),
+    }
+  }
+
+  if (simulationId === 'torque-levers-center-mass') {
+    const firstSample = samples[0]
+    const leftArmMeters = firstSample?.leftArmMeters ?? 1
+    const rightArmMeters = firstSample?.rightArmMeters ?? 1
+    const appliedForceArmMeters = firstSample?.appliedForceArmMeters ?? 0
+    const leverHalfSpanMeters = Math.max(
+      leftArmMeters,
+      rightArmMeters,
+      appliedForceArmMeters,
+    )
+
+    return {
+      span: Math.max(1, leverHalfSpanMeters * 2.25, leftArmMeters + rightArmMeters),
     }
   }
 

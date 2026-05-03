@@ -214,6 +214,9 @@ type KinematicsSample = {
   secondaryXMeters: number;
   secondaryZMeters: number;
   secondaryRadiusMeters: number;
+  leftArmMeters: number;
+  rightArmMeters: number;
+  appliedForceArmMeters: number;
   secondaryVelocityMetersPerSecond: number;
   secondaryVelocityXMetersPerSecond: number;
   secondaryVelocityZMetersPerSecond: number;
