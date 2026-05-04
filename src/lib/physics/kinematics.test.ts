@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  computeKinematicsSample,
   computeKinematicsTimeline,
   getKinematicsVectorOverlays,
   toKinematicsParameters,
@@ -403,6 +404,178 @@ describe('kinematics physics engine', () => {
     expect(sample.totalEnergyJoules).toBeLessThan(0)
   })
 
+  it('varies elliptical orbital speed while preserving equal areas', () => {
+    const parameters: GravitationalFieldOrbitsParameters = {
+      centralMassEarths: 1,
+      eccentricity: 0.45,
+      initialAngleDegrees: 0,
+      orbitalRadiusKilometers: 7000,
+      satelliteMassKilograms: 900,
+    }
+    const periapsisSample = computeKinematicsSample(
+      'gravitational-field-orbits',
+      parameters,
+      0,
+    )
+    const apoapsisSample = computeKinematicsSample(
+      'gravitational-field-orbits',
+      parameters,
+      periapsisSample.periodSeconds / 2,
+    )
+    const expectedApoapsisRadiusMeters =
+      parameters.orbitalRadiusKilometers *
+      1000 *
+      ((1 + parameters.eccentricity) / (1 - parameters.eccentricity))
+    const periapsisSpecificArealRate =
+      periapsisSample.xMeters * periapsisSample.velocityZMetersPerSecond -
+      periapsisSample.zMeters * periapsisSample.velocityXMetersPerSecond
+    const apoapsisSpecificArealRate =
+      apoapsisSample.xMeters * apoapsisSample.velocityZMetersPerSecond -
+      apoapsisSample.zMeters * apoapsisSample.velocityXMetersPerSecond
+
+    expect(periapsisSample.positionMeters).toBeCloseTo(7_000_000)
+    expect(
+      Math.abs(apoapsisSample.positionMeters - expectedApoapsisRadiusMeters) /
+        expectedApoapsisRadiusMeters,
+    ).toBeLessThan(1e-10)
+    expect(periapsisSample.speedMetersPerSecond).toBeGreaterThan(
+      apoapsisSample.speedMetersPerSecond,
+    )
+    expect(periapsisSample.angularVelocityRadiansPerSecond).toBeGreaterThan(
+      apoapsisSample.angularVelocityRadiansPerSecond,
+    )
+    expect(
+      Math.abs(
+        (periapsisSpecificArealRate - apoapsisSpecificArealRate) /
+          periapsisSpecificArealRate,
+      ),
+    ).toBeLessThan(1e-10)
+  })
+
+  it('keeps orbital period tied to semi-major axis by Kepler third law', () => {
+    const firstParameters: GravitationalFieldOrbitsParameters = {
+      centralMassEarths: 1,
+      eccentricity: 0.2,
+      initialAngleDegrees: 35,
+      orbitalRadiusKilometers: 7000,
+      satelliteMassKilograms: 900,
+    }
+    const secondParameters: GravitationalFieldOrbitsParameters = {
+      ...firstParameters,
+      orbitalRadiusKilometers: 14000,
+    }
+    const firstSample = computeKinematicsSample(
+      'gravitational-field-orbits',
+      firstParameters,
+      0,
+    )
+    const secondSample = computeKinematicsSample(
+      'gravitational-field-orbits',
+      secondParameters,
+      0,
+    )
+    const firstSemiMajorAxisMeters =
+      (firstParameters.orbitalRadiusKilometers * 1000) /
+      (1 - firstParameters.eccentricity)
+    const secondSemiMajorAxisMeters =
+      (secondParameters.orbitalRadiusKilometers * 1000) /
+      (1 - secondParameters.eccentricity)
+    const firstPeriodRatio =
+      firstSample.periodSeconds ** 2 / firstSemiMajorAxisMeters ** 3
+    const secondPeriodRatio =
+      secondSample.periodSeconds ** 2 / secondSemiMajorAxisMeters ** 3
+
+    expect(
+      Math.abs((firstPeriodRatio - secondPeriodRatio) / firstPeriodRatio),
+    ).toBeLessThan(1e-12)
+  })
+
+  it('derives a didactic satellite around the orbiting body from gravitational samples', () => {
+    const parameters: GravitationalFieldOrbitsParameters = {
+      centralMassEarths: 1,
+      eccentricity: 0.08,
+      initialAngleDegrees: 0,
+      orbitalRadiusKilometers: 7000,
+      satelliteMassKilograms: 900,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 60,
+      parameters,
+      sampleRateHz: 1,
+      simulationId: 'gravitational-field-orbits',
+    })
+    const firstSample = result.samples[0]
+    const laterSample = result.samples[30]
+    const firstSatelliteDistanceMeters = Math.hypot(
+      firstSample.secondaryXMeters - firstSample.xMeters,
+      firstSample.secondaryZMeters - firstSample.zMeters,
+    )
+    const laterSatelliteDistanceMeters = Math.hypot(
+      laterSample.secondaryXMeters - laterSample.xMeters,
+      laterSample.secondaryZMeters - laterSample.zMeters,
+    )
+
+    expect(firstSample.secondaryRadiusMeters).toBeGreaterThan(0)
+    expect(firstSatelliteDistanceMeters)
+      .toBeCloseTo(firstSample.secondaryRadiusMeters)
+    expect(laterSatelliteDistanceMeters)
+      .toBeCloseTo(laterSample.secondaryRadiusMeters)
+    expect(laterSample.secondaryXMeters).not.toBeCloseTo(
+      firstSample.secondaryXMeters,
+    )
+    expect(laterSample.secondarySpeedMetersPerSecond).toBeGreaterThan(
+      laterSample.speedMetersPerSecond,
+    )
+  })
+
+  it('keeps the didactic moon orbit speed independent of eccentricity-driven planet speed', () => {
+    const circularParameters: GravitationalFieldOrbitsParameters = {
+      centralMassEarths: 1,
+      eccentricity: 0,
+      initialAngleDegrees: 0,
+      orbitalRadiusKilometers: 7000,
+      satelliteMassKilograms: 900,
+    }
+    const eccentricParameters: GravitationalFieldOrbitsParameters = {
+      ...circularParameters,
+      eccentricity: 0.45,
+    }
+    const circularSample = computeKinematicsSample(
+      'gravitational-field-orbits',
+      circularParameters,
+      0,
+    )
+    const eccentricPeriapsisSample = computeKinematicsSample(
+      'gravitational-field-orbits',
+      eccentricParameters,
+      0,
+    )
+    const eccentricApoapsisSample = computeKinematicsSample(
+      'gravitational-field-orbits',
+      eccentricParameters,
+      eccentricPeriapsisSample.periodSeconds / 2,
+    )
+
+    expect(eccentricPeriapsisSample.speedMetersPerSecond).toBeGreaterThan(
+      eccentricApoapsisSample.speedMetersPerSecond,
+    )
+    expect(
+      eccentricPeriapsisSample.angularVelocityRadiansPerSecond,
+    ).toBeGreaterThan(eccentricApoapsisSample.angularVelocityRadiansPerSecond)
+    expect(eccentricPeriapsisSample.secondarySpeedMetersPerSecond)
+      .toBeCloseTo(eccentricApoapsisSample.secondarySpeedMetersPerSecond)
+    expect(eccentricPeriapsisSample.secondarySpeedMetersPerSecond)
+      .toBeCloseTo(circularSample.secondarySpeedMetersPerSecond)
+    expect(eccentricPeriapsisSample.secondaryRadiusMeters)
+      .toBeCloseTo(circularSample.secondaryRadiusMeters)
+    expect(
+      Math.hypot(
+        eccentricApoapsisSample.secondaryXMeters - eccentricApoapsisSample.xMeters,
+        eccentricApoapsisSample.secondaryZMeters - eccentricApoapsisSample.zMeters,
+      ),
+    ).toBeCloseTo(circularSample.secondaryRadiusMeters)
+  })
+
   it('computes hydrostatic pressure and buoyancy regimes', () => {
     const floating: HydrostaticsBuoyancyParameters = {
       depthMeters: 2,
@@ -649,6 +822,7 @@ describe('kinematics physics engine', () => {
       initialAngleDegrees: 0,
       initialAngularVelocityRadiansPerSecond: 2,
       momentOfInertiaKilogramMetersSquared: 1.5,
+      slidingMassDistanceMeters: 1,
     }
     const result = computeKinematicsTimeline({
       durationSeconds: 2,
@@ -662,6 +836,53 @@ describe('kinematics physics engine', () => {
     expect(lastSample?.angularVelocityRadiansPerSecond).toBeLessThan(2)
     expect(lastSample?.thermalEnergyJoules).toBeGreaterThan(0)
     expect(result.warnings[0]?.code).toBe('ROTATION_DAMPING_ACTIVE')
+  })
+
+  it('moves the rigid-body mass inward by conserving angular momentum', () => {
+    const outerMassParameters: RigidBodyRotationParameters = {
+      angularDampingPerSecond: 0,
+      appliedTorqueNewtonMeters: 0,
+      initialAngleDegrees: 0,
+      initialAngularVelocityRadiansPerSecond: 1.2,
+      momentOfInertiaKilogramMetersSquared: 0.9,
+      slidingMassDistanceMeters: 1.2,
+    }
+    const innerMassParameters: RigidBodyRotationParameters = {
+      ...outerMassParameters,
+      slidingMassDistanceMeters: 0.35,
+    }
+    const outerSample = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters: outerMassParameters,
+      sampleRateHz: 20,
+      simulationId: 'rigid-body-rotation',
+    }).samples[0]
+    const innerSample = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters: innerMassParameters,
+      sampleRateHz: 20,
+      simulationId: 'rigid-body-rotation',
+    }).samples[0]
+    const outerAngularMomentum =
+      outerSample.momentOfInertiaKilogramMetersSquared *
+      outerSample.angularVelocityRadiansPerSecond
+    const innerAngularMomentum =
+      innerSample.momentOfInertiaKilogramMetersSquared *
+      innerSample.angularVelocityRadiansPerSecond
+
+    expect(innerSample.primaryRadiusMeters).toBeLessThan(
+      outerSample.primaryRadiusMeters,
+    )
+    expect(innerSample.centerOfMassMeters).toBeLessThan(
+      outerSample.centerOfMassMeters,
+    )
+    expect(innerSample.momentOfInertiaKilogramMetersSquared).toBeLessThan(
+      outerSample.momentOfInertiaKilogramMetersSquared,
+    )
+    expect(innerSample.angularVelocityRadiansPerSecond).toBeGreaterThan(
+      outerSample.angularVelocityRadiansPerSecond,
+    )
+    expect(innerAngularMomentum).toBeCloseTo(outerAngularMomentum)
   })
 
   it('derives vector overlays from the same kinematics samples', () => {
@@ -855,7 +1076,8 @@ function readFixtureLikeParameters(
         appliedTorqueNewtonMeters: 0.8,
         initialAngleDegrees: 0,
         initialAngularVelocityRadiansPerSecond: 0.5,
-        momentOfInertiaKilogramMetersSquared: 1.6,
+        momentOfInertiaKilogramMetersSquared: 0.9,
+        slidingMassDistanceMeters: 1,
       }
     case 'rolling-without-slipping':
       return {

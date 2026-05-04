@@ -42,7 +42,6 @@ export type InclinedPlaneFrameStats = FrameStats
 type InclinedPlaneSceneProps = {
   durationSeconds: number
   isPlaying: boolean
-  maximized?: boolean
   onSampleChange: (
     sample: InclinedPlaneSample,
     stats: InclinedPlaneFrameStats,
@@ -124,7 +123,6 @@ const maxCameraRadiusScale = 2.35
 export function InclinedPlaneScene({
   durationSeconds,
   isPlaying,
-  maximized = false,
   onSampleChange,
   parameters,
   playbackRate,
@@ -526,12 +524,15 @@ export function InclinedPlaneScene({
   }, [parameters, renderCurrentFrame, samples])
 
   useEffect(() => {
+    const resetSamples = runtimeRef.current.samples
+
     elapsedSecondsRef.current = 0
     lastFrameTimeRef.current = null
     lastReadoutTimeRef.current = 0
     statsWindowRef.current = createFrameStatsWindow()
-    liveStateRef.current = readInitialInclinedPlaneState(samples)
-    initialMechanicalEnergyRef.current = readInitialMechanicalEnergy(samples)
+    liveStateRef.current = readInitialInclinedPlaneState(resetSamples)
+    initialMechanicalEnergyRef.current =
+      readInitialMechanicalEnergy(resetSamples)
     traceSamplesRef.current = [
       toInclinedPlaneSample(
         liveStateRef.current,
@@ -540,7 +541,7 @@ export function InclinedPlaneScene({
       ),
     ]
     renderCurrentFrame(true)
-  }, [renderCurrentFrame, resetVersion, samples])
+  }, [renderCurrentFrame, resetVersion])
 
   useEffect(() => {
     if (import.meta.env.MODE === 'test') {
@@ -605,13 +606,8 @@ export function InclinedPlaneScene({
   return (
     <Box
       sx={{
-        height: maximized
-          ? {
-              xs: '52svh',
-              md: 'calc(100svh - 256px)',
-            }
-          : { xs: 326, md: 382 },
-        minHeight: maximized ? { xs: 320, md: 430 } : undefined,
+        height: '100%',
+        minHeight: 0,
         position: 'relative',
       }}
     >

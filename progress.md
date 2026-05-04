@@ -2152,3 +2152,333 @@ Validacao:
 - Executado `npm run test`; 77 testes passaram.
 - Executado smoke visual headless com Playwright temporario e Chrome local em `http://127.0.0.1:5173/`, selecionando `Rolamento sem escorregamento`; canvas capturado com pixels nao-background e salvo em `artifacts/rolling-visual-smoke.png`.
 - Apos a correcao de sentido do giro, reexecutados `npm run build`, `npm run lint`, `npm run test` e o smoke visual headless; todos passaram.
+
+## 2026-05-04 - Viewport inicial maior e titulo limpo
+
+Status: feito.
+
+Pedido reportado:
+
+- Aumentar a area inicial da viewport para 90% da altura da tela e remover o texto `Viewport Three.js` do titulo da viewport.
+
+Ajuste:
+
+- O card da viewport passou a definir a altura inicial em `90svh`.
+- As cenas Three.js do pendulo, plano inclinado e renderer cinematico compartilhado passaram a preencher `100%` do espaco restante do card, inclusive em modo maximizado.
+- O cabecalho da viewport deixou de renderizar o texto `Viewport Three.js`, mantendo apenas FPS, tempo, toggle de leituras/vetores e acao de maximizar.
+- O teste da tela inicial passou a garantir que o texto removido nao aparece.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a mudanca e somente de layout/rotulo. Motor, parametros, regimes, samples, graficos, tabela, formulas, teoria e warnings continuam sem alteracao e usando a mesma fonte fisica.
+
+Documentacao:
+
+- Atualizado este registro de progresso. Nenhum guide estrutural mudou porque nao houve mudanca de contrato, modelo fisico, dados, roadmap ou status de simulacao.
+
+Validacao:
+
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm run test -- src/App.test.tsx -t "renders the pendulum simulation shell" --reporter=verbose`; 1 teste passou e 7 ficaram ignorados pelo filtro.
+- Executado smoke visual headless via Chrome DevTools Protocol em `http://127.0.0.1:5173/`: apos maximizar, o card do viewport mediu 1128 px de altura e o canvas preencheu ate 1 px do fundo do card.
+- A tentativa ampla `npm run test -- src/App.test.tsx` excedeu o timeout local de 120s sem reportar falha; os processos de teste pendurados foram encerrados, preservando o dev server em `127.0.0.1:5173`.
+
+## 2026-05-04 - Leituras do viewport retrateis
+
+Status: feito.
+
+Pedido reportado:
+
+- Tornar o bloco de metricas instantaneas e legenda detalhada dos vetores retratil, fechado por padrao, e desativar as funcoes de exibicao/calculo de valores enquanto ele estiver escondido para liberar mais espaco para a simulacao.
+
+Ajuste:
+
+- O viewport do pendulo, plano inclinado e simulacoes cinematicas ganhou um toggle `Abrir/Fechar leituras e vetores`, fechado por padrao.
+- Metricas instantaneas e legendas detalhadas de vetores agora ficam desmontadas enquanto o bloco esta fechado.
+- Os builders de overlays numericos detalhados so calculam vetores quando o bloco esta aberto e o overlay de vetores esta ativo.
+- A legenda compacta sobre o canvas continua aparecendo quando vetores estao ligados, mas usa unidades estaticas de legenda para nao depender dos valores vivos desmontados.
+- O shell preserva o canvas como area principal do viewport, com a cena preenchendo o espaco disponivel.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a mudanca e de layout/execucao de UI. Motor numerico, parametros, regimes, samples, graficos, tabela, formulas, teoria e warnings continuam derivados da mesma fonte fisica.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md` e `guides/07-quality-and-operations.md`.
+
+Validacao:
+
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npx vitest run App.test.tsx --reporter=json --outputFile=vitest-results.json`; 8 testes passaram e o relatorio temporario foi removido.
+- Executado `npx vitest run --reporter=json --outputFile=vitest-results.json`; 77 testes passaram em 22 suites e o relatorio temporario foi removido.
+- Executado smoke visual headless com Chrome local em `http://127.0.0.1:5173/`; a legenda detalhada iniciou escondida, abriu pelo toggle e o canvas mediu aproximadamente 645 px de altura no viewport padrao.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; falhou por lacunas estruturais ja existentes no SDD (`README.md`, `.agent/`, `tasks/`, `adr/` e rotas de refinamento), sem relacao direta com esta mudanca de UI.
+
+## 2026-05-04 - Cena didatica de rotacao de corpo rigido
+
+Status: feito.
+
+Pedido reportado:
+
+- Substituir a visualizacao fraca de `Mecanica > Rotacao > Rotacao de corpo rigido` por uma versao visualmente melhor, seguindo a opcao de mesa de rotacao didatica.
+
+Ajuste:
+
+- A cena de `Rotacao de corpo rigido` passou a usar uma bancada circular com aro, eixo fixo, hub central, rotor assimetrico, massas visuais, linha de referencia de angulo, arco de fase angular, trilha circular e freio/amortecimento visual.
+- As setas retas genericas de velocidade angular, aceleracao angular e torque foram substituidas nessa simulacao por setas curvas ao redor do eixo, preservando a legenda compacta e os mesmos ids de grandezas.
+- A camera inicial, bounds da cena e opacidade da grade foram ajustados para aproximar o experimento e reduzir o efeito de objeto pequeno perdido no plano.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a mudanca e visual/didatica no renderer. Motor, parametros, regimes, samples, graficos, tabela, formulas, teoria e warnings continuam sem alteracao e usando a mesma fonte fisica.
+- Confirmado que o renderer continua consumindo `angleRadians`, `angularVelocityRadiansPerSecond`, `angularAccelerationRadiansPerSecondSquared`, `netTorqueNewtonMeters`, `momentOfInertiaKilogramMetersSquared` e `thermalEnergyJoules` do sample, sem criar fisica paralela.
+
+Documentacao:
+
+- Atualizado este registro de progresso. Nenhum guide estrutural mudou porque nao houve mudanca de contrato, modelo fisico, dados, roadmap ou status da simulacao.
+
+Validacao:
+
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm run test`; 77 testes passaram.
+- Executado smoke visual headless com Chrome local em `http://127.0.0.1:5173/`, selecionando `Rotacao de corpo rigido`; canvas capturado com `dataLength` 20842, aria da mesa de rotacao presente e screenshot salvo em `artifacts/rigid-body-rotation-smoke.png`.
+
+## 2026-05-04 - Massa movel e momento angular na rotacao
+
+Status: feito.
+
+Pedido reportado:
+
+- Ajustar `Mecanica > Rotacao > Rotacao de corpo rigido` para que a esfera tenha a cor da barra, possa se aproximar ou afastar do eixo, altere centro de massa/momento de inercia e mostre o aumento de velocidade angular por conservacao do momento angular. Revisar tambem o sentido das setas e o vetor perpendicular ao plano de rotacao.
+
+Ajuste:
+
+- A esfera da barra passou a usar a mesma cor teal do rotor.
+- Adicionado o controle `Distancia da massa movel`, com tooltip de ajuda, presets e teoria/formulas atualizadas.
+- O motor agora calcula `I = I_base + m r^2`, `centerOfMassMeters` e a velocidade angular inicial efetiva a partir de um momento angular de referencia; com torque e amortecimento zerados, aproximar a massa do eixo reduz `I` e aumenta `omega`.
+- A cena move a esfera ao longo da barra, mostra um marcador do centro de massa e adiciona o vetor axial de momento angular perpendicular ao plano de giro.
+- Os graficos passaram a incluir inercia total, centro de massa e momento angular, usando os mesmos samples da cena/tabela/formulas.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: parametros, sample, cena, graficos, tabela, formulas, teoria, warnings e testes foram ajustados para manter uma unica fonte fisica.
+- A simulacao permanece em `analysis`; nao houve promocao para `ready`.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/06-data-and-api.md`, fixture de rotacao, teoria de rotacao e este registro de progresso.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts --reporter=verbose`; 25 testes passaram, incluindo o caso de conservacao de momento angular com massa movel.
+- Executado `npm run test -- src/App.test.tsx --reporter=verbose`; 8 testes passaram.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm run test`; 11 arquivos e 78 testes passaram.
+- Executado smoke visual headless com Chrome local em `http://127.0.0.1:5173/`, selecionando `Rotacao de corpo rigido`; canvas capturado com `dataLength` 19018, controle `Distancia da massa movel` presente, legenda `Momento angular` presente e screenshot salvo em `artifacts/rigid-body-rotation-mass-smoke.png`.
+
+## 2026-05-04 - Parametros sem reiniciar playback
+
+Status: feito.
+
+Pedido reportado:
+
+- Alterar valores nos controles parecia reiniciar a simulacao; a experiencia desejada e aplicar os novos valores ao estado/tempo atual para perceber as mudancas de forma mais sinuosa, valendo para simulacoes atuais e futuras.
+
+Ajuste:
+
+- Mudancas em parametros fisicos deixaram de incrementar `playbackResetVersion`.
+- Mudancas em parametros de runtime, incluindo `Horizonte calculado`, tambem deixaram de reiniciar o relogio continuo.
+- `Reset`, troca de simulacao e preset continuam sendo acoes explicitas de reinicio.
+- `PendulumScene`, `InclinedPlaneScene` e `KinematicsScene` agora usam a timeline/samples atuais apenas quando um reset explicito acontece; a troca de samples por mudanca de parametros preserva `elapsedSecondsRef` e o estado vivo.
+- `KinematicsScene` atualiza sua referencia interna de timeline quando os samples mudam, sem zerar o playback.
+- Adicionado teste de regressao em `SimulationShell.test.tsx` garantindo que mudancas de parametro e horizonte preservam a versao de reset, enquanto o botao Reset incrementa.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a mudanca preserva fonte unica de samples e altera apenas a politica de continuidade do playback. Motor, cena, graficos, tabela, formulas e warnings continuam derivados dos mesmos parametros/samples.
+
+Documentacao:
+
+- Lidos `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Nenhum guide estrutural foi alterado porque o contrato ja dizia que alterar parametros nao deve resetar o tempo; a implementacao foi corrigida para cumprir esse contrato.
+
+Validacao:
+
+- Executado `npm run test -- src/features/simulation-shell/SimulationShell.test.tsx --reporter=verbose`; passou.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test`; 12 arquivos e 79 testes passaram.
+- Dev server local iniciado em `http://127.0.0.1:5174/`.
+
+## 2026-05-04 - Gravitação com tempo visível e lua didática
+
+Status: feito.
+
+Pedido reportado:
+
+- A orbita em `Mecanica > Gravitacao > Campo gravitacional e orbitas` parecia parada porque o periodo fisico era longo demais para o playback em tempo real.
+- A cena deveria mostrar um satelite no planeta, em leitura parecida com Sol, Terra e Lua.
+
+Ajuste:
+
+- Adicionado o runtime `Tempo orbital exibido`, que compacta o tempo do modelo para tornar a orbita visivel sem recalcular fisica fora dos samples.
+- O motor de gravitacao agora preenche `secondaryXMeters`, `secondaryZMeters`, velocidades secundarias e `secondaryRadiusMeters` para uma lua didatica ao redor do corpo em orbita.
+- A cena orbital passou a desenhar corpo central, planeta em orbita, lua e guia local da lua, todos derivados do sample.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a compactacao temporal e runtime declarado; campo, forca, energia, graficos, tabela, formulas e cena continuam lendo os mesmos samples.
+- A lua e declarada como marcador didatico sem perturbacao de tres corpos; a simulacao permanece em `analysis`.
+
+Documentacao:
+
+- Atualizados fixture, teoria local, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md` e este registro.
+
+Validacao:
+
+- Adicionados testes unitarios para as coordenadas da lua didatica no motor e para a projecao horizontal do sistema orbital.
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/features/simulation-shell/KinematicsScene.test.ts --reporter=verbose`; 30 testes passaram.
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts --reporter=verbose`; 9 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test -- --reporter=dot`; 12 arquivos e 81 testes passaram.
+- Executado smoke visual headless com Chrome em `http://127.0.0.1:5173/`, selecionando `Campo gravitacional e orbitas`; confirmou controle `Tempo orbital exibido`, canvas nao vazio e mudanca entre frames. Capturas em `artifacts/gravity-orbit-before.png` e `artifacts/gravity-orbit-after.png`.
+
+## 2026-05-04 - Orbita kepleriana com leis dos periodos e areas
+
+Status: feito.
+
+Pedido reportado:
+
+- A simulacao `Mecanica > Gravitacao > Campo gravitacional e orbitas` mantinha velocidade visual praticamente constante e nao respeitava a lei dos periodos nem a lei das areas.
+
+Ajuste:
+
+- O motor orbital deixou de avancar por anomalia verdadeira uniforme e passou a resolver a anomalia excentrica de Kepler a partir da anomalia media.
+- A posicao orbital agora vem da anomalia verdadeira calculada, enquanto a velocidade vem das componentes radial e transversal do problema de dois corpos.
+- A velocidade angular instantanea passou a usar `omega = h / r^2`, fazendo o corpo acelerar no periastro e desacelerar no apoastro.
+- Adicionado grafico `Leis de Kepler: areas e periodos`, com taxa areolar relativa constante e velocidade angular relativa variavel.
+- Fixture e teoria local foram atualizados para declarar lei dos periodos, lei das areas, anomalia excentrica e limites do modelo.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: parametros, samples, cena, graficos, tabela, formulas, teoria e warnings permanecem derivados da mesma fonte fisica. A simulacao continua em `analysis`.
+
+Documentacao:
+
+- Lidos `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizados `fixtures/simulations/mechanics-gravitational-field-orbits.json`, `src/content/simulations/mechanics/gravitational-field-orbits/theory.md` e este registro.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/features/simulation-shell/kinematicsChartConfigs.test.ts`; 2 arquivos e 30 testes passaram.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm run test`; 12 arquivos e 84 testes passaram.
+- Confirmado servidor local ativo em `http://127.0.0.1:5173/`.
+- Executado smoke visual headless isolado em Chrome local para `http://127.0.0.1:5173/`; selecionou `Campo gravitacional e orbitas`, abriu graficos, encontrou `Leis de Kepler: areas e periodos`, `Velocidade orbital por tempo`, 6 canvas e screenshot canvas serializavel com `dataLength` 20842.
+
+## 2026-05-04 - Lua didatica desacoplada da velocidade kepleriana
+
+Status: feito.
+
+Pedido reportado:
+
+- Em `Mecanica > Gravitacao > Campo gravitacional e orbitas`, a velocidade orbital da lua didatica aumentava junto com a velocidade kepleriana do planeta quando a excentricidade variava.
+- A lua visual deveria ter velocidade relativa propria, independente da velocidade instantanea que aumenta no periastro e diminui no apoastro.
+
+Ajuste:
+
+- O motor orbital manteve a velocidade kepleriana variavel do planeta em `speedMetersPerSecond` e `angularVelocityRadiansPerSecond`.
+- A lua didatica passou a usar uma velocidade angular relativa de referencia, derivada do raio de periastro e da massa central, sem multiplicar a velocidade angular instantanea do planeta.
+- `secondaryVelocity*` agora registra a velocidade relativa propria da lua visual ao redor do planeta, sem entrar na energia, campo ou forca da orbita principal.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: planeta, campo, forca, energia, graficos e formulas continuam lendo o sample kepleriano principal; a lua permanece marcador didatico secundario no mesmo sample e nao altera o problema de dois corpos.
+- A simulacao continua em `analysis`, aguardando teste manual antes de promocao.
+
+Documentacao:
+
+- Lidos `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizados `fixtures/simulations/mechanics-gravitational-field-orbits.json`, `src/content/simulations/mechanics/gravitational-field-orbits/theory.md`, `guides/06-data-and-api.md` e este registro.
+- Nenhum HLD/diagrama foi alterado porque a fronteira de arquitetura nao mudou.
+
+Validacao:
+
+- Adicionado teste unitario garantindo que a velocidade da lua didatica fica independente da variacao de velocidade causada pela excentricidade.
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/features/simulation-shell/kinematicsChartConfigs.test.ts --reporter=verbose`; 2 arquivos e 31 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test -- --reporter=dot`; 12 arquivos e 85 testes passaram.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; falhou por estrutura SDD ausente ja existente no repositorio (`README.md`, `.agent/`, `tasks/` e `adr/`), nao por inconsistencias especificas desta correcao.
+
+## 2026-05-04 - Folga visual da lua em orbitas excentricas
+
+Status: feito.
+
+Pedido reportado:
+
+- Em `Mecanica > Gravitacao > Campo gravitacional e orbitas`, aumentar a excentricidade fazia a lua didatica parecer se aproximar da Terra e ate tocar nela.
+- A excentricidade da orbita principal nao deve interferir na apresentacao local Terra/Lua.
+
+Ajuste:
+
+- A projecao da cena passou a preservar uma folga visual minima para a lua didatica ao redor da Terra quando a escala global da orbita principal fica muito reduzida.
+- O motor e os samples `secondary*` continuam desacoplados da velocidade kepleriana instantanea e da excentricidade; o ajuste e apenas de legibilidade da cena.
+- A trilha circular local da lua usa a mesma posicao ajustada, evitando que a orbita desenhada contradiga o marcador visual.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: campo, forca, energia, graficos, tabela e formulas da orbita principal continuam usando os samples keplerianos; a lua permanece marcador didatico secundario no mesmo sample, sem alterar o problema de dois corpos.
+- A simulacao continua em `analysis`, aguardando teste manual antes de promocao.
+
+Documentacao:
+
+- Lidos `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizado este registro. Nenhum guide, fixture, teoria ou HLD/diagrama precisou mudar porque a decisao de desacoplar a lua didatica ja estava documentada e a fronteira arquitetural nao mudou.
+
+Validacao:
+
+- Executado `npm run test -- --run src/features/simulation-shell/KinematicsScene.test.ts src/lib/physics/kinematics.test.ts`; 2 arquivos e 34 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test`; 12 arquivos e 86 testes passaram.
+- Executado smoke visual headless em `http://127.0.0.1:5173/` com excentricidade `0.84`; desktop teve 15018 pixels nao-background e 7654 pixels alterados apos drag, mobile teve 205722 pixels nao-background e 2679 pixels alterados apos drag.
+
+## 2026-05-04 - Linha orbital completa em alta excentricidade
+
+Status: feito.
+
+Pedido reportado:
+
+- Em `Mecanica > Gravitacao > Campo gravitacional e orbitas`, aumentar muito a excentricidade fazia a linha de referencia da orbita sumir ou virar apenas um trecho visualmente confuso.
+
+Ajuste:
+
+- A referencia visual da orbita principal agora usa amostras fechadas de uma volta completa calculadas pelo mesmo motor kepleriano, em vez de depender apenas do horizonte temporal atual.
+- O enquadramento da cena orbital tambem considera essa volta completa, mantendo a elipse alta em excentricidade dentro do viewport sem mudar o sample vivo de planeta, lua didatica, graficos, tabela ou formulas.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a linha continua sendo uma referencia secundaria derivada do modelo, e a cena animada segue usando os samples keplerianos compartilhados com graficos, tabela e formulas.
+- A simulacao continua em `analysis`, aguardando teste manual antes de promocao.
+
+Documentacao:
+
+- Lidos `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizado este registro. Nenhum guide, fixture, teoria ou HLD/diagrama precisou mudar porque o contrato fisico e a arquitetura nao mudaram.
+
+Validacao:
+
+- Adicionado teste garantindo que a referencia orbital fechada em `e = 0.84` fica enquadrada mesmo quando o horizonte de runtime nao cobre a volta inteira.
+- Executado `npm run test -- --run src/features/simulation-shell/KinematicsScene.test.ts src/lib/physics/kinematics.test.ts`; 2 arquivos e 35 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test -- --reporter=dot`; 12 arquivos e 87 testes passaram.
+- Executado smoke visual headless em `http://127.0.0.1:5173/` com excentricidade `0.84`; screenshot salvo em `artifacts/gravity-orbit-high-e-reference.png`, com 47.566 pixels nao-background e 2.641 pixels cyan/teal no recorte do canvas.

@@ -36,6 +36,7 @@ npm run test:e2e
 - Testes de geracao de samples para graficos e tabela.
 - Testes de campos derivados de cinematica quando eles alimentarem graficos, tabela, legendas ou formulas.
 - Testes de recorte temporal para graficos/tabela quando houver janela movel configuravel.
+- Testes de que o bloco de leituras e legenda detalhada do viewport inicia fechado, desmonta metricas/valores quando fechado e monta novamente ao abrir.
 - Testes de que blocos chevron recolhidos desmontam graficos, tabela, formulas e teoria em vez de apenas ocultar visualmente.
 - Testes de que viewport, graficos, tabela, formulas e apendice teorico podem ser maximizados, escondem os demais paineis e restauram o shell ao minimizar.
 - Testes de que a sidebar renderiza o catalogo planejado por menus de area, subarea e simulacoes com status claro.
@@ -77,7 +78,7 @@ Depois da prova do core, cada nova simulacao promovida para `analysis` ou `ready
 - Em `Trabalho e energia em trilho`, o smoke visual deve confirmar que o corpo aparece como bloco/carrinho alinhado a tangente da rampa em U, que a guia 3D tem referencia de altura/distancia, que o rastro acompanha a dissipacao do sample e que o painel compacto de `K`, `U_g`, `E_perdida`, energia total mecanica e percentual de perda aparece no viewport quando energia esta ligada.
 - Quando a simulacao tiver parametros-limite relevantes, o smoke visual ou teste proporcional deve cobrir pelo menos um caso-limite didatico, nao apenas o preset nominal.
 - Vetores devem ter legenda visivel com cor, modulo atual e significado fisico.
-- Metricas instantaneas e legenda detalhada de vetores devem aparecer acima do canvas do viewport.
+- Metricas instantaneas e legenda detalhada de vetores devem aparecer acima do canvas do viewport apenas quando o bloco retratil de leituras estiver aberto; por padrao esse bloco fica fechado e os componentes de valores ficam desmontados.
 - A animacao deve exibir legenda compacta dos vetores principais no canto superior direito, com traco na cor do vetor, grandeza representada e unidade abreviada quando houver.
 - Graficos devem atualizar quando parametros mudam.
 - Graficos devem exibir valores numericos do eixo Y e legendas de series com grandezas por extenso; unidades podem usar simbolos fisicos abreviados.

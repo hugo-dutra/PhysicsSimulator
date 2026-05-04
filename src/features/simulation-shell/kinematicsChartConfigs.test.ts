@@ -1,11 +1,53 @@
 import { describe, expect, it } from 'vitest'
 import {
   computeKinematicsTimeline,
+  type GravitationalFieldOrbitsParameters,
   type TorqueLeversCenterMassParameters,
 } from '../../lib/physics/kinematics'
 import { buildKinematicsChartConfigs } from './kinematicsChartConfigs'
 
 describe('kinematics chart configs', () => {
+  it('exposes Kepler area-law traces for gravitational orbits', () => {
+    const parameters: GravitationalFieldOrbitsParameters = {
+      centralMassEarths: 1,
+      eccentricity: 0.45,
+      initialAngleDegrees: 0,
+      orbitalRadiusKilometers: 7000,
+      satelliteMassKilograms: 900,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 3600,
+      parameters,
+      sampleRateHz: 2,
+      simulationId: 'gravitational-field-orbits',
+    })
+    const charts = buildKinematicsChartConfigs(
+      result.samples,
+      'gravitational-field-orbits',
+      true,
+    )
+    const keplerChart = charts.find((chart) => chart.id === 'kepler')
+    const velocityChart = charts.find((chart) => chart.id === 'velocity')
+    const arealRateTrace = keplerChart?.traces[0]
+    const angularVelocityTrace = keplerChart?.traces[1]
+
+    expect(velocityChart?.traces[0]?.y[0]).toBeGreaterThan(
+      velocityChart?.traces[0]?.y.at(-1) ?? 0,
+    )
+    expect(keplerChart?.traces.map((trace) => trace.name)).toEqual([
+      'Taxa areolar relativa (adimensional)',
+      'Velocidade angular relativa (adimensional)',
+    ])
+    expect(
+      Math.max(...(arealRateTrace?.y ?? [])) -
+        Math.min(...(arealRateTrace?.y ?? [])),
+    ).toBeLessThan(1e-9)
+    expect(
+      Math.max(...(angularVelocityTrace?.y ?? [])) -
+        Math.min(...(angularVelocityTrace?.y ?? [])),
+    ).toBeGreaterThan(0.1)
+  })
+
   it('shows per-body energy traces for torque levers', () => {
     const parameters: TorqueLeversCenterMassParameters = {
       appliedForceArmMeters: 1.5,

@@ -164,11 +164,6 @@ type AnimationVectorLegendItem = {
   label: string
 }
 
-type AnimationVector = {
-  id: string
-  unit?: string
-}
-
 type KinematicsVectorLegendItem = {
   color: string
   description: string
@@ -541,6 +536,13 @@ const kinematicsVectorLegendItemsById = {
   ],
   'rigid-body-rotation': [
     {
+      id: 'angularMomentum',
+      label: 'Momento angular',
+      color: themeTokens.vector,
+      description:
+        'vetor axial L = I omega, perpendicular ao plano de giro pela regra da mao direita',
+    },
+    {
       id: 'angularVelocity',
       label: 'Vel. angular',
       color: themeTokens.cyan,
@@ -847,6 +849,11 @@ export function SimulationShell() {
     'chartWindowSeconds',
     selectedKinematicsFixture.chartWindowSeconds,
   )
+  const selectedKinematicsModelTimeScale = readRuntimeValue(
+    selectedKinematicsRuntimeValues,
+    'modelTimeScale',
+    1,
+  )
   const selectedKinematicsEffectiveChartWindowSeconds =
     selectedKinematicsChartWindowSeconds
   const selectedKinematicsTimeline = useMemo(
@@ -991,7 +998,6 @@ export function SimulationShell() {
         [parameter.id]: clampedValue,
       }))
     }
-    setPlaybackResetVersion((current) => current + 1)
   }
 
   const handleRuntimeParameterChange = (
@@ -1027,10 +1033,6 @@ export function SimulationShell() {
         ...currentValues,
         [parameter.id]: clampedValue,
       }))
-    }
-
-    if (parameter.id === 'durationSeconds') {
-      setPlaybackResetVersion((current) => current + 1)
     }
   }
 
@@ -1185,6 +1187,7 @@ export function SimulationShell() {
                 isPlaying={isPlaybackAdvancing}
                 key={selectedKinematicsSimulationId}
                 maximizedPanel={maximizedPanel}
+                modelTimeScale={selectedKinematicsModelTimeScale}
                 onMaximizedPanelToggle={handleMaximizedPanelToggle}
                 onOutputPanelToggle={handleOutputPanelToggle}
                 outputPanels={outputPanels}
@@ -1959,6 +1962,7 @@ function PendulumRuntime({
     useState<PendulumFrameStats>(initialFrameStats)
   const [focusedChartId, setFocusedChartId] =
     useState<PendulumChartId | null>(null)
+  const [readoutsExpanded, setReadoutsExpanded] = useState(false)
 
   const handleSampleChange = useCallback(
     (sample: PendulumSample, stats: PendulumFrameStats) => {
@@ -1974,6 +1978,9 @@ function PendulumRuntime({
     setFocusedChartId((currentChartId) =>
       currentChartId === chartId ? null : chartId,
     )
+  }, [])
+  const handleReadoutsToggle = useCallback(() => {
+    setReadoutsExpanded((expanded) => !expanded)
   }, [])
 
   const isSimulationMaximized = maximizedPanel === 'simulation'
@@ -2034,10 +2041,10 @@ function PendulumRuntime({
   )
   const vectors = useMemo(
     () =>
-      overlays.vectors
+      readoutsExpanded && overlays.vectors
         ? getPendulumVectorOverlays(liveSample, parameters)
         : [],
-    [liveSample, overlays.vectors, parameters],
+    [liveSample, overlays.vectors, parameters, readoutsExpanded],
   )
   const chartSamples = useMemo(
     () =>
@@ -2069,8 +2076,6 @@ function PendulumRuntime({
 
     return selectStableRows(visibleWindowSamples, tableRowCount)
   }, [tableExpanded, tableRowCount, visibleWindowSamples])
-  const angleDegrees = radiansToDegrees(liveSample.angleRadians)
-
   return (
     <>
       <Box
@@ -2081,12 +2086,16 @@ function PendulumRuntime({
             border: `1px solid ${themeTokens.border}`,
             borderRadius: 1,
             bgcolor: alpha(themeTokens.panel, 0.58),
+            display: 'flex',
+            flexDirection: 'column',
+            height: '90svh',
             minHeight: 322,
             overflow: 'hidden',
             position: 'relative',
           },
           isSimulationMaximized
             ? {
+                height: 'calc(100svh - 24px)',
                 minHeight: 'calc(100svh - 24px)',
               }
             : null,
@@ -2112,13 +2121,13 @@ function PendulumRuntime({
             alignItems: 'center',
             borderBottom: `1px solid ${themeTokens.border}`,
             display: 'flex',
+            flex: '0 0 auto',
             gap: 1,
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             px: 1.5,
             py: 1,
           }}
         >
-          <Typography variant="body2">Viewport Three.js</Typography>
           <Stack
             direction="row"
             spacing={1}
@@ -2136,6 +2145,10 @@ function PendulumRuntime({
             <Typography color="text.secondary" variant="body2">
               t = {formatNumber(liveSample.timeSeconds, 's')}
             </Typography>
+            <ReadoutToggleButton
+              expanded={readoutsExpanded}
+              onToggle={handleReadoutsToggle}
+            />
             <Tooltip
               title={isSimulationMaximized ? 'Minimizar' : 'Maximizar'}
             >
@@ -2162,60 +2175,71 @@ function PendulumRuntime({
           </Stack>
         </Box>
 
+        {readoutsExpanded ? (
+          <>
+            <Box
+              sx={{
+                borderBottom: `1px solid ${themeTokens.border}`,
+                display: 'grid',
+                gap: 1,
+                gridTemplateColumns: {
+                  xs: '1fr 1fr',
+                  md: 'repeat(7, minmax(0, 1fr))',
+                },
+                p: 1.5,
+              }}
+            >
+              <Metric
+                label="Angulo do pendulo"
+                value={formatDegrees(radiansToDegrees(liveSample.angleRadians))}
+              />
+              <Metric
+                label="Velocidade angular"
+                value={formatNumber(
+                  liveSample.angularVelocityRadiansPerSecond,
+                  'rad/s',
+                )}
+              />
+              <Metric
+                label="Velocidade linear"
+                value={formatNumber(
+                  liveSample.linearVelocityMetersPerSecond,
+                  'm/s',
+                )}
+              />
+              <Metric
+                label="Aceleracao total"
+                value={formatNumber(
+                  liveSample.totalAccelerationMetersPerSecondSquared,
+                  'm/s^2',
+                )}
+              />
+              <Metric
+                label="Posicao horizontal"
+                value={formatNumber(liveSample.xMeters, 'm')}
+              />
+              {overlays.energy ? (
+                <Metric
+                  label="Energia mecanica"
+                  value={formatNumber(liveSample.totalEnergyJoules, 'J')}
+                />
+              ) : null}
+              <Metric
+                label="Tempo do frame"
+                value={
+                  frameStats.frameTimeMs > 0
+                    ? formatNumber(frameStats.frameTimeMs, 'ms')
+                    : '-- ms'
+                }
+              />
+            </Box>
+            {overlays.vectors ? <VectorLegend vectors={vectors} /> : null}
+          </>
+        ) : null}
         <Box
           sx={{
-            borderBottom: `1px solid ${themeTokens.border}`,
             display: 'grid',
-            gap: 1,
-            gridTemplateColumns: {
-              xs: '1fr 1fr',
-              md: 'repeat(7, minmax(0, 1fr))',
-            },
-            p: 1.5,
-          }}
-        >
-          <Metric label="Angulo do pendulo" value={formatDegrees(angleDegrees)} />
-          <Metric
-            label="Velocidade angular"
-            value={formatNumber(
-              liveSample.angularVelocityRadiansPerSecond,
-              'rad/s',
-            )}
-          />
-          <Metric
-            label="Velocidade linear"
-            value={formatNumber(liveSample.linearVelocityMetersPerSecond, 'm/s')}
-          />
-          <Metric
-            label="Aceleracao total"
-            value={formatNumber(
-              liveSample.totalAccelerationMetersPerSecondSquared,
-              'm/s^2',
-            )}
-          />
-          <Metric
-            label="Posicao horizontal"
-            value={formatNumber(liveSample.xMeters, 'm')}
-          />
-          {overlays.energy ? (
-            <Metric
-              label="Energia mecanica"
-              value={formatNumber(liveSample.totalEnergyJoules, 'J')}
-            />
-          ) : null}
-          <Metric
-            label="Tempo do frame"
-            value={
-              frameStats.frameTimeMs > 0
-                ? formatNumber(frameStats.frameTimeMs, 'ms')
-                : '-- ms'
-            }
-          />
-        </Box>
-        {overlays.vectors ? <VectorLegend vectors={vectors} /> : null}
-        <Box
-          sx={{
-            display: 'grid',
+            flex: '1 1 auto',
             gap: focusedChart ? 1.5 : 0,
             gridTemplateColumns: {
               xs: '1fr',
@@ -2223,14 +2247,14 @@ function PendulumRuntime({
                 ? 'minmax(0, 2fr) minmax(280px, 1fr)'
                 : '1fr',
             },
+            minHeight: 0,
             p: focusedChart ? 1.5 : 0,
           }}
         >
-          <Box sx={{ minWidth: 0, position: 'relative' }}>
+          <Box sx={{ minHeight: 0, minWidth: 0, position: 'relative' }}>
             <PendulumScene
               durationSeconds={durationSeconds}
               isPlaying={isPlaying}
-              maximized={isSimulationMaximized}
               onSampleChange={handleSampleChange}
               parameters={parameters}
               playbackRate={playbackRate}
@@ -2240,10 +2264,7 @@ function PendulumRuntime({
               showVectors={overlays.vectors}
             />
             {overlays.vectors ? (
-              <AnimationVectorLegend
-                items={vectorLegendItems}
-                vectors={vectors}
-              />
+              <AnimationVectorLegend items={vectorLegendItems} />
             ) : null}
           </Box>
           {focusedChart ? (
@@ -2465,6 +2486,7 @@ function InclinedPlaneRuntime({
     useState<InclinedPlaneFrameStats>(initialInclinedPlaneFrameStats)
   const [focusedChartId, setFocusedChartId] =
     useState<InclinedPlaneChartId | null>(null)
+  const [readoutsExpanded, setReadoutsExpanded] = useState(false)
 
   const handleSampleChange = useCallback(
     (sample: InclinedPlaneSample, stats: InclinedPlaneFrameStats) => {
@@ -2484,6 +2506,9 @@ function InclinedPlaneRuntime({
     },
     [],
   )
+  const handleReadoutsToggle = useCallback(() => {
+    setReadoutsExpanded((expanded) => !expanded)
+  }, [])
 
   const isSimulationMaximized = maximizedPanel === 'simulation'
   const isChartsMaximized = maximizedPanel === 'charts'
@@ -2543,10 +2568,10 @@ function InclinedPlaneRuntime({
   )
   const vectors = useMemo(
     () =>
-      overlays.vectors
+      readoutsExpanded && overlays.vectors
         ? getInclinedPlaneVectorOverlays(liveSample, parameters)
         : [],
-    [liveSample, overlays.vectors, parameters],
+    [liveSample, overlays.vectors, parameters, readoutsExpanded],
   )
   const chartSamples = useMemo(
     () =>
@@ -2589,12 +2614,16 @@ function InclinedPlaneRuntime({
             border: `1px solid ${themeTokens.border}`,
             borderRadius: 1,
             bgcolor: alpha(themeTokens.panel, 0.58),
+            display: 'flex',
+            flexDirection: 'column',
+            height: '90svh',
             minHeight: 322,
             overflow: 'hidden',
             position: 'relative',
           },
           isSimulationMaximized
             ? {
+                height: 'calc(100svh - 24px)',
                 minHeight: 'calc(100svh - 24px)',
               }
             : null,
@@ -2620,13 +2649,13 @@ function InclinedPlaneRuntime({
             alignItems: 'center',
             borderBottom: `1px solid ${themeTokens.border}`,
             display: 'flex',
+            flex: '0 0 auto',
             gap: 1,
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             px: 1.5,
             py: 1,
           }}
         >
-          <Typography variant="body2">Viewport Three.js</Typography>
           <Stack
             direction="row"
             spacing={1}
@@ -2644,6 +2673,10 @@ function InclinedPlaneRuntime({
             <Typography color="text.secondary" variant="body2">
               t = {formatNumber(liveSample.timeSeconds, 's')}
             </Typography>
+            <ReadoutToggleButton
+              expanded={readoutsExpanded}
+              onToggle={handleReadoutsToggle}
+            />
             <Tooltip
               title={isSimulationMaximized ? 'Minimizar' : 'Maximizar'}
             >
@@ -2670,60 +2703,67 @@ function InclinedPlaneRuntime({
           </Stack>
         </Box>
 
+        {readoutsExpanded ? (
+          <>
+            <Box
+              sx={{
+                borderBottom: `1px solid ${themeTokens.border}`,
+                display: 'grid',
+                gap: 1,
+                gridTemplateColumns: {
+                  xs: '1fr 1fr',
+                  md: 'repeat(7, minmax(0, 1fr))',
+                },
+                p: 1.5,
+              }}
+            >
+              <Metric
+                label="Posicao no plano"
+                value={formatNumber(liveSample.positionMeters, 'm')}
+              />
+              <Metric
+                label="Velocidade no plano"
+                value={formatNumber(liveSample.velocityMetersPerSecond, 'm/s')}
+              />
+              <Metric
+                label="Aceleracao no plano"
+                value={formatNumber(
+                  liveSample.accelerationMetersPerSecondSquared,
+                  'm/s^2',
+                )}
+              />
+              <Metric
+                label="Forca resultante"
+                value={formatNumber(liveSample.netForceNewtons, 'N')}
+              />
+              <Metric
+                label="Forca normal"
+                value={formatNumber(liveSample.normalForceNewtons, 'N')}
+              />
+              {overlays.energy ? (
+                <Metric
+                  label="Energia total"
+                  value={formatNumber(liveSample.totalEnergyJoules, 'J')}
+                />
+              ) : null}
+              <Metric
+                label="Tempo do frame"
+                value={
+                  frameStats.frameTimeMs > 0
+                    ? formatNumber(frameStats.frameTimeMs, 'ms')
+                    : '-- ms'
+                }
+              />
+            </Box>
+            {overlays.vectors ? (
+              <InclinedPlaneVectorLegend vectors={vectors} />
+            ) : null}
+          </>
+        ) : null}
         <Box
           sx={{
-            borderBottom: `1px solid ${themeTokens.border}`,
             display: 'grid',
-            gap: 1,
-            gridTemplateColumns: {
-              xs: '1fr 1fr',
-              md: 'repeat(7, minmax(0, 1fr))',
-            },
-            p: 1.5,
-          }}
-        >
-          <Metric
-            label="Posicao no plano"
-            value={formatNumber(liveSample.positionMeters, 'm')}
-          />
-          <Metric
-            label="Velocidade no plano"
-            value={formatNumber(liveSample.velocityMetersPerSecond, 'm/s')}
-          />
-          <Metric
-            label="Aceleracao no plano"
-            value={formatNumber(
-              liveSample.accelerationMetersPerSecondSquared,
-              'm/s^2',
-            )}
-          />
-          <Metric
-            label="Forca resultante"
-            value={formatNumber(liveSample.netForceNewtons, 'N')}
-          />
-          <Metric
-            label="Forca normal"
-            value={formatNumber(liveSample.normalForceNewtons, 'N')}
-          />
-          {overlays.energy ? (
-            <Metric
-              label="Energia total"
-              value={formatNumber(liveSample.totalEnergyJoules, 'J')}
-            />
-          ) : null}
-          <Metric
-            label="Tempo do frame"
-            value={
-              frameStats.frameTimeMs > 0
-                ? formatNumber(frameStats.frameTimeMs, 'ms')
-                : '-- ms'
-            }
-          />
-        </Box>
-        {overlays.vectors ? <InclinedPlaneVectorLegend vectors={vectors} /> : null}
-        <Box
-          sx={{
-            display: 'grid',
+            flex: '1 1 auto',
             gap: focusedChart ? 1.5 : 0,
             gridTemplateColumns: {
               xs: '1fr',
@@ -2731,14 +2771,14 @@ function InclinedPlaneRuntime({
                 ? 'minmax(0, 2fr) minmax(280px, 1fr)'
                 : '1fr',
             },
+            minHeight: 0,
             p: focusedChart ? 1.5 : 0,
           }}
         >
-          <Box sx={{ minWidth: 0, position: 'relative' }}>
+          <Box sx={{ minHeight: 0, minWidth: 0, position: 'relative' }}>
             <InclinedPlaneScene
               durationSeconds={durationSeconds}
               isPlaying={isPlaying}
-              maximized={isSimulationMaximized}
               onSampleChange={handleSampleChange}
               parameters={parameters}
               playbackRate={playbackRate}
@@ -2750,7 +2790,6 @@ function InclinedPlaneRuntime({
             {overlays.vectors ? (
               <AnimationVectorLegend
                 items={inclinedPlaneVectorLegendItems}
-                vectors={vectors}
               />
             ) : null}
           </Box>
@@ -2929,6 +2968,7 @@ function KinematicsRuntime({
   durationSeconds,
   isPlaying,
   maximizedPanel,
+  modelTimeScale,
   onMaximizedPanelToggle,
   onOutputPanelToggle,
   outputPanels,
@@ -2943,6 +2983,7 @@ function KinematicsRuntime({
   durationSeconds: number
   isPlaying: boolean
   maximizedPanel: MaximizedPanelId | null
+  modelTimeScale: number
   onMaximizedPanelToggle: (panelId: MaximizedPanelId) => void
   onOutputPanelToggle: (panelId: keyof OutputPanelState) => void
   outputPanels: OutputPanelState
@@ -2966,6 +3007,7 @@ function KinematicsRuntime({
     useState<KinematicsFrameStats>(initialKinematicsFrameStats)
   const [focusedChartId, setFocusedChartId] =
     useState<KinematicsChartId | null>(null)
+  const [readoutsExpanded, setReadoutsExpanded] = useState(false)
 
   const handleSampleChange = useCallback(
     (sample: KinematicsSample, stats: KinematicsFrameStats) => {
@@ -2985,6 +3027,9 @@ function KinematicsRuntime({
     },
     [],
   )
+  const handleReadoutsToggle = useCallback(() => {
+    setReadoutsExpanded((expanded) => !expanded)
+  }, [])
 
   const isSimulationMaximized = maximizedPanel === 'simulation'
   const isChartsMaximized = maximizedPanel === 'charts'
@@ -3044,10 +3089,10 @@ function KinematicsRuntime({
   )
   const vectors = useMemo(
     () =>
-      overlays.vectors
+      readoutsExpanded && overlays.vectors
         ? getKinematicsVectorOverlays(liveSample, simulationId)
         : [],
-    [liveSample, overlays.vectors, simulationId],
+    [liveSample, overlays.vectors, readoutsExpanded, simulationId],
   )
   const chartSamples = useMemo(
     () =>
@@ -3082,12 +3127,18 @@ function KinematicsRuntime({
     return selectStableRows(visibleWindowSamples, tableRowCount)
   }, [tableExpanded, tableRowCount, visibleWindowSamples])
   const vectorLegendItems = kinematicsVectorLegendItemsById[simulationId]
-  const readoutMetrics = buildKinematicsReadoutMetrics({
-    frameStats,
-    sample: liveSample,
-    showEnergy: overlays.energy,
-    simulationId,
-  })
+  const readoutMetrics = useMemo(
+    () =>
+      readoutsExpanded
+        ? buildKinematicsReadoutMetrics({
+            frameStats,
+            sample: liveSample,
+            showEnergy: overlays.energy,
+            simulationId,
+          })
+        : [],
+    [frameStats, liveSample, overlays.energy, readoutsExpanded, simulationId],
+  )
 
   return (
     <>
@@ -3099,12 +3150,16 @@ function KinematicsRuntime({
             border: `1px solid ${themeTokens.border}`,
             borderRadius: 1,
             bgcolor: alpha(themeTokens.panel, 0.58),
+            display: 'flex',
+            flexDirection: 'column',
+            height: '90svh',
             minHeight: 322,
             overflow: 'hidden',
             position: 'relative',
           },
           isSimulationMaximized
             ? {
+                height: 'calc(100svh - 24px)',
                 minHeight: 'calc(100svh - 24px)',
               }
             : null,
@@ -3130,13 +3185,13 @@ function KinematicsRuntime({
             alignItems: 'center',
             borderBottom: `1px solid ${themeTokens.border}`,
             display: 'flex',
+            flex: '0 0 auto',
             gap: 1,
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             px: 1.5,
             py: 1,
           }}
         >
-          <Typography variant="body2">Viewport Three.js</Typography>
           <Stack
             direction="row"
             spacing={1}
@@ -3154,6 +3209,10 @@ function KinematicsRuntime({
             <Typography color="text.secondary" variant="body2">
               t = {formatNumber(liveSample.timeSeconds, 's')}
             </Typography>
+            <ReadoutToggleButton
+              expanded={readoutsExpanded}
+              onToggle={handleReadoutsToggle}
+            />
             <Tooltip
               title={isSimulationMaximized ? 'Minimizar' : 'Maximizar'}
             >
@@ -3180,35 +3239,40 @@ function KinematicsRuntime({
           </Stack>
         </Box>
 
-        <Box
-          sx={{
-            borderBottom: `1px solid ${themeTokens.border}`,
-            display: 'grid',
-            gap: 1,
-            gridTemplateColumns: {
-              xs: '1fr 1fr',
-              md: 'repeat(7, minmax(0, 1fr))',
-            },
-            p: 1.5,
-          }}
-        >
-          {readoutMetrics.map((metric) => (
-            <Metric
-              key={metric.label}
-              label={metric.label}
-              value={metric.value}
-            />
-          ))}
-        </Box>
-        {overlays.vectors ? (
-          <KinematicsVectorLegend
-            items={vectorLegendItems}
-            vectors={vectors}
-          />
+        {readoutsExpanded ? (
+          <>
+            <Box
+              sx={{
+                borderBottom: `1px solid ${themeTokens.border}`,
+                display: 'grid',
+                gap: 1,
+                gridTemplateColumns: {
+                  xs: '1fr 1fr',
+                  md: 'repeat(7, minmax(0, 1fr))',
+                },
+                p: 1.5,
+              }}
+            >
+              {readoutMetrics.map((metric) => (
+                <Metric
+                  key={metric.label}
+                  label={metric.label}
+                  value={metric.value}
+                />
+              ))}
+            </Box>
+            {overlays.vectors ? (
+              <KinematicsVectorLegend
+                items={vectorLegendItems}
+                vectors={vectors}
+              />
+            ) : null}
+          </>
         ) : null}
         <Box
           sx={{
             display: 'grid',
+            flex: '1 1 auto',
             gap: focusedChart ? 1.5 : 0,
             gridTemplateColumns: {
               xs: '1fr',
@@ -3216,14 +3280,15 @@ function KinematicsRuntime({
                 ? 'minmax(0, 2fr) minmax(280px, 1fr)'
                 : '1fr',
             },
+            minHeight: 0,
             p: focusedChart ? 1.5 : 0,
           }}
         >
-          <Box sx={{ minWidth: 0, position: 'relative' }}>
+          <Box sx={{ minHeight: 0, minWidth: 0, position: 'relative' }}>
             <KinematicsScene
               durationSeconds={durationSeconds}
               isPlaying={isPlaying}
-              maximized={isSimulationMaximized}
+              modelTimeScale={modelTimeScale}
               onSampleChange={handleSampleChange}
               parameters={parameters}
               playbackRate={playbackRate}
@@ -3234,10 +3299,7 @@ function KinematicsRuntime({
               simulationId={simulationId}
             />
             {overlays.vectors ? (
-              <AnimationVectorLegend
-                items={vectorLegendItems}
-                vectors={vectors}
-              />
+              <AnimationVectorLegend items={vectorLegendItems} />
             ) : null}
             {simulationId === 'work-energy-track' && overlays.energy ? (
               <WorkEnergyTrackHud sample={liveSample} />
@@ -3665,6 +3727,14 @@ function buildKinematicsReadoutMetrics({
         label: 'Torque',
         value: formatNumber(sample.netTorqueNewtonMeters, 'N m'),
       },
+      {
+        label: 'Momento de inercia',
+        value: formatNumber(sample.momentOfInertiaKilogramMetersSquared, 'kg m^2'),
+      },
+      {
+        label: 'Centro de massa',
+        value: formatNumber(sample.centerOfMassMeters, 'm'),
+      },
       ...energyMetric,
       frameMetric,
     ]
@@ -4036,15 +4106,9 @@ function clampToParameterRange(
 
 function AnimationVectorLegend({
   items,
-  vectors,
 }: {
   items: readonly AnimationVectorLegendItem[]
-  vectors: readonly AnimationVector[]
 }) {
-  const unitByVectorId = new Map(
-    vectors.map((vector) => [vector.id, vector.unit] as const),
-  )
-
   return (
     <Box
       aria-label="Legenda compacta dos vetores na animacao"
@@ -4094,7 +4158,10 @@ function AnimationVectorLegend({
             }}
             variant="caption"
           >
-            {formatVectorLegendLabel(item.label, unitByVectorId.get(item.id))}
+            {formatVectorLegendLabel(
+              item.label,
+              getAnimationVectorLegendUnit(item),
+            )}
           </Typography>
         </Stack>
       ))}
@@ -4506,6 +4573,34 @@ function Metric({ label, value }: { label: string; value: string }) {
   )
 }
 
+function ReadoutToggleButton({
+  expanded,
+  onToggle,
+}: {
+  expanded: boolean
+  onToggle: () => void
+}) {
+  const label = expanded ? 'Fechar leituras e vetores' : 'Abrir leituras e vetores'
+
+  return (
+    <Tooltip title={label}>
+      <IconButton
+        aria-expanded={expanded}
+        aria-label={label}
+        color={expanded ? 'primary' : 'default'}
+        onClick={onToggle}
+        size="small"
+      >
+        {expanded ? (
+          <ChevronDown aria-hidden size={17} />
+        ) : (
+          <ChevronRight aria-hidden size={17} />
+        )}
+      </IconButton>
+    </Tooltip>
+  )
+}
+
 function groupSimulationsBySubarea(simulations: SimulationDefinition[]) {
   const subareas = new Map<string, SimulationDefinition[]>()
 
@@ -4606,6 +4701,50 @@ function formatEnergy(value: number) {
 
 function formatFps(value: number) {
   return value > 0 ? `${value} FPS` : 'medindo FPS'
+}
+
+function getAnimationVectorLegendUnit(item: AnimationVectorLegendItem) {
+  if (item.id === 'displacement') {
+    return 'm'
+  }
+
+  if (item.id === 'velocity' || item.id === 'secondaryVelocity') {
+    return 'm/s'
+  }
+
+  if (
+    item.id === 'acceleration' ||
+    item.id === 'gravity' ||
+    (item.id === 'centripetal' && item.label.includes('Aceleracao'))
+  ) {
+    return 'm/s^2'
+  }
+
+  if (item.id === 'angularVelocity') {
+    return 'rad/s'
+  }
+
+  if (item.id === 'angularAcceleration') {
+    return 'rad/s^2'
+  }
+
+  if (item.id === 'angularMomentum') {
+    return 'kg m^2/s'
+  }
+
+  if (item.id === 'momentum') {
+    return 'kg m/s'
+  }
+
+  if (item.id === 'impulse') {
+    return 'N s'
+  }
+
+  if (item.id === 'torque') {
+    return 'N m'
+  }
+
+  return 'N'
 }
 
 function formatVectorLegendLabel(label: string, unit?: string) {

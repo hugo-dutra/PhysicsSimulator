@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  computeGravitationalOrbitPathSamples,
+  computeKinematicsSample,
   computeKinematicsTimeline,
   getKinematicsVectorOverlays,
+  type GravitationalFieldOrbitsParameters,
   type TorqueLeversCenterMassParameters,
   type UniformCircularMotionParameters,
   type UniformlyAcceleratedMotionParameters,
@@ -10,6 +13,7 @@ import {
   createKinematicsSceneProjection,
   toKinematicsSceneDirection,
   toKinematicsScenePosition,
+  toOrbitSatelliteScenePosition,
 } from './KinematicsSceneProjection'
 
 describe('KinematicsScene projection helpers', () => {
@@ -88,6 +92,142 @@ describe('KinematicsScene projection helpers', () => {
     )
     expect(direction.z).toBeCloseTo(0)
     expect(Math.hypot(direction.x, direction.y)).toBeCloseTo(1)
+  })
+
+  it('projects gravitational planet and satellite markers onto the horizontal plane', () => {
+    const parameters: GravitationalFieldOrbitsParameters = {
+      centralMassEarths: 1,
+      eccentricity: 0.08,
+      initialAngleDegrees: 0,
+      orbitalRadiusKilometers: 7000,
+      satelliteMassKilograms: 900,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 60,
+      parameters,
+      sampleRateHz: 1,
+      simulationId: 'gravitational-field-orbits',
+    })
+    const sample = result.samples[10]
+    const projection = createKinematicsSceneProjection(
+      result.samples,
+      'gravitational-field-orbits',
+    )
+    const planetPosition = toKinematicsScenePosition(sample, projection)
+    const satellitePosition = toKinematicsScenePosition(
+      {
+        ...sample,
+        xMeters: sample.secondaryXMeters,
+        zMeters: sample.secondaryZMeters,
+      },
+      projection,
+    )
+
+    expect(projection.horizontalPlane).toBe(true)
+    expect(planetPosition.z).toBeCloseTo(0)
+    expect(satellitePosition.z).toBeCloseTo(0)
+    expect(satellitePosition.distanceTo(planetPosition)).toBeCloseTo(
+      sample.secondaryRadiusMeters * projection.positionScale,
+    )
+  })
+
+  it('keeps the didactic moon visually clear of Earth when eccentricity expands the main orbit scale', () => {
+    const parameters: GravitationalFieldOrbitsParameters = {
+      centralMassEarths: 1,
+      eccentricity: 0.84,
+      initialAngleDegrees: 0,
+      orbitalRadiusKilometers: 7000,
+      satelliteMassKilograms: 900,
+    }
+    const periapsisSample = computeKinematicsSample(
+      'gravitational-field-orbits',
+      parameters,
+      0,
+    )
+    const result = computeKinematicsTimeline({
+      durationSeconds: periapsisSample.periodSeconds / 2,
+      parameters,
+      sampleRateHz: 1 / 1200,
+      simulationId: 'gravitational-field-orbits',
+    })
+    const sample = result.samples[0]
+    const projection = createKinematicsSceneProjection(
+      result.samples,
+      'gravitational-field-orbits',
+    )
+    const planetPosition = toKinematicsScenePosition(sample, projection)
+    const rawSatellitePosition = toKinematicsScenePosition(
+      {
+        ...sample,
+        xMeters: sample.secondaryXMeters,
+        zMeters: sample.secondaryZMeters,
+      },
+      projection,
+    )
+    const minimumMoonOrbitRadius = 1.06
+    const adjustedSatellitePosition = toOrbitSatelliteScenePosition(
+      sample,
+      projection,
+      minimumMoonOrbitRadius,
+    )
+
+    expect(rawSatellitePosition.distanceTo(planetPosition)).toBeLessThan(
+      minimumMoonOrbitRadius,
+    )
+    expect(adjustedSatellitePosition.distanceTo(planetPosition)).toBeCloseTo(
+      minimumMoonOrbitRadius,
+    )
+  })
+
+  it('keeps a full high-eccentricity orbit reference path framed', () => {
+    const parameters: GravitationalFieldOrbitsParameters = {
+      centralMassEarths: 1,
+      eccentricity: 0.84,
+      initialAngleDegrees: 0,
+      orbitalRadiusKilometers: 7000,
+      satelliteMassKilograms: 900,
+    }
+    const runtimeTimeline = computeKinematicsTimeline({
+      durationSeconds: 7200,
+      parameters,
+      sampleRateHz: 1,
+      simulationId: 'gravitational-field-orbits',
+    })
+    const orbitPathSamples = computeGravitationalOrbitPathSamples(parameters)
+    const runtimeLastSample = runtimeTimeline.samples.at(-1)
+    const maxReferenceRadiusMeters = Math.max(
+      ...orbitPathSamples.map((sample) => sample.positionMeters),
+    )
+
+    if (!runtimeLastSample) {
+      throw new Error('Expected gravitational timeline to have a final sample.')
+    }
+
+    const projection = createKinematicsSceneProjection(
+      [...runtimeTimeline.samples, ...orbitPathSamples],
+      'gravitational-field-orbits',
+    )
+    const pathPositions = orbitPathSamples.map((sample) =>
+      toKinematicsScenePosition(sample, projection),
+    )
+    const pathXs = pathPositions.map((position) => position.x)
+    const pathYs = pathPositions.map((position) => position.y)
+    const pathWidth = Math.max(...pathXs) - Math.min(...pathXs)
+    const pathDepth = Math.max(...pathYs) - Math.min(...pathYs)
+    const firstPathPosition = pathPositions[0]
+    const lastPathPosition = pathPositions.at(-1)
+
+    if (!firstPathPosition || !lastPathPosition) {
+      throw new Error('Expected orbit reference path positions.')
+    }
+
+    expect(runtimeLastSample.positionMeters).toBeLessThan(
+      maxReferenceRadiusMeters * 0.5,
+    )
+    expect(orbitPathSamples.length).toBeGreaterThan(180)
+    expect(pathWidth).toBeLessThanOrEqual(32.01)
+    expect(pathDepth).toBeLessThanOrEqual(32.01)
+    expect(lastPathPosition.distanceTo(firstPathPosition)).toBeLessThan(0.001)
   })
 
   it('projects torque levers as a vertical seesaw plane', () => {

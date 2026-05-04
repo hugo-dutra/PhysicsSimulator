@@ -60,6 +60,7 @@ Usuario altera parametro
   -> physics-core recalcula estado inicial, regimes, timeline e campos derivados
   -> renderer recebe timeline/samples e controla o playback visual em loop proprio
   -> SimulationShell recebe leituras periodicas do sample atual para UI
+  -> readouts detalhados e legenda numerica de vetores montam apenas quando o bloco retratil de leituras esta aberto
   -> charts recebem a janela movel dos ultimos N segundos quando o bloco chevron esta aberto
   -> table recebe o mesmo recorte temporal quando o bloco chevron esta aberto
   -> formula-guide renderiza equacoes aplicaveis quando o bloco chevron esta aberto
@@ -73,11 +74,13 @@ Toda simulacao animada deve seguir o padrao adotado no pendulo:
 - O renderer visual (`Three.js`, `PixiJS` ou equivalente) deve possuir o loop de `requestAnimationFrame` e atualizar objetos de cena de forma imperativa.
 - O loop visual reutilizavel deve usar helpers comuns para agendar/cancelar frames, ler samples interpolados e atualizar metricas simples. Cada cena ainda mantem seus objetos, buffers e controles de camera locais.
 - A velocidade de passagem do tempo e um fator de runtime de `0` a `1` aplicado ao delta do relogio visual. `1` preserva tempo normal, valores intermediarios geram camera lenta continua, e `0` equivale a pausa sem resetar estado, samples ou graficos.
+- Simulacoes com periodos fisicos muito longos podem declarar um runtime adicional de compactacao de tempo do modelo, como `modelTimeScale`, desde que o controle seja visivel, documentado e aplicado antes da leitura do mesmo sample fisico usado por cena, graficos, tabela e formulas.
 - Cenas Three.js devem usar espaco 3D com eixo Z vertical quando houver viewport espacial; o movimento fisico pode continuar planar, mas deve ser projetado para objetos 3D e camera orbitavel.
 - Cenas Three.js com plano de grade devem incluir um marcador de origem compartilhado, desenhado como eixos X, Y e Z translucidos no canto inferior esquerdo da grade, alem de uma legenda DOM fixa no canto superior esquerdo do canvas. Essa referencia e visual e nao altera samples, camera ou fisica.
 - O padrao de camera inicial e orbitavel por drag bidimensional no canvas: movimento horizontal altera yaw ao redor do eixo Z e movimento vertical altera pitch para inspecao por cima ou por baixo, com Shift + scroll fazendo zoom em direcao a cena. Esses controles pertencem ao renderer e devem atualizar camera/refs imperativamente, sem re-renderizar o shell React.
 - O shell React deve orquestrar parametros, toggles, layout, graficos, tabela, formulas e teoria, mas nao deve re-renderizar a arvore inteira a cada frame.
 - A fonte fisica continua unica: motor numerico, cena, graficos, tabela e formulas derivam dos mesmos parametros e samples.
+- O bloco de leituras instantaneas e legenda detalhada de vetores deve iniciar fechado por padrao para preservar area de simulacao. Quando fechado, componentes que formatam metricas ou calculam valores de legenda detalhada devem permanecer desmontados; quando aberto, eles consomem o sample vivo sem criar nova fonte numerica.
 - Campos derivados como velocidade linear tangencial, aceleracao angular, aceleracao tangencial, aceleracao radial e modulo total de aceleracao pertencem ao sample do motor, nao a calculos soltos de UI.
 - O renderer pode manter refs para timeline, parametros e flags visuais; a UI recebe snapshots periodicos do sample atual apenas na cadencia necessaria para leitura humana.
 - Buffers e geometrias dinamicas devem ser reutilizados quando possivel; evitar recriar `BufferGeometry`, materiais, renderers ou series pesadas dentro do frame loop.

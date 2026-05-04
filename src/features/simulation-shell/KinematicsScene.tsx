@@ -9,10 +9,12 @@ import {
 import { Box } from '@mui/material'
 import * as THREE from 'three'
 import {
+  computeGravitationalOrbitPathSamples,
   computeKinematicsSample,
   computeKinematicsTimeline,
   getKinematicsVectorOverlays,
   interpolateKinematicsSample,
+  type GravitationalFieldOrbitsParameters,
   type KinematicsParameters,
   type KinematicsSample,
   type KinematicsSimulationId,
@@ -42,6 +44,7 @@ import {
   createKinematicsSceneProjection,
   toKinematicsSceneDirection,
   toKinematicsScenePosition,
+  toOrbitSatelliteScenePosition,
   type KinematicsSceneProjection,
 } from './KinematicsSceneProjection'
 import { ViewportOriginLegend } from './ViewportOriginLegend'
@@ -51,7 +54,7 @@ export type KinematicsFrameStats = FrameStats
 type KinematicsSceneProps = {
   durationSeconds: number
   isPlaying: boolean
-  maximized?: boolean
+  modelTimeScale?: number
   onSampleChange: (sample: KinematicsSample, stats: KinematicsFrameStats) => void
   parameters: KinematicsParameters
   playbackRate: number
@@ -60,6 +63,18 @@ type KinematicsSceneProps = {
   showTrace: boolean
   showVectors: boolean
   simulationId: KinematicsSimulationId
+}
+
+type RigidRotationVectorId = Extract<
+  KinematicsVectorOverlay['id'],
+  'angularAcceleration' | 'angularVelocity' | 'torque'
+>
+
+type RigidRotationCurvedArrow = {
+  cone: THREE.Mesh
+  line: THREE.Line
+  positionAttribute: THREE.BufferAttribute
+  positions: Float32Array
 }
 
 type SceneObjects = {
@@ -74,8 +89,24 @@ type SceneObjects = {
   rope: THREE.Line
   ropePositionAttribute: THREE.BufferAttribute
   ropePositions: Float32Array
+  rigidRotationBaseRadius: number
   rollingPlane: THREE.Mesh
   rollingPlaneEdges: THREE.LineSegments
+  rotationAngleArc: THREE.Line
+  rotationAngleArcPositionAttribute: THREE.BufferAttribute
+  rotationAngleArcPositions: Float32Array
+  rotationAngleMarker: THREE.Mesh
+  rotationAxis: THREE.Mesh
+  rotationBase: THREE.Mesh
+  rotationBrakePad: THREE.Mesh
+  rotationCenterOfMassMarker: THREE.Mesh
+  rotationCounterMass: THREE.Mesh
+  rotationCurvedArrows: Record<RigidRotationVectorId, RigidRotationCurvedArrow>
+  rotationHub: THREE.Mesh
+  rotationRim: THREE.Mesh
+  rotationThermalRing: THREE.Mesh
+  rotationTipMass: THREE.Mesh
+  rotationZeroLine: THREE.Line
   scene: THREE.Scene
   sceneProjection: KinematicsSceneProjection
   secondaryBody: THREE.Mesh
@@ -89,6 +120,10 @@ type SceneObjects = {
   leverRightMass: THREE.Mesh
   leverSupportHoleShadow: THREE.Mesh
   leverSupport: THREE.Mesh
+  orbitCentralBody: THREE.Mesh
+  orbitSatellitePath: THREE.Line
+  orbitSatellitePathPositionAttribute: THREE.BufferAttribute
+  orbitSatellitePathPositions: Float32Array
   pulley: THREE.Mesh
   supportBar: THREE.Mesh
   supportStem: THREE.Mesh
@@ -106,6 +141,7 @@ type SceneObjects = {
 
 type RuntimeProps = {
   durationSeconds: number
+  modelTimeScale: number
   onSampleChange: (sample: KinematicsSample, stats: KinematicsFrameStats) => void
   parameters: KinematicsParameters
   playbackRate: number
@@ -131,6 +167,7 @@ type WorkEnergyTrackSceneProfile = {
 const vectorColors: Record<KinematicsVectorOverlay['id'], number> = {
   acceleration: 0xf59e0b,
   angularAcceleration: 0xf59e0b,
+  angularMomentum: 0xa3e635,
   angularVelocity: 0x38bdf8,
   appliedForce: 0x2dd4bf,
   centripetal: 0xf59e0b,
@@ -156,6 +193,7 @@ const vectorIds = [
   'velocity',
   'acceleration',
   'angularAcceleration',
+  'angularMomentum',
   'angularVelocity',
   'gravity',
   'centripetal',
@@ -182,6 +220,7 @@ const massSpringCoilTurns = 9
 const maxPathPoints = 360
 const maxTracePoints = 120
 const traceFadeSeconds = 2.4
+const orbitalTraceFadeSeconds = 900
 const traceMinOpacity = 0.04
 const traceMaxOpacity = 0.58
 const traceColor = {
@@ -223,11 +262,18 @@ const leverSupportPivotPinInsetFromTop = 0.12
 const leverSupportPivotHoleX = 0
 const leverBoardDepth = 0.16
 const leverBoardThickness = 0.085
+const rigidRotationAngleArcSegments = 72
+const rigidRotationBaseThickness = 0.12
+const rigidRotationCurvedArrowSegments = 36
+const rigidRotationRotorZ = 0.22
+const rigidRotationAxisHeight = 0.7
+const rigidRotationMinMassRadiusRatio = 0.14
+const orbitSatellitePathSegments = 96
 
 export function KinematicsScene({
   durationSeconds,
   isPlaying,
-  maximized = false,
+  modelTimeScale = 1,
   onSampleChange,
   parameters,
   playbackRate,
@@ -241,6 +287,7 @@ export function KinematicsScene({
   const objectsRef = useRef<SceneObjects | null>(null)
   const runtimeRef = useRef<RuntimeProps>({
     durationSeconds,
+    modelTimeScale,
     onSampleChange,
     parameters,
     playbackRate,
@@ -255,8 +302,8 @@ export function KinematicsScene({
   const lastFrameTimeRef = useRef<number | null>(null)
   const lastReadoutTimeRef = useRef(0)
   const cameraPoseRef = useRef<OrbitCameraPose>({
-    pitchRadians: initialCameraPitchRadians,
-    yawRadians: initialCameraYawRadians,
+    pitchRadians: getInitialCameraPitchRadians(simulationId),
+    yawRadians: getInitialCameraYawRadians(simulationId),
   })
   const dragStateRef = useRef<DragState | null>(null)
   const statsWindowRef = useRef(createFrameStatsWindow())
@@ -272,7 +319,11 @@ export function KinematicsScene({
       elapsedSecondsRef.current,
     )
     const sample = frame.sample
-    appendTraceSample(traceSamplesRef.current, sample, traceFadeSeconds)
+    appendTraceSample(
+      traceSamplesRef.current,
+      sample,
+      getTraceFadeSeconds(runtime.simulationId),
+    )
 
     if (!objects || !sample) {
       return
@@ -293,7 +344,7 @@ export function KinematicsScene({
       runtime.onSampleChange(
         {
           ...sample,
-          timeSeconds: elapsedSecondsRef.current,
+          timeSeconds: sample.timeSeconds,
         },
         statsWindowRef.current.stats,
       )
@@ -401,8 +452,10 @@ export function KinematicsScene({
   )
 
   useEffect(() => {
+    timelineSamplesRef.current = samples
     runtimeRef.current = {
       durationSeconds,
+      modelTimeScale,
       onSampleChange,
       parameters,
       playbackRate,
@@ -416,6 +469,7 @@ export function KinematicsScene({
     renderCurrentFrame()
   }, [
     durationSeconds,
+    modelTimeScale,
     onSampleChange,
     parameters,
     playbackRate,
@@ -450,15 +504,25 @@ export function KinematicsScene({
       return
     }
 
-    const sceneProjection = createKinematicsSceneProjection(
+    const referencePathSamples = createSceneReferencePathSamples(
       samples,
+      simulationId,
+      parameters,
+    )
+    const framingSamples = mergeSceneFramingSamples(samples, referencePathSamples)
+    const sceneProjection = createKinematicsSceneProjection(
+      framingSamples,
       simulationId,
     )
     const workEnergyProfile = createWorkEnergyTrackSceneProfile(
       samples,
       sceneProjection,
     )
-    const bounds = estimateSceneBounds(samples, sceneProjection, simulationId)
+    const bounds = estimateSceneBounds(
+      framingSamples,
+      sceneProjection,
+      simulationId,
+    )
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 160)
     const cameraTarget = new THREE.Vector3(
@@ -466,10 +530,13 @@ export function KinematicsScene({
       bounds.centerY,
       bounds.centerZ,
     )
-    const cameraRadius = Math.max(
-      4.2,
-      bounds.span * (simulationId === 'collisions-1d-2d' ? 0.92 : 1.35),
-    )
+    const cameraRadius =
+      simulationId === 'rigid-body-rotation'
+        ? Math.max(3.05, bounds.span * 0.84)
+        : Math.max(
+            4.2,
+            bounds.span * (simulationId === 'collisions-1d-2d' ? 0.92 : 1.35),
+          )
     const cameraMinRadius = Math.max(1.2, cameraRadius * minCameraRadiusScale)
     const cameraMaxRadius = cameraRadius * maxCameraRadiusScale
 
@@ -481,13 +548,16 @@ export function KinematicsScene({
     keyLight.position.set(-2.4, -3.2, 5)
     scene.add(keyLight)
 
-    const gridSize = Math.max(5, bounds.span * 1.25)
+    const gridSize =
+      simulationId === 'rigid-body-rotation'
+        ? Math.max(4, bounds.span * 0.96)
+        : Math.max(5, bounds.span * 1.25)
     const gridBackground = new THREE.Mesh(
       new THREE.PlaneGeometry(gridSize, gridSize),
       new THREE.MeshBasicMaterial({
         color: 0x171a21,
         depthWrite: false,
-        opacity: 0.34,
+        opacity: simulationId === 'rigid-body-rotation' ? 0.22 : 0.34,
         side: THREE.DoubleSide,
         transparent: true,
       }),
@@ -501,7 +571,8 @@ export function KinematicsScene({
     grid.rotation.x = Math.PI / 2
     grid.position.set(bounds.centerX, bounds.centerY, 0)
     grid.material.transparent = true
-    grid.material.opacity = 0.38
+    grid.material.opacity =
+      simulationId === 'rigid-body-rotation' ? 0.18 : 0.38
     grid.material.depthWrite = false
     grid.renderOrder = 1
     scene.add(grid)
@@ -519,7 +590,7 @@ export function KinematicsScene({
 
     scene.add(
       createReferencePath(
-        samples,
+        referencePathSamples,
         simulationId,
         sceneProjection,
         workEnergyProfile,
@@ -528,6 +599,8 @@ export function KinematicsScene({
 
     const sceneBodySize = getBodyDisplaySize(bounds.span)
     const atwoodMassSize = sceneBodySize * 1.8
+    const rigidRotationBaseRadius =
+      getRigidBodyRotationBaseRadius(sceneBodySize)
     const rollingWheelDepth = sceneBodySize * 0.72
     const rollingPlane = new THREE.Mesh(
       new THREE.BoxGeometry(1, 1, 1),
@@ -573,9 +646,9 @@ export function KinematicsScene({
           ? simulationId === 'torque-levers-center-mass'
             ? new THREE.BoxGeometry(1, 1, 1)
             : new THREE.BoxGeometry(
-                sceneBodySize * 5.2,
-                sceneBodySize * 0.78,
-                sceneBodySize * 0.38,
+                getRigidBodyRotorLength(sceneBodySize),
+                sceneBodySize * 0.72,
+                sceneBodySize * 0.42,
               )
         : simulationId === 'work-energy-track'
           ? new THREE.BoxGeometry(
@@ -602,6 +675,197 @@ export function KinematicsScene({
     })
     scene.add(body)
 
+    const rotationBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(
+        rigidRotationBaseRadius * 1.02,
+        rigidRotationBaseRadius * 1.08,
+        rigidRotationBaseThickness,
+        72,
+      ),
+      new THREE.MeshStandardMaterial({
+        color: 0x20242d,
+        metalness: 0.12,
+        roughness: 0.54,
+      }),
+    )
+    rotationBase.rotation.x = Math.PI / 2
+    rotationBase.position.z = -rigidRotationBaseThickness / 2
+
+    const rotationRim = new THREE.Mesh(
+      new THREE.TorusGeometry(rigidRotationBaseRadius, 0.026, 10, 96),
+      new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        emissive: 0x082433,
+        emissiveIntensity: 0.24,
+        metalness: 0.14,
+        roughness: 0.42,
+      }),
+    )
+    rotationRim.position.z = 0.012
+
+    const rotationAxis = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.034, 0.034, rigidRotationAxisHeight, 24),
+      new THREE.MeshStandardMaterial({
+        color: 0xe6e8ec,
+        metalness: 0.32,
+        roughness: 0.34,
+      }),
+    )
+    rotationAxis.rotation.x = Math.PI / 2
+    rotationAxis.position.z = rigidRotationAxisHeight / 2 - 0.04
+
+    const rotationHub = new THREE.Mesh(
+      new THREE.CylinderGeometry(sceneBodySize * 0.72, sceneBodySize * 0.72, 0.14, 40),
+      new THREE.MeshStandardMaterial({
+        color: 0xe6e8ec,
+        metalness: 0.22,
+        roughness: 0.4,
+      }),
+    )
+    rotationHub.rotation.x = Math.PI / 2
+    rotationHub.position.z = rigidRotationRotorZ
+
+    const rotationTipMass = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 24, 16),
+      new THREE.MeshStandardMaterial({
+        color: 0x2dd4bf,
+        emissive: 0x06352e,
+        emissiveIntensity: 0.12,
+        metalness: 0.06,
+        roughness: 0.46,
+      }),
+    )
+    const rotationCenterOfMassMarker = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 18, 12),
+      new THREE.MeshStandardMaterial({
+        color: 0xe6e8ec,
+        emissive: 0x20242d,
+        emissiveIntensity: 0.1,
+        metalness: 0.08,
+        roughness: 0.42,
+      }),
+    )
+    const rotationCounterMass = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshStandardMaterial({
+        color: 0xa3e635,
+        emissive: 0x1f3b0a,
+        emissiveIntensity: 0.14,
+        metalness: 0.04,
+        roughness: 0.5,
+      }),
+    )
+
+    const rotationZeroLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, rigidRotationRotorZ + 0.055),
+        new THREE.Vector3(rigidRotationBaseRadius * 0.98, 0, rigidRotationRotorZ + 0.055),
+      ]),
+      new THREE.LineBasicMaterial({
+        color: 0xe6e8ec,
+        transparent: true,
+        opacity: 0.42,
+      }),
+    )
+
+    const rotationAngleArcPositions = new Float32Array(
+      (rigidRotationAngleArcSegments + 1) * 3,
+    )
+    const rotationAngleArcGeometry = new THREE.BufferGeometry()
+    const rotationAngleArcPositionAttribute = new THREE.BufferAttribute(
+      rotationAngleArcPositions,
+      3,
+    )
+    rotationAngleArcPositionAttribute.setUsage(THREE.DynamicDrawUsage)
+    rotationAngleArcGeometry.setAttribute(
+      'position',
+      rotationAngleArcPositionAttribute,
+    )
+    rotationAngleArcGeometry.setDrawRange(0, 0)
+    const rotationAngleArc = new THREE.Line(
+      rotationAngleArcGeometry,
+      new THREE.LineBasicMaterial({
+        color: 0x2dd4bf,
+        transparent: true,
+        opacity: 0.86,
+      }),
+    )
+    const rotationAngleMarker = new THREE.Mesh(
+      new THREE.SphereGeometry(sceneBodySize * 0.2, 18, 10),
+      new THREE.MeshBasicMaterial({
+        color: 0x2dd4bf,
+        transparent: true,
+        opacity: 0.92,
+      }),
+    )
+
+    const rotationBrakePad = new THREE.Mesh(
+      new THREE.BoxGeometry(0.34, 0.07, 0.16),
+      new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        emissive: 0x3b2504,
+        emissiveIntensity: 0.32,
+        metalness: 0.08,
+        roughness: 0.5,
+      }),
+    )
+    const rotationThermalRing = new THREE.Mesh(
+      new THREE.TorusGeometry(rigidRotationBaseRadius * 0.91, 0.018, 8, 96),
+      new THREE.MeshBasicMaterial({
+        color: 0xf59e0b,
+        depthWrite: false,
+        transparent: true,
+        opacity: 0,
+      }),
+    )
+    rotationThermalRing.position.z = 0.05
+
+    const rotationCurvedArrows: Record<
+      RigidRotationVectorId,
+      RigidRotationCurvedArrow
+    > = {
+      angularAcceleration: createRigidRotationCurvedArrow(0xf59e0b),
+      angularVelocity: createRigidRotationCurvedArrow(0x38bdf8),
+      torque: createRigidRotationCurvedArrow(0xa3e635),
+    }
+
+    ;[
+      rotationBase,
+      rotationRim,
+      rotationAxis,
+      rotationHub,
+      rotationTipMass,
+      rotationCenterOfMassMarker,
+      rotationCounterMass,
+      rotationZeroLine,
+      rotationAngleArc,
+      rotationAngleMarker,
+      rotationBrakePad,
+      rotationThermalRing,
+    ].forEach((object) => {
+      object.visible = false
+      scene.add(object)
+    })
+    Object.values(rotationCurvedArrows).forEach((arrow) => {
+      arrow.line.visible = false
+      arrow.cone.visible = false
+      scene.add(arrow.line)
+      scene.add(arrow.cone)
+    })
+
+    const orbitCentralBody = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 32, 20),
+      new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        emissive: 0x3b2504,
+        emissiveIntensity: 0.38,
+        metalness: 0.02,
+        roughness: 0.46,
+      }),
+    )
+    orbitCentralBody.visible = false
+    scene.add(orbitCentralBody)
+
     const secondaryBody = new THREE.Mesh(
       simulationId === 'collisions-1d-2d' ||
         simulationId === 'gravitational-field-orbits'
@@ -614,6 +878,31 @@ export function KinematicsScene({
       }),
     )
     scene.add(secondaryBody)
+
+    const orbitSatellitePathPositions = new Float32Array(
+      (orbitSatellitePathSegments + 1) * 3,
+    )
+    const orbitSatellitePathGeometry = new THREE.BufferGeometry()
+    const orbitSatellitePathPositionAttribute = new THREE.BufferAttribute(
+      orbitSatellitePathPositions,
+      3,
+    )
+    orbitSatellitePathPositionAttribute.setUsage(THREE.DynamicDrawUsage)
+    orbitSatellitePathGeometry.setAttribute(
+      'position',
+      orbitSatellitePathPositionAttribute,
+    )
+    orbitSatellitePathGeometry.setDrawRange(0, 0)
+    const orbitSatellitePath = new THREE.Line(
+      orbitSatellitePathGeometry,
+      new THREE.LineBasicMaterial({
+        color: 0x38bdf8,
+        opacity: 0.42,
+        transparent: true,
+      }),
+    )
+    orbitSatellitePath.visible = false
+    scene.add(orbitSatellitePath)
 
     const leverLeftMass = new THREE.Mesh(
       new THREE.BoxGeometry(1, 1, 1),
@@ -826,8 +1115,24 @@ export function KinematicsScene({
       rope,
       ropePositionAttribute,
       ropePositions,
+      rigidRotationBaseRadius,
       rollingPlane,
       rollingPlaneEdges,
+      rotationAngleArc,
+      rotationAngleArcPositionAttribute,
+      rotationAngleArcPositions,
+      rotationAngleMarker,
+      rotationAxis,
+      rotationBase,
+      rotationBrakePad,
+      rotationCenterOfMassMarker,
+      rotationCounterMass,
+      rotationCurvedArrows,
+      rotationHub,
+      rotationRim,
+      rotationThermalRing,
+      rotationTipMass,
+      rotationZeroLine,
       scene,
       sceneProjection,
       secondaryBody,
@@ -841,6 +1146,10 @@ export function KinematicsScene({
       leverRightMass,
       leverSupportHoleShadow,
       leverSupport,
+      orbitCentralBody,
+      orbitSatellitePath,
+      orbitSatellitePathPositionAttribute,
+      orbitSatellitePathPositions,
       pulley,
       supportBar,
       supportStem,
@@ -860,7 +1169,7 @@ export function KinematicsScene({
     }
 
     cameraPoseRef.current = {
-      pitchRadians: initialCameraPitchRadians,
+      pitchRadians: getInitialCameraPitchRadians(simulationId),
       yawRadians: getInitialCameraYawRadians(simulationId),
     }
     observer.observe(parent)
@@ -878,17 +1187,19 @@ export function KinematicsScene({
       renderer.dispose()
       objectsRef.current = null
     }
-  }, [renderCurrentFrame, samples, simulationId])
+  }, [parameters, renderCurrentFrame, samples, simulationId])
 
   useEffect(() => {
+    const resetSamples = runtimeRef.current.samples
+
     elapsedSecondsRef.current = 0
     lastFrameTimeRef.current = null
     lastReadoutTimeRef.current = 0
     statsWindowRef.current = createFrameStatsWindow()
-    timelineSamplesRef.current = samples
-    traceSamplesRef.current = [readFirstKinematicsSample(samples)]
+    timelineSamplesRef.current = resetSamples
+    traceSamplesRef.current = [readFirstKinematicsSample(resetSamples)]
     renderCurrentFrame(true)
-  }, [renderCurrentFrame, resetVersion, samples])
+  }, [renderCurrentFrame, resetVersion])
 
   useEffect(() => {
     if (import.meta.env.MODE === 'test') {
@@ -918,7 +1229,8 @@ export function KinematicsScene({
         runtime.playbackRate,
       )
       const nextElapsedSeconds =
-        elapsedSecondsRef.current + playbackDeltaSeconds
+        elapsedSecondsRef.current +
+        playbackDeltaSeconds * normalizeModelTimeScale(runtime.modelTimeScale)
 
       lastFrameTimeRef.current = timestamp
       elapsedSecondsRef.current = nextElapsedSeconds
@@ -948,13 +1260,8 @@ export function KinematicsScene({
   return (
     <Box
       sx={{
-        height: maximized
-          ? {
-              xs: '52svh',
-              md: 'calc(100svh - 256px)',
-            }
-          : { xs: 326, md: 382 },
-        minHeight: maximized ? { xs: 320, md: 430 } : undefined,
+        height: '100%',
+        minHeight: 0,
         position: 'relative',
       }}
     >
@@ -1025,36 +1332,38 @@ function updateKinematicsObjects({
     objects.body.rotation.y = sample.angleRadians
   }
 
-  updateConstrainedBodyObjects(objects, sample, simulationId)
+  updateConstrainedBodyObjects(objects, sample, simulationId, showVectors)
   Object.values(objects.arrows).forEach((arrow) => {
     arrow.visible = false
   })
 
-  getKinematicsVectorOverlays(sample, simulationId).forEach((vector) => {
-    const arrow = objects.arrows[vector.id]
-    const direction = toKinematicsSceneDirection(
-      vector,
-      objects.sceneProjection,
-    )
+  if (simulationId !== 'rigid-body-rotation') {
+    getKinematicsVectorOverlays(sample, simulationId).forEach((vector) => {
+      const arrow = objects.arrows[vector.id]
+      const direction = toKinematicsSceneDirection(
+        vector,
+        objects.sceneProjection,
+      )
 
-    if (!showVectors || direction.lengthSq() === 0 || vector.magnitude === 0) {
-      arrow.visible = false
-      return
-    }
+      if (!showVectors || direction.lengthSq() === 0 || vector.magnitude === 0) {
+        arrow.visible = false
+        return
+      }
 
-    arrow.visible = true
-    arrow.position.copy(
-      getKinematicsVectorOrigin(
-        objects,
-        sample,
-        simulationId,
-        vector.id,
-        objects.body.position,
-      ),
-    )
-    arrow.setDirection(direction.normalize())
-    arrow.setLength(getVectorDisplayLength(vector), 0.08, 0.045)
-  })
+      arrow.visible = true
+      arrow.position.copy(
+        getKinematicsVectorOrigin(
+          objects,
+          sample,
+          simulationId,
+          vector.id,
+          objects.body.position,
+        ),
+      )
+      arrow.setDirection(direction.normalize())
+      arrow.setLength(getVectorDisplayLength(vector), 0.08, 0.045)
+    })
+  }
 
   updateTrace(objects, samples, sampleIndex, sample, showTrace, simulationId)
 }
@@ -1097,14 +1406,17 @@ function updateConstrainedBodyObjects(
   objects: SceneObjects,
   sample: KinematicsSample,
   simulationId: KinematicsSimulationId,
+  showVectors: boolean,
 ) {
   const isAtwood = simulationId === 'atwood-machine'
   const isCollision = simulationId === 'collisions-1d-2d'
   const isMassSpring = simulationId === 'mass-spring'
   const isOrbit = simulationId === 'gravitational-field-orbits'
+  const isRigidRotation = simulationId === 'rigid-body-rotation'
   const isRolling = simulationId === 'rolling-without-slipping'
   const isTorqueLever = simulationId === 'torque-levers-center-mass'
 
+  setRigidBodyRotationObjectsVisible(objects, isRigidRotation)
   objects.secondaryBody.visible = isAtwood || isCollision || isOrbit
   objects.rollingPlane.visible = isRolling
   objects.rollingPlaneEdges.visible = isRolling
@@ -1121,10 +1433,32 @@ function updateConstrainedBodyObjects(
   objects.leverRightMass.visible = isTorqueLever
   objects.leverSupportHoleShadow.visible = isTorqueLever
   objects.leverSupport.visible = isTorqueLever
+  objects.orbitCentralBody.visible = isOrbit
+  objects.orbitSatellitePath.visible = isOrbit
+
+  if (isRigidRotation) {
+    updateRigidBodyRotationObjects(objects, sample, showVectors)
+    return
+  }
 
   if (isOrbit) {
-    objects.secondaryBody.position.set(0, 0, 0)
-    objects.secondaryBody.scale.setScalar(0.78)
+    const orbitMoonRadius = getOrbitMoonDisplayRadius(objects)
+    const orbitMoonMinimumRadius =
+      objects.bodyRadius + orbitMoonRadius + objects.bodyRadius * 0.18
+
+    objects.orbitCentralBody.position.set(0, 0, 0)
+    objects.orbitCentralBody.scale.setScalar(
+      clamp(objects.bodyRadius * 1.18, 0.48, 0.88),
+    )
+    objects.secondaryBody.position.copy(
+      toOrbitSatelliteScenePosition(
+        sample,
+        objects.sceneProjection,
+        orbitMoonMinimumRadius,
+      ),
+    )
+    objects.secondaryBody.scale.setScalar(orbitMoonRadius)
+    updateOrbitSatellitePath(objects, sample, orbitMoonMinimumRadius)
     return
   }
 
@@ -1234,6 +1568,260 @@ function updateConstrainedBodyObjects(
   })
   objects.rope.geometry.setDrawRange(0, ropePoints.length)
   objects.ropePositionAttribute.needsUpdate = true
+}
+
+function updateOrbitSatellitePath(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+  minimumSceneRadius: number,
+) {
+  const planetPosition = toKinematicsScenePosition(
+    sample,
+    objects.sceneProjection,
+  )
+  const satellitePosition = toOrbitSatelliteScenePosition(
+    sample,
+    objects.sceneProjection,
+    minimumSceneRadius,
+  )
+  const radius = satellitePosition.distanceTo(planetPosition)
+
+  if (radius <= 0.001) {
+    objects.orbitSatellitePath.visible = false
+    objects.orbitSatellitePath.geometry.setDrawRange(0, 0)
+    return
+  }
+
+  for (let index = 0; index <= orbitSatellitePathSegments; index += 1) {
+    const angle = (Math.PI * 2 * index) / orbitSatellitePathSegments
+    const offset = index * 3
+
+    objects.orbitSatellitePathPositions[offset] =
+      planetPosition.x + Math.cos(angle) * radius
+    objects.orbitSatellitePathPositions[offset + 1] =
+      planetPosition.y + Math.sin(angle) * radius
+    objects.orbitSatellitePathPositions[offset + 2] = planetPosition.z + 0.035
+  }
+
+  objects.orbitSatellitePath.visible = true
+  objects.orbitSatellitePath.geometry.setDrawRange(
+    0,
+    orbitSatellitePathSegments + 1,
+  )
+  objects.orbitSatellitePathPositionAttribute.needsUpdate = true
+}
+
+function getOrbitMoonDisplayRadius(objects: SceneObjects) {
+  return clamp(objects.bodyRadius * 0.32, 0.09, 0.22)
+}
+
+function setRigidBodyRotationObjectsVisible(
+  objects: SceneObjects,
+  visible: boolean,
+) {
+  ;[
+    objects.rotationBase,
+    objects.rotationRim,
+    objects.rotationAxis,
+    objects.rotationHub,
+    objects.rotationTipMass,
+    objects.rotationCenterOfMassMarker,
+    objects.rotationCounterMass,
+    objects.rotationZeroLine,
+    objects.rotationAngleArc,
+    objects.rotationAngleMarker,
+  ].forEach((object) => {
+    object.visible = visible
+  })
+
+  if (!visible) {
+    objects.rotationBrakePad.visible = false
+    objects.rotationThermalRing.visible = false
+    Object.values(objects.rotationCurvedArrows).forEach((arrow) => {
+      arrow.line.visible = false
+      arrow.cone.visible = false
+    })
+  }
+}
+
+function updateRigidBodyRotationObjects(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+  showVectors: boolean,
+) {
+  const angle = sample.angleRadians
+  const rotorHalfLength = getRigidBodyRotorHalfLength(objects.bodyRadius)
+  const massRadiusRatio = getRigidBodySlidingMassRadiusRatio(sample)
+  const slidingMassOffset = rotorHalfLength * massRadiusRatio
+  const tipRadius = clamp(objects.bodyRadius * 0.46, 0.09, 0.18)
+  const centerMarkerRadius = clamp(tipRadius * 0.38, 0.045, 0.07)
+  const counterSize = clamp(objects.bodyRadius * 0.7, 0.12, 0.22)
+  const axis = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0)
+  const tangent = new THREE.Vector3(-Math.sin(angle), Math.cos(angle), 0)
+  const rotorCenter = new THREE.Vector3(0, 0, rigidRotationRotorZ)
+  const centerOfMassRatio =
+    sample.primaryRadiusMeters > 0
+      ? clamp(sample.centerOfMassMeters / sample.primaryRadiusMeters, 0, 1)
+      : 0
+
+  objects.body.position.copy(rotorCenter)
+  objects.body.rotation.set(0, 0, angle)
+  objects.body.scale.set(1, 1, 1)
+
+  objects.rotationHub.position.copy(rotorCenter)
+  objects.rotationTipMass.position
+    .copy(rotorCenter)
+    .addScaledVector(axis, slidingMassOffset)
+  objects.rotationTipMass.scale.setScalar(tipRadius)
+  objects.rotationCenterOfMassMarker.position
+    .copy(rotorCenter)
+    .addScaledVector(axis, slidingMassOffset * centerOfMassRatio)
+    .addScaledVector(new THREE.Vector3(0, 0, 1), tipRadius * 0.8)
+  objects.rotationCenterOfMassMarker.scale.setScalar(centerMarkerRadius)
+  objects.rotationCounterMass.position
+    .copy(rotorCenter)
+    .addScaledVector(axis, -rotorHalfLength * 0.72)
+    .addScaledVector(tangent, objects.bodyRadius * 0.03)
+  objects.rotationCounterMass.rotation.set(0, 0, angle)
+  objects.rotationCounterMass.scale.set(
+    counterSize * 1.1,
+    counterSize * 0.72,
+    counterSize * 0.72,
+  )
+
+  updateRigidRotationAngleArc(objects, sample)
+  updateRigidRotationDampingCue(objects, sample)
+  updateRigidRotationCurvedVectorCues(objects, sample, showVectors)
+  updateRigidRotationAngularMomentumVector(objects, sample, showVectors)
+}
+
+function updateRigidRotationAngleArc(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+) {
+  const radius = objects.rigidRotationBaseRadius * 0.58
+  const z = rigidRotationRotorZ + 0.1
+  const sweepRadians = readVisibleAngleSweep(sample.angleRadians)
+  const pointCount = updateArcLineGeometry({
+    endAngleRadians: sweepRadians,
+    positions: objects.rotationAngleArcPositions,
+    radius,
+    segmentCapacity: rigidRotationAngleArcSegments,
+    startAngleRadians: 0,
+    z,
+  })
+  const markerAngle = sweepRadians
+
+  objects.rotationAngleArc.geometry.setDrawRange(0, pointCount)
+  objects.rotationAngleArcPositionAttribute.needsUpdate = true
+  objects.rotationAngleArc.visible = pointCount > 1 && Math.abs(sweepRadians) > 0.002
+  objects.rotationAngleMarker.visible = true
+  objects.rotationAngleMarker.position.set(
+    Math.cos(markerAngle) * radius,
+    Math.sin(markerAngle) * radius,
+    z,
+  )
+}
+
+function updateRigidRotationDampingCue(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+) {
+  const baseRadius = objects.rigidRotationBaseRadius
+  const idealAngularAcceleration =
+    sample.momentOfInertiaKilogramMetersSquared > 0
+      ? sample.netTorqueNewtonMeters /
+        sample.momentOfInertiaKilogramMetersSquared
+      : 0
+  const dampingAcceleration =
+    sample.angularAccelerationRadiansPerSecondSquared -
+    idealAngularAcceleration
+  const dampingVisible =
+    Math.abs(dampingAcceleration) > 0.001 &&
+    Math.abs(sample.angularVelocityRadiansPerSecond) > 0.001
+  const thermalVisible = dampingVisible || sample.thermalEnergyJoules > 0.001
+  const thermalMaterial =
+    objects.rotationThermalRing.material as THREE.MeshBasicMaterial
+
+  objects.rotationBrakePad.visible = dampingVisible
+  objects.rotationBrakePad.position.set(
+    0,
+    baseRadius + 0.055,
+    rigidRotationRotorZ + 0.015,
+  )
+  objects.rotationBrakePad.rotation.set(0, 0, 0)
+  objects.rotationThermalRing.visible = thermalVisible
+  thermalMaterial.opacity = thermalVisible
+    ? clamp(0.18 + sample.thermalEnergyJoules * 0.035, 0.18, 0.58)
+    : 0
+}
+
+function updateRigidRotationCurvedVectorCues(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+  showVectors: boolean,
+) {
+  const baseRadius = objects.rigidRotationBaseRadius
+  const angle = sample.angleRadians
+
+  updateRigidRotationCurvedArrow(objects.rotationCurvedArrows.angularVelocity, {
+    radius: baseRadius * 0.82,
+    startAngleRadians: angle + 0.24,
+    sweepRadians: readVectorCueSweep(
+      sample.angularVelocityRadiansPerSecond,
+      0.3,
+    ),
+    visible: showVectors && Math.abs(sample.angularVelocityRadiansPerSecond) > 0.001,
+    z: rigidRotationRotorZ + 0.18,
+  })
+  updateRigidRotationCurvedArrow(
+    objects.rotationCurvedArrows.angularAcceleration,
+    {
+      radius: baseRadius * 1.02,
+      startAngleRadians: angle - 0.2,
+      sweepRadians: readVectorCueSweep(
+        sample.angularAccelerationRadiansPerSecondSquared,
+        0.46,
+      ),
+      visible:
+        showVectors &&
+        Math.abs(sample.angularAccelerationRadiansPerSecondSquared) > 0.001,
+      z: rigidRotationRotorZ + 0.28,
+    },
+  )
+  updateRigidRotationCurvedArrow(objects.rotationCurvedArrows.torque, {
+    radius: baseRadius * 1.2,
+    startAngleRadians: angle - 0.62,
+    sweepRadians: readVectorCueSweep(sample.netTorqueNewtonMeters, 0.42),
+    visible: showVectors && Math.abs(sample.netTorqueNewtonMeters) > 0.001,
+    z: rigidRotationRotorZ + 0.11,
+  })
+}
+
+function updateRigidRotationAngularMomentumVector(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+  showVectors: boolean,
+) {
+  const arrow = objects.arrows.angularMomentum
+  const angularMomentumMagnitude =
+    sample.momentOfInertiaKilogramMetersSquared *
+    Math.abs(sample.angularVelocityRadiansPerSecond)
+  const directionSign = Math.sign(sample.angularVelocityRadiansPerSecond) || 1
+
+  if (!showVectors || angularMomentumMagnitude <= 0.001) {
+    arrow.visible = false
+    return
+  }
+
+  arrow.visible = true
+  arrow.position.set(0, 0, rigidRotationRotorZ + 0.08)
+  arrow.setDirection(new THREE.Vector3(0, 0, directionSign))
+  arrow.setLength(
+    clamp(0.34 + angularMomentumMagnitude * 0.035, 0.44, 0.86),
+    0.08,
+    0.045,
+  )
 }
 
 function updateTorqueLeverObjects(
@@ -1525,6 +2113,11 @@ function updateTrace(
   showTrace: boolean,
   simulationId: KinematicsSimulationId,
 ) {
+  if (simulationId === 'rigid-body-rotation') {
+    updateRigidBodyRotationTrace(objects, samples, sampleIndex, showTrace)
+    return
+  }
+
   if (!showTrace || sampleIndex < 1) {
     objects.trace.visible = false
     objects.trace.geometry.setDrawRange(0, 0)
@@ -1532,9 +2125,10 @@ function updateTrace(
   }
 
   const newestTimeSeconds = currentSample.timeSeconds
+  const traceHistorySeconds = getTraceFadeSeconds(simulationId)
   const oldestVisibleTimeSeconds = Math.max(
     0,
-    newestTimeSeconds - traceFadeSeconds,
+    newestTimeSeconds - traceHistorySeconds,
   )
   const firstTraceSampleIndex = findTraceStartIndex(
     samples,
@@ -1572,7 +2166,7 @@ function updateTrace(
     const colorOffset = traceIndex * 4
     const ageRatio = Math.min(
       1,
-      Math.max(0, (newestTimeSeconds - sample.timeSeconds) / traceFadeSeconds),
+      Math.max(0, (newestTimeSeconds - sample.timeSeconds) / traceHistorySeconds),
     )
     const opacity = traceMaxOpacity - ageRatio * (traceMaxOpacity - traceMinOpacity)
 
@@ -1583,6 +2177,69 @@ function updateTrace(
     objects.tracePositions[positionOffset] = position.x
     objects.tracePositions[positionOffset + 1] = position.y
     objects.tracePositions[positionOffset + 2] = position.z
+    objects.traceColors[colorOffset] = color.red
+    objects.traceColors[colorOffset + 1] = color.green
+    objects.traceColors[colorOffset + 2] = color.blue
+    objects.traceColors[colorOffset + 3] = opacity
+  })
+
+  objects.trace.visible = true
+  objects.trace.geometry.setDrawRange(0, drawCount)
+  objects.tracePositionAttribute.needsUpdate = true
+  objects.traceColorAttribute.needsUpdate = true
+}
+
+function updateRigidBodyRotationTrace(
+  objects: SceneObjects,
+  samples: KinematicsSample[],
+  sampleIndex: number,
+  showTrace: boolean,
+) {
+  if (!showTrace || sampleIndex < 1) {
+    objects.trace.visible = false
+    objects.trace.geometry.setDrawRange(0, 0)
+    return
+  }
+
+  const currentSample = samples[sampleIndex]
+  const newestTimeSeconds = currentSample.timeSeconds
+  const oldestVisibleTimeSeconds = Math.max(
+    0,
+    newestTimeSeconds - traceFadeSeconds,
+  )
+  const firstTraceSampleIndex = findTraceStartIndex(
+    samples,
+    sampleIndex,
+    oldestVisibleTimeSeconds,
+  )
+  const traceSamples = samples
+    .slice(firstTraceSampleIndex, sampleIndex + 1)
+    .slice(-maxTracePoints)
+  const drawCount = traceSamples.length
+
+  if (drawCount < 2) {
+    objects.trace.visible = false
+    objects.trace.geometry.setDrawRange(0, 0)
+    return
+  }
+
+  traceSamples.forEach((sample, traceIndex) => {
+    const radius = objects.rigidRotationBaseRadius * 0.88
+    const positionOffset = traceIndex * 3
+    const colorOffset = traceIndex * 4
+    const ageRatio = Math.min(
+      1,
+      Math.max(0, (newestTimeSeconds - sample.timeSeconds) / traceFadeSeconds),
+    )
+    const heatRatio = clamp(sample.thermalEnergyJoules * 0.035, 0, 1)
+    const color = blendRgb(traceColor, thermalTraceEndColor, heatRatio)
+    const opacity = traceMaxOpacity - ageRatio * (traceMaxOpacity - traceMinOpacity)
+
+    objects.tracePositions[positionOffset] =
+      Math.cos(sample.angleRadians) * radius
+    objects.tracePositions[positionOffset + 1] =
+      Math.sin(sample.angleRadians) * radius
+    objects.tracePositions[positionOffset + 2] = rigidRotationRotorZ + 0.08
     objects.traceColors[colorOffset] = color.red
     objects.traceColors[colorOffset + 1] = color.green
     objects.traceColors[colorOffset + 2] = color.blue
@@ -1666,6 +2323,29 @@ function readFirstKinematicsSample(samples: KinematicsSample[]) {
   }
 
   return firstSample
+}
+
+function createSceneReferencePathSamples(
+  samples: KinematicsSample[],
+  simulationId: KinematicsSimulationId,
+  parameters: KinematicsParameters,
+) {
+  if (simulationId === 'gravitational-field-orbits') {
+    return computeGravitationalOrbitPathSamples(
+      parameters as GravitationalFieldOrbitsParameters,
+    )
+  }
+
+  return samples
+}
+
+function mergeSceneFramingSamples(
+  samples: KinematicsSample[],
+  referencePathSamples: KinematicsSample[],
+) {
+  return referencePathSamples === samples
+    ? samples
+    : [...samples, ...referencePathSamples]
 }
 
 function appendTraceSample(
@@ -2418,6 +3098,14 @@ function estimateSceneBounds(
     }
   }
 
+  if (simulationId === 'rigid-body-rotation') {
+    positions.length = 0
+    positions.push(
+      new THREE.Vector3(-1.35, -1.35, -rigidRotationBaseThickness),
+      new THREE.Vector3(1.35, 1.35, rigidRotationAxisHeight + 0.12),
+    )
+  }
+
   if (simulationId === 'centripetal-force-curve') {
     const firstSample = samples[0]
     const scale = sceneProjection.positionScale
@@ -2492,6 +3180,170 @@ function getBodyDisplaySize(sceneSpan: number) {
   return clamp(sceneSpan * 0.022, bodySize, 0.72)
 }
 
+function getRigidBodyRotationBaseRadius(bodyRadius: number) {
+  return clamp(bodyRadius * 4.8, 1.04, 1.48)
+}
+
+function getRigidBodyRotorLength(bodyRadius: number) {
+  return getRigidBodyRotationBaseRadius(bodyRadius) * 1.48
+}
+
+function getRigidBodyRotorHalfLength(bodyRadius: number) {
+  return getRigidBodyRotorLength(bodyRadius) / 2
+}
+
+function getRigidBodySlidingMassRadiusRatio(sample: KinematicsSample) {
+  const maxDistanceMeters =
+    sample.secondaryRadiusMeters > 0 ? sample.secondaryRadiusMeters : 1
+
+  return clamp(
+    sample.primaryRadiusMeters / maxDistanceMeters,
+    rigidRotationMinMassRadiusRatio,
+    1,
+  )
+}
+
+function createRigidRotationCurvedArrow(
+  color: number,
+): RigidRotationCurvedArrow {
+  const positions = new Float32Array((rigidRotationCurvedArrowSegments + 1) * 3)
+  const geometry = new THREE.BufferGeometry()
+  const positionAttribute = new THREE.BufferAttribute(positions, 3)
+
+  positionAttribute.setUsage(THREE.DynamicDrawUsage)
+  geometry.setAttribute('position', positionAttribute)
+  geometry.setDrawRange(0, 0)
+
+  return {
+    cone: new THREE.Mesh(
+      new THREE.ConeGeometry(0.055, 0.16, 18),
+      new THREE.MeshStandardMaterial({
+        color,
+        emissive: color,
+        emissiveIntensity: 0.12,
+        metalness: 0.04,
+        roughness: 0.44,
+      }),
+    ),
+    line: new THREE.Line(
+      geometry,
+      new THREE.LineBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.9,
+      }),
+    ),
+    positionAttribute,
+    positions,
+  }
+}
+
+function updateRigidRotationCurvedArrow(
+  arrow: RigidRotationCurvedArrow,
+  {
+    radius,
+    startAngleRadians,
+    sweepRadians,
+    visible,
+    z,
+  }: {
+    radius: number
+    startAngleRadians: number
+    sweepRadians: number
+    visible: boolean
+    z: number
+  },
+) {
+  if (!visible || Math.abs(sweepRadians) < 0.001) {
+    arrow.line.visible = false
+    arrow.cone.visible = false
+    arrow.line.geometry.setDrawRange(0, 0)
+    return
+  }
+
+  const endAngleRadians = startAngleRadians + sweepRadians
+  const pointCount = updateArcLineGeometry({
+    endAngleRadians,
+    positions: arrow.positions,
+    radius,
+    segmentCapacity: rigidRotationCurvedArrowSegments,
+    startAngleRadians,
+    z,
+  })
+  const directionSign = Math.sign(sweepRadians) || 1
+  const tangent = new THREE.Vector3(
+    -Math.sin(endAngleRadians) * directionSign,
+    Math.cos(endAngleRadians) * directionSign,
+    0,
+  ).normalize()
+
+  arrow.line.geometry.setDrawRange(0, pointCount)
+  arrow.positionAttribute.needsUpdate = true
+  arrow.line.visible = true
+  arrow.cone.visible = true
+  arrow.cone.position.set(
+    Math.cos(endAngleRadians) * radius,
+    Math.sin(endAngleRadians) * radius,
+    z,
+  )
+  arrow.cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tangent)
+}
+
+function updateArcLineGeometry({
+  endAngleRadians,
+  positions,
+  radius,
+  segmentCapacity,
+  startAngleRadians,
+  z,
+}: {
+  endAngleRadians: number
+  positions: Float32Array
+  radius: number
+  segmentCapacity: number
+  startAngleRadians: number
+  z: number
+}) {
+  const sweepRadians = endAngleRadians - startAngleRadians
+  const pointCount = Math.max(
+    2,
+    Math.min(
+      segmentCapacity + 1,
+      Math.ceil((Math.abs(sweepRadians) / (Math.PI * 2)) * segmentCapacity) + 1,
+    ),
+  )
+
+  for (let index = 0; index < pointCount; index += 1) {
+    const ratio = pointCount === 1 ? 0 : index / (pointCount - 1)
+    const angle = startAngleRadians + sweepRadians * ratio
+    const offset = index * 3
+
+    positions[offset] = Math.cos(angle) * radius
+    positions[offset + 1] = Math.sin(angle) * radius
+    positions[offset + 2] = z
+  }
+
+  return pointCount
+}
+
+function readVisibleAngleSweep(angleRadians: number) {
+  const fullTurn = Math.PI * 2
+  const magnitude = Math.abs(angleRadians)
+  const wrappedMagnitude = magnitude % fullTurn
+
+  if (wrappedMagnitude < 0.002) {
+    return 0
+  }
+
+  return wrappedMagnitude * (angleRadians < 0 ? -1 : 1)
+}
+
+function readVectorCueSweep(value: number, magnitudeScale: number) {
+  const sign = Math.sign(value) || 1
+
+  return sign * clamp(Math.abs(value) * magnitudeScale, 0.42, 1.42)
+}
+
 function updateOrbitCamera(
   objects: Pick<
     SceneObjects,
@@ -2508,6 +3360,12 @@ function getInitialCameraYawRadians(simulationId: KinematicsSimulationId) {
     : initialCameraYawRadians
 }
 
+function getInitialCameraPitchRadians(simulationId: KinematicsSimulationId) {
+  return simulationId === 'rigid-body-rotation'
+    ? Math.atan2(0.68, 0.74)
+    : initialCameraPitchRadians
+}
+
 function getKinematicsCanvasAriaLabel(simulationId: KinematicsSimulationId) {
   if (simulationId === 'mass-spring') {
     return 'Cena 3D do massa-mola vertical com arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom'
@@ -2517,7 +3375,29 @@ function getKinematicsCanvasAriaLabel(simulationId: KinematicsSimulationId) {
     return 'Cena 3D da gangorra com massas, apoio fixo, centro de massa e vetores com arraste para orbitar, e Shift + scroll para zoom'
   }
 
+  if (simulationId === 'rigid-body-rotation') {
+    return 'Cena 3D da mesa de rotacao com eixo fixo, rotor, torque e setas angulares com arraste para orbitar, e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'gravitational-field-orbits') {
+    return 'Cena 3D orbital com corpo central, planeta, lua didatica e arraste para orbitar, e Shift + scroll para zoom'
+  }
+
   return 'Cena 3D de Cinematica com arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom'
+}
+
+function normalizeModelTimeScale(value: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return 1
+  }
+
+  return value
+}
+
+function getTraceFadeSeconds(simulationId: KinematicsSimulationId) {
+  return simulationId === 'gravitational-field-orbits'
+    ? orbitalTraceFadeSeconds
+    : traceFadeSeconds
 }
 
 function normalizeWheelDeltaY(event: ReactWheelEvent<HTMLCanvasElement>) {

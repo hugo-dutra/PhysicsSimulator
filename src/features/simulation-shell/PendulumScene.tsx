@@ -42,7 +42,6 @@ export type PendulumFrameStats = FrameStats
 type PendulumSceneProps = {
   durationSeconds: number
   isPlaying: boolean
-  maximized?: boolean
   onSampleChange: (sample: PendulumSample, stats: PendulumFrameStats) => void
   parameters: PendulumParameters
   playbackRate: number
@@ -117,7 +116,6 @@ const maxCameraRadiusScale = 2.25
 export function PendulumScene({
   durationSeconds,
   isPlaying,
-  maximized = false,
   onSampleChange,
   parameters,
   playbackRate,
@@ -500,16 +498,18 @@ export function PendulumScene({
   }, [renderCurrentFrame, samples])
 
   useEffect(() => {
+    const resetSamples = runtimeRef.current.samples
+
     elapsedSecondsRef.current = 0
     lastFrameTimeRef.current = null
     lastReadoutTimeRef.current = 0
     statsWindowRef.current = createFrameStatsWindow()
-    liveStateRef.current = readInitialPendulumState(samples)
+    liveStateRef.current = readInitialPendulumState(resetSamples)
     traceSamplesRef.current = [
       toPendulumSample(liveStateRef.current, runtimeRef.current.parameters),
     ]
     renderCurrentFrame(true)
-  }, [renderCurrentFrame, resetVersion, samples])
+  }, [renderCurrentFrame, resetVersion])
 
   useEffect(() => {
     if (import.meta.env.MODE === 'test') {
@@ -574,13 +574,8 @@ export function PendulumScene({
   return (
     <Box
       sx={{
-        height: maximized
-          ? {
-              xs: '52svh',
-              md: 'calc(100svh - 256px)',
-            }
-          : { xs: 326, md: 382 },
-        minHeight: maximized ? { xs: 320, md: 430 } : undefined,
+        height: '100%',
+        minHeight: 0,
         position: 'relative',
       }}
     >

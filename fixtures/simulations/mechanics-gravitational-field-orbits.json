@@ -25,6 +25,17 @@
       "max": 7200,
       "step": 60,
       "defaultValue": 1800
+    },
+    {
+      "id": "modelTimeScale",
+      "label": "Tempo orbital exibido",
+      "description": "Compactacao temporal da orbita: define quantos segundos do modelo fisico avancam por segundo real quando a velocidade global esta em 1x. Aumentar torna a orbita visivelmente mais rapida sem alterar campo, forca, energia ou samples; reduzir aproxima a leitura do tempo real.",
+      "unit": "s/s",
+      "kind": "number",
+      "min": 1,
+      "max": 360,
+      "step": 5,
+      "defaultValue": 120
     }
   ],
   "defaultParameters": {
@@ -69,8 +80,8 @@
     },
     {
       "id": "satelliteMassKilograms",
-      "label": "Massa do satelite",
-      "description": "Massa do corpo em orbita. Aumentar escala forca e energias, mas nao altera a trajetoria ideal de teste.",
+      "label": "Massa do corpo em orbita",
+      "description": "Massa do planeta ou satelite principal em orbita. Aumentar escala forca e energias, mas nao altera a trajetoria ideal de teste; a lua visual permanece como marcador didatico sem perturbacao.",
       "unit": "kg",
       "kind": "number",
       "min": 1,
@@ -126,8 +137,10 @@
     }
   ],
   "limits": [
-    "O modelo usa campo central de dois corpos e ignora atmosfera, arrasto, oblatividade e perturbacoes de terceiros.",
-    "A orbita eliptica e amostrada por uma parametrizacao didatica; nao resolve anomalia excentrica com precisao astronomica.",
+    "O modelo usa campo central de dois corpos para a orbita principal e ignora atmosfera, arrasto, oblatividade e perturbacoes de terceiros.",
+    "A lua visual e um satelite didatico calculado no sample para leitura Sol-planeta-lua, mas nao perturba a orbita principal nem entra na energia orbital.",
+    "A velocidade orbital da lua visual e relativa ao planeta e usa ritmo didatico proprio, desacoplado da velocidade kepleriana instantanea que varia com a excentricidade.",
+    "A orbita eliptica resolve a anomalia excentrica de Kepler para amostras em tempo uniforme, preservando periodo e taxa areolar no modelo de dois corpos.",
     "A massa do satelite escala energia e forca, mas nao altera a trajetoria no problema ideal de dois corpos.",
     "Excentricidades altas sao mantidas como demonstracao visual e geram warning de limite de modelo."
   ],
@@ -167,13 +180,47 @@
       "relatedVectorIds": ["velocity"]
     },
     {
+      "id": "kepler-third-law",
+      "title": "Lei dos periodos",
+      "expressionLatex": "\\frac{T^2}{a^3}=\\frac{4\\pi^2}{GM}",
+      "description": "Relaciona o periodo orbital ao semi-eixo maior no campo central ideal.",
+      "variables": [
+        { "symbol": "T", "label": "periodo orbital", "unit": "s" },
+        { "symbol": "a", "label": "semi-eixo maior", "unit": "m" },
+        { "symbol": "G", "label": "constante gravitacional" },
+        { "symbol": "M", "label": "massa central", "unit": "kg" }
+      ],
+      "usedWhen": "Usar em orbitas keplerianas ideais fechadas em torno de uma massa central dominante.",
+      "notUsedWhen": "Nao cobre arrasto, propulsao, perturbacoes de terceiros ou potencial nao central.",
+      "parameterIds": ["centralMassEarths", "eccentricity", "orbitalRadiusKilometers"],
+      "sampleFields": ["periodSeconds"],
+      "relatedChartIds": ["kepler"]
+    },
+    {
+      "id": "kepler-area-law",
+      "title": "Lei das areas",
+      "expressionLatex": "\\frac{dA}{dt}=\\frac{1}{2}r^2\\dot{\\theta}=\\frac{h}{2}",
+      "description": "Mostra que a linha entre massa central e corpo em orbita varre areas iguais em tempos iguais.",
+      "variables": [
+        { "symbol": "A", "label": "area varrida", "unit": "m^2" },
+        { "symbol": "r", "label": "raio orbital", "unit": "m" },
+        { "symbol": "\\dot{\\theta}", "label": "velocidade angular instantanea", "unit": "rad/s" },
+        { "symbol": "h", "label": "momento angular especifico", "unit": "m^2/s" }
+      ],
+      "usedWhen": "Usar para verificar que a velocidade angular aumenta no periastro e diminui no apoastro sem alterar a taxa areolar.",
+      "notUsedWhen": "Nao vale se houver torque externo, arrasto ou perturbacao gravitacional relevante.",
+      "parameterIds": ["centralMassEarths", "eccentricity", "orbitalRadiusKilometers"],
+      "sampleFields": ["xMeters", "zMeters", "velocityXMetersPerSecond", "velocityZMetersPerSecond", "angularVelocityRadiansPerSecond"],
+      "relatedChartIds": ["kepler"]
+    },
+    {
       "id": "orbital-energy",
       "title": "Energia orbital",
       "expressionLatex": "E=\\frac{1}{2}mv^2-\\frac{GMm}{r}",
       "description": "Combina energia cinetica e potencial gravitacional do satelite no campo central.",
       "variables": [
         { "symbol": "E", "label": "energia mecanica", "unit": "J" },
-        { "symbol": "m", "label": "massa do satelite", "unit": "kg" },
+        { "symbol": "m", "label": "massa do corpo em orbita", "unit": "kg" },
         { "symbol": "r", "label": "raio orbital", "unit": "m" }
       ],
       "usedWhen": "Usar para comparar conservacao de energia no modelo orbital ideal.",

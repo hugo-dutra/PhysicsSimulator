@@ -28,7 +28,8 @@
     }
   ],
   "defaultParameters": {
-    "momentOfInertiaKilogramMetersSquared": 1.6,
+    "momentOfInertiaKilogramMetersSquared": 0.9,
+    "slidingMassDistanceMeters": 1,
     "appliedTorqueNewtonMeters": 0.8,
     "initialAngularVelocityRadiansPerSecond": 0.5,
     "initialAngleDegrees": 0,
@@ -37,14 +38,25 @@
   "parameters": [
     {
       "id": "momentOfInertiaKilogramMetersSquared",
-      "label": "Momento de inercia",
-      "description": "Resistencia do corpo a mudar o giro. Aumentar reduz a aceleracao angular para o mesmo torque; diminuir torna o giro mais sensivel.",
+      "label": "Inercia base do rotor",
+      "description": "Momento de inercia do rotor sem a massa movel. Aumentar deixa o conjunto menos sensivel ao torque; diminuir faz a mesma massa deslocavel alterar mais a velocidade angular.",
       "unit": "kg m^2",
       "kind": "number",
       "min": 0.1,
       "max": 12,
       "step": 0.1,
-      "defaultValue": 1.6
+      "defaultValue": 0.9
+    },
+    {
+      "id": "slidingMassDistanceMeters",
+      "label": "Distancia da massa movel",
+      "description": "Distancia radial da esfera ao eixo. Aproximar do centro reduz I = I_base + m r^2, desloca o centro de massa para perto do eixo e aumenta omega quando o momento angular de referencia e mantido.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 1.2,
+      "step": 0.02,
+      "defaultValue": 1
     },
     {
       "id": "appliedTorqueNewtonMeters",
@@ -96,7 +108,8 @@
       "id": "constant-torque",
       "label": "Torque constante",
       "parameters": {
-        "momentOfInertiaKilogramMetersSquared": 1.6,
+        "momentOfInertiaKilogramMetersSquared": 0.9,
+        "slidingMassDistanceMeters": 1,
         "appliedTorqueNewtonMeters": 0.8,
         "initialAngularVelocityRadiansPerSecond": 0.5,
         "initialAngleDegrees": 0,
@@ -107,7 +120,8 @@
       "id": "high-inertia",
       "label": "Alta inercia",
       "parameters": {
-        "momentOfInertiaKilogramMetersSquared": 5,
+        "momentOfInertiaKilogramMetersSquared": 3.2,
+        "slidingMassDistanceMeters": 1.2,
         "appliedTorqueNewtonMeters": 0.8,
         "initialAngularVelocityRadiansPerSecond": 0.5,
         "initialAngleDegrees": 30,
@@ -118,17 +132,31 @@
       "id": "damped-spin",
       "label": "Giro amortecido",
       "parameters": {
-        "momentOfInertiaKilogramMetersSquared": 1.2,
+        "momentOfInertiaKilogramMetersSquared": 0.9,
+        "slidingMassDistanceMeters": 0.82,
         "appliedTorqueNewtonMeters": 0,
         "initialAngularVelocityRadiansPerSecond": 2.2,
         "initialAngleDegrees": -20,
         "angularDampingPerSecond": 0.18
       }
+    },
+    {
+      "id": "conserved-angular-momentum",
+      "label": "Conservacao de L",
+      "parameters": {
+        "momentOfInertiaKilogramMetersSquared": 0.9,
+        "slidingMassDistanceMeters": 0.38,
+        "appliedTorqueNewtonMeters": 0,
+        "initialAngularVelocityRadiansPerSecond": 1.2,
+        "initialAngleDegrees": 0,
+        "angularDampingPerSecond": 0
+      }
     }
   ],
   "limits": [
     "O corpo gira em torno de eixo fixo e nao translada.",
-    "O momento de inercia e informado diretamente para comparar corpos compactos e espalhados.",
+    "O momento de inercia total e calculado como I = I_base + m r^2 para uma massa movel didatica sobre a barra.",
+    "Com torque aplicado e amortecimento zerados, o motor conserva L = I omega ao mudar a distancia radial da massa movel.",
     "Torque aplicado igual a zero e valido; nesse caso a rotacao pode ser livre ou amortecida.",
     "O amortecimento e linear em omega e representa dissipacao didatica, nao contato real detalhado."
   ],
@@ -147,14 +175,64 @@
       "notUsedWhen": "Nao descreve corpos deformaveis ou eixo movel.",
       "parameterIds": [
         "momentOfInertiaKilogramMetersSquared",
+        "slidingMassDistanceMeters",
         "appliedTorqueNewtonMeters"
       ],
       "sampleFields": [
+        "momentOfInertiaKilogramMetersSquared",
         "netTorqueNewtonMeters",
         "angularAccelerationRadiansPerSecondSquared"
       ],
       "relatedChartIds": ["torque"],
       "relatedVectorIds": ["torque", "angularAcceleration"]
+    },
+    {
+      "id": "sliding-mass-inertia",
+      "title": "Inercia com massa movel",
+      "expressionLatex": "I=I_{base}+m r^2",
+      "description": "Mostra como afastar a massa do eixo aumenta o momento de inercia total.",
+      "variables": [
+        { "symbol": "I_{base}", "label": "inercia base do rotor", "unit": "kg m^2" },
+        { "symbol": "m", "label": "massa movel didatica", "unit": "kg" },
+        { "symbol": "r", "label": "distancia da massa ao eixo", "unit": "m" }
+      ],
+      "usedWhen": "Usar para comparar massa proxima ao centro e massa perto da borda.",
+      "notUsedWhen": "Nao substitui o calculo integral de um corpo deformavel ou com distribuicao continua real.",
+      "parameterIds": [
+        "momentOfInertiaKilogramMetersSquared",
+        "slidingMassDistanceMeters"
+      ],
+      "sampleFields": [
+        "primaryRadiusMeters",
+        "centerOfMassMeters",
+        "momentOfInertiaKilogramMetersSquared"
+      ],
+      "relatedChartIds": ["momentum"]
+    },
+    {
+      "id": "angular-momentum-conservation",
+      "title": "Conservacao do momento angular",
+      "expressionLatex": "L=I\\omega",
+      "description": "Mantem um momento angular de referencia para mostrar que reduzir I aumenta omega.",
+      "variables": [
+        { "symbol": "L", "label": "momento angular", "unit": "kg m^2/s" },
+        { "symbol": "I", "label": "momento de inercia total", "unit": "kg m^2" },
+        { "symbol": "\\omega", "label": "velocidade angular", "unit": "rad/s" }
+      ],
+      "usedWhen": "Usar quando torque aplicado e amortecimento estao zerados.",
+      "notUsedWhen": "Com torque externo ou amortecimento, L muda ao longo do tempo.",
+      "parameterIds": [
+        "slidingMassDistanceMeters",
+        "initialAngularVelocityRadiansPerSecond",
+        "appliedTorqueNewtonMeters",
+        "angularDampingPerSecond"
+      ],
+      "sampleFields": [
+        "angularVelocityRadiansPerSecond",
+        "momentOfInertiaKilogramMetersSquared"
+      ],
+      "relatedChartIds": ["momentum"],
+      "relatedVectorIds": ["angularMomentum"]
     },
     {
       "id": "angular-kinematics",
@@ -169,7 +247,8 @@
       "notUsedWhen": "Com amortecimento ativo, a curva usa solucao exponencial do motor.",
       "parameterIds": [
         "initialAngularVelocityRadiansPerSecond",
-        "initialAngleDegrees"
+        "initialAngleDegrees",
+        "slidingMassDistanceMeters"
       ],
       "sampleFields": [
         "angleRadians",

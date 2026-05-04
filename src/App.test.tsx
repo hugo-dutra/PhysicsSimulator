@@ -78,10 +78,8 @@ describe('App', () => {
       screen.getByRole('button', { name: /Continuidade e Bernoulli/i }),
     ).toBeInTheDocument()
     expect(screen.getByText('3601')).toBeInTheDocument()
-    expect(screen.getByText(/Viewport Three\.js/i)).toBeInTheDocument()
+    expect(screen.queryByText(/Viewport Three\.js/i)).not.toBeInTheDocument()
     const viewport = screen.getByLabelText(/Pendulum numerical viewport/i)
-    const angleMetric = within(viewport).getByText(/^Angulo do pendulo$/i)
-    const vectorLegend = within(viewport).getByLabelText(/Legenda dos vetores/i)
     const originLegend = within(viewport).getByLabelText(
       /Referencia de origem dos eixos da grade/i,
     )
@@ -91,11 +89,19 @@ describe('App', () => {
     const simulationCanvas = within(viewport).getByLabelText(
       /Cena 3D do pendulo simples/i,
     )
+    const readoutToggle = within(viewport).getByRole('button', {
+      name: /Abrir leituras e vetores/i,
+    })
 
     expect(simulationCanvas).toBeInTheDocument()
     expect(simulationCanvas).toHaveAccessibleName(
       /por cima e por baixo.*Shift \+ scroll para zoom/i,
     )
+    expect(readoutToggle).toHaveAttribute('aria-expanded', 'false')
+    expect(within(viewport).queryByText(/^Angulo do pendulo$/i)).toBeNull()
+    expect(
+      within(viewport).queryByLabelText(/^Legenda dos vetores$/i),
+    ).toBeNull()
     expect(within(originLegend).getByText(/^Origem da grade$/i))
       .toBeInTheDocument()
     expect(within(originLegend).getByText(/^X$/i)).toBeInTheDocument()
@@ -110,6 +116,17 @@ describe('App', () => {
     expect(
       within(animationVectorLegend).getByText(/^Velocidade linear \(m\/s\)$/i),
     ).toBeInTheDocument()
+
+    fireEvent.click(readoutToggle)
+
+    const angleMetric = within(viewport).getByText(/^Angulo do pendulo$/i)
+    const vectorLegend = within(viewport).getByLabelText(/^Legenda dos vetores$/i)
+
+    expect(
+      within(viewport).getByRole('button', {
+        name: /Fechar leituras e vetores/i,
+      }),
+    ).toHaveAttribute('aria-expanded', 'true')
     expect(
       angleMetric.compareDocumentPosition(simulationCanvas) &
         Node.DOCUMENT_POSITION_FOLLOWING,
@@ -118,7 +135,7 @@ describe('App', () => {
       vectorLegend.compareDocumentPosition(simulationCanvas) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).not.toBe(0)
-    expect(screen.getByLabelText(/Legenda dos vetores/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^Legenda dos vetores$/i)).toBeInTheDocument()
     expect(
       screen.getByText(/tangencial a trajetoria, perpendicular ao fio/i),
     ).toBeInTheDocument()
@@ -919,8 +936,8 @@ describe('App', () => {
       },
       {
         title: /Rotacao de corpo rigido/i,
-        chart: /Torque e aceleracao angular/i,
-        control: /Momento de inercia \(kg m\^2\)/i,
+        chart: /Inercia, centro de massa e momento angular/i,
+        control: /Distancia da massa movel \(m\)/i,
       },
       {
         title: /Rolamento sem escorregamento/i,

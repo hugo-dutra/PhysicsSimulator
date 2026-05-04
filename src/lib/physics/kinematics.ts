@@ -147,6 +147,7 @@ export type RigidBodyRotationParameters = {
   initialAngleDegrees: number
   initialAngularVelocityRadiansPerSecond: number
   momentOfInertiaKilogramMetersSquared: number
+  slidingMassDistanceMeters: number
 }
 
 export type RollingWithoutSlippingParameters = {
@@ -264,6 +265,7 @@ export type KinematicsVectorOverlay = {
   id:
     | 'acceleration'
     | 'angularAcceleration'
+    | 'angularMomentum'
     | 'angularVelocity'
     | 'appliedForce'
     | 'centripetal'
@@ -286,6 +288,7 @@ export type KinematicsVectorOverlay = {
   magnitude: number
   unit:
     | 'kg m/s'
+    | 'kg m^2/s'
     | 'm'
     | 'm/s'
     | 'm/s^2'
@@ -422,11 +425,17 @@ const earthMassKilograms = 5.9722e24
 const equilibriumForceToleranceNewtons = 0.05
 const gravitationalConstant = 6.6743e-11
 const highEccentricityWarningThreshold = 0.65
+const orbitalSatelliteRadiusRatio = 0.16
+const orbitalSatelliteSpeedRatio = 12
 const hydrostaticFloatToleranceNewtons = 1e-6
 const massSpringDampingTolerance = 1e-9
 const massSpringVisualNaturalLengthMeters = 1.15
 const uniformlyAcceleratedGroundTolerance = 1e-9
 const rollingInertiaFactor = 0.5
+const rigidBodyCentralMassKilograms = 2.4
+const rigidBodyMaxSlidingMassDistanceMeters = 1.2
+const rigidBodyReferenceMassDistanceMeters = 1.0
+const rigidBodySlidingMassKilograms = 0.72
 const torqueToleranceNewtonMeters = 0.05
 const torqueLeverMaxDisplayAngleRadians = 0.35
 const torqueLeverVisualTimeScale = 0.28
@@ -673,6 +682,10 @@ export function toKinematicsParameters(
           values,
           'momentOfInertiaKilogramMetersSquared',
         ),
+        slidingMassDistanceMeters: readNumber(
+          values,
+          'slidingMassDistanceMeters',
+        ),
       }
 
       validateRigidBodyRotationParameters(parameters)
@@ -902,6 +915,23 @@ export function computeKinematicsSample(
         timeSeconds,
       )
   }
+}
+
+export function computeGravitationalOrbitPathSamples(
+  parameters: GravitationalFieldOrbitsParameters,
+  segmentCount = 240,
+): KinematicsSample[] {
+  validateGravitationalFieldOrbitsParameters(parameters)
+
+  const safeSegmentCount = Math.max(4, Math.floor(segmentCount))
+  const firstSample = computeGravitationalFieldOrbitsSample(parameters, 0)
+
+  return Array.from({ length: safeSegmentCount + 1 }, (_, index) =>
+    computeGravitationalFieldOrbitsSample(
+      parameters,
+      (firstSample.periodSeconds * index) / safeSegmentCount,
+    ),
+  )
 }
 
 export function getKinematicsVectorOverlays(
@@ -1285,6 +1315,19 @@ export function getKinematicsVectorOverlays(
 
   if (simulationId === 'rigid-body-rotation') {
     return [
+      {
+        direction: {
+          x: 0,
+          z: Math.sign(sample.angularVelocityRadiansPerSecond) || 1,
+        },
+        id: 'angularMomentum',
+        label: 'Momento angular',
+        magnitude: Math.abs(
+          sample.momentOfInertiaKilogramMetersSquared *
+            sample.angularVelocityRadiansPerSecond,
+        ),
+        unit: 'kg m^2/s',
+      },
       {
         direction: {
           x: Math.cos(sample.angleRadians + Math.PI / 2),
@@ -1731,28 +1774,84 @@ function computeGravitationalFieldOrbitsSample(
     parameters.centralMassEarths * earthMassKilograms
   const gravitationalParameter =
     gravitationalConstant * centralMassKilograms
+  const eccentricity = parameters.eccentricity
   const periapsisRadiusMeters = parameters.orbitalRadiusKilometers * 1000
   const semiMajorAxisMeters =
-    periapsisRadiusMeters / (1 - parameters.eccentricity)
+    periapsisRadiusMeters / (1 - eccentricity)
   const meanMotionRadiansPerSecond = Math.sqrt(
     gravitationalParameter / semiMajorAxisMeters ** 3,
   )
-  const angleRadians =
-    degreesToRadians(parameters.initialAngleDegrees) +
-    meanMotionRadiansPerSecond * timeSeconds
+  const initialTrueAnomalyRadians = normalizePositiveAngleRadians(
+    degreesToRadians(parameters.initialAngleDegrees),
+  )
+  const initialEccentricAnomalyRadians = trueAnomalyToEccentricAnomaly(
+    initialTrueAnomalyRadians,
+    eccentricity,
+  )
+  const initialMeanAnomalyRadians = eccentricAnomalyToMeanAnomaly(
+    initialEccentricAnomalyRadians,
+    eccentricity,
+  )
+  const meanAnomalyRadians =
+    initialMeanAnomalyRadians + meanMotionRadiansPerSecond * timeSeconds
+  const eccentricAnomalyRadians = solveKeplerEccentricAnomaly(
+    meanAnomalyRadians,
+    eccentricity,
+  )
+  const angleRadians = normalizePositiveAngleRadians(
+    eccentricAnomalyToTrueAnomaly(eccentricAnomalyRadians, eccentricity),
+  )
   const orbitalRadiusMeters =
-    (semiMajorAxisMeters * (1 - parameters.eccentricity ** 2)) /
-    (1 + parameters.eccentricity * Math.cos(angleRadians))
+    semiMajorAxisMeters * (1 - eccentricity * Math.cos(eccentricAnomalyRadians))
   const xMeters = orbitalRadiusMeters * Math.cos(angleRadians)
   const zMeters = orbitalRadiusMeters * Math.sin(angleRadians)
-  const orbitalSpeedMetersPerSecond = Math.sqrt(
-    gravitationalParameter *
-      (2 / orbitalRadiusMeters - 1 / semiMajorAxisMeters),
+  const specificAngularMomentumMetersSquaredPerSecond = Math.sqrt(
+    gravitationalParameter * semiMajorAxisMeters * (1 - eccentricity ** 2),
   )
+  const radialVelocityMetersPerSecond =
+    (gravitationalParameter /
+      specificAngularMomentumMetersSquaredPerSecond) *
+    eccentricity *
+    Math.sin(angleRadians)
+  const transverseVelocityMetersPerSecond =
+    specificAngularMomentumMetersSquaredPerSecond / orbitalRadiusMeters
   const velocityXMetersPerSecond =
-    -orbitalSpeedMetersPerSecond * Math.sin(angleRadians)
+    radialVelocityMetersPerSecond * Math.cos(angleRadians) -
+    transverseVelocityMetersPerSecond * Math.sin(angleRadians)
   const velocityZMetersPerSecond =
-    orbitalSpeedMetersPerSecond * Math.cos(angleRadians)
+    radialVelocityMetersPerSecond * Math.sin(angleRadians) +
+    transverseVelocityMetersPerSecond * Math.cos(angleRadians)
+  const orbitalSpeedMetersPerSecond = Math.hypot(
+    velocityXMetersPerSecond,
+    velocityZMetersPerSecond,
+  )
+  const angularVelocityRadiansPerSecond =
+    specificAngularMomentumMetersSquaredPerSecond / orbitalRadiusMeters ** 2
+  const satelliteOrbitRadiusMeters =
+    periapsisRadiusMeters * orbitalSatelliteRadiusRatio
+  const satelliteReferenceAngularVelocityRadiansPerSecond =
+    Math.sqrt(gravitationalParameter / periapsisRadiusMeters ** 3) *
+    orbitalSatelliteSpeedRatio
+  const satelliteAngleRadians =
+    initialTrueAnomalyRadians * orbitalSatelliteSpeedRatio +
+    satelliteReferenceAngularVelocityRadiansPerSecond * timeSeconds +
+    Math.PI * 0.35
+  const secondaryXMeters =
+    xMeters + satelliteOrbitRadiusMeters * Math.cos(satelliteAngleRadians)
+  const secondaryZMeters =
+    zMeters + satelliteOrbitRadiusMeters * Math.sin(satelliteAngleRadians)
+  const secondaryVelocityXMetersPerSecond =
+    -satelliteOrbitRadiusMeters *
+    satelliteReferenceAngularVelocityRadiansPerSecond *
+    Math.sin(satelliteAngleRadians)
+  const secondaryVelocityZMetersPerSecond =
+    satelliteOrbitRadiusMeters *
+      satelliteReferenceAngularVelocityRadiansPerSecond *
+      Math.cos(satelliteAngleRadians)
+  const secondarySpeedMetersPerSecond = Math.hypot(
+    secondaryVelocityXMetersPerSecond,
+    secondaryVelocityZMetersPerSecond,
+  )
   const gravitationalFieldNewtonsPerKilogram =
     gravitationalParameter / orbitalRadiusMeters ** 2
   const accelerationXMetersPerSecondSquared =
@@ -1775,7 +1874,7 @@ function computeGravitationalFieldOrbitsSample(
     accelerationXMetersPerSecondSquared,
     accelerationZMetersPerSecondSquared,
     angleRadians,
-    angularVelocityRadiansPerSecond: meanMotionRadiansPerSecond,
+    angularVelocityRadiansPerSecond,
     centripetalAccelerationMetersPerSecondSquared:
       gravitationalFieldNewtonsPerKilogram,
     centripetalForceNewtons:
@@ -1788,6 +1887,13 @@ function computeGravitationalFieldOrbitsSample(
     periodSeconds,
     positionMeters: orbitalRadiusMeters,
     potentialEnergyJoules,
+    secondaryRadiusMeters: satelliteOrbitRadiusMeters,
+    secondarySpeedMetersPerSecond,
+    secondaryVelocityMetersPerSecond: secondarySpeedMetersPerSecond,
+    secondaryVelocityXMetersPerSecond,
+    secondaryVelocityZMetersPerSecond,
+    secondaryXMeters,
+    secondaryZMeters,
     speedMetersPerSecond: orbitalSpeedMetersPerSecond,
     timeSeconds,
     totalEnergyJoules: kineticEnergyJoules + potentialEnergyJoules,
@@ -1797,6 +1903,93 @@ function computeGravitationalFieldOrbitsSample(
     xMeters,
     zMeters,
   })
+}
+
+function trueAnomalyToEccentricAnomaly(
+  trueAnomalyRadians: number,
+  eccentricity: number,
+) {
+  if (eccentricity === 0) {
+    return normalizePositiveAngleRadians(trueAnomalyRadians)
+  }
+
+  return normalizePositiveAngleRadians(
+    Math.atan2(
+      Math.sqrt(1 - eccentricity ** 2) * Math.sin(trueAnomalyRadians),
+      eccentricity + Math.cos(trueAnomalyRadians),
+    ),
+  )
+}
+
+function eccentricAnomalyToMeanAnomaly(
+  eccentricAnomalyRadians: number,
+  eccentricity: number,
+) {
+  return (
+    eccentricAnomalyRadians -
+    eccentricity * Math.sin(eccentricAnomalyRadians)
+  )
+}
+
+function solveKeplerEccentricAnomaly(
+  meanAnomalyRadians: number,
+  eccentricity: number,
+) {
+  const normalizedMeanAnomaly = normalizeSignedAngleRadians(meanAnomalyRadians)
+
+  if (eccentricity === 0) {
+    return normalizedMeanAnomaly
+  }
+
+  let eccentricAnomalyRadians =
+    eccentricity < 0.8
+      ? normalizedMeanAnomaly
+      : Math.PI * (Math.sign(normalizedMeanAnomaly) || 1)
+
+  for (let iteration = 0; iteration < 12; iteration += 1) {
+    const residual =
+      eccentricAnomalyRadians -
+      eccentricity * Math.sin(eccentricAnomalyRadians) -
+      normalizedMeanAnomaly
+    const derivative =
+      1 - eccentricity * Math.cos(eccentricAnomalyRadians)
+    const correction = residual / derivative
+
+    eccentricAnomalyRadians -= correction
+
+    if (Math.abs(correction) < 1e-12) {
+      break
+    }
+  }
+
+  return eccentricAnomalyRadians
+}
+
+function eccentricAnomalyToTrueAnomaly(
+  eccentricAnomalyRadians: number,
+  eccentricity: number,
+) {
+  if (eccentricity === 0) {
+    return eccentricAnomalyRadians
+  }
+
+  return Math.atan2(
+    Math.sqrt(1 - eccentricity ** 2) * Math.sin(eccentricAnomalyRadians),
+    Math.cos(eccentricAnomalyRadians) - eccentricity,
+  )
+}
+
+function normalizePositiveAngleRadians(angleRadians: number) {
+  const fullTurnRadians = Math.PI * 2
+
+  return (
+    ((angleRadians % fullTurnRadians) + fullTurnRadians) %
+    fullTurnRadians
+  )
+}
+
+function normalizeSignedAngleRadians(angleRadians: number) {
+  return normalizePositiveAngleRadians(angleRadians + Math.PI) - Math.PI
 }
 
 function computeHydrostaticsBuoyancySample(
@@ -2838,25 +3031,36 @@ function computeRigidBodyRotationSample(
   timeSeconds: number,
 ): KinematicsSample {
   const initialAngleRadians = degreesToRadians(parameters.initialAngleDegrees)
+  const momentOfInertiaKilogramMetersSquared =
+    computeRigidBodyRotationMomentOfInertia(parameters)
+  const referenceMomentOfInertiaKilogramMetersSquared =
+    parameters.momentOfInertiaKilogramMetersSquared +
+    rigidBodySlidingMassKilograms * rigidBodyReferenceMassDistanceMeters ** 2
+  const initialAngularMomentumKilogramMetersSquaredPerSecond =
+    referenceMomentOfInertiaKilogramMetersSquared *
+    parameters.initialAngularVelocityRadiansPerSecond
+  const effectiveInitialAngularVelocityRadiansPerSecond =
+    initialAngularMomentumKilogramMetersSquaredPerSecond /
+    momentOfInertiaKilogramMetersSquared
   const driveAngularAcceleration =
     parameters.appliedTorqueNewtonMeters /
-    parameters.momentOfInertiaKilogramMetersSquared
+    momentOfInertiaKilogramMetersSquared
   const angularState = computeDampedAngularMotion({
     angularDampingPerSecond: parameters.angularDampingPerSecond,
     driveAngularAcceleration,
     initialAngleRadians,
     initialAngularVelocityRadiansPerSecond:
-      parameters.initialAngularVelocityRadiansPerSecond,
+      effectiveInitialAngularVelocityRadiansPerSecond,
     timeSeconds,
   })
   const kineticEnergyJoules =
     0.5 *
-    parameters.momentOfInertiaKilogramMetersSquared *
+    momentOfInertiaKilogramMetersSquared *
     angularState.angularVelocityRadiansPerSecond ** 2
   const initialKineticEnergyJoules =
     0.5 *
-    parameters.momentOfInertiaKilogramMetersSquared *
-    parameters.initialAngularVelocityRadiansPerSecond ** 2
+    momentOfInertiaKilogramMetersSquared *
+    effectiveInitialAngularVelocityRadiansPerSecond ** 2
   const angularDisplacementRadians =
     angularState.angleRadians - initialAngleRadians
   const appliedWorkJoules =
@@ -2865,6 +3069,9 @@ function computeRigidBodyRotationSample(
     0,
     appliedWorkJoules + initialKineticEnergyJoules - kineticEnergyJoules,
   )
+  const centerOfMassMeters =
+    (rigidBodySlidingMassKilograms * parameters.slidingMassDistanceMeters) /
+    (rigidBodyCentralMassKilograms + rigidBodySlidingMassKilograms)
 
   return buildSample({
     angleRadians: angularState.angleRadians,
@@ -2873,11 +3080,14 @@ function computeRigidBodyRotationSample(
     angularVelocityRadiansPerSecond:
       angularState.angularVelocityRadiansPerSecond,
     appliedWorkJoules,
+    centerOfMassMeters,
     kineticEnergyJoules,
     momentOfInertiaKilogramMetersSquared:
-      parameters.momentOfInertiaKilogramMetersSquared,
+      momentOfInertiaKilogramMetersSquared,
     netTorqueNewtonMeters: parameters.appliedTorqueNewtonMeters,
     positionMeters: angularDisplacementRadians,
+    primaryRadiusMeters: parameters.slidingMassDistanceMeters,
+    secondaryRadiusMeters: rigidBodyMaxSlidingMassDistanceMeters,
     speedMetersPerSecond: Math.abs(angularState.angularVelocityRadiansPerSecond),
     thermalEnergyJoules,
     timeSeconds,
@@ -2886,6 +3096,15 @@ function computeRigidBodyRotationSample(
     xMeters: 0,
     zMeters: 0,
   })
+}
+
+function computeRigidBodyRotationMomentOfInertia(
+  parameters: RigidBodyRotationParameters,
+) {
+  return (
+    parameters.momentOfInertiaKilogramMetersSquared +
+    rigidBodySlidingMassKilograms * parameters.slidingMassDistanceMeters ** 2
+  )
 }
 
 function computeRollingWithoutSlippingSample(
@@ -3955,6 +4174,10 @@ function validateRigidBodyRotationParameters(
   assertFinitePositive(
     'momentOfInertiaKilogramMetersSquared',
     parameters.momentOfInertiaKilogramMetersSquared,
+  )
+  assertFiniteNonNegative(
+    'slidingMassDistanceMeters',
+    parameters.slidingMassDistanceMeters,
   )
 }
 

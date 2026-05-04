@@ -48,6 +48,41 @@ export function toKinematicsScenePosition(
   return new THREE.Vector3(sample.xMeters * scale, 0, sample.zMeters * scale)
 }
 
+export function toOrbitSatelliteScenePosition(
+  sample: KinematicsSample,
+  sceneProjection: KinematicsSceneProjection,
+  minimumSceneRadius = 0,
+) {
+  const planetPosition = toKinematicsScenePosition(sample, sceneProjection)
+  const satellitePosition = toKinematicsScenePosition(
+    {
+      ...sample,
+      xMeters: sample.secondaryXMeters,
+      zMeters: sample.secondaryZMeters,
+    },
+    sceneProjection,
+  )
+
+  if (minimumSceneRadius <= 0) {
+    return satellitePosition
+  }
+
+  const satelliteOffset = satellitePosition.clone().sub(planetPosition)
+  const currentSceneRadius = satelliteOffset.length()
+
+  if (currentSceneRadius >= minimumSceneRadius) {
+    return satellitePosition
+  }
+
+  if (currentSceneRadius <= 1e-9) {
+    return planetPosition.clone().add(new THREE.Vector3(minimumSceneRadius, 0, 0))
+  }
+
+  return planetPosition
+    .clone()
+    .add(satelliteOffset.multiplyScalar(minimumSceneRadius / currentSceneRadius))
+}
+
 export function toKinematicsSceneDirection(
   vector: KinematicsVectorOverlay,
   sceneProjection: KinematicsSceneProjection,

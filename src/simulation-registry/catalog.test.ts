@@ -179,10 +179,13 @@ describe('simulation registry', () => {
       expect(simulation.technologyPlan?.engine).toBe('custom-analytic')
       expect(simulation.technologyPlan?.charting).toBe('live-canvas')
       expect(fixture.simulationId).toBe(simulationId)
-      expect(fixture.runtimeParameters.map((parameter) => parameter.id)).toEqual([
-        'durationSeconds',
-        'chartWindowSeconds',
-      ])
+      const expectedRuntimeParameterIds =
+        simulationId === 'gravitational-field-orbits'
+          ? ['durationSeconds', 'chartWindowSeconds', 'modelTimeScale']
+          : ['durationSeconds', 'chartWindowSeconds']
+
+      expect(fixture.runtimeParameters.map((parameter) => parameter.id))
+        .toEqual(expectedRuntimeParameterIds)
       expect(fixture.parameters.length).toBeGreaterThan(0)
       expect(fixture.presets.length).toBeGreaterThan(0)
       expect(fixture.limits.length).toBeGreaterThan(0)

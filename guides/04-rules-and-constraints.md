@@ -27,6 +27,7 @@
 - Parametros fisicamente validos em zero, como coeficiente de atrito zero ou forca aplicada zero, nao devem ser bloqueados apenas para manter uma animacao ideal.
 - Controles de runtime, como horizonte calculado de samples, janela do grafico e velocidade de passagem do tempo, tambem devem declarar minimo, maximo, passo e valor padrao.
 - O controle de velocidade de passagem do tempo deve ir de `1x` a `0x`; `0x` pausa o relogio visual e valores intermediarios desaceleram cena, graficos e tabela sem trocar a fonte de samples nem criar avancos em blocos.
+- Quando uma simulacao didatica precisar compactar periodos fisicos longos, o fator adicional deve ser um runtime declarado, com tooltip, e deve apenas avancar mais rapido pelo mesmo tempo de modelo e pelos mesmos samples.
 - Formulas devem declarar variaveis, unidades, significado fisico, quando usar e quando nao usar.
 - Formulas exibidas devem corresponder ao modelo numerico ou analitico implementado.
 - O modelo numerico ou analitico deve ser deterministico para os mesmos parametros.
@@ -46,7 +47,7 @@
 - Rotulos de variaveis nos controles exibem icone de interrogacao com tooltip compacta; a legenda vem do fixture/contrato, nao de texto solto duplicado no componente.
 - Toggles para exibir vetores, trilha, energia e overlays.
 - Vetores exibidos precisam de legenda visivel com cor, modulo atual e significado fisico, especialmente quando a direcao nao e obvia no movimento.
-- Leituras instantaneas e legenda detalhada de vetores devem ficar acima do canvas da simulacao, nao abaixo, para preservar a leitura antes da observacao visual.
+- Leituras instantaneas e legenda detalhada de vetores devem ficar em um bloco retratil acima do canvas da simulacao, nao abaixo. O bloco inicia fechado por padrao para preservar area visual; quando fechado, metricas e legenda numerica detalhada ficam desmontadas e so voltam a calcular/exibir valores ao abrir.
 - A area de animacao deve incluir legenda compacta dos vetores principais no canto superior direito, com traco na cor do vetor, grandeza representada e unidade abreviada quando houver.
 - Viewports Three.js devem ser cenas 3D orbitaveis: arraste com o botao pressionado no canvas gira a visualizacao em yaw e pitch para ver lados, topo e base da cena, e Shift + scroll sobre o canvas aproxima ou afasta a camera em direcao a simulacao, sem alterar parametros fisicos ou samples.
 - O eixo Z deve ser tratado como vertical nas cenas Three.js padrao, para manter consistencia entre simulacoes.
@@ -56,6 +57,7 @@
 - Blocos de saida pesada, como graficos, tabela, formulas e teoria, devem ser recolhiveis por chevron no proprio cabecalho.
 - Blocos chevron de saida pesada iniciam fechados por padrao e devem abrir/fechar ao clique no cabecalho.
 - Quando um bloco chevron estiver recolhido, a aplicacao deve desmontar o conteudo e suspender calculos/renderizacao derivados daquele bloco.
+- O bloco de leituras e vetores do viewport tambem deve iniciar recolhido por padrao. Mesmo sendo leve, ele deve desmontar os componentes de valores enquanto estiver fechado para deixar mais espaco para a cena.
 - Viewport, graficos, tabela, formulas e apendice teorico devem oferecer botao com icone para maximizar/minimizar o painel dentro da janela.
 - Enquanto um painel estiver maximizado, os demais paineis do shell devem ficar invisiveis; minimizar deve restaurar o layout anterior e manter a fonte unica de samples.
 - Cada grafico temporal deve oferecer acao de olho para entrar no slot lateral direito do viewport, com apenas um grafico em foco por vez. Acionar novamente deve remover o slot e recolocar o grafico no bloco original.

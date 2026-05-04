@@ -12,6 +12,7 @@ export type KinematicsChartId =
   | 'field'
   | 'forces'
   | 'flow'
+  | 'kepler'
   | 'momentum'
   | 'position'
   | 'pressure'
@@ -303,6 +304,13 @@ export function buildKinematicsChartConfigs(
       },
     )
   } else if (simulationId === 'gravitational-field-orbits') {
+    const referenceSample = samples[0]
+    const referenceSpecificArealRate = referenceSample
+      ? readSpecificArealRate(referenceSample)
+      : 0
+    const referenceAngularVelocity =
+      referenceSample?.angularVelocityRadiansPerSecond ?? 0
+
     charts.push(
       {
         id: 'position',
@@ -335,6 +343,35 @@ export function buildKinematicsChartConfigs(
           },
         ],
         yAxisTitle: 'Velocidade (metros por segundo)',
+      },
+      {
+        id: 'kepler',
+        title: 'Leis de Kepler: areas e periodos',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Taxa areolar relativa (adimensional)',
+            x: time,
+            y: samples.map((sample) =>
+              normalizeToReference(
+                readSpecificArealRate(sample),
+                referenceSpecificArealRate,
+              ),
+            ),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Velocidade angular relativa (adimensional)',
+            x: time,
+            y: samples.map((sample) =>
+              normalizeToReference(
+                sample.angularVelocityRadiansPerSecond,
+                referenceAngularVelocity,
+              ),
+            ),
+          },
+        ],
+        yAxisTitle: 'Razao relativa',
       },
       {
         id: 'field',
@@ -688,6 +725,37 @@ export function buildKinematicsChartConfigs(
           },
         ],
         yAxisTitle: 'Torque e aceleracao',
+      },
+      {
+        id: 'momentum',
+        title: 'Inercia, centro de massa e momento angular',
+        traces: [
+          {
+            lineColor: themeTokens.vector,
+            name: 'Momento angular (kg m^2/s)',
+            x: time,
+            y: samples.map(
+              (sample) =>
+                sample.momentOfInertiaKilogramMetersSquared *
+                sample.angularVelocityRadiansPerSecond,
+            ),
+          },
+          {
+            lineColor: themeTokens.teal,
+            name: 'Momento de inercia total (kg m^2)',
+            x: time,
+            y: samples.map(
+              (sample) => sample.momentOfInertiaKilogramMetersSquared,
+            ),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Centro de massa (m)',
+            x: time,
+            y: samples.map((sample) => sample.centerOfMassMeters),
+          },
+        ],
+        yAxisTitle: 'Grandezas angulares',
       },
     )
   } else if (simulationId === 'uniform-circular-motion') {
@@ -1119,6 +1187,27 @@ export function buildKinematicsChartConfigs(
   }
 
   return charts
+}
+
+function readSpecificArealRate(sample: KinematicsSample) {
+  return (
+    Math.abs(
+      sample.xMeters * sample.velocityZMetersPerSecond -
+        sample.zMeters * sample.velocityXMetersPerSecond,
+    ) / 2
+  )
+}
+
+function normalizeToReference(value: number, reference: number) {
+  if (!Number.isFinite(value) || !Number.isFinite(reference)) {
+    return 0
+  }
+
+  if (Math.abs(reference) < 1e-12) {
+    return 0
+  }
+
+  return value / reference
 }
 
 function downsampleSamples(samples: KinematicsSample[], maxSampleCount: number) {
