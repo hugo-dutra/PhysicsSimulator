@@ -2120,3 +2120,35 @@ Validacao:
 - Executado `npm run test`; 77 testes passaram.
 - Executado `npm run lint`; passou.
 - Executado `npm run build:pages`; passou com o aviso conhecido de chunk acima de 500 kB.
+
+## 2026-05-04 - Plano e furo visual no rolamento
+
+Status: feito.
+
+Pedido reportado:
+
+- Em `Mecanica > Rotacao > Rolamento sem escorregamento`, colocar a roda sobre um plano e adicionar um furo proximo da borda para a rotacao ficar visivel.
+
+Ajuste:
+
+- O renderer Three.js da cena cinematica compartilhada agora cria um plano inclinado solido apenas para `rolling-without-slipping`.
+- A roda visual e reposicionada para apoiar o raio renderizado sobre a superficie do plano, mantendo o movimento derivado dos mesmos samples do motor.
+- Um furo escuro atravessando a roda foi adicionado perto da borda para destacar a rotacao durante o rolamento.
+- A linha de referencia central da roda foi removida nessa simulacao para nao competir visualmente com o plano.
+- Correcao posterior: o renderer do rolamento passou a usar `rotation.y = sample.angleRadians`, alinhando o sentido do giro da roda ao avanco no plano em vez de girar contra o deslocamento.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a mudanca e visual/didatica no renderer. Motor, parametros, regimes, samples, graficos, tabela, formulas, teoria e warnings continuam sem alteracao e usando a mesma fonte fisica.
+
+Documentacao:
+
+- Atualizado este registro de progresso. Nenhum guide estrutural mudou porque nao houve mudanca de contrato, modelo fisico, dados, roadmap ou status da simulacao.
+
+Validacao:
+
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm run test`; 77 testes passaram.
+- Executado smoke visual headless com Playwright temporario e Chrome local em `http://127.0.0.1:5173/`, selecionando `Rolamento sem escorregamento`; canvas capturado com pixels nao-background e salvo em `artifacts/rolling-visual-smoke.png`.
+- Apos a correcao de sentido do giro, reexecutados `npm run build`, `npm run lint`, `npm run test` e o smoke visual headless; todos passaram.

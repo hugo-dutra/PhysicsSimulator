@@ -74,6 +74,8 @@ type SceneObjects = {
   rope: THREE.Line
   ropePositionAttribute: THREE.BufferAttribute
   ropePositions: Float32Array
+  rollingPlane: THREE.Mesh
+  rollingPlaneEdges: THREE.LineSegments
   scene: THREE.Scene
   sceneProjection: KinematicsSceneProjection
   secondaryBody: THREE.Mesh
@@ -208,6 +210,7 @@ const minCameraRadiusScale = 0.4
 const maxCameraRadiusScale = 2.4
 const workEnergyTrackHalfWidth = 0.28
 const workEnergySleeperCount = 15
+const rollingPlaneMinimumWidth = 0.72
 const leverPivotHeight = 0.78
 const leverSupportHeight = 0.74
 const leverSupportBaseWidth = 1.05
@@ -525,6 +528,36 @@ export function KinematicsScene({
 
     const sceneBodySize = getBodyDisplaySize(bounds.span)
     const atwoodMassSize = sceneBodySize * 1.8
+    const rollingWheelDepth = sceneBodySize * 0.72
+    const rollingPlane = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshBasicMaterial({
+        color: 0x20242d,
+        opacity: 0.84,
+        side: THREE.DoubleSide,
+        transparent: true,
+      }),
+    )
+    const rollingPlaneEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(rollingPlane.geometry),
+      new THREE.LineBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.34,
+      }),
+    )
+
+    configureRollingPlaneReference({
+      plane: rollingPlane,
+      planeEdges: rollingPlaneEdges,
+      samples,
+      sceneProjection,
+      visible: simulationId === 'rolling-without-slipping',
+      wheelRadius: sceneBodySize,
+    })
+    scene.add(rollingPlane)
+    scene.add(rollingPlaneEdges)
+
     const body = new THREE.Mesh(
       simulationId === 'atwood-machine'
         ? new THREE.BoxGeometry(atwoodMassSize, atwoodMassSize, atwoodMassSize)
@@ -532,7 +565,7 @@ export function KinematicsScene({
           ? new THREE.CylinderGeometry(
               sceneBodySize,
               sceneBodySize,
-              sceneBodySize * 0.72,
+              rollingWheelDepth,
               32,
             )
         : simulationId === 'rigid-body-rotation' ||
@@ -561,6 +594,12 @@ export function KinematicsScene({
         roughness: 0.42,
       }),
     )
+    addRollingWheelHoleMarkers({
+      body,
+      visible: simulationId === 'rolling-without-slipping',
+      wheelDepth: rollingWheelDepth,
+      wheelRadius: sceneBodySize,
+    })
     scene.add(body)
 
     const secondaryBody = new THREE.Mesh(
@@ -787,6 +826,8 @@ export function KinematicsScene({
       rope,
       ropePositionAttribute,
       ropePositions,
+      rollingPlane,
+      rollingPlaneEdges,
       scene,
       sceneProjection,
       secondaryBody,
@@ -978,7 +1019,10 @@ function updateKinematicsObjects({
     )
     objects.body.rotation.y = getWorkEnergyTrackPitchRadians(sample)
   } else if (simulationId === 'rolling-without-slipping') {
-    objects.body.rotation.y = -sample.angleRadians
+    objects.body.position.z +=
+      objects.bodyRadius -
+      sample.primaryRadiusMeters * objects.sceneProjection.positionScale
+    objects.body.rotation.y = sample.angleRadians
   }
 
   updateConstrainedBodyObjects(objects, sample, simulationId)
@@ -1000,7 +1044,13 @@ function updateKinematicsObjects({
 
     arrow.visible = true
     arrow.position.copy(
-      getKinematicsVectorOrigin(objects, sample, simulationId, vector.id, bodyPosition),
+      getKinematicsVectorOrigin(
+        objects,
+        sample,
+        simulationId,
+        vector.id,
+        objects.body.position,
+      ),
     )
     arrow.setDirection(direction.normalize())
     arrow.setLength(getVectorDisplayLength(vector), 0.08, 0.045)
@@ -1052,9 +1102,12 @@ function updateConstrainedBodyObjects(
   const isCollision = simulationId === 'collisions-1d-2d'
   const isMassSpring = simulationId === 'mass-spring'
   const isOrbit = simulationId === 'gravitational-field-orbits'
+  const isRolling = simulationId === 'rolling-without-slipping'
   const isTorqueLever = simulationId === 'torque-levers-center-mass'
 
   objects.secondaryBody.visible = isAtwood || isCollision || isOrbit
+  objects.rollingPlane.visible = isRolling
+  objects.rollingPlaneEdges.visible = isRolling
   objects.pulley.visible = isAtwood
   objects.rope.visible = isAtwood || isMassSpring
   objects.supportBar.visible = isAtwood || isMassSpring
@@ -1897,6 +1950,10 @@ function createReferencePath(
   sceneProjection: KinematicsSceneProjection,
   workEnergyProfile: WorkEnergyTrackSceneProfile,
 ) {
+  if (simulationId === 'rolling-without-slipping') {
+    return new THREE.Group()
+  }
+
   if (simulationId === 'atwood-machine') {
     return new THREE.Group()
   }
@@ -1948,6 +2005,105 @@ function createReferencePath(
   })
 
   return new THREE.Line(geometry, material)
+}
+
+function addRollingWheelHoleMarkers({
+  body,
+  visible,
+  wheelDepth,
+  wheelRadius,
+}: {
+  body: THREE.Mesh
+  visible: boolean
+  wheelDepth: number
+  wheelRadius: number
+}) {
+  const holeRadius = clamp(wheelRadius * 0.26, 0.055, 0.16)
+  const radialOffset = wheelRadius * 0.58
+  const hole = new THREE.Mesh(
+    new THREE.CylinderGeometry(
+      holeRadius,
+      holeRadius,
+      wheelDepth + 0.018,
+      28,
+    ),
+    new THREE.MeshStandardMaterial({
+      color: 0x05070a,
+      metalness: 0.02,
+      roughness: 0.82,
+    }),
+  )
+
+  hole.position.set(radialOffset, 0, 0)
+  hole.renderOrder = 3
+  hole.visible = visible
+  body.add(hole)
+}
+
+function configureRollingPlaneReference({
+  plane,
+  planeEdges,
+  samples,
+  sceneProjection,
+  visible,
+  wheelRadius,
+}: {
+  plane: THREE.Mesh
+  planeEdges: THREE.LineSegments
+  samples: KinematicsSample[]
+  sceneProjection: KinematicsSceneProjection
+  visible: boolean
+  wheelRadius: number
+}) {
+  const firstSample = samples[0]
+  const lastSample = samples.at(-1)
+
+  plane.visible = visible
+  planeEdges.visible = visible
+
+  if (!visible || !firstSample || !lastSample) {
+    return
+  }
+
+  const startSurface = getRollingTrackSurfacePosition(
+    firstSample,
+    sceneProjection,
+  )
+  const endSurface = getRollingTrackSurfacePosition(lastSample, sceneProjection)
+  const trackDelta = endSurface.clone().sub(startSurface)
+  const trackLength = Math.max(0.1, trackDelta.length())
+  const trackPitchRadians =
+    trackDelta.lengthSq() > 0.000001
+      ? Math.atan2(-trackDelta.z, trackDelta.x)
+      : 0
+  const trackNormal = new THREE.Vector3(
+    Math.sin(trackPitchRadians),
+    0,
+    Math.cos(trackPitchRadians),
+  )
+  const thickness = clamp(wheelRadius * 0.2, 0.045, 0.14)
+  const width = Math.max(rollingPlaneMinimumWidth, wheelRadius * 3.25)
+  const surfaceCenter = startSurface.clone().add(endSurface).multiplyScalar(0.5)
+  const planeCenter = surfaceCenter.addScaledVector(trackNormal, -thickness / 2)
+
+  plane.position.copy(planeCenter)
+  plane.rotation.set(0, trackPitchRadians, 0)
+  plane.scale.set(trackLength + wheelRadius * 1.2, width, thickness)
+
+  planeEdges.position.copy(plane.position)
+  planeEdges.rotation.copy(plane.rotation)
+  planeEdges.scale.copy(plane.scale)
+}
+
+function getRollingTrackSurfacePosition(
+  sample: KinematicsSample,
+  sceneProjection: KinematicsSceneProjection,
+) {
+  const position = toKinematicsScenePosition(sample, sceneProjection)
+
+  position.z -= sample.primaryRadiusMeters * sceneProjection.positionScale
+
+  return position
 }
 
 function createMassSpringReferencePath(
