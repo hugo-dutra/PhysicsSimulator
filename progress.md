@@ -2482,3 +2482,445 @@ Validacao:
 - Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
 - Executado `npm run test -- --reporter=dot`; 12 arquivos e 87 testes passaram.
 - Executado smoke visual headless em `http://127.0.0.1:5173/` com excentricidade `0.84`; screenshot salvo em `artifacts/gravity-orbit-high-e-reference.png`, com 47.566 pixels nao-background e 2.641 pixels cyan/teal no recorte do canvas.
+
+## 2026-05-04 - Toggle de camera perspectiva e ortogonal no viewport
+
+Status: feito.
+
+Pedido reportado:
+
+- Adicionar um controle no viewport para alternar a visualizacao entre camera em perspectiva e camera ortogonal.
+- O controle deveria funcionar como um toggle moderno, com alternancia direta entre os dois modos.
+
+Ajuste:
+
+- Adicionado um controle segmentado `Persp.`/`Orto` no cabecalho do viewport da simulacao.
+- O modo de camera agora e estado compartilhado do shell e e repassado para Pendulo, Plano inclinado e cenas cinematicas/mecanicas compartilhadas.
+- O helper de camera passou a criar cameras perspectiva ou ortografica e recalcular aspect/frustum a partir do tamanho do viewport e do raio de zoom.
+- O zoom por `Shift + scroll` continua funcionando nos dois modos: em perspectiva move a camera e, em ortogonal, tambem ajusta o frustum.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a alteracao fica restrita a projecao visual da camera. Motor numerico, samples, graficos, tabela, vetores, formulas, teoria e warnings continuam usando a mesma fonte fisica.
+- Nenhuma simulacao mudou de status; promocao para `ready` continua dependendo de teste manual quando aplicavel.
+
+Documentacao:
+
+- Lidos `guides/00-index.md`, `guides/01-strategy.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/05-roadmap.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md`, `guides/10-simulation-fidelity-adjustment-guide.md` e `guides/issues.md`.
+- Atualizado este registro. Nenhum guide, fixture, teoria ou HLD/diagrama precisou mudar porque o contrato fisico, os dados e a arquitetura documentada permanecem os mesmos.
+
+Validacao:
+
+- Adicionados testes para o frustum ortografico e para a alternancia de camera no shell sem resetar playback.
+- Executado `npm run test -- src/lib/rendering/orbitCamera.test.ts src/features/simulation-shell/SimulationShell.test.tsx`; 2 arquivos e 5 testes passaram.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm run test`; 12 arquivos e 89 testes passaram.
+- Executado `git diff --check`; passou, com avisos existentes de normalizacao LF/CRLF.
+- Executado smoke visual headless em `http://127.0.0.1:5173/`; desktop e mobile mantiveram canvas nao vazio antes/depois da troca para ortogonal, com screenshots em `artifacts/camera-projection-smoke`.
+
+## 2026-05-04 - Rolamento sem escorregamento promovido para pronto
+
+Status: feito.
+
+Pedido reportado:
+
+- Promover `Mecanica > Rotacao > Rolamento sem escorregamento` de `analysis` para `ready` apos aprovacao manual no catalogo.
+
+Ajuste:
+
+- `fixtures/simulations/catalog.json` agora marca `rolling-without-slipping` como `ready`, exibindo o card como `pronto`.
+- O teste de contrato do catalogo moveu `rolling-without-slipping` para o grupo de simulacoes mecanicas compartilhadas `ready`.
+- Guides de produto, arquitetura, regras, dados, catalogo planejado e issues foram sincronizados com o novo status.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide` como gate de promocao: parametros de runtime e fisicos possuem descricoes, atrito zero e velocidade inicial zero permanecem validos, o modelo declara rolamento puro e escorregamento, os samples alimentam cena, graficos, tabela, formulas e teoria, e ha teste unitario cobrindo o limite de atrito estatico excedido.
+- Nenhum motor, renderer, formula ou teoria foi alterado nesta promocao; a decisao foi somente de status apos aprovacao manual.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/01-strategy.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/05-roadmap.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md`, `guides/09-simulation-catalog-plan.md`, `guides/10-simulation-fidelity-adjustment-guide.md` e `guides/issues.md`.
+- HLD/diagrama nao foi atualizado porque a arquitetura, fluxo de dados e fronteiras do renderer nao mudaram.
+
+Validacao:
+
+- Executado `npm run test -- --run src/simulation-registry/catalog.test.ts src/lib/physics/kinematics.test.ts`; 2 arquivos e 38 testes passaram.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm run test -- --reporter=dot`; 12 arquivos e 90 testes passaram.
+- Executado `git diff --check`; passou, com avisos existentes de normalizacao LF/CRLF.
+
+## 2026-05-05 - Modo de rotacao constante no corpo rigido
+
+Status: feito.
+
+Pedido reportado:
+
+- Adicionar uma opcao de rotacao constante para comparar a mudanca do momento de inercia na simulacao de `Rotacao de corpo rigido`.
+
+Ajuste:
+
+- Adicionado o parametro booleano `constantAngularVelocity` como `Rotacao constante (omega fixa)` no fixture da simulacao.
+- O motor agora preserva o modo atual por padrao: com torque e amortecimento zerados, a mudanca de raio conserva `L = I omega`. Quando o novo modo esta ligado, `omega` fica fixa no valor inicial, torque/amortecimento sao neutralizados para a cinematica e `L` passa a variar com `I`.
+- Adicionado preset `Rotacao constante`, formula aplicada propria e aviso `ROTATION_CONSTANT_OMEGA_ACTIVE`.
+- O painel generico de controles passou a renderizar parametros booleanos com `Switch` e tooltip de interrogacao.
+- Atualizada a teoria da rotacao para distinguir sistema isolado com conservacao de momento angular e modo controlado de omega fixa.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: o novo controle e parametro declarado com descricao, o regime altera samples no motor, e cena, graficos, tabela, formulas, teoria e warnings continuam derivados da mesma fonte.
+- Nenhuma simulacao mudou de status; `Rotacao de corpo rigido` permanece em `analysis` ate teste manual.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md`, `guides/10-simulation-fidelity-adjustment-guide.md` e `guides/issues.md`.
+- Atualizados `guides/02-product-spec.md`, `guides/06-data-and-api.md`, teoria da simulacao e este registro. HLD/diagrama nao foi atualizado porque arquitetura, servicos e fluxo visual continuam iguais.
+
+Validacao:
+
+- Executado `npm run test -- --run src/lib/physics/kinematics.test.ts src/simulation-registry/catalog.test.ts`; 2 arquivos e 40 testes passaram.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test -- --run src/App.test.tsx`; 1 arquivo e 8 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run test`; 12 arquivos e 92 testes passaram.
+
+## 2026-05-05 - Energia constante na rotacao de corpo rigido
+
+Status: feito.
+
+Pedido reportado:
+
+- O controle de rotacao constante deveria conservar energia, nao fixar `omega`.
+- Ao mudar a posicao radial da massa movel, a velocidade angular precisa aumentar ou diminuir conforme o momento de inercia muda.
+
+Ajuste:
+
+- O controle booleano da fixture passou a ser `Energia constante`, com parametro `constantRotationalEnergy`.
+- No motor de `Rotacao de corpo rigido`, esse modo conserva `K_rot` calculada a partir da velocidade angular inicial de referencia e usa `omega = sgn(omega0) * sqrt(2K/I)`.
+- Torque e amortecimento ficam neutralizados nesse modo, mantendo energia constante; `L = I omega` varia quando a massa movel altera `I`.
+- Atualizados preset, formula aplicada, warning, teoria, contrato de dados e teste de UI para refletir o novo comportamento.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: parametro possui tooltip, o regime altera samples no motor, graficos/tabela/cena/formulas leem os mesmos campos (`I`, `omega`, `K_rot`, `L`) e a teoria explica quando usar energia constante versus conservacao de momento angular.
+- `Rotacao de corpo rigido` permanece em `analysis`, aguardando teste manual antes de qualquer promocao.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizados `guides/02-product-spec.md`, `guides/06-data-and-api.md`, teoria local da simulacao e este registro. HLD/diagrama nao foi atualizado porque arquitetura, servicos e fluxo visual continuam iguais.
+
+Validacao:
+
+- Executado `npm run test -- --run src/lib/physics/kinematics.test.ts src/simulation-registry/catalog.test.ts --reporter=verbose`; 2 arquivos e 40 testes passaram.
+- Executado `npm run test -- --run src/App.test.tsx --reporter=verbose`; 1 arquivo e 8 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+
+## 2026-05-05 - Faixa ampliada da massa movel na rotacao
+
+Status: feito.
+
+Pedido reportado:
+
+- Permitir que a massa movel em `Rotacao de corpo rigido` varie de `0` a `50 kg`.
+
+Ajuste:
+
+- O controle `Massa movel (kg)` passou a ter faixa `0..50 kg`, mantendo o valor padrao em `2.4 kg`.
+- O teste de contrato do catalogo agora verifica explicitamente `min = 0` e `max = 50` para `slidingMassKilograms`.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: zero continua valido, a unidade permanece em kg e o motor ja usa o valor controlado em `I = I_base + m r^2`, centro de massa, conservacao de `L` e modo de energia constante.
+- `Rotacao de corpo rigido` permanece em `analysis`, sem promocao de status.
+
+Documentacao:
+
+- Lidos `guides/00-index.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Guides e HLD/diagrama nao foram atualizados porque o contrato conceitual e a arquitetura nao mudaram; apenas a faixa de um parametro existente mudou.
+
+Validacao:
+
+- Fixture JSON de rotacao validado com `ConvertFrom-Json`.
+- Executado `npm run test -- --run src/simulation-registry/catalog.test.ts --reporter=verbose`; passou.
+- Executado `npm run test -- --reporter=dot`; 12 arquivos e 92 testes passaram.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; falhou pela estrutura SDD ausente ja conhecida (`README.md`, `.agent/`, `tasks/`, `adr/`), nao por inconsistencia especifica deste ajuste.
+
+## 2026-05-05 - Controle de massa movel na rotacao
+
+Status: feito.
+
+Pedido reportado:
+
+- Adicionar, perto da distancia da massa movel em `Rotacao de corpo rigido`, um controle para o valor dessa massa, porque ele muda bastante a resposta do giro.
+
+Ajuste:
+
+- Adicionado o parametro `slidingMassKilograms` como controle `Massa movel (kg)`, posicionado logo apos `Distancia da massa movel`.
+- O motor de `Rotacao de corpo rigido` deixou de usar uma massa movel fixa interna e agora calcula `I = I_base + m r^2`, centro de massa, conservacao de `L` e modo de energia constante com o valor controlado pelo usuario.
+- Os presets da simulacao passaram a declarar a massa movel; `Alta inercia` usa uma massa maior para evidenciar o efeito.
+- Teoria, formulas, limites, contrato de dados e teste de UI foram atualizados para explicar que `m = 0` e valido e que aumentar `m` intensifica a mudanca de `I`, centro de massa e `omega`.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: o novo parametro tem unidade, faixa, passo e tooltip; zero e permitido; samples, graficos, tabela, formulas e cena seguem os campos calculados pelo motor.
+- `Rotacao de corpo rigido` permanece em `analysis`, sem promocao de status.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/02-product-spec.md`, `guides/06-data-and-api.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizados `guides/02-product-spec.md`, `guides/06-data-and-api.md`, teoria local da simulacao e este registro. HLD/diagrama nao foi atualizado porque arquitetura, servicos e fluxo visual continuam iguais.
+
+Validacao:
+
+- Executado `npm run test -- --run src/lib/physics/kinematics.test.ts src/simulation-registry/catalog.test.ts --reporter=verbose`; 2 arquivos e 41 testes passaram.
+- Executado `npm run test -- --run src/App.test.tsx --reporter=verbose`; 1 arquivo e 8 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test -- --reporter=dot`; 12 arquivos e 93 testes passaram.
+
+## 2026-05-05 - Promocao de Continuidade e Bernoulli para ready
+
+Status: feito.
+
+Pedido reportado:
+
+- Marcar `Mecanica > Fluidos basicos > Continuidade e Bernoulli` como pronta apos aprovacao manual da simulacao Venturi.
+
+Ajuste:
+
+- `continuity-bernoulli` foi promovida para `ready` no catalogo local.
+- A sidebar e os testes foram alinhados para o estado sem simulacoes `analysis`: `Mecanica` e `Fluidos basicos` iniciam recolhidas quando nao ha item aguardando teste manual.
+- Os testes de catalogo foram atualizados para 18 simulacoes `ready` e 0 simulacoes `analysis`.
+- Guides de produto, arquitetura, regras, dados/API, catalogo planejado e issues foram atualizados para refletir que a cobertura mecanica introdutoria funcional esta pronta, incluindo a cena Venturi.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide` como gate de promocao: a versao aprovada usa o motor de continuidade/Bernoulli como fonte unica para particulas, tubo Venturi, manometros, graficos, tabela, metricas, formulas, teoria e warnings.
+- A promocao dependeu da aprovacao manual do dono do projeto, sem alterar o modelo fisico nesta etapa alem dos ajustes de status, testes e documentacao.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/09-simulation-catalog-plan.md`, `guides/issues.md` e este registro.
+- HLD/diagrama nao foi atualizado porque arquitetura, servicos, pipeline e fluxo de dados nao mudaram; houve promocao de status e alinhamento documental.
+
+Validacao:
+
+- Fixture JSON de catalogo validado com `ConvertFrom-Json`.
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts src/App.test.tsx src/lib/physics/kinematics.test.ts --reporter=dot`; 3 arquivos e 49 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test -- --reporter=dot`; 12 arquivos e 93 testes passaram.
+
+## 2026-05-05 - Cena Venturi para Continuidade e Bernoulli
+
+Status: feito.
+
+Pedido reportado:
+
+- Tornar `Mecanica > Fluidos basicos > Continuidade e Bernoulli` mais visual, intuitiva e didatica, deixando claro que area menor aumenta velocidade e reduz pressao.
+
+Ajuste:
+
+- A cena de `continuity-bernoulli` foi especializada com tubo de Venturi 3D transparente, entrada larga, garganta estreita, saida larga, fluido translucido, tracadores animados, cores por velocidade e tres manometros relativos de pressao.
+- O motor passou a expor raio fisico da entrada/garganta, altura da garganta e pressao/velocidade local do tracador sem perder as grandezas de entrada e garganta ja usadas por graficos, tabela, formulas e readouts.
+- Graficos de velocidade e pressao passaram a incluir as curvas locais do tracador, alem das referencias de entrada e garganta.
+- Readouts de Bernoulli passaram a mostrar area de entrada, area da garganta, velocidades, pressoes e queda de pressao.
+- O painel flutuante de controles no mobile foi limitado em altura para nao cobrir a leitura principal do canvas.
+- `continuity-bernoulli` permanece em `analysis`; nao houve promocao para `ready`.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: parametros, zeros validos de vazao, regime ideal, pressao negativa com warning, samples, cena, graficos, tabela, formulas e teoria continuam derivados do mesmo motor analitico.
+- As particulas, cores e manometros sao representacoes didaticas normalizadas a partir dos samples, sem afirmar CFD real, perfil de velocidade, perdas viscosas ou cavitacao resolvida.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizados `fixtures/simulations/mechanics-continuity-bernoulli.json`, `src/content/simulations/mechanics/continuity-bernoulli/theory.md` e este registro.
+- HLD/diagrama nao foi atualizado porque nao houve mudanca de arquitetura, servicos, pipeline, contrato externo ou fluxo de dados; foi uma especializacao de renderer/motor local da simulacao.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/features/simulation-shell/KinematicsScene.test.ts src/features/simulation-shell/kinematicsChartConfigs.test.ts`; 3 arquivos e 41 testes passaram.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm run test`; 12 arquivos e 94 testes passaram.
+- Executado smoke visual com Playwright temporario e Chrome local contra `http://127.0.0.1:5210`, em desktop 1440x900 e mobile 390x844; capturas em `artifacts/bernoulli-venturi-desktop.png`, `artifacts/bernoulli-venturi-desktop-canvas.png`, `artifacts/bernoulli-venturi-mobile.png` e `artifacts/bernoulli-venturi-mobile-canvas.png` confirmaram canvas nao vazio, cena enquadrada e mudanca entre frames.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; falhou pela estrutura SDD ausente ja conhecida (`README.md`, `.agent/`, `tasks/`, `adr/`), nao por inconsistencia especifica deste ajuste.
+- Dev server local respondeu em `http://127.0.0.1:5173/`.
+
+## 2026-05-05 - Massa movel mais perceptivel na rotacao
+
+Status: feito.
+
+Pedido reportado:
+
+- Aumentar a massa movel padrao em `Rotacao de corpo rigido` para que o aumento do giro ao aproximar a massa do centro fique muito perceptivel.
+
+Ajuste:
+
+- A massa movel padrao passou de `0.72 kg` para `2.4 kg`.
+- Os presets que usam a massa movel principal tambem passaram para `2.4 kg`.
+- O preset `Alta inercia` passou para `4.2 kg`, mantendo uma comparacao mais extrema.
+- O motor nao precisou mudar: ele ja usa `slidingMassKilograms` em `I = I_base + m r^2`, centro de massa, conservacao de `L` e modo de energia constante.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a mudanca e uma calibragem de parametro fisico existente, mantendo unidade, faixa, passo, tooltip, zero valido e samples derivados do motor.
+- `Rotacao de corpo rigido` permanece em `analysis`, sem promocao de status.
+
+Documentacao:
+
+- Lidos `guides/00-index.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Guides e HLD/diagrama nao foram atualizados porque o contrato, arquitetura e explicacao fisica continuam os mesmos; apenas o valor padrao/presets da massa mudaram.
+
+Validacao:
+
+- Fixture JSON de rotacao validado com `ConvertFrom-Json`.
+- Executado `npm run test -- --run src/lib/physics/kinematics.test.ts src/simulation-registry/catalog.test.ts --reporter=verbose`; 2 arquivos e 41 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+
+## 2026-05-05 - Hidrostatica e empuxo com tanque e esfera fisica
+
+Status: feito.
+
+Pedido reportado:
+
+- Recriar `Mecanica > Fluidos basicos > Hidrostatica e empuxo` para mostrar uma caixa/tanque transparente com esfera imersa no liquido.
+- Fazer volume alterar raio visual, densidade derivada e movimento vertical.
+- Fazer massa, volume e densidade definirem empuxo, peso, resultante, aceleracao, subida/flutuacao ou afundamento.
+
+Ajuste:
+
+- O motor passou a usar massa e volume como controles principais e a derivar `rho_corpo = m/V`.
+- O sample agora carrega massa, densidade derivada, raio da esfera, profundidade do tanque, pressao no centro, empuxo, peso, normal de fundo, resultante, aceleracao, velocidade vertical e fracao submersa.
+- O renderer Three.js passou a mostrar tanque transparente, volume de agua, superficie do fluido e esfera escalada pelo raio calculado.
+- Mudar volume reinicia o movimento visual e altera o diametro da esfera; mudar massa no mesmo volume altera a densidade e faz a esfera subir, flutuar ou descer pelo mesmo sample.
+- Graficos, tabela, leituras, vetores, formulas, fixture, catalogo e teoria foram alinhados ao novo modelo.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: parametros, regimes, samples, cena, graficos, tabela, formulas, teoria, warnings e testes concordam.
+- `Hidrostatica e empuxo` permanece em `analysis`, sem promocao de status.
+
+Documentacao:
+
+- Lidos `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-validation-and-quality.md`, `guides/08-api-contracts.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizados product spec, arquitetura, regras, dados/API, contratos, catalogo planejado, fixture local e apendice teorico.
+- HLD/diagrama nao foram atualizados porque nao houve nova fronteira arquitetural nem fluxo externo; a mudanca ficou no motor analitico, contrato local e renderer existente.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/features/simulation-shell/kinematicsChartConfigs.test.ts src/features/simulation-shell/KinematicsScene.test.ts`; 3 arquivos e 40 testes passaram.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test -- --reporter=dot`; 12 arquivos e 93 testes passaram.
+- Executado `npm run lint`; passou antes e depois do smoke visual.
+- Executado `node artifacts/hydrostatics-buoyancy-smoke.cjs` contra `http://127.0.0.1:5196/`; capturas de canvas nao vazias e mudanca visual por volume/massa confirmada por diferenca de pixels.
+
+## 2026-05-05 - Tanque fixo na hidrostatica
+
+Status: feito.
+
+Pedido reportado:
+
+- Corrigir `Hidrostatica e empuxo` porque o volume da caixa com liquido aumentava junto com o volume da esfera.
+- Manter a caixa fixa e grande o suficiente para a faixa de tamanho da esfera.
+
+Ajuste:
+
+- A profundidade fisica do tanque passou a ser fixa no motor.
+- A largura e a profundidade visual do tanque/agua passaram a ser fixas no renderer Three.js.
+- O volume agora altera apenas o raio visual da esfera, densidade derivada, empuxo e movimento vertical.
+- A profundidade inicial maxima foi limitada para caber no tanque fixo.
+- Fixture, teoria e guides foram atualizados para explicitar que mudar volume nao redimensiona a caixa nem o liquido.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: renderer continua consumindo o sample do motor, e a correcao remove o acoplamento indevido entre volume da esfera e dimensoes do tanque.
+- `Hidrostatica e empuxo` permanece em `analysis`, sem promocao de status.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/features/simulation-shell/KinematicsScene.test.ts src/features/simulation-shell/kinematicsChartConfigs.test.ts --reporter=dot`; 3 arquivos e 40 testes passaram.
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts --reporter=dot`; 1 arquivo e 10 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `node artifacts/hydrostatics-buoyancy-smoke.cjs` contra `http://127.0.0.1:5196/`; capturas confirmaram tanque fixo, esfera maior ao aumentar volume e afundamento ao aumentar massa.
+
+## 2026-05-05 - Promocao da rotacao de corpo rigido para ready
+
+Status: feito.
+
+Pedido reportado:
+
+- Marcar `Mecanica > Rotacao > Rotacao de corpo rigido` como pronta apos aprovacao manual da simulacao.
+
+Ajuste:
+
+- `rigid-body-rotation` foi promovida para `ready` no catalogo local.
+- Os testes de catalogo foram alinhados para a nova contagem de simulacoes `analysis` e `ready`.
+- Os testes de sidebar/app foram ajustados para a regra atual: subareas com itens `analysis` iniciam abertas, enquanto Rotacao agora inicia recolhida porque seus itens visiveis estao prontos.
+- Guides de produto, arquitetura, regras, dados/API, catalogo planejado e issues foram atualizados para refletir que a rotacao de corpo rigido esta pronta.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a simulacao ja tinha parametro de massa movel `0..50 kg`, modo de energia constante, formulas, teoria, cena, graficos, tabela e warnings sincronizados pelo motor antes da promocao.
+- A promocao dependeu da aprovacao manual do dono do projeto, sem mudar o motor fisico nesta etapa.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/09-simulation-catalog-plan.md`, `guides/issues.md` e este registro.
+- HLD/diagrama nao foi atualizado porque a arquitetura, servicos, pipeline e fluxo de dados nao mudaram; houve apenas promocao de status e alinhamento documental.
+
+Validacao:
+
+- Fixtures JSON de catalogo e rotacao validados com `ConvertFrom-Json`.
+- Executado `npm run test -- --run src/simulation-registry/catalog.test.ts --reporter=verbose`; 1 arquivo e 10 testes passaram.
+- Executado `npm run test -- --run src/App.test.tsx --reporter=verbose`; 1 arquivo e 8 testes passaram.
+- Executado `npm run test -- --run src/lib/physics/kinematics.test.ts --reporter=verbose`; 1 arquivo e 31 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test -- --reporter=dot`; 12 arquivos e 93 testes passaram apos repeticao limpa da suite.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; falhou pela estrutura SDD ausente ja conhecida (`README.md`, `.agent/`, `tasks/`, `adr/`), nao por inconsistencia especifica desta promocao.
+
+## 2026-05-05 - Promocao de gravitacao e hidrostatica para ready
+
+Status: feito.
+
+Pedido reportado:
+
+- Marcar `Mecanica > Gravitacao > Campo gravitacional e orbitas` como pronta apos aprovacao manual.
+- Marcar `Mecanica > Fluidos basicos > Hidrostatica e empuxo` como pronta apos aprovacao manual.
+
+Ajuste:
+
+- `gravitational-field-orbits` e `hydrostatics-buoyancy` foram promovidas para `ready` no catalogo local.
+- `continuity-bernoulli` permanece como a unica simulacao mecanica em `analysis`.
+- Os testes de catalogo foram alinhados para 17 simulacoes `ready` e 1 simulacao `analysis`.
+- Os testes da sidebar foram ajustados para a regra atual: `Gravitacao` inicia recolhida porque agora so contem item `ready`, enquanto `Fluidos basicos` continua aberta por ainda conter `Continuidade e Bernoulli` em `analysis`.
+- Guides de produto, arquitetura, regras, dados/API, catalogo planejado e issues foram atualizados para refletir o novo status.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide` como gate de promocao: as auditorias anteriores de gravidade/orbitas e hidrostatica/empuxo ja registravam parametros, regimes, samples, cena, graficos, tabela, formulas, teoria, warnings e testes sincronizados.
+- A promocao desta etapa dependeu da aprovacao manual do dono do projeto, sem alterar motor fisico, renderer, formulas ou teoria.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md`, `guides/09-simulation-catalog-plan.md`, `guides/issues.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/09-simulation-catalog-plan.md`, `guides/issues.md` e este registro.
+- HLD/diagrama nao foi atualizado porque arquitetura, servicos, pipeline e fluxo de dados nao mudaram; houve apenas promocao de status e alinhamento documental.
+
+Validacao:
+
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts --reporter=dot`; 1 arquivo e 10 testes passaram.
+- Executado `npm run test -- src/App.test.tsx -t "renders the pendulum simulation shell|renders the simulation catalog with analysis subareas open|opens the next mechanics simulations through the shared shell" --reporter=dot`; 3 testes passaram e 5 foram ignorados pelo filtro.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test -- --reporter=dot`; 12 arquivos e 93 testes passaram.

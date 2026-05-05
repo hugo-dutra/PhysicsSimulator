@@ -30,8 +30,10 @@
   "defaultParameters": {
     "momentOfInertiaKilogramMetersSquared": 0.9,
     "slidingMassDistanceMeters": 1,
+    "slidingMassKilograms": 2.4,
     "appliedTorqueNewtonMeters": 0.8,
     "initialAngularVelocityRadiansPerSecond": 0.5,
+    "constantRotationalEnergy": false,
     "initialAngleDegrees": 0,
     "angularDampingPerSecond": 0.05
   },
@@ -50,13 +52,24 @@
     {
       "id": "slidingMassDistanceMeters",
       "label": "Distancia da massa movel",
-      "description": "Distancia radial da esfera ao eixo. Aproximar do centro reduz I = I_base + m r^2, desloca o centro de massa para perto do eixo e aumenta omega quando o momento angular de referencia e mantido.",
+      "description": "Distancia radial da esfera ao eixo. Aproximar do centro reduz I = I_base + m r^2, desloca o centro de massa para perto do eixo e aumenta omega quando momento angular ou energia de referencia sao mantidos.",
       "unit": "m",
       "kind": "number",
       "min": 0,
       "max": 1.2,
       "step": 0.02,
       "defaultValue": 1
+    },
+    {
+      "id": "slidingMassKilograms",
+      "label": "Massa movel",
+      "description": "Massa da esfera deslocavel na barra. Aumentar eleva a contribuicao m r^2 ao momento de inercia, puxa o centro de massa para a esfera e muda omega nos modos de conservacao; zerar remove essa contribuicao.",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0,
+      "max": 50,
+      "step": 0.05,
+      "defaultValue": 2.4
     },
     {
       "id": "appliedTorqueNewtonMeters",
@@ -79,6 +92,13 @@
       "max": 6,
       "step": 0.05,
       "defaultValue": 0.5
+    },
+    {
+      "id": "constantRotationalEnergy",
+      "label": "Energia constante",
+      "description": "Quando ligado, o motor conserva a energia cinetica rotacional definida pela velocidade angular inicial de referencia. Aproximar a massa movel reduz I e aumenta omega; afastar a massa aumenta I e diminui omega. Torque e amortecimento ficam neutralizados nesse modo.",
+      "kind": "boolean",
+      "defaultValue": false
     },
     {
       "id": "initialAngleDegrees",
@@ -110,8 +130,10 @@
       "parameters": {
         "momentOfInertiaKilogramMetersSquared": 0.9,
         "slidingMassDistanceMeters": 1,
+        "slidingMassKilograms": 2.4,
         "appliedTorqueNewtonMeters": 0.8,
         "initialAngularVelocityRadiansPerSecond": 0.5,
+        "constantRotationalEnergy": false,
         "initialAngleDegrees": 0,
         "angularDampingPerSecond": 0
       }
@@ -122,8 +144,10 @@
       "parameters": {
         "momentOfInertiaKilogramMetersSquared": 3.2,
         "slidingMassDistanceMeters": 1.2,
+        "slidingMassKilograms": 4.2,
         "appliedTorqueNewtonMeters": 0.8,
         "initialAngularVelocityRadiansPerSecond": 0.5,
+        "constantRotationalEnergy": false,
         "initialAngleDegrees": 30,
         "angularDampingPerSecond": 0.02
       }
@@ -134,8 +158,10 @@
       "parameters": {
         "momentOfInertiaKilogramMetersSquared": 0.9,
         "slidingMassDistanceMeters": 0.82,
+        "slidingMassKilograms": 2.4,
         "appliedTorqueNewtonMeters": 0,
         "initialAngularVelocityRadiansPerSecond": 2.2,
+        "constantRotationalEnergy": false,
         "initialAngleDegrees": -20,
         "angularDampingPerSecond": 0.18
       }
@@ -146,8 +172,24 @@
       "parameters": {
         "momentOfInertiaKilogramMetersSquared": 0.9,
         "slidingMassDistanceMeters": 0.38,
+        "slidingMassKilograms": 2.4,
         "appliedTorqueNewtonMeters": 0,
         "initialAngularVelocityRadiansPerSecond": 1.2,
+        "constantRotationalEnergy": false,
+        "initialAngleDegrees": 0,
+        "angularDampingPerSecond": 0
+      }
+    },
+    {
+      "id": "constant-energy",
+      "label": "Energia constante",
+      "parameters": {
+        "momentOfInertiaKilogramMetersSquared": 0.9,
+        "slidingMassDistanceMeters": 0.38,
+        "slidingMassKilograms": 2.4,
+        "appliedTorqueNewtonMeters": 0,
+        "initialAngularVelocityRadiansPerSecond": 1.2,
+        "constantRotationalEnergy": true,
         "initialAngleDegrees": 0,
         "angularDampingPerSecond": 0
       }
@@ -156,7 +198,9 @@
   "limits": [
     "O corpo gira em torno de eixo fixo e nao translada.",
     "O momento de inercia total e calculado como I = I_base + m r^2 para uma massa movel didatica sobre a barra.",
+    "A massa movel pode ser zero; nesse caso ela nao altera o momento de inercia nem desloca o centro de massa.",
     "Com torque aplicado e amortecimento zerados, o motor conserva L = I omega ao mudar a distancia radial da massa movel.",
+    "Com energia constante ligada, o motor conserva K_rot da velocidade angular inicial de referencia; quando I muda, omega aumenta ou diminui para manter a energia.",
     "Torque aplicado igual a zero e valido; nesse caso a rotacao pode ser livre ou amortecida.",
     "O amortecimento e linear em omega e representa dissipacao didatica, nao contato real detalhado."
   ],
@@ -176,6 +220,7 @@
       "parameterIds": [
         "momentOfInertiaKilogramMetersSquared",
         "slidingMassDistanceMeters",
+        "slidingMassKilograms",
         "appliedTorqueNewtonMeters"
       ],
       "sampleFields": [
@@ -190,7 +235,7 @@
       "id": "sliding-mass-inertia",
       "title": "Inercia com massa movel",
       "expressionLatex": "I=I_{base}+m r^2",
-      "description": "Mostra como afastar a massa do eixo aumenta o momento de inercia total.",
+      "description": "Mostra como afastar ou aumentar a massa movel eleva o momento de inercia total.",
       "variables": [
         { "symbol": "I_{base}", "label": "inercia base do rotor", "unit": "kg m^2" },
         { "symbol": "m", "label": "massa movel didatica", "unit": "kg" },
@@ -200,7 +245,8 @@
       "notUsedWhen": "Nao substitui o calculo integral de um corpo deformavel ou com distribuicao continua real.",
       "parameterIds": [
         "momentOfInertiaKilogramMetersSquared",
-        "slidingMassDistanceMeters"
+        "slidingMassDistanceMeters",
+        "slidingMassKilograms"
       ],
       "sampleFields": [
         "primaryRadiusMeters",
@@ -220,12 +266,14 @@
         { "symbol": "\\omega", "label": "velocidade angular", "unit": "rad/s" }
       ],
       "usedWhen": "Usar quando torque aplicado e amortecimento estao zerados.",
-      "notUsedWhen": "Com torque externo ou amortecimento, L muda ao longo do tempo.",
+      "notUsedWhen": "Com torque externo, amortecimento ou modo de energia constante, L muda ao longo do tempo.",
       "parameterIds": [
         "slidingMassDistanceMeters",
+        "slidingMassKilograms",
         "initialAngularVelocityRadiansPerSecond",
         "appliedTorqueNewtonMeters",
-        "angularDampingPerSecond"
+        "angularDampingPerSecond",
+        "constantRotationalEnergy"
       ],
       "sampleFields": [
         "angularVelocityRadiansPerSecond",
@@ -233,6 +281,33 @@
       ],
       "relatedChartIds": ["momentum"],
       "relatedVectorIds": ["angularMomentum"]
+    },
+    {
+      "id": "constant-rotational-energy",
+      "title": "Rotacao com energia constante",
+      "expressionLatex": "K_{rot}=K_0,\\quad \\omega=\\operatorname{sgn}(\\omega_0)\\sqrt{\\frac{2K_0}{I}}",
+      "description": "Representa o modo em que a energia cinetica rotacional fica fixa e a velocidade angular muda quando I muda.",
+      "variables": [
+        { "symbol": "K_0", "label": "energia rotacional de referencia", "unit": "J" },
+        { "symbol": "\\omega_0", "label": "velocidade angular de referencia", "unit": "rad/s" },
+        { "symbol": "L", "label": "momento angular", "unit": "kg m^2/s" },
+        { "symbol": "I", "label": "momento de inercia", "unit": "kg m^2" }
+      ],
+      "usedWhen": "Usar quando o controle Energia constante esta ligado para comparar como a mesma energia de giro muda omega conforme a massa movel altera I.",
+      "notUsedWhen": "Nao representa conservacao de momento angular; nesse caso use L = I omega conservado com torque e amortecimento zerados.",
+      "parameterIds": [
+        "constantRotationalEnergy",
+        "initialAngularVelocityRadiansPerSecond",
+        "slidingMassDistanceMeters",
+        "slidingMassKilograms"
+      ],
+      "sampleFields": [
+        "angularVelocityRadiansPerSecond",
+        "kineticEnergyJoules",
+        "momentOfInertiaKilogramMetersSquared"
+      ],
+      "relatedChartIds": ["angle", "energy", "momentum"],
+      "relatedVectorIds": ["angularVelocity", "angularMomentum"]
     },
     {
       "id": "angular-kinematics",
@@ -248,7 +323,8 @@
       "parameterIds": [
         "initialAngularVelocityRadiansPerSecond",
         "initialAngleDegrees",
-        "slidingMassDistanceMeters"
+        "slidingMassDistanceMeters",
+        "slidingMassKilograms"
       ],
       "sampleFields": [
         "angleRadians",
@@ -269,7 +345,9 @@
       "notUsedWhen": "Nao inclui energia de translacao ou vibracao do corpo.",
       "parameterIds": [
         "momentOfInertiaKilogramMetersSquared",
-        "initialAngularVelocityRadiansPerSecond"
+        "initialAngularVelocityRadiansPerSecond",
+        "slidingMassDistanceMeters",
+        "slidingMassKilograms"
       ],
       "sampleFields": [
         "kineticEnergyJoules",

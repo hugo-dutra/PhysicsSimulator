@@ -251,6 +251,8 @@ type KinematicsSample = {
   secondaryCrossSectionAreaSquareMeters: number;
   buoyantForceNewtons: number;
   submergedFraction: number;
+  objectMassKilograms: number;
+  objectDensityKilogramsPerCubicMeter: number;
   forceOneNewtons: number;
   forceOneXNewtons: number;
   forceOneZNewtons: number;
@@ -286,6 +288,8 @@ type KinematicsSample = {
   isGrounded: boolean;
 };
 ```
+
+Em `Hidrostatica e empuxo`, `objectMassKilograms` vem do controle de massa, `objectDensityKilogramsPerCubicMeter` e derivada de `m/V`, `primaryRadiusMeters` e o raio fisico/visual da esfera e `secondaryRadiusMeters` e a profundidade fixa do tanque transparente. Esses campos precisam concordar com pressao, empuxo, resultante, aceleracao, fracao submersa, graficos e warnings; mudar volume nao deve redimensionar o tanque.
 
 ## Erros esperados
 

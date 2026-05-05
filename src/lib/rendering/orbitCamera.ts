@@ -5,6 +5,10 @@ export type OrbitCameraPose = {
   yawRadians: number
 }
 
+export type CameraProjectionMode = 'orthographic' | 'perspective'
+
+export type OrbitCamera = THREE.OrthographicCamera | THREE.PerspectiveCamera
+
 type OrbitCameraDragConfig = {
   maxPitchRadians: number
   minPitchRadians: number
@@ -13,18 +17,81 @@ type OrbitCameraDragConfig = {
 }
 
 type OrbitCameraTarget = {
-  camera: THREE.PerspectiveCamera
+  camera: OrbitCamera
   cameraRadius: number
   cameraTarget: THREE.Vector3
 }
 
+type OrbitCameraProjectionConfig = {
+  cameraRadius: number
+  fovDegrees?: number
+  height: number
+  width: number
+}
+
+type OrbitCameraCreateConfig = {
+  far?: number
+  fovDegrees?: number
+  near?: number
+}
+
 export const maxOrbitCameraPitchRadians = Math.PI / 2 - 0.12
+export const defaultOrbitCameraFovDegrees = 42
 
 export const defaultOrbitCameraDragConfig: OrbitCameraDragConfig = {
   maxPitchRadians: maxOrbitCameraPitchRadians,
   minPitchRadians: -maxOrbitCameraPitchRadians,
   pitchRadiansPerPixel: 0.006,
   yawRadiansPerPixel: 0.008,
+}
+
+export function createOrbitCamera(
+  mode: CameraProjectionMode,
+  {
+    far = 100,
+    fovDegrees = defaultOrbitCameraFovDegrees,
+    near = 0.1,
+  }: OrbitCameraCreateConfig = {},
+): OrbitCamera {
+  const camera =
+    mode === 'orthographic'
+      ? new THREE.OrthographicCamera(-1, 1, 1, -1, near, far)
+      : new THREE.PerspectiveCamera(fovDegrees, 1, near, far)
+
+  camera.up.set(0, 0, 1)
+
+  return camera
+}
+
+export function updateOrbitCameraProjection(
+  camera: OrbitCamera,
+  {
+    cameraRadius,
+    fovDegrees = defaultOrbitCameraFovDegrees,
+    height,
+    width,
+  }: OrbitCameraProjectionConfig,
+) {
+  const safeHeight = Math.max(1, height)
+  const aspect = Math.max(0.001, width / safeHeight)
+
+  if (camera instanceof THREE.PerspectiveCamera) {
+    camera.aspect = aspect
+    camera.fov = fovDegrees
+    camera.updateProjectionMatrix()
+    return
+  }
+
+  const halfHeight = Math.max(
+    0.05,
+    cameraRadius * Math.tan((fovDegrees * Math.PI) / 360),
+  )
+
+  camera.left = -halfHeight * aspect
+  camera.right = halfHeight * aspect
+  camera.top = halfHeight
+  camera.bottom = -halfHeight
+  camera.updateProjectionMatrix()
 }
 
 export function updateOrbitCameraPose(

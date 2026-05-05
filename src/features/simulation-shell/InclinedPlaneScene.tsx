@@ -25,8 +25,12 @@ import {
   type FrameStats,
 } from '../../lib/rendering/visualRuntime'
 import {
+  createOrbitCamera,
   positionOrbitCamera,
+  updateOrbitCameraProjection,
   updateOrbitCameraPose,
+  type CameraProjectionMode,
+  type OrbitCamera,
   type OrbitCameraPose,
 } from '../../lib/rendering/orbitCamera'
 import {
@@ -40,6 +44,7 @@ import { ViewportOriginLegend } from './ViewportOriginLegend'
 export type InclinedPlaneFrameStats = FrameStats
 
 type InclinedPlaneSceneProps = {
+  cameraProjectionMode: CameraProjectionMode
   durationSeconds: number
   isPlaying: boolean
   onSampleChange: (
@@ -57,7 +62,7 @@ type InclinedPlaneSceneProps = {
 type SceneObjects = {
   arrows: Record<InclinedPlaneVectorOverlay['id'], THREE.ArrowHelper>
   block: THREE.Mesh
-  camera: THREE.PerspectiveCamera
+  camera: OrbitCamera
   cameraMaxRadius: number
   cameraMinRadius: number
   cameraRadius: number
@@ -121,6 +126,7 @@ const minCameraRadiusScale = 0.42
 const maxCameraRadiusScale = 2.35
 
 export function InclinedPlaneScene({
+  cameraProjectionMode,
   durationSeconds,
   isPlaying,
   onSampleChange,
@@ -163,6 +169,19 @@ export function InclinedPlaneScene({
       readInitialMechanicalEnergy(samples),
     ),
   ])
+  const updateCameraProjection = useCallback((objects: SceneObjects | null) => {
+    const parent = canvasRef.current?.parentElement
+
+    if (!objects || !parent) {
+      return
+    }
+
+    updateOrbitCameraProjection(objects.camera, {
+      cameraRadius: objects.cameraRadius,
+      height: parent.clientHeight,
+      width: parent.clientWidth,
+    })
+  }, [])
 
   const renderCurrentFrame = useCallback((notify = false) => {
     const objects = objectsRef.current
@@ -294,10 +313,11 @@ export function InclinedPlaneScene({
       }
 
       objects.cameraRadius = nextCameraRadius
+      updateCameraProjection(objects)
       updateOrbitCamera(objects, cameraPoseRef.current)
       renderCurrentFrame()
     },
-    [renderCurrentFrame],
+    [renderCurrentFrame, updateCameraProjection],
   )
 
   useEffect(() => {
@@ -352,7 +372,7 @@ export function InclinedPlaneScene({
     const planeHorizontalMeters = planeLengthMeters * Math.cos(theta)
     const planeHeightMeters = planeLengthMeters * Math.sin(theta)
     const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100)
+    const camera = createOrbitCamera('perspective', { far: 100 })
     const cameraTarget = new THREE.Vector3(
       planeHorizontalMeters * 0.52,
       0,
@@ -362,7 +382,6 @@ export function InclinedPlaneScene({
     const cameraMinRadius = Math.max(1.8, cameraRadius * minCameraRadiusScale)
     const cameraMaxRadius = cameraRadius * maxCameraRadiusScale
 
-    camera.up.set(0, 0, 1)
     scene.background = new THREE.Color(themeTokens.background)
     scene.add(new THREE.AmbientLight(0xffffff, 0.62))
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.08)
@@ -477,13 +496,21 @@ export function InclinedPlaneScene({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25))
 
     const resizeRenderer = () => {
+      const objects = objectsRef.current
       const width = parent.clientWidth
       const height = parent.clientHeight
 
-      camera.aspect = width / Math.max(1, height)
-      camera.updateProjectionMatrix()
+      if (!objects) {
+        return
+      }
+
+      updateOrbitCameraProjection(objects.camera, {
+        cameraRadius: objects.cameraRadius,
+        height,
+        width,
+      })
       renderer.setSize(width, height, false)
-      updateOrbitCamera(objectsRef.current, cameraPoseRef.current)
+      updateOrbitCamera(objects, cameraPoseRef.current)
       renderCurrentFrame()
     }
     const observer = new ResizeObserver(resizeRenderer)
@@ -522,6 +549,27 @@ export function InclinedPlaneScene({
       objectsRef.current = null
     }
   }, [parameters, renderCurrentFrame, samples])
+
+  useEffect(() => {
+    if (import.meta.env.MODE === 'test') {
+      return
+    }
+
+    const objects = objectsRef.current
+
+    if (!objects) {
+      return
+    }
+
+    objects.camera = createOrbitCamera(cameraProjectionMode, { far: 100 })
+    updateCameraProjection(objects)
+    updateOrbitCamera(objects, cameraPoseRef.current)
+    renderCurrentFrame()
+  }, [
+    cameraProjectionMode,
+    renderCurrentFrame,
+    updateCameraProjection,
+  ])
 
   useEffect(() => {
     const resetSamples = runtimeRef.current.samples

@@ -8,9 +8,16 @@ vi.mock('./PendulumScene', async () => {
   const React = await import('react')
 
   return {
-    PendulumScene: ({ resetVersion }: { resetVersion: number }) =>
+    PendulumScene: ({
+      cameraProjectionMode,
+      resetVersion,
+    }: {
+      cameraProjectionMode: string
+      resetVersion: number
+    }) =>
       React.createElement('div', {
         'aria-label': 'mock pendulum scene',
+        'data-camera-projection-mode': cameraProjectionMode,
         'data-reset-version': resetVersion,
       }),
   }
@@ -20,9 +27,16 @@ vi.mock('./InclinedPlaneScene', async () => {
   const React = await import('react')
 
   return {
-    InclinedPlaneScene: ({ resetVersion }: { resetVersion: number }) =>
+    InclinedPlaneScene: ({
+      cameraProjectionMode,
+      resetVersion,
+    }: {
+      cameraProjectionMode: string
+      resetVersion: number
+    }) =>
       React.createElement('div', {
         'aria-label': 'mock inclined plane scene',
+        'data-camera-projection-mode': cameraProjectionMode,
         'data-reset-version': resetVersion,
       }),
   }
@@ -32,9 +46,16 @@ vi.mock('./KinematicsScene', async () => {
   const React = await import('react')
 
   return {
-    KinematicsScene: ({ resetVersion }: { resetVersion: number }) =>
+    KinematicsScene: ({
+      cameraProjectionMode,
+      resetVersion,
+    }: {
+      cameraProjectionMode: string
+      resetVersion: number
+    }) =>
       React.createElement('div', {
         'aria-label': 'mock kinematics scene',
+        'data-camera-projection-mode': cameraProjectionMode,
         'data-reset-version': resetVersion,
       }),
   }
@@ -72,10 +93,43 @@ describe('SimulationShell playback continuity', () => {
 
     expect(readPendulumResetVersion()).toBe('1')
   })
+
+  it('switches the viewport camera projection without resetting playback', () => {
+    render(
+      <ThemeProvider theme={appTheme}>
+        <SimulationShell />
+      </ThemeProvider>,
+    )
+
+    expect(readPendulumProjectionMode()).toBe('perspective')
+    expect(readPendulumResetVersion()).toBe('0')
+    expect(screen.getByRole('button', { name: /Camera em perspectiva/i }))
+      .toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(screen.getByRole('button', { name: /Camera ortogonal/i }))
+
+    expect(readPendulumProjectionMode()).toBe('orthographic')
+    expect(readPendulumResetVersion()).toBe('0')
+    expect(screen.getByRole('button', { name: /Camera ortogonal/i }))
+      .toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Camera em perspectiva/i }),
+    )
+
+    expect(readPendulumProjectionMode()).toBe('perspective')
+    expect(readPendulumResetVersion()).toBe('0')
+  })
 })
 
 function readPendulumResetVersion() {
   return screen
     .getByLabelText(/mock pendulum scene/i)
     .getAttribute('data-reset-version')
+}
+
+function readPendulumProjectionMode() {
+  return screen
+    .getByLabelText(/mock pendulum scene/i)
+    .getAttribute('data-camera-projection-mode')
 }

@@ -5,6 +5,16 @@ import App from './App'
 import { appTheme } from './theme/appTheme'
 
 describe('App', () => {
+  const openMechanicsArea = () => {
+    const mechanicsButton = screen.getByRole('button', {
+      name: /Alternar area Mecanica/i,
+    })
+
+    if (mechanicsButton.getAttribute('aria-expanded') !== 'true') {
+      fireEvent.click(mechanicsButton)
+    }
+  }
+
   it('renders the pendulum simulation shell', () => {
     render(
       <ThemeProvider theme={appTheme}>
@@ -19,6 +29,7 @@ describe('App', () => {
       screen.getByRole('heading', { name: /Pendulo simples/i }),
     ).toBeInTheDocument()
     expect(screen.getByText(/Catalogo local/i)).toBeInTheDocument()
+    openMechanicsArea()
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Oscilacoes/i }),
     )
@@ -62,15 +73,24 @@ describe('App', () => {
         name: /Torque, alavancas e centro de massa/i,
       }),
     ).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Rotacao/i }),
+    )
     expect(
       screen.getByRole('button', { name: /Rotacao de corpo rigido/i }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Rolamento sem escorregamento/i }),
     ).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Gravitacao/i }),
+    )
     expect(
       screen.getByRole('button', { name: /Campo gravitacional e orbitas/i }),
     ).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
+    )
     expect(
       screen.getByRole('button', { name: /Hidrostatica e empuxo/i }),
     ).toBeInTheDocument()
@@ -575,7 +595,7 @@ describe('App', () => {
     ).toBeInTheDocument()
   }, 45_000)
 
-  it('renders the simulation catalog with analysis subareas open', () => {
+  it('renders the simulation catalog with ready subareas collapsed', () => {
     render(
       <ThemeProvider theme={appTheme}>
         <App />
@@ -585,6 +605,10 @@ describe('App', () => {
     expect(
       screen.getByRole('navigation', { name: /Catalogo de simulacoes/i }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Alternar area Mecanica/i }),
+    ).toHaveAttribute('aria-expanded', 'false')
+    openMechanicsArea()
     expect(
       screen.getByRole('button', { name: /Alternar area Mecanica/i }),
     ).toHaveAttribute('aria-expanded', 'true')
@@ -616,14 +640,14 @@ describe('App', () => {
     ).toHaveAttribute('aria-expanded', 'false')
     expect(
       screen.getByRole('button', { name: /Alternar subarea Rotacao/i }),
-    ).toHaveAttribute('aria-expanded', 'true')
+    ).toHaveAttribute('aria-expanded', 'false')
     expect(
       screen.getByRole('button', { name: /Alternar subarea Gravitacao/i }),
-    ).toHaveAttribute('aria-expanded', 'true')
+    ).toHaveAttribute('aria-expanded', 'false')
     expect(
       screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
-    ).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getAllByText(/^analise$/i).length).toBeGreaterThan(0)
+    ).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(0)
     expect(screen.getAllByText(/^pronto$/i).length).toBeGreaterThan(0)
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
@@ -633,6 +657,12 @@ describe('App', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Lancamento obliquo/i }),
+    ).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar subarea Rotacao/i }),
+    )
+    expect(
+      screen.getByRole('button', { name: /Rotacao de corpo rigido/i }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Rolamento sem escorregamento/i }),
@@ -665,6 +695,7 @@ describe('App', () => {
       </ThemeProvider>,
     )
 
+    openMechanicsArea()
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Oscilacoes/i }),
     )
@@ -725,6 +756,7 @@ describe('App', () => {
       </ThemeProvider>,
     )
 
+    openMechanicsArea()
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Dinamica/i }),
     )
@@ -821,6 +853,7 @@ describe('App', () => {
       },
     ]
 
+    openMechanicsArea()
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
     )
@@ -867,6 +900,7 @@ describe('App', () => {
       },
     ]
 
+    openMechanicsArea()
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Dinamica/i }),
     )
@@ -921,57 +955,81 @@ describe('App', () => {
     const nextMechanicsCases = [
       {
         title: /Colisoes 1D e 2D/i,
+        subarea: /Alternar subarea Energia e momento/i,
         chart: /Momento e impulso por tempo/i,
         control: /Coeficiente de restituicao/i,
       },
       {
         title: /Equilibrio de particula/i,
+        subarea: /Alternar subarea Estatica/i,
         chart: /Forcas e resultante por tempo/i,
         control: /Forca A \(N\)/i,
       },
       {
         title: /Torque, alavancas e centro de massa/i,
+        subarea: /Alternar subarea Estatica/i,
         chart: /Torque e centro de massa/i,
         control: /Braco esquerdo \(m\)/i,
       },
       {
         title: /Rotacao de corpo rigido/i,
+        subarea: /Alternar subarea Rotacao/i,
         chart: /Inercia, centro de massa e momento angular/i,
         control: /Distancia da massa movel \(m\)/i,
+        extraControls: [/Massa movel \(kg\)/i, /Energia constante/i],
       },
       {
         title: /Rolamento sem escorregamento/i,
+        subarea: /Alternar subarea Rotacao/i,
         chart: /Atrito estatico e aderencia/i,
         control: /Raio \(m\)/i,
       },
       {
         title: /Campo gravitacional e orbitas/i,
+        subarea: /Alternar subarea Gravitacao/i,
         chart: /Campo gravitacional por tempo/i,
         control: /Massa central \(M_terra\)/i,
       },
       {
         title: /Hidrostatica e empuxo/i,
+        subarea: /Alternar subarea Fluidos basicos/i,
         chart: /Empuxo, peso e resultante/i,
         control: /Densidade do fluido \(kg\/m\^3\)/i,
       },
       {
         title: /Continuidade e Bernoulli/i,
+        subarea: /Alternar subarea Fluidos basicos/i,
         chart: /Pressao por Bernoulli/i,
         control: /Vazao \(m\^3\/s\)/i,
       },
     ]
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /Alternar subarea Estatica/i }),
-    )
+    const ensureSubareaOpen = (name: RegExp) => {
+      const subareaButton = screen.getByRole('button', { name })
 
-    nextMechanicsCases.forEach(({ title, chart, control }) => {
+      if (subareaButton.getAttribute('aria-expanded') !== 'true') {
+        fireEvent.click(subareaButton)
+      }
+    }
+
+    nextMechanicsCases.forEach(({
+      title,
+      subarea,
+      chart,
+      control,
+      extraControls,
+    }) => {
+      ensureSubareaOpen(subarea)
       fireEvent.click(screen.getByRole('button', { name: title }))
 
       expect(screen.getByRole('heading', { name: title })).toBeInTheDocument()
       expect(screen.getByLabelText(/Kinematics numerical viewport/i))
         .toBeInTheDocument()
       expect(screen.getAllByLabelText(control).length).toBeGreaterThan(0)
+      extraControls?.forEach((extraControl) => {
+        expect(screen.getAllByLabelText(extraControl).length)
+          .toBeGreaterThan(0)
+      })
 
       fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
       expect(screen.getByRole('img', { name: chart })).toBeInTheDocument()

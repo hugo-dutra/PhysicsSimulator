@@ -78,7 +78,7 @@ export type HydrostaticsBuoyancyParameters = {
   depthMeters: number
   fluidDensityKilogramsPerCubicMeter: number
   gravityMetersPerSecondSquared: number
-  objectDensityKilogramsPerCubicMeter: number
+  objectMassKilograms: number
   objectVolumeCubicMeters: number
 }
 
@@ -144,10 +144,12 @@ export type TorqueLeversCenterMassParameters = {
 export type RigidBodyRotationParameters = {
   angularDampingPerSecond: number
   appliedTorqueNewtonMeters: number
+  constantRotationalEnergy: boolean
   initialAngleDegrees: number
   initialAngularVelocityRadiansPerSecond: number
   momentOfInertiaKilogramMetersSquared: number
   slidingMassDistanceMeters: number
+  slidingMassKilograms: number
 }
 
 export type RollingWithoutSlippingParameters = {
@@ -229,6 +231,8 @@ export type KinematicsSample = {
   netForceNewtons: number
   netTorqueNewtonMeters: number
   normalForceNewtons: number
+  objectDensityKilogramsPerCubicMeter: number
+  objectMassKilograms: number
   periodSeconds: number
   positionMeters: number
   potentialEnergyJoules: number
@@ -388,6 +392,8 @@ const sampleNumericKeys = [
   'netForceNewtons',
   'netTorqueNewtonMeters',
   'normalForceNewtons',
+  'objectDensityKilogramsPerCubicMeter',
+  'objectMassKilograms',
   'periodSeconds',
   'positionMeters',
   'potentialEnergyJoules',
@@ -427,7 +433,13 @@ const gravitationalConstant = 6.6743e-11
 const highEccentricityWarningThreshold = 0.65
 const orbitalSatelliteRadiusRatio = 0.16
 const orbitalSatelliteSpeedRatio = 12
+const bernoulliTubeHalfLengthMeters = 3
+const bernoulliThroatWidthMeters = 0.95
 const hydrostaticFloatToleranceNewtons = 1e-6
+const hydrostaticFloatAngularFrequencyRadiansPerSecond = 2.2
+const hydrostaticFloatDampingPerSecond = 0.82
+const hydrostaticNeutralDensityRatioTolerance = 0.015
+export const hydrostaticTankDepthMeters = 3.6
 const massSpringDampingTolerance = 1e-9
 const massSpringVisualNaturalLengthMeters = 1.15
 const uniformlyAcceleratedGroundTolerance = 1e-9
@@ -435,7 +447,6 @@ const rollingInertiaFactor = 0.5
 const rigidBodyCentralMassKilograms = 2.4
 const rigidBodyMaxSlidingMassDistanceMeters = 1.2
 const rigidBodyReferenceMassDistanceMeters = 1.0
-const rigidBodySlidingMassKilograms = 0.72
 const torqueToleranceNewtonMeters = 0.05
 const torqueLeverMaxDisplayAngleRadians = 0.35
 const torqueLeverVisualTimeScale = 0.28
@@ -562,6 +573,19 @@ export function toKinematicsParameters(
       return parameters
     }
     case 'hydrostatics-buoyancy': {
+      const objectVolumeCubicMeters = readNumber(
+        values,
+        'objectVolumeCubicMeters',
+      )
+      const legacyObjectDensityKilogramsPerCubicMeter = readOptionalNumber(
+        values,
+        'objectDensityKilogramsPerCubicMeter',
+      )
+      const objectMassKilograms =
+        readOptionalNumber(values, 'objectMassKilograms') ??
+        (typeof legacyObjectDensityKilogramsPerCubicMeter === 'number'
+          ? legacyObjectDensityKilogramsPerCubicMeter * objectVolumeCubicMeters
+          : readNumber(values, 'objectMassKilograms'))
       const parameters: HydrostaticsBuoyancyParameters = {
         depthMeters: readNumber(values, 'depthMeters'),
         fluidDensityKilogramsPerCubicMeter: readNumber(
@@ -572,11 +596,8 @@ export function toKinematicsParameters(
           values,
           'gravityMetersPerSecondSquared',
         ),
-        objectDensityKilogramsPerCubicMeter: readNumber(
-          values,
-          'objectDensityKilogramsPerCubicMeter',
-        ),
-        objectVolumeCubicMeters: readNumber(values, 'objectVolumeCubicMeters'),
+        objectMassKilograms,
+        objectVolumeCubicMeters,
       }
 
       validateHydrostaticsBuoyancyParameters(parameters)
@@ -673,6 +694,11 @@ export function toKinematicsParameters(
           values,
           'appliedTorqueNewtonMeters',
         ),
+        constantRotationalEnergy: readBoolean(
+          values,
+          'constantRotationalEnergy',
+          readBoolean(values, 'constantAngularVelocity', false),
+        ),
         initialAngleDegrees: readNumber(values, 'initialAngleDegrees'),
         initialAngularVelocityRadiansPerSecond: readNumber(
           values,
@@ -686,6 +712,7 @@ export function toKinematicsParameters(
           values,
           'slidingMassDistanceMeters',
         ),
+        slidingMassKilograms: readNumber(values, 'slidingMassKilograms'),
       }
 
       validateRigidBodyRotationParameters(parameters)
@@ -1070,8 +1097,8 @@ export function getKinematicsVectorOverlays(
           z: sample.velocityZMetersPerSecond,
         }),
         id: 'velocity',
-        label: 'Velocidade na entrada',
-        magnitude: sample.speedMetersPerSecond,
+        label: 'Velocidade local do tracador',
+        magnitude: sample.velocityMetersPerSecond,
         unit: 'm/s',
       },
       {
@@ -1118,6 +1145,23 @@ export function getKinematicsVectorOverlays(
 
   if (simulationId === 'hydrostatics-buoyancy') {
     return [
+      {
+        direction: { x: 0, z: Math.sign(sample.velocityMetersPerSecond) || 0 },
+        id: 'velocity',
+        label: 'Velocidade vertical',
+        magnitude: Math.abs(sample.velocityMetersPerSecond),
+        unit: 'm/s',
+      },
+      {
+        direction: {
+          x: 0,
+          z: Math.sign(sample.accelerationMetersPerSecondSquared) || 0,
+        },
+        id: 'acceleration',
+        label: 'Aceleracao vertical',
+        magnitude: Math.abs(sample.accelerationMetersPerSecondSquared),
+        unit: 'm/s^2',
+      },
       {
         direction: { x: 0, z: 1 },
         id: 'normal',
@@ -1721,13 +1765,23 @@ function computeContinuityBernoulliSample(
         throatVelocityMetersPerSecond ** 2)
   const pressureDropPascals = inletPressurePascals - throatPressurePascals
   const phase = (timeSeconds % 4) / 4
-  const xMeters = -3 + phase * 6
-  const zMeters =
-    phase < 0.5
-      ? 2 * phase * parameters.heightDifferenceMeters
-      : parameters.heightDifferenceMeters
+  const xMeters =
+    -bernoulliTubeHalfLengthMeters + phase * bernoulliTubeHalfLengthMeters * 2
+  const throatInfluence = getBernoulliThroatInfluence(xMeters)
+  const zMeters = parameters.heightDifferenceMeters * throatInfluence
+  const localAreaSquareMeters = getBernoulliAreaAtX(parameters, xMeters)
   const localVelocityMetersPerSecond =
-    phase < 0.5 ? inletVelocityMetersPerSecond : throatVelocityMetersPerSecond
+    localAreaSquareMeters > 0
+      ? parameters.flowRateCubicMetersPerSecond / localAreaSquareMeters
+      : 0
+  const localPressurePascals =
+    inletPressurePascals -
+    parameters.fluidDensityKilogramsPerCubicMeter *
+      parameters.gravityMetersPerSecondSquared *
+      zMeters +
+    0.5 *
+      parameters.fluidDensityKilogramsPerCubicMeter *
+      (inletVelocityMetersPerSecond ** 2 - localVelocityMetersPerSecond ** 2)
   const kineticEnergyJoules =
     0.5 *
     parameters.fluidDensityKilogramsPerCubicMeter *
@@ -1740,6 +1794,7 @@ function computeContinuityBernoulliSample(
   return buildSample({
     crossSectionAreaSquareMeters: parameters.inletAreaSquareMeters,
     displacementMeters: phase * 6,
+    fluidPressurePascals: localPressurePascals,
     flowRateCubicMetersPerSecond: parameters.flowRateCubicMetersPerSecond,
     forceOneNewtons: inletPressurePascals,
     forceTwoNewtons: throatPressurePascals,
@@ -1747,23 +1802,41 @@ function computeContinuityBernoulliSample(
     positionMeters: phase * 6,
     potentialEnergyJoules,
     pressurePascals: inletPressurePascals,
+    primaryRadiusMeters: Math.sqrt(parameters.inletAreaSquareMeters / Math.PI),
     secondaryCrossSectionAreaSquareMeters: parameters.throatAreaSquareMeters,
     secondaryPressurePascals: throatPressurePascals,
+    secondaryRadiusMeters: Math.sqrt(parameters.throatAreaSquareMeters / Math.PI),
     secondarySpeedMetersPerSecond: throatVelocityMetersPerSecond,
     secondaryVelocityMetersPerSecond: throatVelocityMetersPerSecond,
     secondaryVelocityXMetersPerSecond: throatVelocityMetersPerSecond,
+    secondaryXMeters: 0,
+    secondaryZMeters: parameters.heightDifferenceMeters,
     speedMetersPerSecond: inletVelocityMetersPerSecond,
     timeSeconds,
-    totalEnergyJoules:
-      inletPressurePascals +
-      kineticEnergyJoules +
-      potentialEnergyJoules,
-    velocityMetersPerSecond: inletVelocityMetersPerSecond,
-    velocityXMetersPerSecond: inletVelocityMetersPerSecond,
+    totalEnergyJoules: localPressurePascals + kineticEnergyJoules + potentialEnergyJoules,
+    velocityMetersPerSecond: localVelocityMetersPerSecond,
+    velocityXMetersPerSecond: localVelocityMetersPerSecond,
     xMeters,
     zMeters,
     netForceNewtons: pressureDropPascals,
   })
+}
+
+function getBernoulliAreaAtX(
+  parameters: ContinuityBernoulliParameters,
+  xMeters: number,
+) {
+  return (
+    parameters.inletAreaSquareMeters +
+    (parameters.throatAreaSquareMeters - parameters.inletAreaSquareMeters) *
+      getBernoulliThroatInfluence(xMeters)
+  )
+}
+
+function getBernoulliThroatInfluence(xMeters: number) {
+  const normalized = xMeters / bernoulliThroatWidthMeters
+
+  return Math.exp(-(normalized * normalized))
 }
 
 function computeGravitationalFieldOrbitsSample(
@@ -1996,57 +2069,217 @@ function computeHydrostaticsBuoyancySample(
   parameters: HydrostaticsBuoyancyParameters,
   timeSeconds: number,
 ): KinematicsSample {
-  const objectMassKilograms =
-    parameters.objectDensityKilogramsPerCubicMeter *
-    parameters.objectVolumeCubicMeters
+  const objectMassKilograms = parameters.objectMassKilograms
+  const objectDensityKilogramsPerCubicMeter =
+    objectMassKilograms / parameters.objectVolumeCubicMeters
+  const sphereRadiusMeters = sphereRadiusFromVolume(
+    parameters.objectVolumeCubicMeters,
+  )
+  const tankDepthMeters = hydrostaticTankDepthMeters
+  const bottomCenterZ = -tankDepthMeters + sphereRadiusMeters
+  const initialCenterZ = computeHydrostaticInitialCenterZ(
+    parameters,
+    sphereRadiusMeters,
+    tankDepthMeters,
+  )
+  const densityRatio =
+    objectDensityKilogramsPerCubicMeter /
+    parameters.fluidDensityKilogramsPerCubicMeter
+  const submergedFractionAtEquilibrium = clamp(densityRatio, 0, 1)
+  const equilibriumCapHeightMeters =
+    sphereCapHeightForSubmergedFraction(
+      sphereRadiusMeters,
+      submergedFractionAtEquilibrium,
+    )
+  const equilibriumCenterZ = clamp(
+    sphereRadiusMeters - equilibriumCapHeightMeters,
+    bottomCenterZ,
+    sphereRadiusMeters,
+  )
   const weightNewtons =
     objectMassKilograms * parameters.gravityMetersPerSecondSquared
   const fullBuoyantForceNewtons =
     parameters.fluidDensityKilogramsPerCubicMeter *
     parameters.gravityMetersPerSecondSquared *
     parameters.objectVolumeCubicMeters
+  let zMeters = initialCenterZ
+  let velocityMetersPerSecond = 0
+  const isFloating =
+    densityRatio < 1 - hydrostaticNeutralDensityRatioTolerance
+  const isNeutral =
+    Math.abs(densityRatio - 1) <= hydrostaticNeutralDensityRatioTolerance
+
+  if (isFloating) {
+    const motion = solveDampedHydrostaticApproach({
+      equilibriumCenterZ,
+      initialCenterZ,
+      timeSeconds,
+    })
+
+    zMeters = clamp(motion.zMeters, bottomCenterZ, sphereRadiusMeters)
+    velocityMetersPerSecond = motion.velocityMetersPerSecond
+  } else if (!isNeutral) {
+    const sinkingAccelerationMetersPerSecondSquared =
+      (fullBuoyantForceNewtons - weightNewtons) / objectMassKilograms
+    const unclampedZ =
+      initialCenterZ +
+      0.5 * sinkingAccelerationMetersPerSecondSquared * timeSeconds ** 2
+
+    zMeters = Math.max(bottomCenterZ, unclampedZ)
+    velocityMetersPerSecond =
+      zMeters <= bottomCenterZ + hydrostaticFloatToleranceNewtons
+        ? 0
+        : sinkingAccelerationMetersPerSecondSquared * timeSeconds
+  }
+
+  const submergedVolumeCubicMeters =
+    sphereSubmergedVolumeCubicMeters(sphereRadiusMeters, zMeters)
   const submergedFraction = clamp(
-    parameters.objectDensityKilogramsPerCubicMeter /
-      parameters.fluidDensityKilogramsPerCubicMeter,
+    submergedVolumeCubicMeters / parameters.objectVolumeCubicMeters,
     0,
     1,
   )
   const buoyantForceNewtons =
-    parameters.objectDensityKilogramsPerCubicMeter <=
-    parameters.fluidDensityKilogramsPerCubicMeter
-      ? weightNewtons
-      : fullBuoyantForceNewtons
-  const netForceNewtons = buoyantForceNewtons - weightNewtons
+    parameters.fluidDensityKilogramsPerCubicMeter *
+    parameters.gravityMetersPerSecondSquared *
+    submergedVolumeCubicMeters
+  const freeNetForceNewtons = buoyantForceNewtons - weightNewtons
+  const isGrounded =
+    zMeters <= bottomCenterZ + hydrostaticFloatToleranceNewtons &&
+    freeNetForceNewtons < 0
+  const bottomNormalForceNewtons = isGrounded ? -freeNetForceNewtons : 0
+  const netForceNewtons = freeNetForceNewtons + bottomNormalForceNewtons
+  const accelerationMetersPerSecondSquared =
+    netForceNewtons / objectMassKilograms
+  const centerDepthMeters = Math.max(0, -zMeters)
   const fluidPressurePascals =
     parameters.fluidDensityKilogramsPerCubicMeter *
     parameters.gravityMetersPerSecondSquared *
-    parameters.depthMeters
-  const bobbingOffsetMeters =
-    Math.abs(netForceNewtons) <= hydrostaticFloatToleranceNewtons
-      ? Math.sin(timeSeconds * 1.6) * 0.035
-      : 0
-  const zMeters = -parameters.depthMeters + bobbingOffsetMeters
+    centerDepthMeters
+  const kineticEnergyJoules =
+    0.5 * objectMassKilograms * velocityMetersPerSecond ** 2
+  const potentialEnergyJoules =
+    objectMassKilograms *
+    parameters.gravityMetersPerSecondSquared *
+    Math.max(0, zMeters - bottomCenterZ)
 
   return buildSample({
+    accelerationMetersPerSecondSquared,
+    accelerationZMetersPerSecondSquared: accelerationMetersPerSecondSquared,
     buoyantForceNewtons,
-    displacementMeters: parameters.depthMeters,
+    crossSectionAreaSquareMeters: Math.PI * sphereRadiusMeters ** 2,
+    displacementMeters: zMeters - initialCenterZ,
     fluidPressurePascals,
     forceOneNewtons: buoyantForceNewtons,
     forceTwoNewtons: weightNewtons,
+    forceThreeNewtons: bottomNormalForceNewtons,
+    gripRatio: densityRatio,
+    isGrounded,
+    kineticEnergyJoules,
     netForceNewtons,
-    positionMeters: parameters.depthMeters,
+    normalForceNewtons: bottomNormalForceNewtons,
+    objectDensityKilogramsPerCubicMeter,
+    objectMassKilograms,
+    positionMeters: centerDepthMeters,
+    potentialEnergyJoules,
     pressurePascals: fluidPressurePascals,
-    primaryRadiusMeters: Math.cbrt(parameters.objectVolumeCubicMeters),
-    speedMetersPerSecond: 0,
+    primaryRadiusMeters: sphereRadiusMeters,
+    secondaryRadiusMeters: tankDepthMeters,
+    speedMetersPerSecond: Math.abs(velocityMetersPerSecond),
     submergedFraction,
     timeSeconds,
-    totalEnergyJoules:
-      Math.abs(netForceNewtons) * parameters.depthMeters,
-    velocityMetersPerSecond: 0,
+    totalEnergyJoules: kineticEnergyJoules + potentialEnergyJoules,
+    velocityMetersPerSecond,
+    velocityZMetersPerSecond: velocityMetersPerSecond,
     weightNewtons,
     xMeters: 0,
     zMeters,
   })
+}
+
+function sphereRadiusFromVolume(volumeCubicMeters: number) {
+  return Math.cbrt((3 * volumeCubicMeters) / (4 * Math.PI))
+}
+
+function computeHydrostaticInitialCenterZ(
+  parameters: HydrostaticsBuoyancyParameters,
+  sphereRadiusMeters: number,
+  tankDepthMeters: number,
+) {
+  const bottomCenterZ = -tankDepthMeters + sphereRadiusMeters
+
+  return clamp(-parameters.depthMeters, bottomCenterZ, sphereRadiusMeters)
+}
+
+function sphereSubmergedVolumeCubicMeters(
+  sphereRadiusMeters: number,
+  centerZMeters: number,
+) {
+  const capHeightMeters = clamp(
+    sphereRadiusMeters - centerZMeters,
+    0,
+    sphereRadiusMeters * 2,
+  )
+
+  return (
+    (Math.PI * capHeightMeters ** 2 * (3 * sphereRadiusMeters - capHeightMeters)) /
+    3
+  )
+}
+
+function sphereCapHeightForSubmergedFraction(
+  sphereRadiusMeters: number,
+  submergedFraction: number,
+) {
+  if (submergedFraction <= 0) {
+    return 0
+  }
+
+  if (submergedFraction >= 1) {
+    return sphereRadiusMeters * 2
+  }
+
+  const targetVolume =
+    (4 * Math.PI * sphereRadiusMeters ** 3 * submergedFraction) / 3
+  let low = 0
+  let high = sphereRadiusMeters * 2
+
+  for (let index = 0; index < 42; index += 1) {
+    const mid = (low + high) / 2
+    const volume =
+      (Math.PI * mid ** 2 * (3 * sphereRadiusMeters - mid)) / 3
+
+    if (volume < targetVolume) {
+      low = mid
+    } else {
+      high = mid
+    }
+  }
+
+  return (low + high) / 2
+}
+
+function solveDampedHydrostaticApproach({
+  equilibriumCenterZ,
+  initialCenterZ,
+  timeSeconds,
+}: {
+  equilibriumCenterZ: number
+  initialCenterZ: number
+  timeSeconds: number
+}) {
+  const delta = initialCenterZ - equilibriumCenterZ
+  const damping = hydrostaticFloatDampingPerSecond
+  const angularFrequency = hydrostaticFloatAngularFrequencyRadiansPerSecond
+  const decay = Math.exp(-damping * timeSeconds)
+  const cos = Math.cos(angularFrequency * timeSeconds)
+  const sin = Math.sin(angularFrequency * timeSeconds)
+
+  return {
+    velocityMetersPerSecond:
+      delta * decay * (-damping * cos - angularFrequency * sin),
+    zMeters: equilibriumCenterZ + delta * decay * cos,
+  }
 }
 
 function computeMassSpringSample(
@@ -3035,24 +3268,45 @@ function computeRigidBodyRotationSample(
     computeRigidBodyRotationMomentOfInertia(parameters)
   const referenceMomentOfInertiaKilogramMetersSquared =
     parameters.momentOfInertiaKilogramMetersSquared +
-    rigidBodySlidingMassKilograms * rigidBodyReferenceMassDistanceMeters ** 2
+    parameters.slidingMassKilograms *
+      rigidBodyReferenceMassDistanceMeters ** 2
   const initialAngularMomentumKilogramMetersSquaredPerSecond =
     referenceMomentOfInertiaKilogramMetersSquared *
     parameters.initialAngularVelocityRadiansPerSecond
+  const referenceKineticEnergyJoules =
+    0.5 *
+    referenceMomentOfInertiaKilogramMetersSquared *
+    parameters.initialAngularVelocityRadiansPerSecond ** 2
   const effectiveInitialAngularVelocityRadiansPerSecond =
-    initialAngularMomentumKilogramMetersSquaredPerSecond /
-    momentOfInertiaKilogramMetersSquared
-  const driveAngularAcceleration =
-    parameters.appliedTorqueNewtonMeters /
-    momentOfInertiaKilogramMetersSquared
-  const angularState = computeDampedAngularMotion({
-    angularDampingPerSecond: parameters.angularDampingPerSecond,
-    driveAngularAcceleration,
-    initialAngleRadians,
-    initialAngularVelocityRadiansPerSecond:
-      effectiveInitialAngularVelocityRadiansPerSecond,
-    timeSeconds,
-  })
+    parameters.constantRotationalEnergy
+      ? restoreAngularVelocityFromEnergy(
+          referenceKineticEnergyJoules,
+          momentOfInertiaKilogramMetersSquared,
+          parameters.initialAngularVelocityRadiansPerSecond,
+        )
+      : initialAngularMomentumKilogramMetersSquaredPerSecond /
+        momentOfInertiaKilogramMetersSquared
+  const driveAngularAcceleration = parameters.constantRotationalEnergy
+    ? 0
+    : parameters.appliedTorqueNewtonMeters /
+      momentOfInertiaKilogramMetersSquared
+  const angularState = parameters.constantRotationalEnergy
+    ? {
+        angleRadians:
+          initialAngleRadians +
+          effectiveInitialAngularVelocityRadiansPerSecond * timeSeconds,
+        angularAccelerationRadiansPerSecondSquared: 0,
+        angularVelocityRadiansPerSecond:
+          effectiveInitialAngularVelocityRadiansPerSecond,
+      }
+    : computeDampedAngularMotion({
+        angularDampingPerSecond: parameters.angularDampingPerSecond,
+        driveAngularAcceleration,
+        initialAngleRadians,
+        initialAngularVelocityRadiansPerSecond:
+          effectiveInitialAngularVelocityRadiansPerSecond,
+        timeSeconds,
+      })
   const kineticEnergyJoules =
     0.5 *
     momentOfInertiaKilogramMetersSquared *
@@ -3063,15 +3317,17 @@ function computeRigidBodyRotationSample(
     effectiveInitialAngularVelocityRadiansPerSecond ** 2
   const angularDisplacementRadians =
     angularState.angleRadians - initialAngleRadians
-  const appliedWorkJoules =
-    parameters.appliedTorqueNewtonMeters * angularDisplacementRadians
+  const netTorqueNewtonMeters = parameters.constantRotationalEnergy
+    ? 0
+    : parameters.appliedTorqueNewtonMeters
+  const appliedWorkJoules = netTorqueNewtonMeters * angularDisplacementRadians
   const thermalEnergyJoules = Math.max(
     0,
     appliedWorkJoules + initialKineticEnergyJoules - kineticEnergyJoules,
   )
   const centerOfMassMeters =
-    (rigidBodySlidingMassKilograms * parameters.slidingMassDistanceMeters) /
-    (rigidBodyCentralMassKilograms + rigidBodySlidingMassKilograms)
+    (parameters.slidingMassKilograms * parameters.slidingMassDistanceMeters) /
+    (rigidBodyCentralMassKilograms + parameters.slidingMassKilograms)
 
   return buildSample({
     angleRadians: angularState.angleRadians,
@@ -3084,7 +3340,7 @@ function computeRigidBodyRotationSample(
     kineticEnergyJoules,
     momentOfInertiaKilogramMetersSquared:
       momentOfInertiaKilogramMetersSquared,
-    netTorqueNewtonMeters: parameters.appliedTorqueNewtonMeters,
+    netTorqueNewtonMeters,
     positionMeters: angularDisplacementRadians,
     primaryRadiusMeters: parameters.slidingMassDistanceMeters,
     secondaryRadiusMeters: rigidBodyMaxSlidingMassDistanceMeters,
@@ -3103,7 +3359,24 @@ function computeRigidBodyRotationMomentOfInertia(
 ) {
   return (
     parameters.momentOfInertiaKilogramMetersSquared +
-    rigidBodySlidingMassKilograms * parameters.slidingMassDistanceMeters ** 2
+    parameters.slidingMassKilograms * parameters.slidingMassDistanceMeters ** 2
+  )
+}
+
+function restoreAngularVelocityFromEnergy(
+  kineticEnergyJoules: number,
+  momentOfInertiaKilogramMetersSquared: number,
+  referenceAngularVelocityRadiansPerSecond: number,
+) {
+  if (kineticEnergyJoules === 0) {
+    return 0
+  }
+
+  return (
+    (Math.sign(referenceAngularVelocityRadiansPerSecond) || 1) *
+    Math.sqrt(
+      (2 * kineticEnergyJoules) / momentOfInertiaKilogramMetersSquared,
+    )
   )
 }
 
@@ -3491,6 +3764,9 @@ function buildSample(
     netForceNewtons: sample.netForceNewtons ?? 0,
     netTorqueNewtonMeters: sample.netTorqueNewtonMeters ?? 0,
     normalForceNewtons: sample.normalForceNewtons ?? 0,
+    objectDensityKilogramsPerCubicMeter:
+      sample.objectDensityKilogramsPerCubicMeter ?? 0,
+    objectMassKilograms: sample.objectMassKilograms ?? 0,
     periodSeconds: sample.periodSeconds ?? 0,
     positionMeters: sample.positionMeters ?? sample.xMeters,
     potentialEnergyJoules,
@@ -3649,17 +3925,20 @@ function getKinematicsWarnings(
   }
 
   if (simulationId === 'hydrostatics-buoyancy') {
-    const sample = computeHydrostaticsBuoyancySample(
-      parameters as HydrostaticsBuoyancyParameters,
-      0,
-    )
+    const hydroParameters = parameters as HydrostaticsBuoyancyParameters
+    const objectDensityKilogramsPerCubicMeter =
+      hydroParameters.objectMassKilograms /
+      hydroParameters.objectVolumeCubicMeters
 
-    if (sample.netForceNewtons < -hydrostaticFloatToleranceNewtons) {
+    if (
+      objectDensityKilogramsPerCubicMeter >
+      hydroParameters.fluidDensityKilogramsPerCubicMeter
+    ) {
       return [
         {
           code: 'OBJECT_SINKS',
           message:
-            'O peso supera o empuxo maximo; o corpo fica totalmente submerso e acelera para baixo no modelo ideal.',
+            'A densidade derivada de massa/volume supera a densidade do fluido; o corpo submerge, acelera para baixo e pode tocar o fundo transparente.',
         },
       ]
     }
@@ -3742,18 +4021,28 @@ function getKinematicsWarnings(
 
   if (simulationId === 'rigid-body-rotation') {
     const rotationParameters = parameters as RigidBodyRotationParameters
+    const warnings: SimulationWarning[] = []
 
-    if (rotationParameters.angularDampingPerSecond > 0) {
-      return [
-        {
-          code: 'ROTATION_DAMPING_ACTIVE',
-          message:
-            'O amortecimento angular transforma parte do trabalho aplicado em dissipacao didatica.',
-        },
-      ]
+    if (
+      rotationParameters.angularDampingPerSecond > 0 &&
+      !rotationParameters.constantRotationalEnergy
+    ) {
+      warnings.push({
+        code: 'ROTATION_DAMPING_ACTIVE',
+        message:
+          'O amortecimento angular transforma parte do trabalho aplicado em dissipacao didatica.',
+      })
     }
 
-    return []
+    if (rotationParameters.constantRotationalEnergy) {
+      warnings.push({
+        code: 'ROTATION_CONSTANT_ENERGY_ACTIVE',
+        message:
+          'O modo de energia constante conserva K_rot da velocidade angular de referencia; ao mudar I, omega muda para manter a energia.',
+      })
+    }
+
+    return warnings
   }
 
   if (simulationId === 'work-energy-track') {
@@ -4043,10 +4332,7 @@ function validateHydrostaticsBuoyancyParameters(
     'gravityMetersPerSecondSquared',
     parameters.gravityMetersPerSecondSquared,
   )
-  assertFinitePositive(
-    'objectDensityKilogramsPerCubicMeter',
-    parameters.objectDensityKilogramsPerCubicMeter,
-  )
+  assertFinitePositive('objectMassKilograms', parameters.objectMassKilograms)
   assertFinitePositive('objectVolumeCubicMeters', parameters.objectVolumeCubicMeters)
 }
 
@@ -4171,6 +4457,9 @@ function validateRigidBodyRotationParameters(
     'initialAngularVelocityRadiansPerSecond',
     parameters.initialAngularVelocityRadiansPerSecond,
   )
+  if (typeof parameters.constantRotationalEnergy !== 'boolean') {
+    throw new Error('constantRotationalEnergy must be a boolean.')
+  }
   assertFinitePositive(
     'momentOfInertiaKilogramMetersSquared',
     parameters.momentOfInertiaKilogramMetersSquared,
@@ -4178,6 +4467,10 @@ function validateRigidBodyRotationParameters(
   assertFiniteNonNegative(
     'slidingMassDistanceMeters',
     parameters.slidingMassDistanceMeters,
+  )
+  assertFiniteNonNegative(
+    'slidingMassKilograms',
+    parameters.slidingMassKilograms,
   )
 }
 
@@ -4676,6 +4969,38 @@ function readNumber(values: Record<string, unknown>, key: string) {
 
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     throw new Error(`${key} must be a finite number.`)
+  }
+
+  return value
+}
+
+function readOptionalNumber(values: Record<string, unknown>, key: string) {
+  const value = values[key]
+
+  if (typeof value === 'undefined') {
+    return undefined
+  }
+
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`${key} must be a finite number.`)
+  }
+
+  return value
+}
+
+function readBoolean(
+  values: Record<string, unknown>,
+  key: string,
+  fallback: boolean,
+) {
+  const value = values[key]
+
+  if (typeof value === 'undefined') {
+    return fallback
+  }
+
+  if (typeof value !== 'boolean') {
+    throw new Error(`${key} must be a boolean.`)
   }
 
   return value

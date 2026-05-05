@@ -25,8 +25,12 @@ import {
   type FrameStats,
 } from '../../lib/rendering/visualRuntime'
 import {
+  createOrbitCamera,
+  updateOrbitCameraProjection,
   positionOrbitCamera,
   updateOrbitCameraPose,
+  type CameraProjectionMode,
+  type OrbitCamera,
   type OrbitCameraPose,
 } from '../../lib/rendering/orbitCamera'
 import {
@@ -40,6 +44,7 @@ import { ViewportOriginLegend } from './ViewportOriginLegend'
 export type PendulumFrameStats = FrameStats
 
 type PendulumSceneProps = {
+  cameraProjectionMode: CameraProjectionMode
   durationSeconds: number
   isPlaying: boolean
   onSampleChange: (sample: PendulumSample, stats: PendulumFrameStats) => void
@@ -54,7 +59,7 @@ type PendulumSceneProps = {
 type SceneObjects = {
   renderer: THREE.WebGLRenderer
   scene: THREE.Scene
-  camera: THREE.PerspectiveCamera
+  camera: OrbitCamera
   cameraRadius: number
   cameraMinRadius: number
   cameraMaxRadius: number
@@ -114,6 +119,7 @@ const minCameraRadiusScale = 0.38
 const maxCameraRadiusScale = 2.25
 
 export function PendulumScene({
+  cameraProjectionMode,
   durationSeconds,
   isPlaying,
   onSampleChange,
@@ -149,6 +155,19 @@ export function PendulumScene({
   const traceSamplesRef = useRef<PendulumSample[]>([
     toPendulumSample(readInitialPendulumState(samples), parameters),
   ])
+  const updateCameraProjection = useCallback((objects: SceneObjects | null) => {
+    const parent = canvasRef.current?.parentElement
+
+    if (!objects || !parent) {
+      return
+    }
+
+    updateOrbitCameraProjection(objects.camera, {
+      cameraRadius: objects.cameraRadius,
+      height: parent.clientHeight,
+      width: parent.clientWidth,
+    })
+  }, [])
 
   const renderCurrentFrame = useCallback((notify = false) => {
     const objects = objectsRef.current
@@ -276,10 +295,11 @@ export function PendulumScene({
       }
 
       objects.cameraRadius = nextCameraRadius
+      updateCameraProjection(objects)
       updateOrbitCamera(objects, cameraPoseRef.current)
       renderCurrentFrame()
     },
-    [renderCurrentFrame],
+    [renderCurrentFrame, updateCameraProjection],
   )
 
   useEffect(() => {
@@ -333,14 +353,13 @@ export function PendulumScene({
       1,
       ...samples.map((item) => Math.hypot(item.xMeters, item.yMeters)),
     )
-    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100)
+    const camera = createOrbitCamera('perspective', { far: 100 })
     const scene = new THREE.Scene()
     const cameraTarget = new THREE.Vector3(0, 0, -maxLength * 0.54)
     const cameraRadius = Math.max(3.7, maxLength * 3.15)
     const cameraMinRadius = Math.max(1.15, cameraRadius * minCameraRadiusScale)
     const cameraMaxRadius = cameraRadius * maxCameraRadiusScale
 
-    camera.up.set(0, 0, 1)
     scene.background = new THREE.Color(themeTokens.background)
     scene.add(new THREE.AmbientLight(0xffffff, 0.64))
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.1)
@@ -450,13 +469,21 @@ export function PendulumScene({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25))
 
     const resizeRenderer = () => {
+      const objects = objectsRef.current
       const width = parent.clientWidth
       const height = parent.clientHeight
 
-      camera.aspect = width / Math.max(1, height)
-      camera.updateProjectionMatrix()
+      if (!objects) {
+        return
+      }
+
+      updateOrbitCameraProjection(objects.camera, {
+        cameraRadius: objects.cameraRadius,
+        height,
+        width,
+      })
       renderer.setSize(width, height, false)
-      updateOrbitCamera(objectsRef.current, cameraPoseRef.current)
+      updateOrbitCamera(objects, cameraPoseRef.current)
       renderCurrentFrame()
     }
     const observer = new ResizeObserver(resizeRenderer)
@@ -496,6 +523,27 @@ export function PendulumScene({
       objectsRef.current = null
     }
   }, [renderCurrentFrame, samples])
+
+  useEffect(() => {
+    if (import.meta.env.MODE === 'test') {
+      return
+    }
+
+    const objects = objectsRef.current
+
+    if (!objects) {
+      return
+    }
+
+    objects.camera = createOrbitCamera(cameraProjectionMode, { far: 100 })
+    updateCameraProjection(objects)
+    updateOrbitCamera(objects, cameraPoseRef.current)
+    renderCurrentFrame()
+  }, [
+    cameraProjectionMode,
+    renderCurrentFrame,
+    updateCameraProjection,
+  ])
 
   useEffect(() => {
     const resetSamples = runtimeRef.current.samples

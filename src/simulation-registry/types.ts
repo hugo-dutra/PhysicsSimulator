@@ -72,6 +72,16 @@ export type SimulationPreset = {
   parameters: Record<string, ParameterValue>
 }
 
+export type SimulationRegime = {
+  id: string
+  label: string
+  condition: string
+  transitionLimit?: string
+  sampleFields: string[]
+  warningCode?: string
+  idealReferenceFields?: string[]
+}
+
 export type FormulaVariable = {
   symbol: string
   label: string
@@ -102,6 +112,7 @@ export type SimulationFixture = {
   defaultParameters: Record<string, ParameterValue>
   parameters: SimulationParameter[]
   presets: SimulationPreset[]
+  regimes?: SimulationRegime[]
   limits: string[]
   formulas: FormulaReference[]
 }

@@ -3,6 +3,7 @@ import {
   computeKinematicsSample,
   computeKinematicsTimeline,
   getKinematicsVectorOverlays,
+  hydrostaticTankDepthMeters,
   toKinematicsParameters,
   type AtwoodMachineParameters,
   type CentripetalForceCurveParameters,
@@ -581,29 +582,71 @@ describe('kinematics physics engine', () => {
       depthMeters: 2,
       fluidDensityKilogramsPerCubicMeter: 1000,
       gravityMetersPerSecondSquared: 9.81,
-      objectDensityKilogramsPerCubicMeter: 600,
+      objectMassKilograms: 60,
       objectVolumeCubicMeters: 0.1,
     }
     const sinking: HydrostaticsBuoyancyParameters = {
       ...floating,
-      objectDensityKilogramsPerCubicMeter: 1200,
+      objectMassKilograms: 120,
+    }
+    const largerVolume: HydrostaticsBuoyancyParameters = {
+      ...floating,
+      objectVolumeCubicMeters: 0.2,
     }
     const floatingResult = computeKinematicsTimeline({
-      durationSeconds: 1,
+      durationSeconds: 12,
       parameters: floating,
       sampleRateHz: 20,
       simulationId: 'hydrostatics-buoyancy',
     })
     const sinkingResult = computeKinematicsTimeline({
-      durationSeconds: 1,
+      durationSeconds: 4,
       parameters: sinking,
       sampleRateHz: 20,
       simulationId: 'hydrostatics-buoyancy',
     })
+    const floatingAtOneSecond = computeKinematicsSample(
+      'hydrostatics-buoyancy',
+      floating,
+      1,
+    )
+    const largerVolumeSample = computeKinematicsSample(
+      'hydrostatics-buoyancy',
+      largerVolume,
+      1,
+    )
+    const sinkingAtOneSecond = computeKinematicsSample(
+      'hydrostatics-buoyancy',
+      sinking,
+      1,
+    )
 
     expect(floatingResult.samples[0].fluidPressurePascals).toBeCloseTo(19620)
-    expect(floatingResult.samples[0].submergedFraction).toBeCloseTo(0.6)
-    expect(floatingResult.samples[0].netForceNewtons).toBeCloseTo(0)
+    expect(floatingResult.samples[0].objectDensityKilogramsPerCubicMeter)
+      .toBeCloseTo(600)
+    expect(floatingResult.samples[0].primaryRadiusMeters).toBeCloseTo(
+      Math.cbrt((3 * floating.objectVolumeCubicMeters) / (4 * Math.PI)),
+    )
+    expect(floatingResult.samples.at(-1)?.submergedFraction)
+      .toBeCloseTo(0.6, 1)
+    expect(floatingResult.samples.at(-1)?.netForceNewtons).toBeCloseTo(0, 0)
+    expect(largerVolumeSample.primaryRadiusMeters).toBeGreaterThan(
+      floatingAtOneSecond.primaryRadiusMeters,
+    )
+    expect(largerVolumeSample.secondaryRadiusMeters).toBeCloseTo(
+      hydrostaticTankDepthMeters,
+    )
+    expect(largerVolumeSample.secondaryRadiusMeters).toBeCloseTo(
+      floatingAtOneSecond.secondaryRadiusMeters,
+    )
+    expect(largerVolumeSample.objectDensityKilogramsPerCubicMeter)
+      .toBeLessThan(floatingAtOneSecond.objectDensityKilogramsPerCubicMeter)
+    expect(largerVolumeSample.zMeters).toBeGreaterThan(
+      floatingAtOneSecond.zMeters,
+    )
+    expect(sinkingAtOneSecond.zMeters).toBeLessThan(
+      floatingAtOneSecond.zMeters,
+    )
     expect(sinkingResult.samples[0].netForceNewtons).toBeLessThan(0)
     expect(sinkingResult.warnings[0]?.code).toBe('OBJECT_SINKS')
   })
@@ -629,7 +672,42 @@ describe('kinematics physics engine', () => {
     expect(sample.speedMetersPerSecond).toBeCloseTo(1.5)
     expect(sample.secondarySpeedMetersPerSecond).toBeCloseTo(3)
     expect(sample.secondaryPressurePascals).toBeLessThan(sample.pressurePascals)
+    expect(sample.primaryRadiusMeters).toBeCloseTo(
+      Math.sqrt(parameters.inletAreaSquareMeters / Math.PI),
+    )
+    expect(sample.secondaryRadiusMeters).toBeCloseTo(
+      Math.sqrt(parameters.throatAreaSquareMeters / Math.PI),
+    )
     expect(result.warnings).toHaveLength(0)
+  })
+
+  it('samples the local Venturi tracer at the throat for visual flow cues', () => {
+    const parameters: ContinuityBernoulliParameters = {
+      flowRateCubicMetersPerSecond: 0.12,
+      fluidDensityKilogramsPerCubicMeter: 1000,
+      gravityMetersPerSecondSquared: 9.81,
+      heightDifferenceMeters: 1.2,
+      inletAreaSquareMeters: 0.08,
+      inletPressureKilopascals: 160,
+      throatAreaSquareMeters: 0.04,
+    }
+    const throatSample = computeKinematicsSample(
+      'continuity-bernoulli',
+      parameters,
+      2,
+    )
+
+    expect(throatSample.xMeters).toBeCloseTo(0)
+    expect(throatSample.zMeters).toBeCloseTo(parameters.heightDifferenceMeters)
+    expect(throatSample.secondaryZMeters).toBeCloseTo(
+      parameters.heightDifferenceMeters,
+    )
+    expect(throatSample.velocityMetersPerSecond).toBeCloseTo(
+      throatSample.secondarySpeedMetersPerSecond,
+    )
+    expect(throatSample.fluidPressurePascals).toBeCloseTo(
+      throatSample.secondaryPressurePascals,
+    )
   })
 
   it('conserves total momentum and applies restitution in 1D and 2D collisions', () => {
@@ -819,10 +897,12 @@ describe('kinematics physics engine', () => {
     const parameters: RigidBodyRotationParameters = {
       angularDampingPerSecond: 0.1,
       appliedTorqueNewtonMeters: 0,
+      constantRotationalEnergy: false,
       initialAngleDegrees: 0,
       initialAngularVelocityRadiansPerSecond: 2,
       momentOfInertiaKilogramMetersSquared: 1.5,
       slidingMassDistanceMeters: 1,
+      slidingMassKilograms: 0.72,
     }
     const result = computeKinematicsTimeline({
       durationSeconds: 2,
@@ -842,10 +922,12 @@ describe('kinematics physics engine', () => {
     const outerMassParameters: RigidBodyRotationParameters = {
       angularDampingPerSecond: 0,
       appliedTorqueNewtonMeters: 0,
+      constantRotationalEnergy: false,
       initialAngleDegrees: 0,
       initialAngularVelocityRadiansPerSecond: 1.2,
       momentOfInertiaKilogramMetersSquared: 0.9,
       slidingMassDistanceMeters: 1.2,
+      slidingMassKilograms: 0.72,
     }
     const innerMassParameters: RigidBodyRotationParameters = {
       ...outerMassParameters,
@@ -883,6 +965,124 @@ describe('kinematics physics engine', () => {
       outerSample.angularVelocityRadiansPerSecond,
     )
     expect(innerAngularMomentum).toBeCloseTo(outerAngularMomentum)
+  })
+
+  it('uses movable mass value in rigid-body inertia, center of mass, and omega', () => {
+    const lightMassParameters: RigidBodyRotationParameters = {
+      angularDampingPerSecond: 0,
+      appliedTorqueNewtonMeters: 0,
+      constantRotationalEnergy: false,
+      initialAngleDegrees: 0,
+      initialAngularVelocityRadiansPerSecond: 1.2,
+      momentOfInertiaKilogramMetersSquared: 0.9,
+      slidingMassDistanceMeters: 0.35,
+      slidingMassKilograms: 0.2,
+    }
+    const heavyMassParameters: RigidBodyRotationParameters = {
+      ...lightMassParameters,
+      slidingMassKilograms: 1.4,
+    }
+    const noMovableMassParameters: RigidBodyRotationParameters = {
+      ...lightMassParameters,
+      slidingMassKilograms: 0,
+    }
+    const lightSample = computeKinematicsSample(
+      'rigid-body-rotation',
+      lightMassParameters,
+      0,
+    )
+    const heavySample = computeKinematicsSample(
+      'rigid-body-rotation',
+      heavyMassParameters,
+      0,
+    )
+    const noMovableMassSample = computeKinematicsSample(
+      'rigid-body-rotation',
+      noMovableMassParameters,
+      0,
+    )
+    const lightEnergySample = computeKinematicsSample(
+      'rigid-body-rotation',
+      { ...lightMassParameters, constantRotationalEnergy: true },
+      0,
+    )
+    const heavyEnergySample = computeKinematicsSample(
+      'rigid-body-rotation',
+      { ...heavyMassParameters, constantRotationalEnergy: true },
+      0,
+    )
+
+    expect(heavySample.momentOfInertiaKilogramMetersSquared).toBeGreaterThan(
+      lightSample.momentOfInertiaKilogramMetersSquared,
+    )
+    expect(heavySample.centerOfMassMeters).toBeGreaterThan(
+      lightSample.centerOfMassMeters,
+    )
+    expect(heavySample.angularVelocityRadiansPerSecond).toBeGreaterThan(
+      lightSample.angularVelocityRadiansPerSecond,
+    )
+    expect(heavyEnergySample.angularVelocityRadiansPerSecond).toBeGreaterThan(
+      lightEnergySample.angularVelocityRadiansPerSecond,
+    )
+    expect(noMovableMassSample.momentOfInertiaKilogramMetersSquared)
+      .toBeCloseTo(noMovableMassParameters.momentOfInertiaKilogramMetersSquared)
+    expect(noMovableMassSample.centerOfMassMeters).toBeCloseTo(0)
+  })
+
+  it('keeps rotational energy fixed while omega changes with sliding mass position', () => {
+    const outerMassParameters: RigidBodyRotationParameters = {
+      angularDampingPerSecond: 0.25,
+      appliedTorqueNewtonMeters: 1.4,
+      constantRotationalEnergy: true,
+      initialAngleDegrees: 0,
+      initialAngularVelocityRadiansPerSecond: 1.2,
+      momentOfInertiaKilogramMetersSquared: 0.9,
+      slidingMassDistanceMeters: 1.2,
+      slidingMassKilograms: 0.72,
+    }
+    const innerMassParameters: RigidBodyRotationParameters = {
+      ...outerMassParameters,
+      slidingMassDistanceMeters: 0.35,
+    }
+    const outerResult = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters: outerMassParameters,
+      sampleRateHz: 20,
+      simulationId: 'rigid-body-rotation',
+    })
+    const innerResult = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters: innerMassParameters,
+      sampleRateHz: 20,
+      simulationId: 'rigid-body-rotation',
+    })
+    const outerSample = outerResult.samples.at(-1)
+    const innerSample = innerResult.samples.at(-1)
+    const outerAngularMomentum =
+      (outerSample?.momentOfInertiaKilogramMetersSquared ?? 0) *
+      (outerSample?.angularVelocityRadiansPerSecond ?? 0)
+    const innerAngularMomentum =
+      (innerSample?.momentOfInertiaKilogramMetersSquared ?? 0) *
+      (innerSample?.angularVelocityRadiansPerSecond ?? 0)
+
+    expect(innerSample?.angularVelocityRadiansPerSecond).toBeGreaterThan(
+      outerSample?.angularVelocityRadiansPerSecond ?? 0,
+    )
+    expect(innerSample?.kineticEnergyJoules).toBeCloseTo(
+      outerSample?.kineticEnergyJoules ?? 0,
+    )
+    expect(innerSample?.totalEnergyJoules).toBeCloseTo(
+      outerSample?.totalEnergyJoules ?? 0,
+    )
+    expect(outerSample?.angularAccelerationRadiansPerSecondSquared)
+      .toBeCloseTo(0)
+    expect(innerSample?.angularAccelerationRadiansPerSecondSquared)
+      .toBeCloseTo(0)
+    expect(innerAngularMomentum).toBeLessThan(outerAngularMomentum)
+    expect(outerSample?.netTorqueNewtonMeters).toBeCloseTo(0)
+    expect(outerResult.warnings.map((warning) => warning.code)).toContain(
+      'ROTATION_CONSTANT_ENERGY_ACTIVE',
+    )
   })
 
   it('derives vector overlays from the same kinematics samples', () => {
@@ -959,12 +1159,29 @@ describe('kinematics physics engine', () => {
         simulationId: 'uniform-circular-motion',
       }),
     ).toThrow(/angularVelocityRadiansPerSecond/)
+    expect(() =>
+      computeKinematicsTimeline({
+        durationSeconds: 1,
+        parameters: {
+          angularDampingPerSecond: 0,
+          appliedTorqueNewtonMeters: 0,
+          constantRotationalEnergy: false,
+          initialAngleDegrees: 0,
+          initialAngularVelocityRadiansPerSecond: 1,
+          momentOfInertiaKilogramMetersSquared: 0.9,
+          slidingMassDistanceMeters: 1,
+          slidingMassKilograms: -0.1,
+        },
+        sampleRateHz: 60,
+        simulationId: 'rigid-body-rotation',
+      }),
+    ).toThrow(/slidingMassKilograms/)
   })
 })
 
 function readFixtureLikeParameters(
   simulationId: KinematicsSimulationId,
-): Record<string, number> {
+): Record<string, boolean | number> {
   switch (simulationId) {
     case 'uniform-linear-motion':
       return {
@@ -1026,7 +1243,7 @@ function readFixtureLikeParameters(
         depthMeters: 1.5,
         fluidDensityKilogramsPerCubicMeter: 1000,
         gravityMetersPerSecondSquared: 9.81,
-        objectDensityKilogramsPerCubicMeter: 650,
+        objectMassKilograms: 52,
         objectVolumeCubicMeters: 0.08,
       }
     case 'mass-spring':
@@ -1074,10 +1291,12 @@ function readFixtureLikeParameters(
       return {
         angularDampingPerSecond: 0.05,
         appliedTorqueNewtonMeters: 0.8,
+        constantRotationalEnergy: false,
         initialAngleDegrees: 0,
         initialAngularVelocityRadiansPerSecond: 0.5,
         momentOfInertiaKilogramMetersSquared: 0.9,
         slidingMassDistanceMeters: 1,
+        slidingMassKilograms: 2.4,
       }
     case 'rolling-without-slipping':
       return {

@@ -13,6 +13,7 @@ import {
   computeKinematicsSample,
   computeKinematicsTimeline,
   getKinematicsVectorOverlays,
+  hydrostaticTankDepthMeters,
   interpolateKinematicsSample,
   type GravitationalFieldOrbitsParameters,
   type KinematicsParameters,
@@ -30,8 +31,12 @@ import {
   type FrameStats,
 } from '../../lib/rendering/visualRuntime'
 import {
+  createOrbitCamera,
   positionOrbitCamera,
+  updateOrbitCameraProjection,
   updateOrbitCameraPose,
+  type CameraProjectionMode,
+  type OrbitCamera,
   type OrbitCameraPose,
 } from '../../lib/rendering/orbitCamera'
 import {
@@ -40,6 +45,14 @@ import {
   getOriginAxesLength,
 } from '../../lib/rendering/originAxes'
 import { themeTokens } from '../../theme/appTheme'
+import {
+  getRigidBodyRotationBaseRadius,
+  getRigidBodyRotationTracePosition,
+  getRigidBodyRotorHalfLength,
+  getRigidBodyRotorLength,
+  getRigidBodySlidingMassRadiusRatio,
+  rigidRotationRotorZ,
+} from './rigidBodyRotationSceneGeometry'
 import {
   createKinematicsSceneProjection,
   toKinematicsSceneDirection,
@@ -52,6 +65,7 @@ import { ViewportOriginLegend } from './ViewportOriginLegend'
 export type KinematicsFrameStats = FrameStats
 
 type KinematicsSceneProps = {
+  cameraProjectionMode: CameraProjectionMode
   durationSeconds: number
   isPlaying: boolean
   modelTimeScale?: number
@@ -77,14 +91,33 @@ type RigidRotationCurvedArrow = {
   positions: Float32Array
 }
 
+type BernoulliFlowLookup = {
+  phases: number[]
+  volumeCubicMeters: number
+  xMeters: number[]
+}
+
+type BernoulliSceneObjects = {
+  group: THREE.Group
+  manometerColumns: THREE.Mesh[]
+  particles: THREE.InstancedMesh
+  particlePhases: number[]
+  flowLookup: BernoulliFlowLookup
+}
+
 type SceneObjects = {
   arrows: Record<KinematicsVectorOverlay['id'], THREE.ArrowHelper>
+  bernoulli: BernoulliSceneObjects
   body: THREE.Mesh
-  camera: THREE.PerspectiveCamera
+  camera: OrbitCamera
   cameraMaxRadius: number
   cameraMinRadius: number
   cameraRadius: number
   cameraTarget: THREE.Vector3
+  hydroTankEdges: THREE.LineSegments
+  hydroTankGlass: THREE.Mesh
+  hydroWater: THREE.Mesh
+  hydroWaterSurface: THREE.Mesh
   renderer: THREE.WebGLRenderer
   rope: THREE.Line
   ropePositionAttribute: THREE.BufferAttribute
@@ -99,7 +132,6 @@ type SceneObjects = {
   rotationAxis: THREE.Mesh
   rotationBase: THREE.Mesh
   rotationBrakePad: THREE.Mesh
-  rotationCenterOfMassMarker: THREE.Mesh
   rotationCounterMass: THREE.Mesh
   rotationCurvedArrows: Record<RigidRotationVectorId, RigidRotationCurvedArrow>
   rotationHub: THREE.Mesh
@@ -265,12 +297,25 @@ const leverBoardThickness = 0.085
 const rigidRotationAngleArcSegments = 72
 const rigidRotationBaseThickness = 0.12
 const rigidRotationCurvedArrowSegments = 36
-const rigidRotationRotorZ = 0.22
 const rigidRotationAxisHeight = 0.7
-const rigidRotationMinMassRadiusRatio = 0.14
 const orbitSatellitePathSegments = 96
+const hydroTankWidthMeters = 2.8
+const hydroTankHorizontalDepthMeters = 1.8
+const bernoulliTubeHalfLengthMeters = 3
+const bernoulliTubeSegments = 84
+const bernoulliTubeRadialSegments = 28
+const bernoulliFlowLookupSegments = 120
+const bernoulliParticleCount = 72
+const bernoulliParticleRadius = 0.035
+const bernoulliManometerMaxHeight = 1.38
+const bernoulliManometerMinHeight = 0.12
+const bernoulliManometerFrontY = -0.72
+const bernoulliManometerXs = [-2.35, 0, 2.35] as const
+const bernoulliTubeRadiusVisualScale = 2.65
+const bernoulliThroatWidthMeters = 0.95
 
 export function KinematicsScene({
+  cameraProjectionMode,
   durationSeconds,
   isPlaying,
   modelTimeScale = 1,
@@ -309,6 +354,19 @@ export function KinematicsScene({
   const statsWindowRef = useRef(createFrameStatsWindow())
   const timelineSamplesRef = useRef<KinematicsSample[]>(samples)
   const traceSamplesRef = useRef<KinematicsSample[]>([readFirstKinematicsSample(samples)])
+  const updateCameraProjection = useCallback((objects: SceneObjects | null) => {
+    const parent = canvasRef.current?.parentElement
+
+    if (!objects || !parent) {
+      return
+    }
+
+    updateOrbitCameraProjection(objects.camera, {
+      cameraRadius: objects.cameraRadius,
+      height: parent.clientHeight,
+      width: parent.clientWidth,
+    })
+  }, [])
 
   const renderCurrentFrame = useCallback((notify = false) => {
     const objects = objectsRef.current
@@ -445,10 +503,11 @@ export function KinematicsScene({
       }
 
       objects.cameraRadius = nextCameraRadius
+      updateCameraProjection(objects)
       updateOrbitCamera(objects, cameraPoseRef.current)
       renderCurrentFrame()
     },
-    [renderCurrentFrame],
+    [renderCurrentFrame, updateCameraProjection],
   )
 
   useEffect(() => {
@@ -524,7 +583,7 @@ export function KinematicsScene({
       simulationId,
     )
     const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 160)
+    const camera = createOrbitCamera('perspective', { far: 160 })
     const cameraTarget = new THREE.Vector3(
       bounds.centerX,
       bounds.centerY,
@@ -540,7 +599,6 @@ export function KinematicsScene({
     const cameraMinRadius = Math.max(1.2, cameraRadius * minCameraRadiusScale)
     const cameraMaxRadius = cameraRadius * maxCameraRadiusScale
 
-    camera.up.set(0, 0, 1)
     scene.background = new THREE.Color(themeTokens.background)
     scene.add(new THREE.AmbientLight(0xffffff, 0.64))
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.12)
@@ -631,6 +689,59 @@ export function KinematicsScene({
     scene.add(rollingPlane)
     scene.add(rollingPlaneEdges)
 
+    const hydroTankGlass = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        depthWrite: false,
+        opacity: 0.075,
+        side: THREE.DoubleSide,
+        transparent: true,
+      }),
+    )
+    const hydroTankEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)),
+      new THREE.LineBasicMaterial({
+        color: 0x8bd7ff,
+        opacity: 0.46,
+        transparent: true,
+      }),
+    )
+    const hydroWater = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshPhysicalMaterial({
+        color: 0x38bdf8,
+        depthWrite: false,
+        metalness: 0,
+        opacity: 0.22,
+        roughness: 0.12,
+        transparent: true,
+        transmission: 0.35,
+      }),
+    )
+    const hydroWaterSurface = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshBasicMaterial({
+        color: 0x2dd4bf,
+        depthWrite: false,
+        opacity: 0.36,
+        side: THREE.DoubleSide,
+        transparent: true,
+      }),
+    )
+
+    ;[hydroTankGlass, hydroTankEdges, hydroWater, hydroWaterSurface].forEach(
+      (object) => {
+        object.renderOrder = 2
+        object.visible = false
+        scene.add(object)
+      },
+    )
+
+    const bernoulli = createBernoulliVenturiObjects(samples, sceneProjection)
+
+    scene.add(bernoulli.group)
+
     const body = new THREE.Mesh(
       simulationId === 'atwood-machine'
         ? new THREE.BoxGeometry(atwoodMassSize, atwoodMassSize, atwoodMassSize)
@@ -656,6 +767,8 @@ export function KinematicsScene({
               sceneBodySize * 1.08,
               sceneBodySize * 0.72,
             )
+        : simulationId === 'hydrostatics-buoyancy'
+          ? new THREE.SphereGeometry(1, 32, 20)
         : new THREE.SphereGeometry(
             simulationId === 'collisions-1d-2d' ? 1 : sceneBodySize,
             24,
@@ -733,16 +846,6 @@ export function KinematicsScene({
         emissiveIntensity: 0.12,
         metalness: 0.06,
         roughness: 0.46,
-      }),
-    )
-    const rotationCenterOfMassMarker = new THREE.Mesh(
-      new THREE.SphereGeometry(1, 18, 12),
-      new THREE.MeshStandardMaterial({
-        color: 0xe6e8ec,
-        emissive: 0x20242d,
-        emissiveIntensity: 0.1,
-        metalness: 0.08,
-        roughness: 0.42,
       }),
     )
     const rotationCounterMass = new THREE.Mesh(
@@ -835,7 +938,6 @@ export function KinematicsScene({
       rotationAxis,
       rotationHub,
       rotationTipMass,
-      rotationCenterOfMassMarker,
       rotationCounterMass,
       rotationZeroLine,
       rotationAngleArc,
@@ -1092,25 +1194,38 @@ export function KinematicsScene({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25))
 
     const resizeRenderer = () => {
+      const objects = objectsRef.current
       const width = parent.clientWidth
       const height = parent.clientHeight
 
-      camera.aspect = width / Math.max(1, height)
-      camera.updateProjectionMatrix()
+      if (!objects) {
+        return
+      }
+
+      updateOrbitCameraProjection(objects.camera, {
+        cameraRadius: objects.cameraRadius,
+        height,
+        width,
+      })
       renderer.setSize(width, height, false)
-      updateOrbitCamera(objectsRef.current, cameraPoseRef.current)
+      updateOrbitCamera(objects, cameraPoseRef.current)
       renderCurrentFrame()
     }
     const observer = new ResizeObserver(resizeRenderer)
 
     objectsRef.current = {
       arrows,
+      bernoulli,
       body,
       camera,
       cameraMaxRadius,
       cameraMinRadius,
       cameraRadius,
       cameraTarget,
+      hydroTankEdges,
+      hydroTankGlass,
+      hydroWater,
+      hydroWaterSurface,
       renderer,
       rope,
       ropePositionAttribute,
@@ -1125,7 +1240,6 @@ export function KinematicsScene({
       rotationAxis,
       rotationBase,
       rotationBrakePad,
-      rotationCenterOfMassMarker,
       rotationCounterMass,
       rotationCurvedArrows,
       rotationHub,
@@ -1188,6 +1302,27 @@ export function KinematicsScene({
       objectsRef.current = null
     }
   }, [parameters, renderCurrentFrame, samples, simulationId])
+
+  useEffect(() => {
+    if (import.meta.env.MODE === 'test') {
+      return
+    }
+
+    const objects = objectsRef.current
+
+    if (!objects) {
+      return
+    }
+
+    objects.camera = createOrbitCamera(cameraProjectionMode, { far: 160 })
+    updateCameraProjection(objects)
+    updateOrbitCamera(objects, cameraPoseRef.current)
+    renderCurrentFrame()
+  }, [
+    cameraProjectionMode,
+    renderCurrentFrame,
+    updateCameraProjection,
+  ])
 
   useEffect(() => {
     const resetSamples = runtimeRef.current.samples
@@ -1409,7 +1544,9 @@ function updateConstrainedBodyObjects(
   showVectors: boolean,
 ) {
   const isAtwood = simulationId === 'atwood-machine'
+  const isBernoulli = simulationId === 'continuity-bernoulli'
   const isCollision = simulationId === 'collisions-1d-2d'
+  const isHydrostatics = simulationId === 'hydrostatics-buoyancy'
   const isMassSpring = simulationId === 'mass-spring'
   const isOrbit = simulationId === 'gravitational-field-orbits'
   const isRigidRotation = simulationId === 'rigid-body-rotation'
@@ -1424,6 +1561,11 @@ function updateConstrainedBodyObjects(
   objects.rope.visible = isAtwood || isMassSpring
   objects.supportBar.visible = isAtwood || isMassSpring
   objects.supportStem.visible = isAtwood || isMassSpring
+  objects.hydroTankEdges.visible = isHydrostatics
+  objects.hydroTankGlass.visible = isHydrostatics
+  objects.hydroWater.visible = isHydrostatics
+  objects.hydroWaterSurface.visible = isHydrostatics
+  objects.bernoulli.group.visible = isBernoulli
   objects.leverAppliedForceMarker.visible = isTorqueLever
   objects.leverCenterOfMassMarker.visible = isTorqueLever
   objects.leverLeftMass.visible = isTorqueLever
@@ -1459,6 +1601,16 @@ function updateConstrainedBodyObjects(
     )
     objects.secondaryBody.scale.setScalar(orbitMoonRadius)
     updateOrbitSatellitePath(objects, sample, orbitMoonMinimumRadius)
+    return
+  }
+
+  if (isHydrostatics) {
+    updateHydrostaticsObjects(objects, sample)
+    return
+  }
+
+  if (isBernoulli) {
+    updateBernoulliObjects(objects, sample)
     return
   }
 
@@ -1625,14 +1777,14 @@ function setRigidBodyRotationObjectsVisible(
     objects.rotationAxis,
     objects.rotationHub,
     objects.rotationTipMass,
-    objects.rotationCenterOfMassMarker,
     objects.rotationCounterMass,
     objects.rotationZeroLine,
-    objects.rotationAngleArc,
-    objects.rotationAngleMarker,
   ].forEach((object) => {
     object.visible = visible
   })
+  objects.rotationAngleArc.visible = false
+  objects.rotationAngleArc.geometry.setDrawRange(0, 0)
+  objects.rotationAngleMarker.visible = false
 
   if (!visible) {
     objects.rotationBrakePad.visible = false
@@ -1654,15 +1806,10 @@ function updateRigidBodyRotationObjects(
   const massRadiusRatio = getRigidBodySlidingMassRadiusRatio(sample)
   const slidingMassOffset = rotorHalfLength * massRadiusRatio
   const tipRadius = clamp(objects.bodyRadius * 0.46, 0.09, 0.18)
-  const centerMarkerRadius = clamp(tipRadius * 0.38, 0.045, 0.07)
   const counterSize = clamp(objects.bodyRadius * 0.7, 0.12, 0.22)
   const axis = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0)
   const tangent = new THREE.Vector3(-Math.sin(angle), Math.cos(angle), 0)
   const rotorCenter = new THREE.Vector3(0, 0, rigidRotationRotorZ)
-  const centerOfMassRatio =
-    sample.primaryRadiusMeters > 0
-      ? clamp(sample.centerOfMassMeters / sample.primaryRadiusMeters, 0, 1)
-      : 0
 
   objects.body.position.copy(rotorCenter)
   objects.body.rotation.set(0, 0, angle)
@@ -1673,11 +1820,6 @@ function updateRigidBodyRotationObjects(
     .copy(rotorCenter)
     .addScaledVector(axis, slidingMassOffset)
   objects.rotationTipMass.scale.setScalar(tipRadius)
-  objects.rotationCenterOfMassMarker.position
-    .copy(rotorCenter)
-    .addScaledVector(axis, slidingMassOffset * centerOfMassRatio)
-    .addScaledVector(new THREE.Vector3(0, 0, 1), tipRadius * 0.8)
-  objects.rotationCenterOfMassMarker.scale.setScalar(centerMarkerRadius)
   objects.rotationCounterMass.position
     .copy(rotorCenter)
     .addScaledVector(axis, -rotorHalfLength * 0.72)
@@ -1689,38 +1831,16 @@ function updateRigidBodyRotationObjects(
     counterSize * 0.72,
   )
 
-  updateRigidRotationAngleArc(objects, sample)
+  hideRigidRotationAngleArc(objects)
   updateRigidRotationDampingCue(objects, sample)
   updateRigidRotationCurvedVectorCues(objects, sample, showVectors)
   updateRigidRotationAngularMomentumVector(objects, sample, showVectors)
 }
 
-function updateRigidRotationAngleArc(
-  objects: SceneObjects,
-  sample: KinematicsSample,
-) {
-  const radius = objects.rigidRotationBaseRadius * 0.58
-  const z = rigidRotationRotorZ + 0.1
-  const sweepRadians = readVisibleAngleSweep(sample.angleRadians)
-  const pointCount = updateArcLineGeometry({
-    endAngleRadians: sweepRadians,
-    positions: objects.rotationAngleArcPositions,
-    radius,
-    segmentCapacity: rigidRotationAngleArcSegments,
-    startAngleRadians: 0,
-    z,
-  })
-  const markerAngle = sweepRadians
-
-  objects.rotationAngleArc.geometry.setDrawRange(0, pointCount)
-  objects.rotationAngleArcPositionAttribute.needsUpdate = true
-  objects.rotationAngleArc.visible = pointCount > 1 && Math.abs(sweepRadians) > 0.002
-  objects.rotationAngleMarker.visible = true
-  objects.rotationAngleMarker.position.set(
-    Math.cos(markerAngle) * radius,
-    Math.sin(markerAngle) * radius,
-    z,
-  )
+function hideRigidRotationAngleArc(objects: SceneObjects) {
+  objects.rotationAngleArc.visible = false
+  objects.rotationAngleArc.geometry.setDrawRange(0, 0)
+  objects.rotationAngleMarker.visible = false
 }
 
 function updateRigidRotationDampingCue(
@@ -2005,6 +2125,548 @@ function getLeverMassDisplaySize(objects: SceneObjects, forceNewtons: number) {
   )
 }
 
+function updateHydrostaticsObjects(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+) {
+  const scale = objects.sceneProjection.positionScale
+  const sphereRadius = Math.max(0.04, sample.primaryRadiusMeters * scale)
+  const tankDepth = hydrostaticTankDepthMeters * scale
+  const dimensions = getHydroTankDimensions(scale)
+  const tankCenterZ = -tankDepth / 2
+  const waterHeight = tankDepth
+
+  objects.body.position.set(0, 0, sample.zMeters * scale)
+  objects.body.rotation.set(0, 0, 0)
+  objects.body.scale.setScalar(sphereRadius)
+
+  ;[objects.hydroTankGlass, objects.hydroTankEdges].forEach((object) => {
+    object.position.set(0, 0, tankCenterZ)
+    object.scale.set(dimensions.width, dimensions.depth, tankDepth)
+  })
+
+  objects.hydroWater.position.set(0, 0, -waterHeight / 2)
+  objects.hydroWater.scale.set(
+    dimensions.width * 0.94,
+    dimensions.depth * 0.9,
+    waterHeight,
+  )
+
+  objects.hydroWaterSurface.position.set(0, 0, 0.004)
+  objects.hydroWaterSurface.rotation.set(0, 0, 0)
+  objects.hydroWaterSurface.scale.set(
+    dimensions.width * 0.94,
+    dimensions.depth * 0.9,
+    1,
+  )
+}
+
+function getHydroTankDimensions(scale: number) {
+  return {
+    depth: hydroTankHorizontalDepthMeters * scale,
+    width: hydroTankWidthMeters * scale,
+  }
+}
+
+function createBernoulliVenturiObjects(
+  samples: KinematicsSample[],
+  sceneProjection: KinematicsSceneProjection,
+): BernoulliSceneObjects {
+  const sample = samples[0] ?? readFirstKinematicsSample(samples)
+  const group = new THREE.Group()
+  const shell = new THREE.Mesh(
+    createBernoulliTubeGeometry(sample, sceneProjection, {
+      includeColors: false,
+      radiusMultiplier: 1,
+    }),
+    new THREE.MeshPhysicalMaterial({
+      color: 0x8bd7ff,
+      depthWrite: false,
+      metalness: 0.02,
+      opacity: 0.2,
+      roughness: 0.08,
+      side: THREE.DoubleSide,
+      transparent: true,
+      transmission: 0.28,
+    }),
+  )
+  const fluid = new THREE.Mesh(
+    createBernoulliTubeGeometry(sample, sceneProjection, {
+      includeColors: true,
+      radiusMultiplier: 0.78,
+    }),
+    new THREE.MeshBasicMaterial({
+      depthWrite: false,
+      opacity: 0.5,
+      side: THREE.DoubleSide,
+      transparent: true,
+      vertexColors: true,
+    }),
+  )
+
+  shell.renderOrder = 3
+  fluid.renderOrder = 2
+  group.add(fluid)
+  group.add(shell)
+  group.add(createBernoulliSectionRing(sample, sceneProjection, -3, 0x2dd4bf))
+  group.add(createBernoulliSectionRing(sample, sceneProjection, 0, 0xf59e0b))
+  group.add(createBernoulliSectionRing(sample, sceneProjection, 3, 0x38bdf8))
+  group.add(createBernoulliAxisLine(sample, sceneProjection))
+
+  const flowLookup = createBernoulliFlowLookup(sample)
+  const particles = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(1, 10, 6),
+    new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      opacity: 0.92,
+      transparent: true,
+      vertexColors: true,
+    }),
+    bernoulliParticleCount,
+  )
+  const particlePhases = Array.from({ length: bernoulliParticleCount }, (_, index) =>
+    (index / bernoulliParticleCount +
+      (((index * 17) % 23) / 23) / bernoulliParticleCount) %
+    1,
+  )
+
+  particles.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+  particles.renderOrder = 4
+  group.add(particles)
+
+  const manometerColumns: THREE.Mesh[] = []
+  const maxSceneRadius = Math.max(
+    ...bernoulliManometerXs.map((xMeters) =>
+      getBernoulliSceneRadiusAtX(sample, sceneProjection, xMeters),
+    ),
+  )
+  const manometerBaseZ = maxSceneRadius + 0.16
+
+  bernoulliManometerXs.forEach((xMeters, index) => {
+    const x = xMeters * sceneProjection.positionScale
+    const pipe = new THREE.Mesh(
+      new THREE.CylinderGeometry(1, 1, 1, 18, 1, true),
+      new THREE.MeshBasicMaterial({
+        color: 0x8bd7ff,
+        depthWrite: false,
+        opacity: 0.14,
+        transparent: true,
+      }),
+    )
+    const column = new THREE.Mesh(
+      new THREE.CylinderGeometry(1, 1, 1, 18),
+      new THREE.MeshBasicMaterial({
+        color: index === 1 ? 0xf59e0b : 0x2dd4bf,
+        opacity: 0.76,
+        transparent: true,
+      }),
+    )
+    const tubeTop = new THREE.Vector3(
+      x,
+      0,
+      getBernoulliSceneCenterZAtX(sample, sceneProjection, xMeters) +
+        getBernoulliSceneRadiusAtX(sample, sceneProjection, xMeters),
+    )
+    const pipeBottom = new THREE.Vector3(x, bernoulliManometerFrontY, manometerBaseZ)
+
+    pipe.rotation.x = Math.PI / 2
+    pipe.position.set(
+      x,
+      bernoulliManometerFrontY,
+      manometerBaseZ + bernoulliManometerMaxHeight / 2,
+    )
+    pipe.scale.set(0.052, bernoulliManometerMaxHeight, 0.052)
+    column.rotation.x = Math.PI / 2
+    column.scale.set(0.038, bernoulliManometerMinHeight, 0.038)
+    column.position.set(
+      x,
+      bernoulliManometerFrontY,
+      manometerBaseZ + bernoulliManometerMinHeight / 2,
+    )
+    column.userData.baseZ = manometerBaseZ
+
+    group.add(
+      createSceneLine(tubeTop, pipeBottom, index === 1 ? 0xf59e0b : 0x2dd4bf, 0.46),
+    )
+    group.add(pipe)
+    group.add(column)
+    manometerColumns.push(column)
+  })
+
+  group.visible = false
+
+  return {
+    flowLookup,
+    group,
+    manometerColumns,
+    particlePhases,
+    particles,
+  }
+}
+
+function createBernoulliTubeGeometry(
+  sample: KinematicsSample,
+  sceneProjection: KinematicsSceneProjection,
+  {
+    includeColors,
+    radiusMultiplier,
+  }: {
+    includeColors: boolean
+    radiusMultiplier: number
+  },
+) {
+  const positions: number[] = []
+  const colors: number[] = []
+  const indices: number[] = []
+
+  for (let axialIndex = 0; axialIndex <= bernoulliTubeSegments; axialIndex += 1) {
+    const ratio = axialIndex / bernoulliTubeSegments
+    const xMeters = lerp(
+      -bernoulliTubeHalfLengthMeters,
+      bernoulliTubeHalfLengthMeters,
+      ratio,
+    )
+    const x = xMeters * sceneProjection.positionScale
+    const centerZ = getBernoulliSceneCenterZAtX(sample, sceneProjection, xMeters)
+    const radius =
+      getBernoulliSceneRadiusAtX(sample, sceneProjection, xMeters) * radiusMultiplier
+    const color = getBernoulliColorAtX(sample, xMeters)
+
+    for (let radialIndex = 0; radialIndex <= bernoulliTubeRadialSegments; radialIndex += 1) {
+      const angle = (Math.PI * 2 * radialIndex) / bernoulliTubeRadialSegments
+
+      positions.push(
+        x,
+        Math.cos(angle) * radius,
+        centerZ + Math.sin(angle) * radius,
+      )
+
+      if (includeColors) {
+        colors.push(color.r, color.g, color.b)
+      }
+    }
+  }
+
+  const ringStride = bernoulliTubeRadialSegments + 1
+
+  for (let axialIndex = 0; axialIndex < bernoulliTubeSegments; axialIndex += 1) {
+    for (let radialIndex = 0; radialIndex < bernoulliTubeRadialSegments; radialIndex += 1) {
+      const a = axialIndex * ringStride + radialIndex
+      const b = a + ringStride
+      const c = b + 1
+      const d = a + 1
+
+      indices.push(a, b, d, b, c, d)
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry()
+
+  geometry.setAttribute(
+    'position',
+    new THREE.Float32BufferAttribute(positions, 3),
+  )
+  geometry.setIndex(indices)
+
+  if (includeColors) {
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  }
+
+  geometry.computeVertexNormals()
+
+  return geometry
+}
+
+function createBernoulliSectionRing(
+  sample: KinematicsSample,
+  sceneProjection: KinematicsSceneProjection,
+  xMeters: number,
+  color: number,
+) {
+  const positions: number[] = []
+  const radius = getBernoulliSceneRadiusAtX(sample, sceneProjection, xMeters)
+  const centerZ = getBernoulliSceneCenterZAtX(sample, sceneProjection, xMeters)
+  const x = xMeters * sceneProjection.positionScale
+
+  for (let index = 0; index <= bernoulliTubeRadialSegments; index += 1) {
+    const angle = (Math.PI * 2 * index) / bernoulliTubeRadialSegments
+
+    positions.push(x, Math.cos(angle) * radius, centerZ + Math.sin(angle) * radius)
+  }
+
+  const geometry = new THREE.BufferGeometry()
+
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+
+  return new THREE.Line(
+    geometry,
+    new THREE.LineBasicMaterial({
+      color,
+      opacity: 0.92,
+      transparent: true,
+    }),
+  )
+}
+
+function createBernoulliAxisLine(
+  sample: KinematicsSample,
+  sceneProjection: KinematicsSceneProjection,
+) {
+  const positions: THREE.Vector3[] = []
+
+  for (let index = 0; index <= 48; index += 1) {
+    const ratio = index / 48
+    const xMeters = lerp(
+      -bernoulliTubeHalfLengthMeters,
+      bernoulliTubeHalfLengthMeters,
+      ratio,
+    )
+
+    positions.push(
+      new THREE.Vector3(
+        xMeters * sceneProjection.positionScale,
+        0,
+        getBernoulliSceneCenterZAtX(sample, sceneProjection, xMeters),
+      ),
+    )
+  }
+
+  return new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(positions),
+    new THREE.LineBasicMaterial({
+      color: 0xe6e8ec,
+      opacity: 0.28,
+      transparent: true,
+    }),
+  )
+}
+
+function createBernoulliFlowLookup(sample: KinematicsSample): BernoulliFlowLookup {
+  const xMeters: number[] = []
+  const cumulativeVolumes: number[] = []
+  let volumeCubicMeters = 0
+
+  for (let index = 0; index <= bernoulliFlowLookupSegments; index += 1) {
+    const ratio = index / bernoulliFlowLookupSegments
+    const x = lerp(
+      -bernoulliTubeHalfLengthMeters,
+      bernoulliTubeHalfLengthMeters,
+      ratio,
+    )
+
+    xMeters.push(x)
+
+    if (index > 0) {
+      const previousX = xMeters[index - 1]
+      const dx = x - previousX
+      const averageArea =
+        (getBernoulliAreaAtX(sample, previousX) + getBernoulliAreaAtX(sample, x)) /
+        2
+
+      volumeCubicMeters += averageArea * dx
+    }
+
+    cumulativeVolumes.push(volumeCubicMeters)
+  }
+
+  return {
+    phases: cumulativeVolumes.map((value) =>
+      volumeCubicMeters > 0 ? value / volumeCubicMeters : 0,
+    ),
+    volumeCubicMeters,
+    xMeters,
+  }
+}
+
+function updateBernoulliObjects(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+) {
+  objects.body.visible = false
+  objects.secondaryBody.visible = false
+  updateBernoulliParticles(objects.bernoulli, sample, objects.sceneProjection)
+  updateBernoulliManometers(objects.bernoulli, sample)
+}
+
+function updateBernoulliParticles(
+  bernoulli: BernoulliSceneObjects,
+  sample: KinematicsSample,
+  sceneProjection: KinematicsSceneProjection,
+) {
+  const cycleRate =
+    bernoulli.flowLookup.volumeCubicMeters > 0
+      ? sample.flowRateCubicMetersPerSecond / bernoulli.flowLookup.volumeCubicMeters
+      : 0
+  const object = new THREE.Object3D()
+
+  bernoulli.particlePhases.forEach((phase, index) => {
+    const travelPhase = positiveModulo(phase + sample.timeSeconds * cycleRate, 1)
+    const xMeters = readBernoulliXFromTravelPhase(
+      bernoulli.flowLookup,
+      travelPhase,
+    )
+    const radius = getBernoulliSceneRadiusAtX(sample, sceneProjection, xMeters)
+    const shellRatio =
+      0.18 + 0.62 * (((index * 11) % bernoulliParticleCount) / bernoulliParticleCount)
+    const angle = ((index * 137.5) % 360) * (Math.PI / 180)
+    const localArea = getBernoulliAreaAtX(sample, xMeters)
+    const localSpeed =
+      localArea > 0 ? sample.flowRateCubicMetersPerSecond / localArea : 0
+    const speedRatio = readBernoulliSpeedRatio(sample, localSpeed)
+    const particleRadius =
+      bernoulliParticleRadius * (0.72 + speedRatio * 0.58)
+    const color = getBernoulliSpeedColor(speedRatio)
+
+    object.position.set(
+      xMeters * sceneProjection.positionScale,
+      Math.cos(angle) * radius * shellRatio,
+      getBernoulliSceneCenterZAtX(sample, sceneProjection, xMeters) +
+        Math.sin(angle) * radius * shellRatio,
+    )
+    object.scale.setScalar(particleRadius)
+    object.updateMatrix()
+    bernoulli.particles.setMatrixAt(index, object.matrix)
+    bernoulli.particles.setColorAt(index, color)
+  })
+
+  bernoulli.particles.instanceMatrix.needsUpdate = true
+  if (bernoulli.particles.instanceColor) {
+    bernoulli.particles.instanceColor.needsUpdate = true
+  }
+}
+
+function updateBernoulliManometers(
+  bernoulli: BernoulliSceneObjects,
+  sample: KinematicsSample,
+) {
+  const pressureValues = [
+    sample.pressurePascals,
+    sample.secondaryPressurePascals,
+    sample.pressurePascals,
+  ]
+  const positivePressures = pressureValues.map((value) => Math.max(0, value))
+  const maxPressure = Math.max(1, ...positivePressures)
+
+  bernoulli.manometerColumns.forEach((column, index) => {
+    const pressureRatio = clamp(positivePressures[index] / maxPressure, 0, 1)
+    const height = lerp(
+      bernoulliManometerMinHeight,
+      bernoulliManometerMaxHeight,
+      pressureRatio,
+    )
+    const baseZ =
+      typeof column.userData.baseZ === 'number'
+        ? column.userData.baseZ
+        : bernoulliManometerMinHeight
+
+    column.scale.set(0.038, height, 0.038)
+    column.position.z = baseZ + height / 2
+  })
+}
+
+function readBernoulliXFromTravelPhase(
+  lookup: BernoulliFlowLookup,
+  phase: number,
+) {
+  const phases = lookup.phases
+
+  for (let index = 1; index < phases.length; index += 1) {
+    if (phase <= phases[index]) {
+      const startPhase = phases[index - 1]
+      const endPhase = phases[index]
+      const ratio =
+        endPhase > startPhase ? (phase - startPhase) / (endPhase - startPhase) : 0
+
+      return lerp(lookup.xMeters[index - 1], lookup.xMeters[index], ratio)
+    }
+  }
+
+  return lookup.xMeters.at(-1) ?? bernoulliTubeHalfLengthMeters
+}
+
+function getBernoulliSceneCenterZAtX(
+  sample: KinematicsSample,
+  sceneProjection: KinematicsSceneProjection,
+  xMeters: number,
+) {
+  return getBernoulliThroatInfluence(xMeters) *
+    sample.secondaryZMeters *
+    sceneProjection.positionScale
+}
+
+function getBernoulliSceneRadiusAtX(
+  sample: KinematicsSample,
+  sceneProjection: KinematicsSceneProjection,
+  xMeters: number,
+) {
+  const physicalRadiusMeters = Math.sqrt(
+    getBernoulliAreaAtX(sample, xMeters) / Math.PI,
+  )
+
+  return clamp(
+    physicalRadiusMeters *
+      sceneProjection.positionScale *
+      bernoulliTubeRadiusVisualScale,
+    0.13,
+    0.62,
+  )
+}
+
+function getBernoulliAreaAtX(sample: KinematicsSample, xMeters: number) {
+  const throatInfluence = getBernoulliThroatInfluence(xMeters)
+
+  return lerp(
+    sample.crossSectionAreaSquareMeters,
+    sample.secondaryCrossSectionAreaSquareMeters,
+    throatInfluence,
+  )
+}
+
+function getBernoulliThroatInfluence(xMeters: number) {
+  const normalized = xMeters / bernoulliThroatWidthMeters
+
+  return Math.exp(-(normalized * normalized))
+}
+
+function getBernoulliColorAtX(sample: KinematicsSample, xMeters: number) {
+  const area = getBernoulliAreaAtX(sample, xMeters)
+  const localSpeed =
+    area > 0 ? sample.flowRateCubicMetersPerSecond / area : 0
+
+  return getBernoulliSpeedColor(readBernoulliSpeedRatio(sample, localSpeed))
+}
+
+function readBernoulliSpeedRatio(sample: KinematicsSample, localSpeed: number) {
+  const minSpeed = Math.min(
+    sample.speedMetersPerSecond,
+    sample.secondarySpeedMetersPerSecond,
+  )
+  const maxSpeed = Math.max(
+    sample.speedMetersPerSecond,
+    sample.secondarySpeedMetersPerSecond,
+  )
+
+  if (maxSpeed - minSpeed <= 1e-9) {
+    return 0
+  }
+
+  return clamp((localSpeed - minSpeed) / (maxSpeed - minSpeed), 0, 1)
+}
+
+function getBernoulliSpeedColor(ratio: number) {
+  const low = new THREE.Color(0x38bdf8)
+  const mid = new THREE.Color(0xa3e635)
+  const high = new THREE.Color(0xf59e0b)
+
+  return ratio < 0.5
+    ? low.lerp(mid, ratio / 0.5)
+    : mid.lerp(high, (ratio - 0.5) / 0.5)
+}
+
+function positiveModulo(value: number, divisor: number) {
+  return ((value % divisor) + divisor) % divisor
+}
+
 function updateMassSpringObjects(
   objects: SceneObjects,
   sample: KinematicsSample,
@@ -2224,7 +2886,10 @@ function updateRigidBodyRotationTrace(
   }
 
   traceSamples.forEach((sample, traceIndex) => {
-    const radius = objects.rigidRotationBaseRadius * 0.88
+    const tracePosition = getRigidBodyRotationTracePosition(
+      objects.bodyRadius,
+      sample,
+    )
     const positionOffset = traceIndex * 3
     const colorOffset = traceIndex * 4
     const ageRatio = Math.min(
@@ -2235,11 +2900,9 @@ function updateRigidBodyRotationTrace(
     const color = blendRgb(traceColor, thermalTraceEndColor, heatRatio)
     const opacity = traceMaxOpacity - ageRatio * (traceMaxOpacity - traceMinOpacity)
 
-    objects.tracePositions[positionOffset] =
-      Math.cos(sample.angleRadians) * radius
-    objects.tracePositions[positionOffset + 1] =
-      Math.sin(sample.angleRadians) * radius
-    objects.tracePositions[positionOffset + 2] = rigidRotationRotorZ + 0.08
+    objects.tracePositions[positionOffset] = tracePosition.x
+    objects.tracePositions[positionOffset + 1] = tracePosition.y
+    objects.tracePositions[positionOffset + 2] = tracePosition.z
     objects.traceColors[colorOffset] = color.red
     objects.traceColors[colorOffset + 1] = color.green
     objects.traceColors[colorOffset + 2] = color.blue
@@ -2644,6 +3307,14 @@ function createReferencePath(
 
   if (simulationId === 'mass-spring') {
     return createMassSpringReferencePath(samples, sceneProjection)
+  }
+
+  if (simulationId === 'hydrostatics-buoyancy') {
+    return new THREE.Group()
+  }
+
+  if (simulationId === 'continuity-bernoulli') {
+    return new THREE.Group()
   }
 
   if (simulationId === 'collisions-1d-2d') {
@@ -3079,6 +3750,46 @@ function estimateSceneBounds(
     }
   }
 
+  if (simulationId === 'hydrostatics-buoyancy') {
+    const firstSample = samples[0]
+
+    if (firstSample) {
+      const scale = sceneProjection.positionScale
+      const tankDepth = hydrostaticTankDepthMeters * scale
+      const dimensions = getHydroTankDimensions(scale)
+      const sphereRadius = Math.max(0.04, firstSample.primaryRadiusMeters * scale)
+
+      positions.length = 0
+      positions.push(
+        new THREE.Vector3(-dimensions.width / 2, -dimensions.depth / 2, -tankDepth),
+        new THREE.Vector3(dimensions.width / 2, dimensions.depth / 2, sphereRadius),
+      )
+    }
+  }
+
+  if (simulationId === 'continuity-bernoulli') {
+    const firstSample = samples[0]
+
+    if (firstSample) {
+      const scale = sceneProjection.positionScale
+      const heightOffset = Math.abs(firstSample.secondaryZMeters * scale)
+
+      positions.length = 0
+      positions.push(
+        new THREE.Vector3(
+          -bernoulliTubeHalfLengthMeters * scale - 0.55,
+          bernoulliManometerFrontY - 0.2,
+          -0.45 - heightOffset,
+        ),
+        new THREE.Vector3(
+          bernoulliTubeHalfLengthMeters * scale + 0.55,
+          0.78,
+          bernoulliManometerMaxHeight + heightOffset + 0.72,
+        ),
+      )
+    }
+  }
+
   if (simulationId === 'torque-levers-center-mass') {
     const firstSample = samples[0]
 
@@ -3178,29 +3889,6 @@ function getVectorDisplayLength(vector: KinematicsVectorOverlay) {
 
 function getBodyDisplaySize(sceneSpan: number) {
   return clamp(sceneSpan * 0.022, bodySize, 0.72)
-}
-
-function getRigidBodyRotationBaseRadius(bodyRadius: number) {
-  return clamp(bodyRadius * 4.8, 1.04, 1.48)
-}
-
-function getRigidBodyRotorLength(bodyRadius: number) {
-  return getRigidBodyRotationBaseRadius(bodyRadius) * 1.48
-}
-
-function getRigidBodyRotorHalfLength(bodyRadius: number) {
-  return getRigidBodyRotorLength(bodyRadius) / 2
-}
-
-function getRigidBodySlidingMassRadiusRatio(sample: KinematicsSample) {
-  const maxDistanceMeters =
-    sample.secondaryRadiusMeters > 0 ? sample.secondaryRadiusMeters : 1
-
-  return clamp(
-    sample.primaryRadiusMeters / maxDistanceMeters,
-    rigidRotationMinMassRadiusRatio,
-    1,
-  )
 }
 
 function createRigidRotationCurvedArrow(
@@ -3326,18 +4014,6 @@ function updateArcLineGeometry({
   return pointCount
 }
 
-function readVisibleAngleSweep(angleRadians: number) {
-  const fullTurn = Math.PI * 2
-  const magnitude = Math.abs(angleRadians)
-  const wrappedMagnitude = magnitude % fullTurn
-
-  if (wrappedMagnitude < 0.002) {
-    return 0
-  }
-
-  return wrappedMagnitude * (angleRadians < 0 ? -1 : 1)
-}
-
 function readVectorCueSweep(value: number, magnitudeScale: number) {
   const sign = Math.sign(value) || 1
 
@@ -3355,7 +4031,9 @@ function updateOrbitCamera(
 }
 
 function getInitialCameraYawRadians(simulationId: KinematicsSimulationId) {
-  return simulationId === 'atwood-machine' || simulationId === 'mass-spring'
+  return simulationId === 'atwood-machine' ||
+    simulationId === 'hydrostatics-buoyancy' ||
+    simulationId === 'mass-spring'
     ? -Math.PI / 2
     : initialCameraYawRadians
 }
@@ -3381,6 +4059,14 @@ function getKinematicsCanvasAriaLabel(simulationId: KinematicsSimulationId) {
 
   if (simulationId === 'gravitational-field-orbits') {
     return 'Cena 3D orbital com corpo central, planeta, lua didatica e arraste para orbitar, e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'hydrostatics-buoyancy') {
+    return 'Cena 3D de hidrostatica com tanque transparente, esfera no fluido, vetores de empuxo e peso, arraste para orbitar e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'continuity-bernoulli') {
+    return 'Cena 3D de um tubo de Venturi transparente com tracadores de fluido, cores de velocidade, manometros de pressao, arraste para orbitar e Shift + scroll para zoom'
   }
 
   return 'Cena 3D de Cinematica com arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom'

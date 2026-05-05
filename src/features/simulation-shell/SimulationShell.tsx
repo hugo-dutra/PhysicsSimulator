@@ -7,6 +7,7 @@ import {
 import {
   Box,
   Button,
+  ButtonBase,
   Chip,
   Collapse,
   Divider,
@@ -97,6 +98,7 @@ import uniformlyAcceleratedMotionTheory from '../../content/simulations/mechanic
 import workEnergyTrackTheory from '../../content/simulations/mechanics/work-energy-track/theory.md?raw'
 import { themeTokens } from '../../theme/appTheme'
 import { normalizePlaybackRate } from '../../lib/rendering/visualRuntime'
+import type { CameraProjectionMode } from '../../lib/rendering/orbitCamera'
 import { ChevronSection } from './ChevronSection'
 import { FormulaGuide } from './FormulaGuide'
 import { InclinedPlaneCharts } from './InclinedPlaneCharts'
@@ -211,7 +213,8 @@ const floatingControlsMobileInsetPx = 12
 const floatingControlsDesktopInsetPx = 16
 const floatingControlsDesktopReservePx =
   floatingControlsPanelWidthPx + floatingControlsDesktopInsetPx * 2
-const floatingControlsMobileBottomReserve = `calc(min(78svh, 720px) + ${
+const floatingControlsMobileMaxHeight = 'min(34svh, 300px)'
+const floatingControlsMobileBottomReserve = `calc(${floatingControlsMobileMaxHeight} + ${
   floatingControlsMobileInsetPx * 2
 }px)`
 const sampleTableColumnIds = [
@@ -391,9 +394,9 @@ const kinematicsVectorLegendItemsById = {
   'continuity-bernoulli': [
     {
       id: 'velocity',
-      label: 'Entrada',
+      label: 'Tracador',
       color: themeTokens.teal,
-      description: 'velocidade media no trecho largo do tubo',
+      description: 'velocidade local do fluido ao longo do tubo de Venturi',
     },
     {
       id: 'secondaryVelocity',
@@ -423,6 +426,18 @@ const kinematicsVectorLegendItemsById = {
     },
   ],
   'hydrostatics-buoyancy': [
+    {
+      id: 'velocity',
+      label: 'Velocidade',
+      color: themeTokens.cyan,
+      description: 'movimento vertical do centro da esfera dentro do tanque',
+    },
+    {
+      id: 'acceleration',
+      label: 'Aceleracao',
+      color: themeTokens.warning,
+      description: 'aceleracao vertical calculada por resultante dividida pela massa',
+    },
     {
       id: 'normal',
       label: 'Empuxo',
@@ -766,6 +781,8 @@ export function SimulationShell() {
     trace: true,
     vectors: true,
   })
+  const [cameraProjectionMode, setCameraProjectionMode] =
+    useState<CameraProjectionMode>('perspective')
   const [outputPanels, setOutputPanels] = useState<OutputPanelState>({
     charts: false,
     formulas: false,
@@ -960,13 +977,16 @@ export function SimulationShell() {
 
   const handleParameterChange = (
     parameter: SimulationParameter,
-    nextValue: number,
+    nextValue: ParameterValue,
   ) => {
-    if (!Number.isFinite(nextValue)) {
+    if (typeof nextValue === 'number' && !Number.isFinite(nextValue)) {
       return
     }
 
-    const clampedValue = clampToParameterRange(nextValue, parameter)
+    const clampedValue =
+      typeof nextValue === 'number'
+        ? clampToParameterRange(nextValue, parameter)
+        : nextValue
     const currentValues = selectedParameterValues
 
     if (currentValues[parameter.id] === clampedValue) {
@@ -991,6 +1011,10 @@ export function SimulationShell() {
           [parameter.id]: clampedValue,
         },
       }))
+
+      if (selectedKinematicsSimulationId === 'hydrostatics-buoyancy') {
+        setPlaybackResetVersion((current) => current + 1)
+      }
     } else {
       setPendulumSelectedPresetId(customPresetId)
       setPendulumParameterValues((currentValues) => ({
@@ -1165,10 +1189,12 @@ export function SimulationShell() {
           <Stack spacing={2} sx={{ minWidth: 0 }}>
             {isInclinedPlaneSelected ? (
               <InclinedPlaneRuntime
+                cameraProjectionMode={cameraProjectionMode}
                 chartWindowSeconds={inclinedPlaneEffectiveChartWindowSeconds}
                 durationSeconds={inclinedPlaneDurationSeconds}
                 isPlaying={isPlaybackAdvancing}
                 maximizedPanel={maximizedPanel}
+                onCameraProjectionModeChange={setCameraProjectionMode}
                 onMaximizedPanelToggle={handleMaximizedPanelToggle}
                 onOutputPanelToggle={handleOutputPanelToggle}
                 outputPanels={outputPanels}
@@ -1180,6 +1206,7 @@ export function SimulationShell() {
               />
             ) : isKinematicsSelected ? (
               <KinematicsRuntime
+                cameraProjectionMode={cameraProjectionMode}
                 chartWindowSeconds={
                   selectedKinematicsEffectiveChartWindowSeconds
                 }
@@ -1188,6 +1215,7 @@ export function SimulationShell() {
                 key={selectedKinematicsSimulationId}
                 maximizedPanel={maximizedPanel}
                 modelTimeScale={selectedKinematicsModelTimeScale}
+                onCameraProjectionModeChange={setCameraProjectionMode}
                 onMaximizedPanelToggle={handleMaximizedPanelToggle}
                 onOutputPanelToggle={handleOutputPanelToggle}
                 outputPanels={outputPanels}
@@ -1200,10 +1228,12 @@ export function SimulationShell() {
               />
             ) : (
               <PendulumRuntime
+                cameraProjectionMode={cameraProjectionMode}
                 chartWindowSeconds={pendulumEffectiveChartWindowSeconds}
                 durationSeconds={pendulumDurationSeconds}
                 isPlaying={isPlaybackAdvancing}
                 maximizedPanel={maximizedPanel}
+                onCameraProjectionModeChange={setCameraProjectionMode}
                 onMaximizedPanelToggle={handleMaximizedPanelToggle}
                 onOutputPanelToggle={handleOutputPanelToggle}
                 overlays={overlays}
@@ -1326,7 +1356,10 @@ function SimulationControlsPanel({
   onOverlayChange: (
     overlayId: keyof OverlayState,
   ) => (_event: ChangeEvent<HTMLInputElement>, checked: boolean) => void
-  onParameterChange: (parameter: SimulationParameter, nextValue: number) => void
+  onParameterChange: (
+    parameter: SimulationParameter,
+    nextValue: ParameterValue,
+  ) => void
   onPlaybackRateChange: (nextValue: number) => void
   onPlaybackToggle: () => void
   onPresetChange: (presetId: string) => void
@@ -1367,7 +1400,10 @@ function SimulationControlsPanel({
           md: floatingControlsDesktopInsetPx,
         },
         boxShadow: `0 18px 42px ${alpha('#000000', 0.46)}`,
-        maxHeight: { xs: 'min(78svh, 720px)', md: 'calc(100svh - 32px)' },
+        maxHeight: {
+          xs: floatingControlsMobileMaxHeight,
+          md: 'calc(100svh - 32px)',
+        },
         minWidth: 0,
         overflowY: 'auto',
         p: 1.5,
@@ -1517,6 +1553,21 @@ function SimulationControlsPanel({
 
         <Stack spacing={1.5}>
           {fixture.parameters.map((parameter) => {
+            if (parameter.kind === 'boolean') {
+              const value = readBooleanParameter(parameterValues, parameter)
+
+              return (
+                <BooleanParameterControl
+                  key={`${parameter.id}:${value}`}
+                  onChange={(nextValue) => {
+                    onParameterChange(parameter, nextValue)
+                  }}
+                  parameter={parameter}
+                  value={value}
+                />
+              )
+            }
+
             const value = readNumericParameter(parameterValues, parameter)
 
             return (
@@ -1924,10 +1975,12 @@ function SidebarSimulationItem({
 }
 
 function PendulumRuntime({
+  cameraProjectionMode,
   chartWindowSeconds,
   durationSeconds,
   isPlaying,
   maximizedPanel,
+  onCameraProjectionModeChange,
   onMaximizedPanelToggle,
   onOutputPanelToggle,
   overlays,
@@ -1937,10 +1990,12 @@ function PendulumRuntime({
   resetVersion,
   samples,
 }: {
+  cameraProjectionMode: CameraProjectionMode
   chartWindowSeconds: number
   durationSeconds: number
   isPlaying: boolean
   maximizedPanel: MaximizedPanelId | null
+  onCameraProjectionModeChange: (mode: CameraProjectionMode) => void
   onMaximizedPanelToggle: (panelId: MaximizedPanelId) => void
   onOutputPanelToggle: (panelId: keyof OutputPanelState) => void
   overlays: OverlayState
@@ -2122,12 +2177,20 @@ function PendulumRuntime({
             borderBottom: `1px solid ${themeTokens.border}`,
             display: 'flex',
             flex: '0 0 auto',
+            flexWrap: { xs: 'wrap', sm: 'nowrap' },
             gap: 1,
-            justifyContent: 'flex-end',
+            justifyContent: 'space-between',
             px: 1.5,
             py: 1,
           }}
         >
+          <Typography
+            color="text.secondary"
+            sx={{ flex: '0 0 auto', whiteSpace: 'nowrap' }}
+            variant="body2"
+          >
+            t = {formatNumber(liveSample.timeSeconds, 's')}
+          </Typography>
           <Stack
             direction="row"
             spacing={1}
@@ -2135,6 +2198,7 @@ function PendulumRuntime({
               alignItems: 'center',
               flexWrap: 'wrap',
               justifyContent: 'flex-end',
+              ml: 'auto',
             }}
           >
             <Chip
@@ -2142,9 +2206,10 @@ function PendulumRuntime({
               size="small"
               variant="outlined"
             />
-            <Typography color="text.secondary" variant="body2">
-              t = {formatNumber(liveSample.timeSeconds, 's')}
-            </Typography>
+            <CameraProjectionSwitch
+              onChange={onCameraProjectionModeChange}
+              value={cameraProjectionMode}
+            />
             <ReadoutToggleButton
               expanded={readoutsExpanded}
               onToggle={handleReadoutsToggle}
@@ -2253,6 +2318,7 @@ function PendulumRuntime({
         >
           <Box sx={{ minHeight: 0, minWidth: 0, position: 'relative' }}>
             <PendulumScene
+              cameraProjectionMode={cameraProjectionMode}
               durationSeconds={durationSeconds}
               isPlaying={isPlaying}
               onSampleChange={handleSampleChange}
@@ -2447,10 +2513,12 @@ function PendulumRuntime({
 }
 
 function InclinedPlaneRuntime({
+  cameraProjectionMode,
   chartWindowSeconds,
   durationSeconds,
   isPlaying,
   maximizedPanel,
+  onCameraProjectionModeChange,
   onMaximizedPanelToggle,
   onOutputPanelToggle,
   outputPanels,
@@ -2460,10 +2528,12 @@ function InclinedPlaneRuntime({
   resetVersion,
   samples,
 }: {
+  cameraProjectionMode: CameraProjectionMode
   chartWindowSeconds: number
   durationSeconds: number
   isPlaying: boolean
   maximizedPanel: MaximizedPanelId | null
+  onCameraProjectionModeChange: (mode: CameraProjectionMode) => void
   onMaximizedPanelToggle: (panelId: MaximizedPanelId) => void
   onOutputPanelToggle: (panelId: keyof OutputPanelState) => void
   outputPanels: OutputPanelState
@@ -2650,12 +2720,20 @@ function InclinedPlaneRuntime({
             borderBottom: `1px solid ${themeTokens.border}`,
             display: 'flex',
             flex: '0 0 auto',
+            flexWrap: { xs: 'wrap', sm: 'nowrap' },
             gap: 1,
-            justifyContent: 'flex-end',
+            justifyContent: 'space-between',
             px: 1.5,
             py: 1,
           }}
         >
+          <Typography
+            color="text.secondary"
+            sx={{ flex: '0 0 auto', whiteSpace: 'nowrap' }}
+            variant="body2"
+          >
+            t = {formatNumber(liveSample.timeSeconds, 's')}
+          </Typography>
           <Stack
             direction="row"
             spacing={1}
@@ -2663,6 +2741,7 @@ function InclinedPlaneRuntime({
               alignItems: 'center',
               flexWrap: 'wrap',
               justifyContent: 'flex-end',
+              ml: 'auto',
             }}
           >
             <Chip
@@ -2670,9 +2749,10 @@ function InclinedPlaneRuntime({
               size="small"
               variant="outlined"
             />
-            <Typography color="text.secondary" variant="body2">
-              t = {formatNumber(liveSample.timeSeconds, 's')}
-            </Typography>
+            <CameraProjectionSwitch
+              onChange={onCameraProjectionModeChange}
+              value={cameraProjectionMode}
+            />
             <ReadoutToggleButton
               expanded={readoutsExpanded}
               onToggle={handleReadoutsToggle}
@@ -2777,6 +2857,7 @@ function InclinedPlaneRuntime({
         >
           <Box sx={{ minHeight: 0, minWidth: 0, position: 'relative' }}>
             <InclinedPlaneScene
+              cameraProjectionMode={cameraProjectionMode}
               durationSeconds={durationSeconds}
               isPlaying={isPlaying}
               onSampleChange={handleSampleChange}
@@ -2964,11 +3045,13 @@ function InclinedPlaneRuntime({
 }
 
 function KinematicsRuntime({
+  cameraProjectionMode,
   chartWindowSeconds,
   durationSeconds,
   isPlaying,
   maximizedPanel,
   modelTimeScale,
+  onCameraProjectionModeChange,
   onMaximizedPanelToggle,
   onOutputPanelToggle,
   outputPanels,
@@ -2979,11 +3062,13 @@ function KinematicsRuntime({
   samples,
   simulationId,
 }: {
+  cameraProjectionMode: CameraProjectionMode
   chartWindowSeconds: number
   durationSeconds: number
   isPlaying: boolean
   maximizedPanel: MaximizedPanelId | null
   modelTimeScale: number
+  onCameraProjectionModeChange: (mode: CameraProjectionMode) => void
   onMaximizedPanelToggle: (panelId: MaximizedPanelId) => void
   onOutputPanelToggle: (panelId: keyof OutputPanelState) => void
   outputPanels: OutputPanelState
@@ -3186,12 +3271,20 @@ function KinematicsRuntime({
             borderBottom: `1px solid ${themeTokens.border}`,
             display: 'flex',
             flex: '0 0 auto',
+            flexWrap: { xs: 'wrap', sm: 'nowrap' },
             gap: 1,
-            justifyContent: 'flex-end',
+            justifyContent: 'space-between',
             px: 1.5,
             py: 1,
           }}
         >
+          <Typography
+            color="text.secondary"
+            sx={{ flex: '0 0 auto', whiteSpace: 'nowrap' }}
+            variant="body2"
+          >
+            t = {formatNumber(liveSample.timeSeconds, 's')}
+          </Typography>
           <Stack
             direction="row"
             spacing={1}
@@ -3199,6 +3292,7 @@ function KinematicsRuntime({
               alignItems: 'center',
               flexWrap: 'wrap',
               justifyContent: 'flex-end',
+              ml: 'auto',
             }}
           >
             <Chip
@@ -3206,9 +3300,10 @@ function KinematicsRuntime({
               size="small"
               variant="outlined"
             />
-            <Typography color="text.secondary" variant="body2">
-              t = {formatNumber(liveSample.timeSeconds, 's')}
-            </Typography>
+            <CameraProjectionSwitch
+              onChange={onCameraProjectionModeChange}
+              value={cameraProjectionMode}
+            />
             <ReadoutToggleButton
               expanded={readoutsExpanded}
               onToggle={handleReadoutsToggle}
@@ -3286,6 +3381,7 @@ function KinematicsRuntime({
         >
           <Box sx={{ minHeight: 0, minWidth: 0, position: 'relative' }}>
             <KinematicsScene
+              cameraProjectionMode={cameraProjectionMode}
               durationSeconds={durationSeconds}
               isPlaying={isPlaying}
               modelTimeScale={modelTimeScale}
@@ -3542,16 +3638,32 @@ function buildKinematicsReadoutMetrics({
         value: formatNumber(sample.flowRateCubicMetersPerSecond, 'm^3/s'),
       },
       {
-        label: 'Entrada',
+        label: 'Area entrada',
+        value: formatNumber(sample.crossSectionAreaSquareMeters, 'm^2'),
+      },
+      {
+        label: 'Area garganta',
+        value: formatNumber(sample.secondaryCrossSectionAreaSquareMeters, 'm^2'),
+      },
+      {
+        label: 'Vel. entrada',
         value: formatNumber(sample.speedMetersPerSecond, 'm/s'),
       },
       {
-        label: 'Garganta',
+        label: 'Vel. garganta',
         value: formatNumber(sample.secondarySpeedMetersPerSecond, 'm/s'),
+      },
+      {
+        label: 'Pressao entrada',
+        value: formatNumber(sample.pressurePascals, 'Pa'),
       },
       {
         label: 'Pressao garganta',
         value: formatNumber(sample.secondaryPressurePascals, 'Pa'),
+      },
+      {
+        label: 'Queda',
+        value: formatNumber(sample.netForceNewtons, 'Pa'),
       },
       frameMetric,
     ]
@@ -3579,8 +3691,26 @@ function buildKinematicsReadoutMetrics({
   if (simulationId === 'hydrostatics-buoyancy') {
     return [
       {
+        label: 'Massa',
+        value: formatNumber(sample.objectMassKilograms, 'kg'),
+      },
+      {
+        label: 'Densidade corpo',
+        value: formatNumber(
+          sample.objectDensityKilogramsPerCubicMeter,
+          'kg/m^3',
+        ),
+      },
+      {
         label: 'Pressao',
         value: formatNumber(sample.fluidPressurePascals, 'Pa'),
+      },
+      {
+        label: 'Aceleracao',
+        value: formatNumber(
+          sample.accelerationMetersPerSecondSquared,
+          'm/s^2',
+        ),
       },
       {
         label: 'Empuxo',
@@ -3588,7 +3718,7 @@ function buildKinematicsReadoutMetrics({
       },
       {
         label: 'Submersao',
-        value: formatNumber(sample.submergedFraction, ''),
+        value: `${compactNumber.format(sample.submergedFraction * 100)}%`,
       },
       {
         label: 'Resultante',
@@ -4043,6 +4173,101 @@ function ParameterControl({
   )
 }
 
+function BooleanParameterControl({
+  onChange,
+  parameter,
+  value,
+}: {
+  onChange: (value: boolean) => void
+  parameter: SimulationParameter
+  value: boolean
+}) {
+  return (
+    <Box>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: 'center',
+          mb: 0.5,
+        }}
+      >
+        <Typography variant="body2">{parameter.label}</Typography>
+        <Tooltip
+          arrow
+          placement="top"
+          title={
+            <Box sx={{ maxWidth: 280 }}>
+              <Typography sx={{ fontWeight: 700 }} variant="body2">
+                {parameter.label}
+              </Typography>
+              <Typography sx={{ mt: 0.5 }} variant="body2">
+                {parameter.description}
+              </Typography>
+              <Typography
+                color="text.secondary"
+                component="p"
+                sx={{ mt: 0.75 }}
+                variant="caption"
+              >
+                Controle liga/desliga do modelo declarado.
+              </Typography>
+            </Box>
+          }
+        >
+          <IconButton
+            aria-label={`Ajuda: ${parameter.label}`}
+            size="small"
+            sx={{
+              bgcolor: alpha(themeTokens.teal, 0.12),
+              border: `1px solid ${alpha(themeTokens.teal, 0.75)}`,
+              color: 'primary.main',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              height: 22,
+              lineHeight: 1,
+              width: 22,
+              '&:hover': {
+                bgcolor: alpha(themeTokens.teal, 0.22),
+                borderColor: themeTokens.teal,
+              },
+            }}
+          >
+            ?
+          </IconButton>
+        </Tooltip>
+      </Stack>
+      <FormControlLabel
+        control={
+          <Switch
+            checked={value}
+            onChange={(_event, checked) => {
+              onChange(checked)
+            }}
+            size="small"
+            slotProps={{
+              input: {
+                'aria-label': parameter.label,
+              },
+            }}
+          />
+        }
+        label={value ? 'Ligado' : 'Desligado'}
+        sx={{
+          bgcolor: alpha(themeTokens.background, 0.36),
+          border: `1px solid ${themeTokens.border}`,
+          borderRadius: 1,
+          justifyContent: 'space-between',
+          m: 0,
+          px: 1,
+          py: 0.5,
+          width: '100%',
+        }}
+      />
+    </Box>
+  )
+}
+
 function formatParameterRange(parameter: SimulationParameter) {
   if (
     typeof parameter.min !== 'number' ||
@@ -4092,6 +4317,17 @@ function readNumericParameter(
   const value = values[parameter.id]
 
   return typeof value === 'number' ? value : Number(parameter.defaultValue)
+}
+
+function readBooleanParameter(
+  values: Record<string, ParameterValue>,
+  parameter: SimulationParameter,
+) {
+  const value = values[parameter.id]
+
+  return typeof value === 'boolean'
+    ? value
+    : parameter.defaultValue === true
 }
 
 function clampToParameterRange(
@@ -4597,6 +4833,109 @@ function ReadoutToggleButton({
           <ChevronRight aria-hidden size={17} />
         )}
       </IconButton>
+    </Tooltip>
+  )
+}
+
+function CameraProjectionSwitch({
+  onChange,
+  value,
+}: {
+  onChange: (mode: CameraProjectionMode) => void
+  value: CameraProjectionMode
+}) {
+  const isOrthographic = value === 'orthographic'
+  const modes = [
+    {
+      ariaLabel: 'Camera em perspectiva',
+      label: 'Persp.',
+      value: 'perspective',
+    },
+    {
+      ariaLabel: 'Camera ortogonal',
+      label: 'Orto',
+      value: 'orthographic',
+    },
+  ] satisfies Array<{
+    ariaLabel: string
+    label: string
+    value: CameraProjectionMode
+  }>
+
+  return (
+    <Tooltip
+      title={
+        isOrthographic
+          ? 'Ortogonal: escala constante, sem fuga visual'
+          : 'Perspectiva: profundidade com fuga visual'
+      }
+    >
+      <Box
+        aria-label="Modo da camera da viewport"
+        role="group"
+        sx={{
+          bgcolor: alpha(themeTokens.background, 0.82),
+          border: `1px solid ${alpha(themeTokens.text, 0.16)}`,
+          borderRadius: 999,
+          display: 'flex',
+          flex: '0 0 auto',
+          height: 30,
+          overflow: 'hidden',
+          p: '2px',
+          position: 'relative',
+          width: { xs: 132, sm: 148 },
+        }}
+      >
+        <Box
+          aria-hidden
+          sx={{
+            bgcolor: alpha(themeTokens.teal, 0.22),
+            border: `1px solid ${alpha(themeTokens.teal, 0.68)}`,
+            borderRadius: 999,
+            bottom: 2,
+            boxShadow: `0 0 0 1px ${alpha(themeTokens.teal, 0.1)}`,
+            left: 2,
+            position: 'absolute',
+            top: 2,
+            transform: isOrthographic ? 'translateX(100%)' : 'translateX(0)',
+            transition: 'transform 160ms ease',
+            width: 'calc(50% - 2px)',
+            zIndex: 0,
+          }}
+        />
+        {modes.map((mode) => {
+          const active = mode.value === value
+
+          return (
+            <ButtonBase
+              aria-label={mode.ariaLabel}
+              aria-pressed={active}
+              key={mode.value}
+              onClick={() => {
+                onChange(mode.value)
+              }}
+              sx={{
+                borderRadius: 999,
+                color: active ? 'primary.main' : 'text.secondary',
+                flex: '1 1 0',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                minWidth: 0,
+                position: 'relative',
+                textTransform: 'uppercase',
+                zIndex: 1,
+                '&:focus-visible': {
+                  outline: `2px solid ${themeTokens.teal}`,
+                  outlineOffset: 1,
+                },
+              }}
+              type="button"
+            >
+              {mode.label}
+            </ButtonBase>
+          )
+        })}
+      </Box>
     </Tooltip>
   )
 }

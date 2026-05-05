@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import {
+  hydrostaticTankDepthMeters,
   type KinematicsSample,
   type KinematicsSimulationId,
   type KinematicsVectorOverlay,
@@ -131,6 +132,19 @@ function estimateRawSceneBounds(
 
     return {
       span: Math.max(1, maxZ - minZ, springTopMeters),
+    }
+  }
+
+  if (simulationId === 'hydrostatics-buoyancy') {
+    const firstSample = samples[0]
+    const sphereRadiusMeters = firstSample?.primaryRadiusMeters ?? 0.3
+
+    return {
+      span: Math.max(
+        1,
+        hydrostaticTankDepthMeters + sphereRadiusMeters,
+        sphereRadiusMeters * 6,
+      ),
     }
   }
 

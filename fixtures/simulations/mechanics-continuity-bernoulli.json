@@ -160,7 +160,7 @@
     "O escoamento e incompressivel, estacionario e sem viscosidade no modelo de Bernoulli ideal.",
     "As velocidades sao medias por secao; perfil real de velocidade, perda de carga e turbulencia nao entram.",
     "Quando a pressao calculada fica negativa, a simulacao emite warning porque o modelo ideal deixou de ser fisico.",
-    "A cena mostra um marcador didatico de fluido, nao particulas individuais nem conservacao de massa por malha."
+    "A cena mostra um tubo de Venturi didatico com fluido translucido, tracadores e manometros normalizados para leitura visual; nao resolve particulas reais, turbulencia, cavitacao, perfil de velocidade ou conservacao de massa por malha."
   ],
   "formulas": [
     {

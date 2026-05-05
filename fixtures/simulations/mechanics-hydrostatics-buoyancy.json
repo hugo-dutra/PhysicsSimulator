@@ -29,7 +29,7 @@
   ],
   "defaultParameters": {
     "fluidDensityKilogramsPerCubicMeter": 1000,
-    "objectDensityKilogramsPerCubicMeter": 650,
+    "objectMassKilograms": 52,
     "objectVolumeCubicMeters": 0.08,
     "depthMeters": 1.4,
     "gravityMetersPerSecondSquared": 9.81
@@ -47,20 +47,20 @@
       "defaultValue": 1000
     },
     {
-      "id": "objectDensityKilogramsPerCubicMeter",
-      "label": "Densidade do corpo",
-      "description": "Densidade media do corpo. Aumentar cresce o peso por volume e pode mudar o regime de flutuacao para afundamento.",
-      "unit": "kg/m^3",
+      "id": "objectMassKilograms",
+      "label": "Massa do corpo",
+      "description": "Massa total da esfera. Mantendo o volume, aumentar a massa aumenta a densidade media, aumenta o peso e faz a esfera descer ou afundar; diminuir massa favorece subida e flutuacao.",
+      "unit": "kg",
       "kind": "number",
-      "min": 50,
-      "max": 20000,
-      "step": 10,
-      "defaultValue": 650
+      "min": 0.5,
+      "max": 500,
+      "step": 0.5,
+      "defaultValue": 52
     },
     {
       "id": "objectVolumeCubicMeters",
       "label": "Volume do corpo",
-      "description": "Volume deslocavel pelo corpo. Aumentar escala peso e empuxo; o regime depende principalmente da comparacao de densidades.",
+      "description": "Volume deslocavel da esfera. Mantendo a massa, aumentar o volume aumenta apenas o raio visual da esfera, reduz a densidade media e aumenta o empuxo maximo; diminuir volume reduz o raio, aumenta a densidade e tende a fazer a esfera descer. O tanque permanece fixo.",
       "unit": "m^3",
       "kind": "number",
       "min": 0.005,
@@ -70,12 +70,12 @@
     },
     {
       "id": "depthMeters",
-      "label": "Profundidade",
-      "description": "Profundidade do ponto de leitura abaixo da superficie. Aumentar cresce a pressao hidrostatica linearmente.",
+      "label": "Profundidade inicial",
+      "description": "Profundidade inicial do centro da esfera abaixo da superficie dentro do tanque fixo. Aumentar solta a esfera mais fundo, elevando a pressao inicial e deixando mais claro o movimento ate flutuar, ficar neutra ou afundar.",
       "unit": "m",
       "kind": "number",
       "min": 0,
-      "max": 10,
+      "max": 3,
       "step": 0.1,
       "defaultValue": 1.4
     },
@@ -97,7 +97,7 @@
       "label": "Madeira em agua",
       "parameters": {
         "fluidDensityKilogramsPerCubicMeter": 1000,
-        "objectDensityKilogramsPerCubicMeter": 650,
+        "objectMassKilograms": 52,
         "objectVolumeCubicMeters": 0.08,
         "depthMeters": 1.4,
         "gravityMetersPerSecondSquared": 9.81
@@ -108,7 +108,7 @@
       "label": "Aco afundando",
       "parameters": {
         "fluidDensityKilogramsPerCubicMeter": 1000,
-        "objectDensityKilogramsPerCubicMeter": 7850,
+        "objectMassKilograms": 314,
         "objectVolumeCubicMeters": 0.04,
         "depthMeters": 2.2,
         "gravityMetersPerSecondSquared": 9.81
@@ -119,18 +119,66 @@
       "label": "Fluido denso",
       "parameters": {
         "fluidDensityKilogramsPerCubicMeter": 1260,
-        "objectDensityKilogramsPerCubicMeter": 1050,
+        "objectMassKilograms": 84,
         "objectVolumeCubicMeters": 0.08,
         "depthMeters": 1.2,
         "gravityMetersPerSecondSquared": 9.81
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "floating",
+      "label": "Flutuacao com fracao submersa",
+      "condition": "objectMassKilograms / objectVolumeCubicMeters < fluidDensityKilogramsPerCubicMeter",
+      "transitionLimit": "rho_corpo = rho_fluido",
+      "sampleFields": [
+        "objectDensityKilogramsPerCubicMeter",
+        "submergedFraction",
+        "zMeters",
+        "buoyantForceNewtons",
+        "weightNewtons",
+        "netForceNewtons",
+        "accelerationMetersPerSecondSquared"
+      ]
+    },
+    {
+      "id": "neutral",
+      "label": "Submersao neutra",
+      "condition": "objectMassKilograms / objectVolumeCubicMeters ~= fluidDensityKilogramsPerCubicMeter",
+      "transitionLimit": "tolerancia didatica de densidade relativa proxima de 1",
+      "sampleFields": [
+        "objectDensityKilogramsPerCubicMeter",
+        "submergedFraction",
+        "buoyantForceNewtons",
+        "weightNewtons",
+        "netForceNewtons"
+      ]
+    },
+    {
+      "id": "sinking",
+      "label": "Afundamento",
+      "condition": "objectMassKilograms / objectVolumeCubicMeters > fluidDensityKilogramsPerCubicMeter",
+      "transitionLimit": "peso maior que empuxo maximo",
+      "sampleFields": [
+        "objectDensityKilogramsPerCubicMeter",
+        "zMeters",
+        "velocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared",
+        "buoyantForceNewtons",
+        "weightNewtons",
+        "normalForceNewtons",
+        "isGrounded"
+      ],
+      "warningCode": "OBJECT_SINKS"
+    }
+  ],
   "limits": [
     "O fluido e incompressivel e em repouso; viscosidade, turbulencia e ondas de superficie nao entram.",
-    "O corpo e representado por densidade media e volume unico, sem geometria real detalhada.",
-    "Quando a densidade do corpo e menor que a do fluido, o modelo usa fracao submersa de equilibrio.",
-    "Quando o peso supera o empuxo maximo, a simulacao indica afundamento ideal sem calcular impacto no fundo."
+    "O corpo e uma esfera de volume unico; massa e volume definem a densidade media usada no criterio de flutuacao.",
+    "O tanque transparente tem dimensoes fixas e grandes o suficiente para comportar toda a faixa de volume da esfera; mudar volume nao redimensiona a caixa nem o liquido.",
+    "Quando a densidade derivada do corpo e menor que a do fluido, o modelo calcula a fracao submersa de uma esfera e mostra a aproximacao amortecida ate o equilibrio.",
+    "Quando o peso supera o empuxo maximo, a simulacao mostra afundamento ideal no tanque e contato com o fundo transparente, sem arrasto viscoso ou impacto elastico."
   ],
   "formulas": [
     {
@@ -146,8 +194,24 @@
       "usedWhen": "Usar em fluido estatico de densidade aproximadamente constante.",
       "notUsedWhen": "Nao descreve escoamento rapido, fluido compressivel ou ondas.",
       "parameterIds": ["fluidDensityKilogramsPerCubicMeter", "depthMeters", "gravityMetersPerSecondSquared"],
-      "sampleFields": ["fluidPressurePascals", "positionMeters"],
-      "relatedChartIds": ["pressure-time"]
+      "sampleFields": ["fluidPressurePascals", "positionMeters", "zMeters"],
+      "relatedChartIds": ["pressure"]
+    },
+    {
+      "id": "object-density",
+      "title": "Densidade media da esfera",
+      "expressionLatex": "\\rho_{corpo}=\\frac{m}{V}",
+      "description": "Deriva a densidade media usada pelo criterio de flutuacao a partir da massa e do volume controlados pelo usuario.",
+      "variables": [
+        { "symbol": "\\rho_{corpo}", "label": "densidade media do corpo", "unit": "kg/m^3" },
+        { "symbol": "m", "label": "massa do corpo", "unit": "kg" },
+        { "symbol": "V", "label": "volume do corpo", "unit": "m^3" }
+      ],
+      "usedWhen": "Usar quando o corpo pode ser tratado como uma esfera homogenea de densidade media.",
+      "notUsedWhen": "Nao descreve corpos ocos com distribuicao interna de massa ou estabilidade rotacional.",
+      "parameterIds": ["objectMassKilograms", "objectVolumeCubicMeters"],
+      "sampleFields": ["objectMassKilograms", "objectDensityKilogramsPerCubicMeter", "primaryRadiusMeters"],
+      "relatedChartIds": ["density"]
     },
     {
       "id": "buoyant-force",
@@ -161,26 +225,28 @@
       ],
       "usedWhen": "Usar para corpo imerso em fluido estatico com volume deslocado conhecido.",
       "notUsedWhen": "Nao inclui arrasto, aceleracao do fluido ou efeitos de superficie.",
-      "parameterIds": ["fluidDensityKilogramsPerCubicMeter", "objectVolumeCubicMeters"],
-      "sampleFields": ["buoyantForceNewtons", "submergedFraction"],
-      "relatedChartIds": ["forces-time"],
+      "parameterIds": ["fluidDensityKilogramsPerCubicMeter", "objectVolumeCubicMeters", "gravityMetersPerSecondSquared"],
+      "sampleFields": ["buoyantForceNewtons", "submergedFraction", "primaryRadiusMeters"],
+      "relatedChartIds": ["forces", "density"],
       "relatedVectorIds": ["normal"]
     },
     {
       "id": "float-or-sink",
       "title": "Criterio de flutuacao",
-      "expressionLatex": "\\rho_{corpo}<\\rho_f",
-      "description": "Compara densidades para decidir se existe equilibrio flutuante antes de submergir todo o corpo.",
+      "expressionLatex": "\\frac{m}{V}<\\rho_f",
+      "description": "Compara a densidade media derivada de massa e volume com a densidade do fluido para decidir se a esfera sobe, fica neutra ou afunda.",
       "variables": [
+        { "symbol": "m", "label": "massa do corpo", "unit": "kg" },
+        { "symbol": "V", "label": "volume do corpo", "unit": "m^3" },
         { "symbol": "\\rho_{corpo}", "label": "densidade media do corpo", "unit": "kg/m^3" },
         { "symbol": "\\rho_f", "label": "densidade do fluido", "unit": "kg/m^3" }
       ],
       "usedWhen": "Usar para estimar se o corpo flutua ou afunda no modelo ideal.",
       "notUsedWhen": "Nao substitui analise de estabilidade para formas complexas ou centro de massa deslocado.",
-      "parameterIds": ["fluidDensityKilogramsPerCubicMeter", "objectDensityKilogramsPerCubicMeter"],
-      "sampleFields": ["weightNewtons", "buoyantForceNewtons", "netForceNewtons"],
-      "relatedChartIds": ["forces-time"],
-      "relatedVectorIds": ["weight", "normal", "resultant"]
+      "parameterIds": ["fluidDensityKilogramsPerCubicMeter", "objectMassKilograms", "objectVolumeCubicMeters"],
+      "sampleFields": ["objectDensityKilogramsPerCubicMeter", "weightNewtons", "buoyantForceNewtons", "netForceNewtons", "accelerationMetersPerSecondSquared"],
+      "relatedChartIds": ["forces", "position", "density"],
+      "relatedVectorIds": ["weight", "normal", "resultant", "acceleration"]
     }
   ]
 }

@@ -15,6 +15,13 @@ import {
   toKinematicsScenePosition,
   toOrbitSatelliteScenePosition,
 } from './KinematicsSceneProjection'
+import {
+  getRigidBodyRotationBaseRadius,
+  getRigidBodyRotationTracePosition,
+  getRigidBodyRotorHalfLength,
+  getRigidBodySlidingMassRadiusRatio,
+  rigidRotationRotorZ,
+} from './rigidBodyRotationSceneGeometry'
 
 describe('KinematicsScene projection helpers', () => {
   it('keeps MUV and free-fall trajectories ending on the ground plane', () => {
@@ -270,5 +277,25 @@ describe('KinematicsScene projection helpers', () => {
     expect(sample.rightArmMeters).toBeCloseTo(parameters.rightArmMeters)
     expect(direction.y).toBeCloseTo(0)
     expect(direction.z).toBeLessThan(0)
+  })
+
+  it('anchors the rigid body rotation trace to the sliding sphere radius', () => {
+    const bodyRadius = 0.22
+    const sample = {
+      angleRadians: Math.PI / 3,
+      primaryRadiusMeters: 1,
+      secondaryRadiusMeters: 1.2,
+    }
+    const tracePosition = getRigidBodyRotationTracePosition(bodyRadius, sample)
+    const expectedSphereRadius =
+      getRigidBodyRotorHalfLength(bodyRadius) *
+      getRigidBodySlidingMassRadiusRatio(sample)
+    const oldBaseTraceRadius = getRigidBodyRotationBaseRadius(bodyRadius) * 0.88
+
+    expect(Math.hypot(tracePosition.x, tracePosition.y)).toBeCloseTo(
+      expectedSphereRadius,
+    )
+    expect(tracePosition.z).toBeCloseTo(rigidRotationRotorZ + 0.08)
+    expect(expectedSphereRadius).not.toBeCloseTo(oldBaseTraceRadius)
   })
 })

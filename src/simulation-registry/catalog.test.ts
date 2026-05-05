@@ -34,10 +34,10 @@ describe('simulation registry', () => {
     expect(allSimulations).toHaveLength(51)
     expect(
       allSimulations.filter((item) => item.status === 'analysis'),
-    ).toHaveLength(5)
+    ).toHaveLength(0)
     expect(
       allSimulations.filter((item) => item.status === 'ready'),
-    ).toHaveLength(13)
+    ).toHaveLength(18)
     expect(allSimulations.some((item) => item.status === 'planned')).toBe(true)
     expect(findSimulation('inclined-plane-friction').status).toBe('ready')
     expect(findSimulation('projectile-motion').status).toBe('ready')
@@ -135,8 +135,13 @@ describe('simulation registry', () => {
       'centripetal-force-curve',
       'work-energy-track',
       'collisions-1d-2d',
+      'continuity-bernoulli',
+      'gravitational-field-orbits',
+      'hydrostatics-buoyancy',
       'mass-spring',
       'particle-equilibrium',
+      'rigid-body-rotation',
+      'rolling-without-slipping',
       'torque-levers-center-mass',
       'uniform-circular-motion',
     ] as const
@@ -150,9 +155,13 @@ describe('simulation registry', () => {
       expect(simulation.technologyPlan?.engine).toBe('custom-analytic')
       expect(simulation.technologyPlan?.charting).toBe('live-canvas')
       expect(fixture.simulationId).toBe(simulationId)
+      const expectedRuntimeParameterIds =
+        simulationId === 'gravitational-field-orbits'
+          ? ['durationSeconds', 'chartWindowSeconds', 'modelTimeScale']
+          : ['durationSeconds', 'chartWindowSeconds']
+
       expect(fixture.runtimeParameters.map((parameter) => parameter.id)).toEqual([
-        'durationSeconds',
-        'chartWindowSeconds',
+        ...expectedRuntimeParameterIds,
       ])
       expect(fixture.parameters.length).toBeGreaterThan(0)
       expect(fixture.presets.length).toBeGreaterThan(0)
@@ -161,36 +170,51 @@ describe('simulation registry', () => {
     })
   })
 
-  it('declares the remaining shared analytic mechanics simulations as in analysis', () => {
-    const kinematicsSimulationIds = [
-      'continuity-bernoulli',
-      'gravitational-field-orbits',
-      'hydrostatics-buoyancy',
-      'rigid-body-rotation',
-      'rolling-without-slipping',
-    ] as const
+  it('declares rigid-body rotation movable mass and constant energy controls', () => {
+    const fixture = kinematicsFixtures['rigid-body-rotation']
+    const parameterIds = fixture.parameters.map((parameter) => parameter.id)
 
-    kinematicsSimulationIds.forEach((simulationId) => {
-      const simulation = findSimulation(simulationId)
-      const fixture = kinematicsFixtures[simulationId]
+    expect(fixture.defaultParameters.constantRotationalEnergy).toBe(false)
+    expect(fixture.defaultParameters.slidingMassKilograms).toBe(2.4)
+    expect(parameterIds).toContain('constantRotationalEnergy')
+    expect(parameterIds).toContain('slidingMassKilograms')
+    expect(parameterIds.indexOf('slidingMassKilograms')).toBe(
+      parameterIds.indexOf('slidingMassDistanceMeters') + 1,
+    )
+    expect(
+      fixture.parameters.find(
+        (parameter) => parameter.id === 'constantRotationalEnergy',
+      )?.kind,
+    ).toBe('boolean')
+    const movableMassParameter = fixture.parameters.find(
+      (parameter) => parameter.id === 'slidingMassKilograms',
+    )
 
-      expect(simulation.status).toBe('analysis')
-      expect(simulation.topicPath[0]).toBe('Mecanica')
-      expect(simulation.technologyPlan?.engine).toBe('custom-analytic')
-      expect(simulation.technologyPlan?.charting).toBe('live-canvas')
-      expect(fixture.simulationId).toBe(simulationId)
-      const expectedRuntimeParameterIds =
-        simulationId === 'gravitational-field-orbits'
-          ? ['durationSeconds', 'chartWindowSeconds', 'modelTimeScale']
-          : ['durationSeconds', 'chartWindowSeconds']
-
-      expect(fixture.runtimeParameters.map((parameter) => parameter.id))
-        .toEqual(expectedRuntimeParameterIds)
-      expect(fixture.parameters.length).toBeGreaterThan(0)
-      expect(fixture.presets.length).toBeGreaterThan(0)
-      expect(fixture.limits.length).toBeGreaterThan(0)
-      expect(fixture.formulas.length).toBeGreaterThan(0)
-    })
+    expect(movableMassParameter?.kind).toBe('number')
+    expect(movableMassParameter?.min).toBe(0)
+    expect(movableMassParameter?.max).toBe(50)
+    expect(movableMassParameter?.unit).toBe('kg')
+    expect(
+      fixture.presets.every(
+        (preset) => typeof preset.parameters.slidingMassKilograms === 'number',
+      ),
+    ).toBe(true)
+    expect(
+      fixture.presets.find((preset) => preset.id === 'constant-energy')
+        ?.parameters.constantRotationalEnergy,
+    ).toBe(true)
+    expect(fixture.formulas.map((formula) => formula.id)).toContain(
+      'constant-rotational-energy',
+    )
+    expect(
+      fixture.formulas.find((formula) => formula.id === 'sliding-mass-inertia')
+        ?.parameterIds,
+    ).toContain('slidingMassKilograms')
+    expect(
+      fixture.formulas.find(
+        (formula) => formula.id === 'constant-rotational-energy',
+      )?.parameterIds,
+    ).toContain('slidingMassKilograms')
   })
 
   it('starts torque levers balanced with equal default masses and arms', () => {

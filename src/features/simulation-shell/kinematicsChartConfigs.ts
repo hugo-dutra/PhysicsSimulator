@@ -8,6 +8,7 @@ import type { ChartTrace, ChartYAxisMode } from './LiveLineChartModel'
 export type KinematicsChartId =
   | 'acceleration'
   | 'angle'
+  | 'density'
   | 'energy'
   | 'field'
   | 'forces'
@@ -280,6 +281,12 @@ export function buildKinematicsChartConfigs(
             x: time,
             y: samples.map((sample) => sample.secondarySpeedMetersPerSecond),
           },
+          {
+            lineColor: themeTokens.warning,
+            name: 'Velocidade local do tracador (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.velocityMetersPerSecond),
+          },
         ],
         yAxisTitle: 'Velocidade (metros por segundo)',
       },
@@ -298,6 +305,12 @@ export function buildKinematicsChartConfigs(
             name: 'Pressao no estrangulamento (Pa)',
             x: time,
             y: samples.map((sample) => sample.secondaryPressurePascals),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Pressao local do tracador (Pa)',
+            x: time,
+            y: samples.map((sample) => sample.fluidPressurePascals),
           },
         ],
         yAxisTitle: 'Pressao (pascals)',
@@ -398,6 +411,33 @@ export function buildKinematicsChartConfigs(
   } else if (simulationId === 'hydrostatics-buoyancy') {
     charts.push(
       {
+        id: 'position',
+        title: 'Movimento vertical da esfera',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Altura do centro (m)',
+            x: time,
+            y: samples.map((sample) => sample.zMeters),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Velocidade vertical (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.velocityMetersPerSecond),
+          },
+          {
+            lineColor: themeTokens.warning,
+            name: 'Aceleracao vertical (m/s^2)',
+            x: time,
+            y: samples.map(
+              (sample) => sample.accelerationMetersPerSecondSquared,
+            ),
+          },
+        ],
+        yAxisTitle: 'Movimento vertical',
+      },
+      {
         id: 'pressure',
         title: 'Pressao hidrostatica por tempo',
         traces: [
@@ -440,6 +480,33 @@ export function buildKinematicsChartConfigs(
           },
         ],
         yAxisTitle: 'Forca (newtons)',
+      },
+      {
+        id: 'density',
+        title: 'Densidade e submersao',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Densidade do corpo (kg/m^3)',
+            x: time,
+            y: samples.map(
+              (sample) => sample.objectDensityKilogramsPerCubicMeter,
+            ),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Razao densidade corpo/fluido',
+            x: time,
+            y: samples.map((sample) => sample.gripRatio),
+          },
+          {
+            lineColor: themeTokens.vector,
+            name: 'Fracao submersa',
+            x: time,
+            y: samples.map((sample) => sample.submergedFraction),
+          },
+        ],
+        yAxisTitle: 'Densidade relativa',
       },
     )
   } else if (simulationId === 'mass-spring') {

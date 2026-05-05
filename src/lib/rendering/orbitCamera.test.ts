@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import {
+  createOrbitCamera,
   maxOrbitCameraPitchRadians,
   positionOrbitCamera,
+  updateOrbitCameraProjection,
   updateOrbitCameraPose,
   type OrbitCameraPose,
 } from './orbitCamera'
@@ -65,5 +67,45 @@ describe('orbit camera controls', () => {
     )
 
     expect(camera.position.z).toBeCloseTo(-1)
+  })
+
+  it('updates perspective aspect and orthographic frustum from viewport size', () => {
+    const perspectiveCamera = createOrbitCamera('perspective')
+
+    updateOrbitCameraProjection(perspectiveCamera, {
+      cameraRadius: 10,
+      height: 400,
+      width: 800,
+    })
+
+    expect(perspectiveCamera).toBeInstanceOf(THREE.PerspectiveCamera)
+
+    if (!(perspectiveCamera instanceof THREE.PerspectiveCamera)) {
+      throw new Error('Expected a perspective camera.')
+    }
+
+    expect(perspectiveCamera.aspect).toBeCloseTo(2)
+
+    const orthographicCamera = createOrbitCamera('orthographic')
+
+    updateOrbitCameraProjection(orthographicCamera, {
+      cameraRadius: 10,
+      fovDegrees: 42,
+      height: 400,
+      width: 800,
+    })
+
+    expect(orthographicCamera).toBeInstanceOf(THREE.OrthographicCamera)
+
+    if (!(orthographicCamera instanceof THREE.OrthographicCamera)) {
+      throw new Error('Expected an orthographic camera.')
+    }
+
+    const halfHeight = 10 * Math.tan((42 * Math.PI) / 360)
+
+    expect(orthographicCamera.top).toBeCloseTo(halfHeight)
+    expect(orthographicCamera.bottom).toBeCloseTo(-halfHeight)
+    expect(orthographicCamera.right).toBeCloseTo(halfHeight * 2)
+    expect(orthographicCamera.left).toBeCloseTo(-halfHeight * 2)
   })
 })
