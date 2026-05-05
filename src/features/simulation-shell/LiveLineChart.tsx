@@ -18,6 +18,7 @@ import {
 
 type LiveLineChartProps = {
   action?: ReactNode
+  height?: number | string
   title: string
   xAxisRange?: [number, number]
   yAxisMode?: ChartYAxisMode
@@ -57,6 +58,7 @@ const chartNumber = new Intl.NumberFormat('pt-BR', {
 
 export const LiveLineChart = memo(function LiveLineChart({
   action,
+  height = chartHeight,
   title,
   traces,
   xAxisRange,
@@ -212,7 +214,7 @@ export const LiveLineChart = memo(function LiveLineChart({
         />
       ) : null}
       <Box aria-labelledby={chartId} role="img">
-        <Box sx={{ height: chartHeight, minWidth: 0 }}>
+        <Box sx={{ height, minWidth: 0 }}>
           <canvas
             ref={canvasRef}
             style={{

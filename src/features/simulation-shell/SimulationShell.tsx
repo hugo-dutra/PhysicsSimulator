@@ -4,6 +4,8 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
 } from 'react'
 import {
   Box,
@@ -28,10 +30,12 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
-import { alpha } from '@mui/material/styles'
+import { alpha, type SxProps, type Theme } from '@mui/material/styles'
 import {
   ChevronDown,
   ChevronRight,
+  GripHorizontal,
+  GripVertical,
   Maximize2,
   Minimize2,
   Pause,
@@ -155,6 +159,13 @@ type OutputPanelState = {
   theory: boolean
 }
 
+type LayoutSizingState = {
+  focusedChartHeightPx: number
+  focusedChartWidthPercent: number
+  sidebarWidthPx: number
+  viewportHeightPx: number
+}
+
 type HydrostaticsContinuitySeed = Required<
   Pick<
     HydrostaticsBuoyancyParameters,
@@ -228,6 +239,18 @@ const floatingControlsMobileMaxHeight = 'min(34svh, 300px)'
 const floatingControlsMobileBottomReserve = `calc(${floatingControlsMobileMaxHeight} + ${
   floatingControlsMobileInsetPx * 2
 }px)`
+const defaultLayoutSizing = {
+  focusedChartHeightPx: 260,
+  focusedChartWidthPercent: 34,
+  sidebarWidthPx: 288,
+  viewportHeightPx: 720,
+} satisfies LayoutSizingState
+const layoutSizingBounds = {
+  focusedChartHeightPx: { max: 560, min: 170 },
+  focusedChartWidthPercent: { max: 54, min: 26 },
+  sidebarWidthPx: { max: 430, min: 232 },
+  viewportHeightPx: { max: 1100, min: 360 },
+} satisfies Record<keyof LayoutSizingState, { max: number; min: number }>
 const sampleTableColumnIds = [
   'time',
   'angle',
@@ -807,6 +830,8 @@ export function SimulationShell() {
   })
   const [maximizedPanel, setMaximizedPanel] =
     useState<MaximizedPanelId | null>(null)
+  const [layoutSizing, setLayoutSizing] =
+    useState<LayoutSizingState>(defaultLayoutSizing)
   const pendulumParameters = useMemo(
     () => toPendulumParameters(pendulumParameterValues),
     [pendulumParameterValues],
@@ -1153,6 +1178,17 @@ export function SimulationShell() {
       currentPanelId === panelId ? null : panelId,
     )
   }
+  const handleLayoutSizingChange = useCallback(
+    (key: keyof LayoutSizingState, value: number) => {
+      const bounds = layoutSizingBounds[key]
+
+      setLayoutSizing((currentSizing) => ({
+        ...currentSizing,
+        [key]: clampNumber(value, bounds.min, bounds.max),
+      }))
+    },
+    [],
+  )
 
   const isPanelMaximized = maximizedPanel !== null
   const isFormulasMaximized = maximizedPanel === 'formulas'
@@ -1172,7 +1208,9 @@ export function SimulationShell() {
         display: 'grid',
         gridTemplateColumns: {
           xs: '1fr',
-          lg: isPanelMaximized ? '1fr' : '288px minmax(0, 1fr)',
+          lg: isPanelMaximized
+            ? '1fr'
+            : `${layoutSizing.sidebarWidthPx}px minmax(0, 1fr)`,
         },
       }}
     >
@@ -1184,6 +1222,7 @@ export function SimulationShell() {
           bgcolor: themeTokens.surface,
           display: isPanelMaximized ? 'none' : 'block',
           minWidth: 0,
+          position: 'relative',
         }}
       >
         <Box sx={{ p: 2 }}>
@@ -1197,6 +1236,27 @@ export function SimulationShell() {
         <SimulationSidebar
           onSelectSimulation={handleSimulationSelect}
           selectedSimulationId={selectedSimulationId}
+        />
+        <ResizeHandle
+          ariaValueText={`${Math.round(layoutSizing.sidebarWidthPx)} px`}
+          axis="x"
+          label="Redimensionar sidebar do catalogo"
+          max={layoutSizingBounds.sidebarWidthPx.max}
+          min={layoutSizingBounds.sidebarWidthPx.min}
+          onChange={(value) => {
+            handleLayoutSizingChange('sidebarWidthPx', value)
+          }}
+          step={16}
+          sx={{
+            bottom: 0,
+            display: { xs: 'none', lg: 'grid' },
+            position: 'absolute',
+            right: -6,
+            top: 0,
+            width: 12,
+            zIndex: 2,
+          }}
+          value={layoutSizing.sidebarWidthPx}
         />
       </Box>
 
@@ -1252,10 +1312,20 @@ export function SimulationShell() {
                 chartWindowSeconds={inclinedPlaneEffectiveChartWindowSeconds}
                 durationSeconds={inclinedPlaneDurationSeconds}
                 isPlaying={isPlaybackAdvancing}
+                layoutSizing={layoutSizing}
                 maximizedPanel={maximizedPanel}
                 onCameraProjectionModeChange={setCameraProjectionMode}
+                onFocusedChartHeightChange={(value) => {
+                  handleLayoutSizingChange('focusedChartHeightPx', value)
+                }}
+                onFocusedChartWidthChange={(value) => {
+                  handleLayoutSizingChange('focusedChartWidthPercent', value)
+                }}
                 onMaximizedPanelToggle={handleMaximizedPanelToggle}
                 onOutputPanelToggle={handleOutputPanelToggle}
+                onViewportHeightChange={(value) => {
+                  handleLayoutSizingChange('viewportHeightPx', value)
+                }}
                 outputPanels={outputPanels}
                 overlays={overlays}
                 parameters={inclinedPlaneParameters}
@@ -1272,12 +1342,22 @@ export function SimulationShell() {
                 durationSeconds={selectedKinematicsDurationSeconds}
                 isPlaying={isPlaybackAdvancing}
                 key={selectedKinematicsSimulationId}
+                layoutSizing={layoutSizing}
                 maximizedPanel={maximizedPanel}
                 modelTimeScale={selectedKinematicsModelTimeScale}
                 onCameraProjectionModeChange={setCameraProjectionMode}
+                onFocusedChartHeightChange={(value) => {
+                  handleLayoutSizingChange('focusedChartHeightPx', value)
+                }}
+                onFocusedChartWidthChange={(value) => {
+                  handleLayoutSizingChange('focusedChartWidthPercent', value)
+                }}
                 onLiveSampleChange={handleKinematicsLiveSampleChange}
                 onMaximizedPanelToggle={handleMaximizedPanelToggle}
                 onOutputPanelToggle={handleOutputPanelToggle}
+                onViewportHeightChange={(value) => {
+                  handleLayoutSizingChange('viewportHeightPx', value)
+                }}
                 outputPanels={outputPanels}
                 overlays={overlays}
                 parameters={selectedKinematicsParameters}
@@ -1292,10 +1372,20 @@ export function SimulationShell() {
                 chartWindowSeconds={pendulumEffectiveChartWindowSeconds}
                 durationSeconds={pendulumDurationSeconds}
                 isPlaying={isPlaybackAdvancing}
+                layoutSizing={layoutSizing}
                 maximizedPanel={maximizedPanel}
                 onCameraProjectionModeChange={setCameraProjectionMode}
+                onFocusedChartHeightChange={(value) => {
+                  handleLayoutSizingChange('focusedChartHeightPx', value)
+                }}
+                onFocusedChartWidthChange={(value) => {
+                  handleLayoutSizingChange('focusedChartWidthPercent', value)
+                }}
                 onMaximizedPanelToggle={handleMaximizedPanelToggle}
                 onOutputPanelToggle={handleOutputPanelToggle}
+                onViewportHeightChange={(value) => {
+                  handleLayoutSizingChange('viewportHeightPx', value)
+                }}
                 overlays={overlays}
                 outputPanels={outputPanels}
                 parameters={pendulumParameters}
@@ -2039,10 +2129,14 @@ function PendulumRuntime({
   chartWindowSeconds,
   durationSeconds,
   isPlaying,
+  layoutSizing,
   maximizedPanel,
   onCameraProjectionModeChange,
+  onFocusedChartHeightChange,
+  onFocusedChartWidthChange,
   onMaximizedPanelToggle,
   onOutputPanelToggle,
+  onViewportHeightChange,
   overlays,
   outputPanels,
   parameters,
@@ -2054,10 +2148,14 @@ function PendulumRuntime({
   chartWindowSeconds: number
   durationSeconds: number
   isPlaying: boolean
+  layoutSizing: LayoutSizingState
   maximizedPanel: MaximizedPanelId | null
   onCameraProjectionModeChange: (mode: CameraProjectionMode) => void
+  onFocusedChartHeightChange: (value: number) => void
+  onFocusedChartWidthChange: (value: number) => void
   onMaximizedPanelToggle: (panelId: MaximizedPanelId) => void
   onOutputPanelToggle: (panelId: keyof OutputPanelState) => void
+  onViewportHeightChange: (value: number) => void
   overlays: OverlayState
   outputPanels: OutputPanelState
   parameters: PendulumParameters
@@ -2203,7 +2301,10 @@ function PendulumRuntime({
             bgcolor: alpha(themeTokens.panel, 0.58),
             display: 'flex',
             flexDirection: 'column',
-            height: '90svh',
+            height: {
+              xs: '90svh',
+              md: `min(${layoutSizing.viewportHeightPx}px, calc(100svh - 28px))`,
+            },
             minHeight: 322,
             overflow: 'hidden',
             position: 'relative',
@@ -2369,7 +2470,7 @@ function PendulumRuntime({
             gridTemplateColumns: {
               xs: '1fr',
               lg: focusedChart
-                ? 'minmax(0, 2fr) minmax(280px, 1fr)'
+                ? `minmax(0, 1fr) 12px minmax(260px, ${layoutSizing.focusedChartWidthPercent}%)`
                 : '1fr',
             },
             minHeight: 0,
@@ -2394,9 +2495,37 @@ function PendulumRuntime({
             ) : null}
           </Box>
           {focusedChart ? (
+            <ResizeHandle
+              ariaValueText={`${Math.round(
+                layoutSizing.focusedChartWidthPercent,
+              )}%`}
+              axis="x"
+              dragDirection={-1}
+              dragScale={0.08}
+              label="Redimensionar largura do grafico em foco"
+              max={layoutSizingBounds.focusedChartWidthPercent.max}
+              min={layoutSizingBounds.focusedChartWidthPercent.min}
+              onChange={(value) => {
+                onFocusedChartWidthChange(value)
+              }}
+              step={4}
+              sx={{
+                alignSelf: 'stretch',
+                display: { xs: 'none', lg: 'grid' },
+                justifySelf: 'stretch',
+              }}
+              value={layoutSizing.focusedChartWidthPercent}
+            />
+          ) : null}
+          {focusedChart ? (
             <Box
               aria-label="Slot de grafico em foco da simulacao"
-              sx={{ minWidth: 0 }}
+              sx={{
+                alignSelf: 'start',
+                maxHeight: '100%',
+                minWidth: 0,
+                overflow: 'auto',
+              }}
             >
               <LiveLineChart
                 action={
@@ -2407,14 +2536,55 @@ function PendulumRuntime({
                   />
                 }
                 title={focusedChart.title}
+                height={layoutSizing.focusedChartHeightPx}
                 traces={focusedChart.traces}
                 xAxisRange={xAxisRange}
                 yAxisMode={focusedChart.yAxisMode}
                 yAxisTitle={focusedChart.yAxisTitle}
               />
+              <ResizeHandle
+                ariaValueText={`${Math.round(
+                  layoutSizing.focusedChartHeightPx,
+                )} px`}
+                axis="y"
+                label="Redimensionar altura do grafico em foco"
+                max={layoutSizingBounds.focusedChartHeightPx.max}
+                min={layoutSizingBounds.focusedChartHeightPx.min}
+                onChange={(value) => {
+                  onFocusedChartHeightChange(value)
+                }}
+                step={16}
+                sx={{
+                  height: 12,
+                  mt: 0.75,
+                  width: '100%',
+                }}
+                value={layoutSizing.focusedChartHeightPx}
+              />
             </Box>
           ) : null}
         </Box>
+        <ResizeHandle
+          ariaValueText={`${Math.round(layoutSizing.viewportHeightPx)} px`}
+          axis="y"
+          label="Redimensionar altura da viewport"
+          max={layoutSizingBounds.viewportHeightPx.max}
+          min={layoutSizingBounds.viewportHeightPx.min}
+          onChange={(value) => {
+            onViewportHeightChange(value)
+          }}
+          step={24}
+          sx={{
+            bottom: 0,
+            display: { xs: 'none', md: 'grid' },
+            height: 12,
+            left: 0,
+            position: 'absolute',
+            right: 0,
+            zIndex: 3,
+          }}
+          value={layoutSizing.viewportHeightPx}
+        />
       </Box>
 
       {shouldShowCharts ? (
@@ -2577,10 +2747,14 @@ function InclinedPlaneRuntime({
   chartWindowSeconds,
   durationSeconds,
   isPlaying,
+  layoutSizing,
   maximizedPanel,
   onCameraProjectionModeChange,
+  onFocusedChartHeightChange,
+  onFocusedChartWidthChange,
   onMaximizedPanelToggle,
   onOutputPanelToggle,
+  onViewportHeightChange,
   outputPanels,
   overlays,
   parameters,
@@ -2592,10 +2766,14 @@ function InclinedPlaneRuntime({
   chartWindowSeconds: number
   durationSeconds: number
   isPlaying: boolean
+  layoutSizing: LayoutSizingState
   maximizedPanel: MaximizedPanelId | null
   onCameraProjectionModeChange: (mode: CameraProjectionMode) => void
+  onFocusedChartHeightChange: (value: number) => void
+  onFocusedChartWidthChange: (value: number) => void
   onMaximizedPanelToggle: (panelId: MaximizedPanelId) => void
   onOutputPanelToggle: (panelId: keyof OutputPanelState) => void
+  onViewportHeightChange: (value: number) => void
   outputPanels: OutputPanelState
   overlays: OverlayState
   parameters: InclinedPlaneParameters
@@ -2746,7 +2924,10 @@ function InclinedPlaneRuntime({
             bgcolor: alpha(themeTokens.panel, 0.58),
             display: 'flex',
             flexDirection: 'column',
-            height: '90svh',
+            height: {
+              xs: '90svh',
+              md: `min(${layoutSizing.viewportHeightPx}px, calc(100svh - 28px))`,
+            },
             minHeight: 322,
             overflow: 'hidden',
             position: 'relative',
@@ -2908,7 +3089,7 @@ function InclinedPlaneRuntime({
             gridTemplateColumns: {
               xs: '1fr',
               lg: focusedChart
-                ? 'minmax(0, 2fr) minmax(280px, 1fr)'
+                ? `minmax(0, 1fr) 12px minmax(260px, ${layoutSizing.focusedChartWidthPercent}%)`
                 : '1fr',
             },
             minHeight: 0,
@@ -2935,9 +3116,37 @@ function InclinedPlaneRuntime({
             ) : null}
           </Box>
           {focusedChart ? (
+            <ResizeHandle
+              ariaValueText={`${Math.round(
+                layoutSizing.focusedChartWidthPercent,
+              )}%`}
+              axis="x"
+              dragDirection={-1}
+              dragScale={0.08}
+              label="Redimensionar largura do grafico em foco"
+              max={layoutSizingBounds.focusedChartWidthPercent.max}
+              min={layoutSizingBounds.focusedChartWidthPercent.min}
+              onChange={(value) => {
+                onFocusedChartWidthChange(value)
+              }}
+              step={4}
+              sx={{
+                alignSelf: 'stretch',
+                display: { xs: 'none', lg: 'grid' },
+                justifySelf: 'stretch',
+              }}
+              value={layoutSizing.focusedChartWidthPercent}
+            />
+          ) : null}
+          {focusedChart ? (
             <Box
               aria-label="Slot de grafico em foco da simulacao"
-              sx={{ minWidth: 0 }}
+              sx={{
+                alignSelf: 'start',
+                maxHeight: '100%',
+                minWidth: 0,
+                overflow: 'auto',
+              }}
             >
               <LiveLineChart
                 action={
@@ -2948,14 +3157,55 @@ function InclinedPlaneRuntime({
                   />
                 }
                 title={focusedChart.title}
+                height={layoutSizing.focusedChartHeightPx}
                 traces={focusedChart.traces}
                 xAxisRange={xAxisRange}
                 yAxisMode={focusedChart.yAxisMode}
                 yAxisTitle={focusedChart.yAxisTitle}
               />
+              <ResizeHandle
+                ariaValueText={`${Math.round(
+                  layoutSizing.focusedChartHeightPx,
+                )} px`}
+                axis="y"
+                label="Redimensionar altura do grafico em foco"
+                max={layoutSizingBounds.focusedChartHeightPx.max}
+                min={layoutSizingBounds.focusedChartHeightPx.min}
+                onChange={(value) => {
+                  onFocusedChartHeightChange(value)
+                }}
+                step={16}
+                sx={{
+                  height: 12,
+                  mt: 0.75,
+                  width: '100%',
+                }}
+                value={layoutSizing.focusedChartHeightPx}
+              />
             </Box>
           ) : null}
         </Box>
+        <ResizeHandle
+          ariaValueText={`${Math.round(layoutSizing.viewportHeightPx)} px`}
+          axis="y"
+          label="Redimensionar altura da viewport"
+          max={layoutSizingBounds.viewportHeightPx.max}
+          min={layoutSizingBounds.viewportHeightPx.min}
+          onChange={(value) => {
+            onViewportHeightChange(value)
+          }}
+          step={24}
+          sx={{
+            bottom: 0,
+            display: { xs: 'none', md: 'grid' },
+            height: 12,
+            left: 0,
+            position: 'absolute',
+            right: 0,
+            zIndex: 3,
+          }}
+          value={layoutSizing.viewportHeightPx}
+        />
       </Box>
 
       {shouldShowCharts ? (
@@ -3109,12 +3359,16 @@ function KinematicsRuntime({
   chartWindowSeconds,
   durationSeconds,
   isPlaying,
+  layoutSizing,
   maximizedPanel,
   modelTimeScale,
   onCameraProjectionModeChange,
+  onFocusedChartHeightChange,
+  onFocusedChartWidthChange,
   onLiveSampleChange,
   onMaximizedPanelToggle,
   onOutputPanelToggle,
+  onViewportHeightChange,
   outputPanels,
   overlays,
   parameters,
@@ -3127,15 +3381,19 @@ function KinematicsRuntime({
   chartWindowSeconds: number
   durationSeconds: number
   isPlaying: boolean
+  layoutSizing: LayoutSizingState
   maximizedPanel: MaximizedPanelId | null
   modelTimeScale: number
   onCameraProjectionModeChange: (mode: CameraProjectionMode) => void
+  onFocusedChartHeightChange: (value: number) => void
+  onFocusedChartWidthChange: (value: number) => void
   onLiveSampleChange: (
     simulationId: KinematicsSimulationId,
     sample: KinematicsSample,
   ) => void
   onMaximizedPanelToggle: (panelId: MaximizedPanelId) => void
   onOutputPanelToggle: (panelId: keyof OutputPanelState) => void
+  onViewportHeightChange: (value: number) => void
   outputPanels: OutputPanelState
   overlays: OverlayState
   parameters: KinematicsParameters
@@ -3303,7 +3561,10 @@ function KinematicsRuntime({
             bgcolor: alpha(themeTokens.panel, 0.58),
             display: 'flex',
             flexDirection: 'column',
-            height: '90svh',
+            height: {
+              xs: '90svh',
+              md: `min(${layoutSizing.viewportHeightPx}px, calc(100svh - 28px))`,
+            },
             minHeight: 322,
             overflow: 'hidden',
             position: 'relative',
@@ -3438,7 +3699,7 @@ function KinematicsRuntime({
             gridTemplateColumns: {
               xs: '1fr',
               lg: focusedChart
-                ? 'minmax(0, 2fr) minmax(280px, 1fr)'
+                ? `minmax(0, 1fr) 12px minmax(260px, ${layoutSizing.focusedChartWidthPercent}%)`
                 : '1fr',
             },
             minHeight: 0,
@@ -3468,9 +3729,37 @@ function KinematicsRuntime({
             ) : null}
           </Box>
           {focusedChart ? (
+            <ResizeHandle
+              ariaValueText={`${Math.round(
+                layoutSizing.focusedChartWidthPercent,
+              )}%`}
+              axis="x"
+              dragDirection={-1}
+              dragScale={0.08}
+              label="Redimensionar largura do grafico em foco"
+              max={layoutSizingBounds.focusedChartWidthPercent.max}
+              min={layoutSizingBounds.focusedChartWidthPercent.min}
+              onChange={(value) => {
+                onFocusedChartWidthChange(value)
+              }}
+              step={4}
+              sx={{
+                alignSelf: 'stretch',
+                display: { xs: 'none', lg: 'grid' },
+                justifySelf: 'stretch',
+              }}
+              value={layoutSizing.focusedChartWidthPercent}
+            />
+          ) : null}
+          {focusedChart ? (
             <Box
               aria-label="Slot de grafico em foco da simulacao"
-              sx={{ minWidth: 0 }}
+              sx={{
+                alignSelf: 'start',
+                maxHeight: '100%',
+                minWidth: 0,
+                overflow: 'auto',
+              }}
             >
               <LiveLineChart
                 action={
@@ -3481,14 +3770,55 @@ function KinematicsRuntime({
                   />
                 }
                 title={focusedChart.title}
+                height={layoutSizing.focusedChartHeightPx}
                 traces={focusedChart.traces}
                 xAxisRange={xAxisRange}
                 yAxisMode={focusedChart.yAxisMode}
                 yAxisTitle={focusedChart.yAxisTitle}
               />
+              <ResizeHandle
+                ariaValueText={`${Math.round(
+                  layoutSizing.focusedChartHeightPx,
+                )} px`}
+                axis="y"
+                label="Redimensionar altura do grafico em foco"
+                max={layoutSizingBounds.focusedChartHeightPx.max}
+                min={layoutSizingBounds.focusedChartHeightPx.min}
+                onChange={(value) => {
+                  onFocusedChartHeightChange(value)
+                }}
+                step={16}
+                sx={{
+                  height: 12,
+                  mt: 0.75,
+                  width: '100%',
+                }}
+                value={layoutSizing.focusedChartHeightPx}
+              />
             </Box>
           ) : null}
         </Box>
+        <ResizeHandle
+          ariaValueText={`${Math.round(layoutSizing.viewportHeightPx)} px`}
+          axis="y"
+          label="Redimensionar altura da viewport"
+          max={layoutSizingBounds.viewportHeightPx.max}
+          min={layoutSizingBounds.viewportHeightPx.min}
+          onChange={(value) => {
+            onViewportHeightChange(value)
+          }}
+          step={24}
+          sx={{
+            bottom: 0,
+            display: { xs: 'none', md: 'grid' },
+            height: 12,
+            left: 0,
+            position: 'absolute',
+            right: 0,
+            zIndex: 3,
+          }}
+          value={layoutSizing.viewportHeightPx}
+        />
       </Box>
 
       {shouldShowCharts ? (
@@ -4414,6 +4744,10 @@ function clampToParameterRange(
   return Math.min(max, Math.max(min, value))
 }
 
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
 function AnimationVectorLegend({
   items,
 }: {
@@ -4907,6 +5241,153 @@ function ReadoutToggleButton({
           <ChevronRight aria-hidden size={17} />
         )}
       </IconButton>
+    </Tooltip>
+  )
+}
+
+function ResizeHandle({
+  ariaValueText,
+  axis,
+  dragDirection = 1,
+  dragScale = 1,
+  label,
+  max,
+  min,
+  onChange,
+  step,
+  sx,
+  value,
+}: {
+  ariaValueText?: string
+  axis: 'x' | 'y'
+  dragDirection?: 1 | -1
+  dragScale?: number
+  label: string
+  max: number
+  min: number
+  onChange: (value: number) => void
+  step: number
+  sx?: SxProps<Theme>
+  value: number
+}) {
+  const isXAxis = axis === 'x'
+  const orientation = isXAxis ? 'vertical' : 'horizontal'
+  const cursor = isXAxis ? 'col-resize' : 'row-resize'
+
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) {
+      return
+    }
+
+    event.preventDefault()
+    const startPosition = isXAxis ? event.clientX : event.clientY
+    const startValue = value
+    const previousCursor = document.body.style.cursor
+    const previousUserSelect = document.body.style.userSelect
+
+    document.body.style.cursor = cursor
+    document.body.style.userSelect = 'none'
+
+    const handlePointerMove = (pointerEvent: PointerEvent) => {
+      pointerEvent.preventDefault()
+      const currentPosition = isXAxis
+        ? pointerEvent.clientX
+        : pointerEvent.clientY
+      const delta = currentPosition - startPosition
+      const nextValue =
+        startValue + delta * dragDirection * dragScale
+
+      onChange(clampNumber(nextValue, min, max))
+    }
+
+    const handlePointerUp = () => {
+      document.body.style.cursor = previousCursor
+      document.body.style.userSelect = previousUserSelect
+      document.removeEventListener('pointermove', handlePointerMove)
+      document.removeEventListener('pointerup', handlePointerUp)
+      document.removeEventListener('pointercancel', handlePointerUp)
+    }
+
+    document.addEventListener('pointermove', handlePointerMove)
+    document.addEventListener('pointerup', handlePointerUp)
+    document.addEventListener('pointercancel', handlePointerUp)
+  }
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const keyStep = event.shiftKey ? step * 4 : step
+
+    if (event.key === 'Home') {
+      event.preventDefault()
+      onChange(min)
+      return
+    }
+
+    if (event.key === 'End') {
+      event.preventDefault()
+      onChange(max)
+      return
+    }
+
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      event.preventDefault()
+      onChange(clampNumber(value + keyStep, min, max))
+      return
+    }
+
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      onChange(clampNumber(value - keyStep, min, max))
+    }
+  }
+
+  return (
+    <Tooltip title={label}>
+      <Box
+        aria-label={label}
+        aria-orientation={orientation}
+        aria-valuemax={max}
+        aria-valuemin={min}
+        aria-valuenow={Math.round(value)}
+        aria-valuetext={ariaValueText}
+        onKeyDown={handleKeyDown}
+        onPointerDown={handlePointerDown}
+        role="separator"
+        sx={[
+          {
+            alignItems: 'center',
+            bgcolor: 'transparent',
+            color: 'text.secondary',
+            cursor,
+            display: 'grid',
+            justifyItems: 'center',
+            minHeight: isXAxis ? 28 : 10,
+            minWidth: isXAxis ? 10 : 28,
+            placeItems: 'center',
+            touchAction: 'none',
+            transition:
+              'background-color 120ms ease, color 120ms ease, box-shadow 120ms ease',
+            userSelect: 'none',
+            '&:focus-visible': {
+              bgcolor: alpha(themeTokens.teal, 0.12),
+              boxShadow: `0 0 0 2px ${alpha(themeTokens.teal, 0.64)}`,
+              color: 'primary.main',
+              outline: 0,
+            },
+            '&:hover': {
+              bgcolor: alpha(themeTokens.teal, 0.1),
+              color: 'primary.main',
+            },
+          },
+          ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
+        ]}
+        tabIndex={0}
+      >
+        {isXAxis ? (
+          <GripVertical aria-hidden size={16} />
+        ) : (
+          <GripHorizontal aria-hidden size={16} />
+        )}
+      </Box>
     </Tooltip>
   )
 }

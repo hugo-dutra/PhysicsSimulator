@@ -121,6 +121,60 @@ describe('SimulationShell playback continuity', () => {
     expect(readPendulumResetVersion()).toBe('0')
   })
 
+  it('resizes sidebar, viewport, and focused chart panes without resetting playback', () => {
+    render(
+      <ThemeProvider theme={appTheme}>
+        <SimulationShell />
+      </ThemeProvider>,
+    )
+
+    const sidebarHandle = screen.getByRole('separator', {
+      hidden: true,
+      name: /Redimensionar sidebar do catalogo/i,
+    })
+    const viewportHeightHandle = screen.getByRole('separator', {
+      hidden: true,
+      name: /Redimensionar altura da viewport/i,
+    })
+
+    expect(readPendulumResetVersion()).toBe('0')
+    expect(sidebarHandle).toHaveAttribute('aria-valuenow', '288')
+    expect(viewportHeightHandle).toHaveAttribute('aria-valuenow', '720')
+
+    fireEvent.keyDown(sidebarHandle, { key: 'ArrowRight' })
+    fireEvent.keyDown(viewportHeightHandle, { key: 'ArrowDown' })
+
+    expect(sidebarHandle).toHaveAttribute('aria-valuenow', '304')
+    expect(viewportHeightHandle).toHaveAttribute('aria-valuenow', '744')
+    expect(readPendulumResetVersion()).toBe('0')
+
+    fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Mostrar Angulo do pendulo por tempo ao lado da simulacao/i,
+      }),
+    )
+
+    const focusedChartWidthHandle = screen.getByRole('separator', {
+      hidden: true,
+      name: /Redimensionar largura do grafico em foco/i,
+    })
+    const focusedChartHeightHandle = screen.getByRole('separator', {
+      hidden: true,
+      name: /Redimensionar altura do grafico em foco/i,
+    })
+
+    expect(focusedChartWidthHandle).toHaveAttribute('aria-valuenow', '34')
+    expect(focusedChartHeightHandle).toHaveAttribute('aria-valuenow', '260')
+
+    fireEvent.keyDown(focusedChartWidthHandle, { key: 'ArrowRight' })
+    fireEvent.keyDown(focusedChartHeightHandle, { key: 'ArrowDown' })
+
+    expect(focusedChartWidthHandle).toHaveAttribute('aria-valuenow', '38')
+    expect(focusedChartHeightHandle).toHaveAttribute('aria-valuenow', '276')
+    expect(readPendulumResetVersion()).toBe('0')
+  })
+
   it('keeps hydrostatics playback continuity when changing object volume', () => {
     render(
       <ThemeProvider theme={appTheme}>
