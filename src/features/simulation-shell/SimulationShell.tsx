@@ -1,6 +1,7 @@
 import {
   useCallback,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
 } from 'react'
@@ -65,6 +66,7 @@ import {
   getKinematicsVectorOverlays,
   isKinematicsSimulationId,
   toKinematicsParameters,
+  type HydrostaticsBuoyancyParameters,
   type KinematicsParameters,
   type KinematicsSample,
   type KinematicsSimulationId,
@@ -152,6 +154,15 @@ type OutputPanelState = {
   table: boolean
   theory: boolean
 }
+
+type HydrostaticsContinuitySeed = Required<
+  Pick<
+    HydrostaticsBuoyancyParameters,
+    | 'initialCenterZMeters'
+    | 'initialVelocityZMetersPerSecond'
+    | 'motionStartTimeSeconds'
+  >
+>
 
 type MaximizedPanelId = 'charts' | 'formulas' | 'simulation' | 'table' | 'theory'
 
@@ -776,6 +787,11 @@ export function SimulationShell() {
   const [isPlaying, setIsPlaying] = useState(true)
   const [playbackRate, setPlaybackRate] = useState(defaultPlaybackRate)
   const [playbackResetVersion, setPlaybackResetVersion] = useState(0)
+  const latestKinematicsSamplesRef = useRef<
+    Partial<Record<KinematicsSimulationId, KinematicsSample>>
+  >({})
+  const [hydrostaticsContinuitySeed, setHydrostaticsContinuitySeed] =
+    useState<HydrostaticsContinuitySeed | null>(null)
   const [overlays, setOverlays] = useState<OverlayState>({
     energy: true,
     trace: true,
@@ -848,7 +864,7 @@ export function SimulationShell() {
     kinematicsRuntimeValuesById[selectedKinematicsSimulationId]
   const selectedKinematicsPresetId =
     kinematicsSelectedPresetIdsById[selectedKinematicsSimulationId]
-  const selectedKinematicsParameters = useMemo(
+  const selectedKinematicsBaseParameters = useMemo(
     () =>
       toKinematicsParameters(
         selectedKinematicsSimulationId,
@@ -856,6 +872,23 @@ export function SimulationShell() {
       ),
     [selectedKinematicsParameterValues, selectedKinematicsSimulationId],
   )
+  const selectedKinematicsParameters = useMemo<KinematicsParameters>(() => {
+    if (
+      selectedKinematicsSimulationId !== 'hydrostatics-buoyancy' ||
+      !hydrostaticsContinuitySeed
+    ) {
+      return selectedKinematicsBaseParameters
+    }
+
+    return {
+      ...(selectedKinematicsBaseParameters as HydrostaticsBuoyancyParameters),
+      ...hydrostaticsContinuitySeed,
+    }
+  }, [
+    hydrostaticsContinuitySeed,
+    selectedKinematicsBaseParameters,
+    selectedKinematicsSimulationId,
+  ])
   const selectedKinematicsDurationSeconds = readRuntimeValue(
     selectedKinematicsRuntimeValues,
     'durationSeconds',
@@ -926,10 +959,21 @@ export function SimulationShell() {
       : pendulumTimeline
   const energyRatio = readEnergyRatio(selectedTimeline.samples)
   const isPlaybackAdvancing = isPlaying && playbackRate > 0
+  const handleKinematicsLiveSampleChange = useCallback(
+    (simulationId: KinematicsSimulationId, sample: KinematicsSample) => {
+      latestKinematicsSamplesRef.current[simulationId] = sample
+    },
+    [],
+  )
+  const clearHydrostaticsContinuity = () => {
+    delete latestKinematicsSamplesRef.current['hydrostatics-buoyancy']
+    setHydrostaticsContinuitySeed(null)
+  }
 
   const handleSimulationSelect = (simulationId: RunnableSimulationId) => {
     setSelectedSimulationId(simulationId)
     setMaximizedPanel(null)
+    clearHydrostaticsContinuity()
     setPlaybackResetVersion((current) => current + 1)
   }
 
@@ -945,6 +989,10 @@ export function SimulationShell() {
         ...currentValues,
         [selectedKinematicsSimulationId]: nextPresetId,
       }))
+
+      if (selectedKinematicsSimulationId === 'hydrostatics-buoyancy') {
+        clearHydrostaticsContinuity()
+      }
     } else {
       setPendulumSelectedPresetId(nextPresetId)
     }
@@ -1004,6 +1052,20 @@ export function SimulationShell() {
         ...currentValues,
         [selectedKinematicsSimulationId]: customPresetId,
       }))
+      if (selectedKinematicsSimulationId === 'hydrostatics-buoyancy') {
+        const latestSample =
+          latestKinematicsSamplesRef.current[selectedKinematicsSimulationId] ??
+          selectedKinematicsTimeline.samples[0]
+
+        if (latestSample) {
+          setHydrostaticsContinuitySeed({
+            initialCenterZMeters: latestSample.zMeters,
+            initialVelocityZMetersPerSecond:
+              latestSample.velocityZMetersPerSecond,
+            motionStartTimeSeconds: latestSample.timeSeconds,
+          })
+        }
+      }
       setKinematicsParameterValuesById((currentValues) => ({
         ...currentValues,
         [selectedKinematicsSimulationId]: {
@@ -1011,10 +1073,6 @@ export function SimulationShell() {
           [parameter.id]: clampedValue,
         },
       }))
-
-      if (selectedKinematicsSimulationId === 'hydrostatics-buoyancy') {
-        setPlaybackResetVersion((current) => current + 1)
-      }
     } else {
       setPendulumSelectedPresetId(customPresetId)
       setPendulumParameterValues((currentValues) => ({
@@ -1061,6 +1119,7 @@ export function SimulationShell() {
   }
 
   const handleReset = () => {
+    clearHydrostaticsContinuity()
     setPlaybackResetVersion((current) => current + 1)
     setIsPlaying(false)
   }
@@ -1216,6 +1275,7 @@ export function SimulationShell() {
                 maximizedPanel={maximizedPanel}
                 modelTimeScale={selectedKinematicsModelTimeScale}
                 onCameraProjectionModeChange={setCameraProjectionMode}
+                onLiveSampleChange={handleKinematicsLiveSampleChange}
                 onMaximizedPanelToggle={handleMaximizedPanelToggle}
                 onOutputPanelToggle={handleOutputPanelToggle}
                 outputPanels={outputPanels}
@@ -3052,6 +3112,7 @@ function KinematicsRuntime({
   maximizedPanel,
   modelTimeScale,
   onCameraProjectionModeChange,
+  onLiveSampleChange,
   onMaximizedPanelToggle,
   onOutputPanelToggle,
   outputPanels,
@@ -3069,6 +3130,10 @@ function KinematicsRuntime({
   maximizedPanel: MaximizedPanelId | null
   modelTimeScale: number
   onCameraProjectionModeChange: (mode: CameraProjectionMode) => void
+  onLiveSampleChange: (
+    simulationId: KinematicsSimulationId,
+    sample: KinematicsSample,
+  ) => void
   onMaximizedPanelToggle: (panelId: MaximizedPanelId) => void
   onOutputPanelToggle: (panelId: keyof OutputPanelState) => void
   outputPanels: OutputPanelState
@@ -3096,13 +3161,14 @@ function KinematicsRuntime({
 
   const handleSampleChange = useCallback(
     (sample: KinematicsSample, stats: KinematicsFrameStats) => {
+      onLiveSampleChange(simulationId, sample)
       setLiveSample(sample)
       setLiveSamples((currentSamples) =>
         appendLiveSample(currentSamples, sample),
       )
       setFrameStats(stats)
     },
-    [],
+    [onLiveSampleChange, simulationId],
   )
   const handleFocusedChartToggle = useCallback(
     (chartId: KinematicsChartId) => {
@@ -3702,8 +3768,16 @@ function buildKinematicsReadoutMetrics({
         ),
       },
       {
-        label: 'Pressao',
+        label: 'Pressao centro',
         value: formatNumber(sample.fluidPressurePascals, 'Pa'),
+      },
+      {
+        label: 'Pressao topo',
+        value: formatNumber(sample.pressurePascals, 'Pa'),
+      },
+      {
+        label: 'Pressao base',
+        value: formatNumber(sample.secondaryPressurePascals, 'Pa'),
       },
       {
         label: 'Aceleracao',

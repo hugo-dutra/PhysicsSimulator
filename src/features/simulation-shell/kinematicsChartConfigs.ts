@@ -442,13 +442,25 @@ export function buildKinematicsChartConfigs(
         title: 'Pressao hidrostatica por tempo',
         traces: [
           {
+            lineColor: themeTokens.teal,
+            name: 'Pressao no topo do corpo (Pa)',
+            x: time,
+            y: samples.map((sample) => sample.pressurePascals),
+          },
+          {
             lineColor: themeTokens.cyan,
-            name: 'Pressao no ponto (Pa)',
+            name: 'Pressao no centro do corpo (Pa)',
             x: time,
             y: samples.map((sample) => sample.fluidPressurePascals),
           },
           {
-            lineColor: themeTokens.teal,
+            lineColor: themeTokens.warning,
+            name: 'Pressao na base do corpo (Pa)',
+            x: time,
+            y: samples.map((sample) => sample.secondaryPressurePascals),
+          },
+          {
+            lineColor: themeTokens.vector,
             name: 'Profundidade (m)',
             x: time,
             y: samples.map((sample) => sample.positionMeters),

@@ -4,7 +4,9 @@ Em um fluido em repouso, a pressao aumenta com a profundidade segundo `p = rho g
 
 Pelo principio de Arquimedes, o empuxo e igual ao peso do fluido deslocado. Nesta simulacao a massa e o volume da esfera definem a densidade media `rho_corpo = m / V`: aumentar massa com o mesmo volume aumenta o peso e favorece a descida; aumentar volume com a mesma massa aumenta o raio visual, reduz a densidade media e favorece a subida.
 
-A cena mostra uma esfera em um tanque transparente fixo e grande o suficiente para a faixa de volumes do controle. O motor calcula raio a partir do volume, volume submerso da esfera, empuxo, peso, resultante vertical e aceleracao; mudar volume altera a esfera e a fisica, nao o tamanho da caixa ou do liquido. A posicao vertical do sample segue uma aproximacao didatica: flutuacao sobe amortecida ate a fracao submersa de equilibrio; afundamento acelera para baixo ate o fundo do tanque.
+A cena mostra uma esfera em um tanque transparente fixo e grande o suficiente para a faixa de volumes do controle. O motor calcula raio a partir do volume, volume submerso da esfera, pressao no topo, no centro e na base, empuxo, peso, resultante vertical e aceleracao; mudar volume altera a esfera e a fisica, nao o tamanho da caixa ou do liquido. A posicao vertical do sample segue uma aproximacao didatica: flutuacao sobe amortecida ate a fracao submersa de equilibrio; afundamento acelera para baixo ate o fundo do tanque.
+
+O mapa de cor no fluido e as faixas horizontais mostram que a pressao cresce com a profundidade. Sobre a esfera, a coloracao e as pequenas setas normais representam a distribuicao de pressao: setas laterais aparecem em sentidos opostos e se cancelam na leitura vertical, enquanto a base recebe maior pressao que o topo. O volume brilhante dentro da parte submersa destaca o fluido deslocado usado em `E = rho_f g V_deslocado`. As pequenas ondulacoes de superficie sao uma acomodacao visual do deslocamento; nao representam um modelo de ondas, viscosidade ou escoamento.
 
 ## Regimes
 

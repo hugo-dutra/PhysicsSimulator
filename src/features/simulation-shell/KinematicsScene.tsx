@@ -105,6 +105,11 @@ type BernoulliSceneObjects = {
   flowLookup: BernoulliFlowLookup
 }
 
+type HydroPressureArrow = {
+  angleRadians: number
+  arrow: THREE.ArrowHelper
+}
+
 type SceneObjects = {
   arrows: Record<KinematicsVectorOverlay['id'], THREE.ArrowHelper>
   bernoulli: BernoulliSceneObjects
@@ -114,10 +119,20 @@ type SceneObjects = {
   cameraMinRadius: number
   cameraRadius: number
   cameraTarget: THREE.Vector3
+  hydroDisplacedVolume: THREE.Mesh
+  hydroPressureArrows: HydroPressureArrow[]
+  hydroPressureField: THREE.Mesh
+  hydroPressureBaseRing: THREE.Mesh
+  hydroPressureLevelLineAttribute: THREE.BufferAttribute
+  hydroPressureLevelLinePositions: Float32Array
+  hydroPressureLevelLines: THREE.LineSegments
+  hydroPressureShell: THREE.Mesh
+  hydroPressureTopRing: THREE.Mesh
   hydroTankEdges: THREE.LineSegments
   hydroTankGlass: THREE.Mesh
   hydroWater: THREE.Mesh
   hydroWaterSurface: THREE.Mesh
+  hydroWaterSurfaceBasePositions: Float32Array
   renderer: THREE.WebGLRenderer
   rope: THREE.Line
   ropePositionAttribute: THREE.BufferAttribute
@@ -301,6 +316,25 @@ const rigidRotationAxisHeight = 0.7
 const orbitSatellitePathSegments = 96
 const hydroTankWidthMeters = 2.8
 const hydroTankHorizontalDepthMeters = 1.8
+const hydroPressureFieldSegments = 24
+const hydroPressureLevelCount = 7
+const hydroPressureLevelSegmentVertices = 8
+const hydroPressureArrowAngles = [
+  0,
+  Math.PI / 6,
+  Math.PI / 3,
+  Math.PI / 2,
+  (Math.PI * 2) / 3,
+  (Math.PI * 5) / 6,
+  Math.PI,
+  (Math.PI * 7) / 6,
+  (Math.PI * 4) / 3,
+  (Math.PI * 3) / 2,
+  (Math.PI * 5) / 3,
+  (Math.PI * 11) / 6,
+] as const
+const hydroSubmergedVolumeRings = 18
+const hydroSubmergedVolumeSegments = 44
 const bernoulliTubeHalfLengthMeters = 3
 const bernoulliTubeSegments = 84
 const bernoulliTubeRadialSegments = 28
@@ -691,12 +725,15 @@ export function KinematicsScene({
 
     const hydroTankGlass = new THREE.Mesh(
       new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshBasicMaterial({
+      new THREE.MeshPhysicalMaterial({
         color: 0x38bdf8,
         depthWrite: false,
-        opacity: 0.075,
+        metalness: 0,
+        opacity: 0.105,
+        roughness: 0.04,
         side: THREE.DoubleSide,
         transparent: true,
+        transmission: 0.24,
       }),
     )
     const hydroTankEdges = new THREE.LineSegments(
@@ -719,24 +756,121 @@ export function KinematicsScene({
         transmission: 0.35,
       }),
     )
-    const hydroWaterSurface = new THREE.Mesh(
-      new THREE.PlaneGeometry(1, 1),
+    const hydroPressureField = new THREE.Mesh(
+      createHydroPressureFieldGeometry(),
       new THREE.MeshBasicMaterial({
-        color: 0x2dd4bf,
         depthWrite: false,
-        opacity: 0.36,
+        opacity: 0.42,
+        side: THREE.DoubleSide,
+        transparent: true,
+        vertexColors: true,
+      }),
+    )
+    const hydroPressureLevelLinePositions = new Float32Array(
+      hydroPressureLevelCount * hydroPressureLevelSegmentVertices * 3,
+    )
+    const hydroPressureLevelLineAttribute = new THREE.BufferAttribute(
+      hydroPressureLevelLinePositions,
+      3,
+    )
+    const hydroPressureLevelLineGeometry = new THREE.BufferGeometry()
+    hydroPressureLevelLineAttribute.setUsage(THREE.DynamicDrawUsage)
+    hydroPressureLevelLineGeometry.setAttribute(
+      'position',
+      hydroPressureLevelLineAttribute,
+    )
+    hydroPressureLevelLineGeometry.setDrawRange(
+      0,
+      hydroPressureLevelCount * hydroPressureLevelSegmentVertices,
+    )
+    const hydroPressureLevelLines = new THREE.LineSegments(
+      hydroPressureLevelLineGeometry,
+      new THREE.LineBasicMaterial({
+        color: 0x8bd7ff,
+        depthWrite: false,
+        opacity: 0.34,
+        transparent: true,
+      }),
+    )
+    const hydroDisplacedVolume = new THREE.Mesh(
+      createHydroSubmergedVolumeGeometry(),
+      new THREE.MeshBasicMaterial({
+        color: 0xa3e635,
+        depthWrite: false,
+        opacity: 0.28,
         side: THREE.DoubleSide,
         transparent: true,
       }),
     )
-
-    ;[hydroTankGlass, hydroTankEdges, hydroWater, hydroWaterSurface].forEach(
-      (object) => {
-        object.renderOrder = 2
-        object.visible = false
-        scene.add(object)
-      },
+    const hydroPressureShell = new THREE.Mesh(
+      createHydroPressureShellGeometry(),
+      new THREE.MeshBasicMaterial({
+        depthWrite: false,
+        opacity: 0.5,
+        side: THREE.DoubleSide,
+        transparent: true,
+        vertexColors: true,
+      }),
     )
+    const hydroPressureTopRing = createHydroPressureRing(0xfbbf24)
+    const hydroPressureBaseRing = createHydroPressureRing(0xf43f5e)
+    const hydroWaterSurfaceGeometry = new THREE.PlaneGeometry(1, 1, 48, 24)
+    const hydroWaterSurfacePositionAttribute =
+      hydroWaterSurfaceGeometry.getAttribute('position') as THREE.BufferAttribute
+    hydroWaterSurfacePositionAttribute.setUsage(THREE.DynamicDrawUsage)
+    const hydroWaterSurfaceBasePositions = Float32Array.from(
+      hydroWaterSurfacePositionAttribute.array as ArrayLike<number>,
+    )
+    const hydroWaterSurface = new THREE.Mesh(
+      hydroWaterSurfaceGeometry,
+      new THREE.MeshBasicMaterial({
+        color: 0x2dd4bf,
+        depthWrite: false,
+        opacity: 0.48,
+        side: THREE.DoubleSide,
+        transparent: true,
+      }),
+    )
+    const hydroPressureArrows = hydroPressureArrowAngles.map((angleRadians) => {
+      const arrow = new THREE.ArrowHelper(
+        new THREE.Vector3(0, 0, -1),
+        new THREE.Vector3(0, 0, 0),
+        0.26,
+        0x8bd7ff,
+        0.07,
+        0.04,
+      )
+
+      configureHydroPressureArrowMaterial(arrow)
+
+      return {
+        angleRadians,
+        arrow,
+      }
+    })
+
+    ;[
+      hydroTankGlass,
+      hydroPressureField,
+      hydroWater,
+      hydroDisplacedVolume,
+      hydroPressureShell,
+      hydroPressureTopRing,
+      hydroPressureBaseRing,
+      hydroPressureLevelLines,
+      hydroWaterSurface,
+      hydroTankEdges,
+    ].forEach((object, index) => {
+      object.renderOrder = 2 + index
+      object.visible = false
+      scene.add(object)
+    })
+
+    hydroPressureArrows.forEach(({ arrow }) => {
+      arrow.renderOrder = 10
+      arrow.visible = false
+      scene.add(arrow)
+    })
 
     const bernoulli = createBernoulliVenturiObjects(samples, sceneProjection)
 
@@ -1222,10 +1356,20 @@ export function KinematicsScene({
       cameraMinRadius,
       cameraRadius,
       cameraTarget,
+      hydroDisplacedVolume,
+      hydroPressureArrows,
+      hydroPressureBaseRing,
+      hydroPressureField,
+      hydroPressureLevelLineAttribute,
+      hydroPressureLevelLinePositions,
+      hydroPressureLevelLines,
+      hydroPressureShell,
+      hydroPressureTopRing,
       hydroTankEdges,
       hydroTankGlass,
       hydroWater,
       hydroWaterSurface,
+      hydroWaterSurfaceBasePositions,
       renderer,
       rope,
       ropePositionAttribute,
@@ -1561,10 +1705,19 @@ function updateConstrainedBodyObjects(
   objects.rope.visible = isAtwood || isMassSpring
   objects.supportBar.visible = isAtwood || isMassSpring
   objects.supportStem.visible = isAtwood || isMassSpring
+  objects.hydroDisplacedVolume.visible = isHydrostatics
+  objects.hydroPressureBaseRing.visible = isHydrostatics
+  objects.hydroPressureField.visible = isHydrostatics
+  objects.hydroPressureLevelLines.visible = isHydrostatics
+  objects.hydroPressureShell.visible = isHydrostatics
+  objects.hydroPressureTopRing.visible = isHydrostatics
   objects.hydroTankEdges.visible = isHydrostatics
   objects.hydroTankGlass.visible = isHydrostatics
   objects.hydroWater.visible = isHydrostatics
   objects.hydroWaterSurface.visible = isHydrostatics
+  objects.hydroPressureArrows.forEach(({ arrow }) => {
+    arrow.visible = isHydrostatics && showVectors
+  })
   objects.bernoulli.group.visible = isBernoulli
   objects.leverAppliedForceMarker.visible = isTorqueLever
   objects.leverCenterOfMassMarker.visible = isTorqueLever
@@ -1605,7 +1758,7 @@ function updateConstrainedBodyObjects(
   }
 
   if (isHydrostatics) {
-    updateHydrostaticsObjects(objects, sample)
+    updateHydrostaticsObjects(objects, sample, showVectors)
     return
   }
 
@@ -2128,6 +2281,7 @@ function getLeverMassDisplaySize(objects: SceneObjects, forceNewtons: number) {
 function updateHydrostaticsObjects(
   objects: SceneObjects,
   sample: KinematicsSample,
+  showVectors: boolean,
 ) {
   const scale = objects.sceneProjection.positionScale
   const sphereRadius = Math.max(0.04, sample.primaryRadiusMeters * scale)
@@ -2135,8 +2289,12 @@ function updateHydrostaticsObjects(
   const dimensions = getHydroTankDimensions(scale)
   const tankCenterZ = -tankDepth / 2
   const waterHeight = tankDepth
+  const waterWidth = dimensions.width * 0.94
+  const waterDepth = dimensions.depth * 0.9
+  const centerZ = sample.zMeters * scale
+  const capHeight = clamp(sphereRadius - centerZ, 0, sphereRadius * 2)
 
-  objects.body.position.set(0, 0, sample.zMeters * scale)
+  objects.body.position.set(0, 0, centerZ)
   objects.body.rotation.set(0, 0, 0)
   objects.body.scale.setScalar(sphereRadius)
 
@@ -2145,20 +2303,53 @@ function updateHydrostaticsObjects(
     object.scale.set(dimensions.width, dimensions.depth, tankDepth)
   })
 
-  objects.hydroWater.position.set(0, 0, -waterHeight / 2)
-  objects.hydroWater.scale.set(
-    dimensions.width * 0.94,
-    dimensions.depth * 0.9,
+  objects.hydroPressureField.position.set(0, 0, -waterHeight / 2)
+  objects.hydroPressureField.scale.set(
+    dimensions.width * 0.925,
+    dimensions.depth * 0.875,
     waterHeight,
   )
 
+  objects.hydroWater.position.set(0, 0, -waterHeight / 2)
+  objects.hydroWater.scale.set(waterWidth, waterDepth, waterHeight)
+
+  updateHydroPressureLevelLines(objects, dimensions, tankDepth)
+  updateHydroWaterSurfaceRipples(objects, sample, {
+    depth: waterDepth,
+    scale,
+    width: waterWidth,
+  })
+  updateHydroSubmergedVolumeGeometry(
+    objects.hydroDisplacedVolume.geometry as THREE.BufferGeometry,
+    sphereRadius,
+    capHeight,
+  )
+  objects.hydroDisplacedVolume.position.copy(objects.body.position)
+  objects.hydroDisplacedVolume.visible = capHeight > sphereRadius * 0.035
+  updateHydroPressureShellColors(
+    objects.hydroPressureShell.geometry as THREE.BufferGeometry,
+    centerZ,
+    sphereRadius,
+    tankDepth,
+  )
+  objects.hydroPressureShell.position.copy(objects.body.position)
+  objects.hydroPressureShell.scale.setScalar(sphereRadius * 1.018)
+  objects.hydroPressureShell.visible = sample.submergedFraction > 0.01
+  updateHydroPressureRings(objects, {
+    capHeight,
+    centerZ,
+    sphereRadius,
+  })
+  updateHydroPressureArrows(objects, {
+    centerZ,
+    showVectors,
+    sphereRadius,
+    tankDepth,
+  })
+
   objects.hydroWaterSurface.position.set(0, 0, 0.004)
   objects.hydroWaterSurface.rotation.set(0, 0, 0)
-  objects.hydroWaterSurface.scale.set(
-    dimensions.width * 0.94,
-    dimensions.depth * 0.9,
-    1,
-  )
+  objects.hydroWaterSurface.scale.set(waterWidth, waterDepth, 1)
 }
 
 function getHydroTankDimensions(scale: number) {
@@ -2166,6 +2357,338 @@ function getHydroTankDimensions(scale: number) {
     depth: hydroTankHorizontalDepthMeters * scale,
     width: hydroTankWidthMeters * scale,
   }
+}
+
+function createHydroPressureFieldGeometry() {
+  const geometry = new THREE.BoxGeometry(
+    1,
+    1,
+    1,
+    1,
+    1,
+    hydroPressureFieldSegments,
+  )
+  const positions = geometry.getAttribute('position') as THREE.BufferAttribute
+  const colors = new Float32Array(positions.count * 3)
+  const topColor = new THREE.Color(0x6ee7f9)
+  const bottomColor = new THREE.Color(0x0f3f5f)
+
+  for (let index = 0; index < positions.count; index += 1) {
+    const depthRatio = clamp(0.5 - positions.getZ(index), 0, 1)
+    const color = topColor.clone().lerp(bottomColor, depthRatio)
+    const offset = index * 3
+
+    colors[offset] = color.r
+    colors[offset + 1] = color.g
+    colors[offset + 2] = color.b
+  }
+
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+
+  return geometry
+}
+
+function createHydroPressureShellGeometry() {
+  const geometry = new THREE.SphereGeometry(1, 36, 22)
+  const positions = geometry.getAttribute('position') as THREE.BufferAttribute
+  const colors = new Float32Array(positions.count * 3)
+  const colorAttribute = new THREE.BufferAttribute(colors, 3)
+
+  colorAttribute.setUsage(THREE.DynamicDrawUsage)
+  geometry.setAttribute('color', colorAttribute)
+
+  return geometry
+}
+
+function createHydroPressureRing(color: number) {
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(1, 0.018, 8, 72),
+    new THREE.MeshBasicMaterial({
+      color,
+      depthTest: false,
+      depthWrite: false,
+      opacity: 0.92,
+      transparent: true,
+    }),
+  )
+
+  ring.renderOrder = 11
+
+  return ring
+}
+
+function createHydroSubmergedVolumeGeometry() {
+  const positions = new Float32Array(
+    (hydroSubmergedVolumeRings + 1) *
+      (hydroSubmergedVolumeSegments + 1) *
+      3,
+  )
+  const indices: number[] = []
+
+  for (let ring = 0; ring < hydroSubmergedVolumeRings; ring += 1) {
+    for (let segment = 0; segment < hydroSubmergedVolumeSegments; segment += 1) {
+      const current =
+        ring * (hydroSubmergedVolumeSegments + 1) + segment
+      const next = current + hydroSubmergedVolumeSegments + 1
+
+      indices.push(
+        current,
+        next,
+        current + 1,
+        current + 1,
+        next,
+        next + 1,
+      )
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry()
+  const positionAttribute = new THREE.BufferAttribute(positions, 3)
+
+  positionAttribute.setUsage(THREE.DynamicDrawUsage)
+  geometry.setAttribute('position', positionAttribute)
+  geometry.setIndex(indices)
+
+  return geometry
+}
+
+function updateHydroPressureRings(
+  objects: SceneObjects,
+  {
+    capHeight,
+    centerZ,
+    sphereRadius,
+  }: {
+    capHeight: number
+    centerZ: number
+    sphereRadius: number
+  },
+) {
+  const topLocalZ = -sphereRadius + capHeight
+  const baseLocalZ = -sphereRadius + capHeight * 0.28
+  const topRadius = Math.sqrt(
+    Math.max(0, sphereRadius ** 2 - topLocalZ ** 2),
+  )
+  const baseRadius = Math.sqrt(
+    Math.max(0, sphereRadius ** 2 - baseLocalZ ** 2),
+  )
+
+  objects.hydroPressureTopRing.position.set(0, 0, centerZ + topLocalZ)
+  objects.hydroPressureTopRing.scale.setScalar(Math.max(topRadius, 0.001))
+  objects.hydroPressureTopRing.visible =
+    capHeight > sphereRadius * 0.08 && topRadius > sphereRadius * 0.08
+
+  objects.hydroPressureBaseRing.position.set(0, 0, centerZ + baseLocalZ)
+  objects.hydroPressureBaseRing.scale.setScalar(Math.max(baseRadius, 0.001))
+  objects.hydroPressureBaseRing.visible =
+    capHeight > sphereRadius * 0.16 && baseRadius > sphereRadius * 0.08
+}
+
+function updateHydroPressureLevelLines(
+  objects: SceneObjects,
+  dimensions: { depth: number; width: number },
+  tankDepth: number,
+) {
+  const halfWidth = (dimensions.width * 0.92) / 2
+  const halfDepth = (dimensions.depth * 0.86) / 2
+  let cursor = 0
+
+  for (let index = 0; index < hydroPressureLevelCount; index += 1) {
+    const depthRatio = (index + 1) / (hydroPressureLevelCount + 1)
+    const z = -tankDepth * depthRatio
+    const corners = [
+      [-halfWidth, -halfDepth, z],
+      [halfWidth, -halfDepth, z],
+      [halfWidth, halfDepth, z],
+      [-halfWidth, halfDepth, z],
+    ] as const
+    const segments = [
+      [corners[0], corners[1]],
+      [corners[1], corners[2]],
+      [corners[2], corners[3]],
+      [corners[3], corners[0]],
+    ] as const
+
+    segments.forEach(([from, to]) => {
+      ;[from, to].forEach(([x, y, lineZ]) => {
+        objects.hydroPressureLevelLinePositions[cursor] = x
+        objects.hydroPressureLevelLinePositions[cursor + 1] = y
+        objects.hydroPressureLevelLinePositions[cursor + 2] = lineZ
+        cursor += 3
+      })
+    })
+  }
+
+  objects.hydroPressureLevelLineAttribute.needsUpdate = true
+}
+
+function updateHydroWaterSurfaceRipples(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+  dimensions: { depth: number; scale: number; width: number },
+) {
+  const geometry = objects.hydroWaterSurface.geometry as THREE.BufferGeometry
+  const positionAttribute = geometry.getAttribute(
+    'position',
+  ) as THREE.BufferAttribute
+  const positions = positionAttribute.array as Float32Array
+  const basePositions = objects.hydroWaterSurfaceBasePositions
+  const motionAmplitude = clamp(
+    Math.abs(sample.velocityMetersPerSecond) * dimensions.scale * 0.026,
+    0.004 * dimensions.scale,
+    0.038 * dimensions.scale,
+  )
+  const submersionPulse =
+    sample.submergedFraction > 0
+      ? (0.006 + sample.submergedFraction * 0.012) * dimensions.scale
+      : 0
+  const amplitude = motionAmplitude + submersionPulse
+
+  for (let index = 0; index < positions.length; index += 3) {
+    const localX = basePositions[index]
+    const localY = basePositions[index + 1]
+    const sceneX = localX * dimensions.width
+    const sceneY = localY * dimensions.depth
+    const distance = Math.hypot(sceneX, sceneY)
+    const radialRipple =
+      Math.sin(distance * 9.2 - sample.timeSeconds * 4.4) *
+      Math.exp(-distance * 1.45)
+    const crossRipple =
+      Math.sin(sceneX * 4.2 + sceneY * 2.7 + sample.timeSeconds * 1.25) *
+      0.22
+
+    positions[index] = basePositions[index]
+    positions[index + 1] = basePositions[index + 1]
+    positions[index + 2] =
+      basePositions[index + 2] + amplitude * (radialRipple + crossRipple)
+  }
+
+  positionAttribute.needsUpdate = true
+}
+
+function updateHydroSubmergedVolumeGeometry(
+  geometry: THREE.BufferGeometry,
+  sphereRadius: number,
+  capHeight: number,
+) {
+  const positionAttribute = geometry.getAttribute(
+    'position',
+  ) as THREE.BufferAttribute
+  const positions = positionAttribute.array as Float32Array
+  const topZ = -sphereRadius + capHeight
+  let cursor = 0
+
+  for (let ring = 0; ring <= hydroSubmergedVolumeRings; ring += 1) {
+    const ringRatio = ring / hydroSubmergedVolumeRings
+    const z = -sphereRadius + (topZ + sphereRadius) * ringRatio
+    const radiusAtZ = Math.sqrt(Math.max(0, sphereRadius ** 2 - z ** 2))
+
+    for (
+      let segment = 0;
+      segment <= hydroSubmergedVolumeSegments;
+      segment += 1
+    ) {
+      const angleRadians =
+        (segment / hydroSubmergedVolumeSegments) * Math.PI * 2
+
+      positions[cursor] = Math.cos(angleRadians) * radiusAtZ
+      positions[cursor + 1] = Math.sin(angleRadians) * radiusAtZ
+      positions[cursor + 2] = z
+      cursor += 3
+    }
+  }
+
+  positionAttribute.needsUpdate = true
+  geometry.computeBoundingSphere()
+}
+
+function updateHydroPressureShellColors(
+  geometry: THREE.BufferGeometry,
+  centerZ: number,
+  sphereRadius: number,
+  tankDepth: number,
+) {
+  const positions = geometry.getAttribute('position') as THREE.BufferAttribute
+  const colorAttribute = geometry.getAttribute('color') as THREE.BufferAttribute
+  const colors = colorAttribute.array as Float32Array
+  const surfaceColor = new THREE.Color(0x6ee7f9)
+  const deepColor = new THREE.Color(0xf59e0b)
+
+  for (let index = 0; index < positions.count; index += 1) {
+    const worldZ = centerZ + positions.getZ(index) * sphereRadius
+    const depthRatio = clamp(-worldZ / Math.max(tankDepth, 0.001), 0, 1)
+    const color = surfaceColor.clone().lerp(deepColor, depthRatio)
+    const offset = index * 3
+
+    colors[offset] = color.r
+    colors[offset + 1] = color.g
+    colors[offset + 2] = color.b
+  }
+
+  colorAttribute.needsUpdate = true
+}
+
+function updateHydroPressureArrows(
+  objects: SceneObjects,
+  {
+    centerZ,
+    showVectors,
+    sphereRadius,
+    tankDepth,
+  }: {
+    centerZ: number
+    showVectors: boolean
+    sphereRadius: number
+    tankDepth: number
+  },
+) {
+  const center = new THREE.Vector3(0, 0, centerZ)
+  const surfaceColor = new THREE.Color(0xfbbf24)
+  const deepColor = new THREE.Color(0xf43f5e)
+
+  objects.hydroPressureArrows.forEach(({ angleRadians, arrow }) => {
+    const normal = new THREE.Vector3(
+      Math.cos(angleRadians),
+      0,
+      Math.sin(angleRadians),
+    ).normalize()
+    const surfacePoint = center.clone().addScaledVector(normal, sphereRadius)
+    const depth = Math.max(0, -surfacePoint.z)
+    const isSubmerged = depth > tankDepth * 0.012
+
+    if (!showVectors || !isSubmerged) {
+      arrow.visible = false
+      return
+    }
+
+    const depthRatio = clamp(depth / Math.max(tankDepth, 0.001), 0, 1)
+    const length = sphereRadius * (0.82 + depthRatio * 1.3)
+    const origin = surfacePoint
+      .clone()
+      .addScaledVector(normal, Math.min(sphereRadius * 0.22, 0.11) + length)
+
+    arrow.visible = true
+    arrow.position.copy(origin)
+    arrow.setDirection(normal.clone().multiplyScalar(-1))
+    arrow.setLength(length, length * 0.27, length * 0.14)
+    arrow.setColor(surfaceColor.clone().lerp(deepColor, depthRatio))
+  })
+}
+
+function configureHydroPressureArrowMaterial(arrow: THREE.ArrowHelper) {
+  const materials = [
+    arrow.line.material,
+    arrow.cone.material,
+  ] as THREE.Material[]
+
+  materials.forEach((material) => {
+    material.depthTest = false
+    material.depthWrite = false
+    material.transparent = true
+    material.opacity = 1
+  })
+  arrow.line.renderOrder = 12
+  arrow.cone.renderOrder = 12
 }
 
 function createBernoulliVenturiObjects(

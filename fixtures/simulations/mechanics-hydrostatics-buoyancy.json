@@ -194,8 +194,26 @@
       "usedWhen": "Usar em fluido estatico de densidade aproximadamente constante.",
       "notUsedWhen": "Nao descreve escoamento rapido, fluido compressivel ou ondas.",
       "parameterIds": ["fluidDensityKilogramsPerCubicMeter", "depthMeters", "gravityMetersPerSecondSquared"],
-      "sampleFields": ["fluidPressurePascals", "positionMeters", "zMeters"],
+      "sampleFields": ["pressurePascals", "fluidPressurePascals", "secondaryPressurePascals", "positionMeters", "zMeters"],
       "relatedChartIds": ["pressure"]
+    },
+    {
+      "id": "pressure-difference",
+      "title": "Diferenca de pressoes no corpo",
+      "expressionLatex": "\\Delta p=\\rho g\\left(h_{base}-h_{topo}\\right)",
+      "description": "Compara a pressao na parte inferior e superior da esfera para mostrar a origem da resultante vertical para cima.",
+      "variables": [
+        { "symbol": "\\Delta p", "label": "diferenca de pressao", "unit": "Pa" },
+        { "symbol": "h_{base}", "label": "profundidade da base", "unit": "m" },
+        { "symbol": "h_{topo}", "label": "profundidade do topo", "unit": "m" },
+        { "symbol": "\\rho", "label": "densidade do fluido", "unit": "kg/m^3" }
+      ],
+      "usedWhen": "Usar para explicar por que as pressoes laterais se cancelam, enquanto a pressao maior na base gera empuxo.",
+      "notUsedWhen": "Nao substitui a integral completa de pressao para corpos irregulares nem descreve escoamento ou arrasto.",
+      "parameterIds": ["fluidDensityKilogramsPerCubicMeter", "objectVolumeCubicMeters", "gravityMetersPerSecondSquared"],
+      "sampleFields": ["pressurePascals", "secondaryPressurePascals", "buoyantForceNewtons", "weightNewtons", "netForceNewtons"],
+      "relatedChartIds": ["pressure", "forces"],
+      "relatedVectorIds": ["normal", "weight", "resultant"]
     },
     {
       "id": "object-density",

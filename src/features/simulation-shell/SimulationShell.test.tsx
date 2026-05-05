@@ -120,6 +120,37 @@ describe('SimulationShell playback continuity', () => {
     expect(readPendulumProjectionMode()).toBe('perspective')
     expect(readPendulumResetVersion()).toBe('0')
   })
+
+  it('keeps hydrostatics playback continuity when changing object volume', () => {
+    render(
+      <ThemeProvider theme={appTheme}>
+        <SimulationShell />
+      </ThemeProvider>,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Alternar area Mecanica/i }),
+    )
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Alternar subarea Fluidos basicos/i,
+      }),
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: /Hidrostatica e empuxo/i }),
+    )
+
+    expect(readKinematicsResetVersion()).toBe('1')
+
+    const volumeInput = screen.getByLabelText(/Volume do corpo \(m\^3\)/i)
+
+    fireEvent.change(volumeInput, {
+      target: { value: '0.2' },
+    })
+    fireEvent.blur(volumeInput)
+
+    expect(readKinematicsResetVersion()).toBe('1')
+  })
 })
 
 function readPendulumResetVersion() {
@@ -132,4 +163,10 @@ function readPendulumProjectionMode() {
   return screen
     .getByLabelText(/mock pendulum scene/i)
     .getAttribute('data-camera-projection-mode')
+}
+
+function readKinematicsResetVersion() {
+  return screen
+    .getByLabelText(/mock kinematics scene/i)
+    .getAttribute('data-reset-version')
 }

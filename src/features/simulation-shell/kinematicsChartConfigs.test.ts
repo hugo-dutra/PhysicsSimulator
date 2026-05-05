@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   computeKinematicsTimeline,
   type GravitationalFieldOrbitsParameters,
+  type HydrostaticsBuoyancyParameters,
   type TorqueLeversCenterMassParameters,
 } from '../../lib/physics/kinematics'
 import { buildKinematicsChartConfigs } from './kinematicsChartConfigs'
@@ -89,6 +90,41 @@ describe('kinematics chart configs', () => {
     )
     expect(energyChart?.traces[3]?.y[20]).toBeCloseTo(
       result.samples[20].rightGravitationalPotentialEnergyJoules,
+    )
+  })
+
+  it('shows top, center and base pressure traces for hydrostatics', () => {
+    const parameters: HydrostaticsBuoyancyParameters = {
+      depthMeters: 1.6,
+      fluidDensityKilogramsPerCubicMeter: 1000,
+      gravityMetersPerSecondSquared: 9.81,
+      objectMassKilograms: 60,
+      objectVolumeCubicMeters: 0.1,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'hydrostatics-buoyancy',
+    })
+    const charts = buildKinematicsChartConfigs(
+      result.samples,
+      'hydrostatics-buoyancy',
+      true,
+    )
+    const pressureChart = charts.find((chart) => chart.id === 'pressure')
+    const firstSample = result.samples[0]
+
+    expect(pressureChart?.traces.map((trace) => trace.name)).toEqual([
+      'Pressao no topo do corpo (Pa)',
+      'Pressao no centro do corpo (Pa)',
+      'Pressao na base do corpo (Pa)',
+      'Profundidade (m)',
+    ])
+    expect(pressureChart?.traces[0]?.y[0]).toBeCloseTo(firstSample.pressurePascals)
+    expect(pressureChart?.traces[1]?.y[0]).toBeCloseTo(firstSample.fluidPressurePascals)
+    expect(pressureChart?.traces[2]?.y[0]).toBeCloseTo(
+      firstSample.secondaryPressurePascals,
     )
   })
 })

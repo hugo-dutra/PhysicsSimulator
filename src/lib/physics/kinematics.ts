@@ -78,6 +78,9 @@ export type HydrostaticsBuoyancyParameters = {
   depthMeters: number
   fluidDensityKilogramsPerCubicMeter: number
   gravityMetersPerSecondSquared: number
+  initialCenterZMeters?: number
+  initialVelocityZMetersPerSecond?: number
+  motionStartTimeSeconds?: number
   objectMassKilograms: number
   objectVolumeCubicMeters: number
 }
@@ -2082,6 +2085,12 @@ function computeHydrostaticsBuoyancySample(
     sphereRadiusMeters,
     tankDepthMeters,
   )
+  const initialVelocityMetersPerSecond =
+    parameters.initialVelocityZMetersPerSecond ?? 0
+  const motionTimeSeconds = Math.max(
+    0,
+    timeSeconds - (parameters.motionStartTimeSeconds ?? 0),
+  )
   const densityRatio =
     objectDensityKilogramsPerCubicMeter /
     parameters.fluidDensityKilogramsPerCubicMeter
@@ -2113,7 +2122,9 @@ function computeHydrostaticsBuoyancySample(
     const motion = solveDampedHydrostaticApproach({
       equilibriumCenterZ,
       initialCenterZ,
-      timeSeconds,
+      initialVelocityMetersPerSecond:
+        parameters.initialVelocityZMetersPerSecond,
+      timeSeconds: motionTimeSeconds,
     })
 
     zMeters = clamp(motion.zMeters, bottomCenterZ, sphereRadiusMeters)
@@ -2123,13 +2134,15 @@ function computeHydrostaticsBuoyancySample(
       (fullBuoyantForceNewtons - weightNewtons) / objectMassKilograms
     const unclampedZ =
       initialCenterZ +
-      0.5 * sinkingAccelerationMetersPerSecondSquared * timeSeconds ** 2
+      initialVelocityMetersPerSecond * motionTimeSeconds +
+      0.5 * sinkingAccelerationMetersPerSecondSquared * motionTimeSeconds ** 2
 
     zMeters = Math.max(bottomCenterZ, unclampedZ)
     velocityMetersPerSecond =
       zMeters <= bottomCenterZ + hydrostaticFloatToleranceNewtons
         ? 0
-        : sinkingAccelerationMetersPerSecondSquared * timeSeconds
+        : initialVelocityMetersPerSecond +
+          sinkingAccelerationMetersPerSecondSquared * motionTimeSeconds
   }
 
   const submergedVolumeCubicMeters =
@@ -2152,10 +2165,20 @@ function computeHydrostaticsBuoyancySample(
   const accelerationMetersPerSecondSquared =
     netForceNewtons / objectMassKilograms
   const centerDepthMeters = Math.max(0, -zMeters)
+  const topDepthMeters = Math.max(0, -(zMeters + sphereRadiusMeters))
+  const bottomDepthMeters = Math.max(0, -(zMeters - sphereRadiusMeters))
   const fluidPressurePascals =
     parameters.fluidDensityKilogramsPerCubicMeter *
     parameters.gravityMetersPerSecondSquared *
     centerDepthMeters
+  const topPressurePascals =
+    parameters.fluidDensityKilogramsPerCubicMeter *
+    parameters.gravityMetersPerSecondSquared *
+    topDepthMeters
+  const bottomPressurePascals =
+    parameters.fluidDensityKilogramsPerCubicMeter *
+    parameters.gravityMetersPerSecondSquared *
+    bottomDepthMeters
   const kineticEnergyJoules =
     0.5 * objectMassKilograms * velocityMetersPerSecond ** 2
   const potentialEnergyJoules =
@@ -2182,8 +2205,9 @@ function computeHydrostaticsBuoyancySample(
     objectMassKilograms,
     positionMeters: centerDepthMeters,
     potentialEnergyJoules,
-    pressurePascals: fluidPressurePascals,
+    pressurePascals: topPressurePascals,
     primaryRadiusMeters: sphereRadiusMeters,
+    secondaryPressurePascals: bottomPressurePascals,
     secondaryRadiusMeters: tankDepthMeters,
     speedMetersPerSecond: Math.abs(velocityMetersPerSecond),
     submergedFraction,
@@ -2207,8 +2231,10 @@ function computeHydrostaticInitialCenterZ(
   tankDepthMeters: number,
 ) {
   const bottomCenterZ = -tankDepthMeters + sphereRadiusMeters
+  const initialCenterZ =
+    parameters.initialCenterZMeters ?? -parameters.depthMeters
 
-  return clamp(-parameters.depthMeters, bottomCenterZ, sphereRadiusMeters)
+  return clamp(initialCenterZ, bottomCenterZ, sphereRadiusMeters)
 }
 
 function sphereSubmergedVolumeCubicMeters(
@@ -2262,23 +2288,32 @@ function sphereCapHeightForSubmergedFraction(
 function solveDampedHydrostaticApproach({
   equilibriumCenterZ,
   initialCenterZ,
+  initialVelocityMetersPerSecond,
   timeSeconds,
 }: {
   equilibriumCenterZ: number
   initialCenterZ: number
+  initialVelocityMetersPerSecond?: number
   timeSeconds: number
 }) {
   const delta = initialCenterZ - equilibriumCenterZ
   const damping = hydrostaticFloatDampingPerSecond
   const angularFrequency = hydrostaticFloatAngularFrequencyRadiansPerSecond
+  const sineCoefficient =
+    initialVelocityMetersPerSecond === undefined
+      ? 0
+      : (initialVelocityMetersPerSecond + damping * delta) / angularFrequency
   const decay = Math.exp(-damping * timeSeconds)
   const cos = Math.cos(angularFrequency * timeSeconds)
   const sin = Math.sin(angularFrequency * timeSeconds)
+  const carrier = delta * cos + sineCoefficient * sin
+  const carrierDerivative =
+    -delta * angularFrequency * sin + sineCoefficient * angularFrequency * cos
 
   return {
     velocityMetersPerSecond:
-      delta * decay * (-damping * cos - angularFrequency * sin),
-    zMeters: equilibriumCenterZ + delta * decay * cos,
+      decay * (carrierDerivative - damping * carrier),
+    zMeters: equilibriumCenterZ + decay * carrier,
   }
 }
 
@@ -4334,6 +4369,24 @@ function validateHydrostaticsBuoyancyParameters(
   )
   assertFinitePositive('objectMassKilograms', parameters.objectMassKilograms)
   assertFinitePositive('objectVolumeCubicMeters', parameters.objectVolumeCubicMeters)
+
+  if (parameters.initialCenterZMeters !== undefined) {
+    assertFinite('initialCenterZMeters', parameters.initialCenterZMeters)
+  }
+
+  if (parameters.initialVelocityZMetersPerSecond !== undefined) {
+    assertFinite(
+      'initialVelocityZMetersPerSecond',
+      parameters.initialVelocityZMetersPerSecond,
+    )
+  }
+
+  if (parameters.motionStartTimeSeconds !== undefined) {
+    assertFiniteNonNegative(
+      'motionStartTimeSeconds',
+      parameters.motionStartTimeSeconds,
+    )
+  }
 }
 
 function validateMassSpringParameters(parameters: MassSpringParameters) {

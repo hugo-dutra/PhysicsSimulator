@@ -610,6 +610,9 @@ describe('kinematics physics engine', () => {
       floating,
       1,
     )
+    const initialSphereRadiusMeters = Math.cbrt(
+      (3 * floating.objectVolumeCubicMeters) / (4 * Math.PI),
+    )
     const largerVolumeSample = computeKinematicsSample(
       'hydrostatics-buoyancy',
       largerVolume,
@@ -622,10 +625,26 @@ describe('kinematics physics engine', () => {
     )
 
     expect(floatingResult.samples[0].fluidPressurePascals).toBeCloseTo(19620)
+    expect(floatingResult.samples[0].pressurePascals).toBeCloseTo(
+      floating.fluidDensityKilogramsPerCubicMeter *
+        floating.gravityMetersPerSecondSquared *
+        (floating.depthMeters - initialSphereRadiusMeters),
+    )
+    expect(floatingResult.samples[0].secondaryPressurePascals).toBeCloseTo(
+      floating.fluidDensityKilogramsPerCubicMeter *
+        floating.gravityMetersPerSecondSquared *
+        (floating.depthMeters + initialSphereRadiusMeters),
+    )
+    expect(floatingResult.samples[0].pressurePascals).toBeLessThan(
+      floatingResult.samples[0].fluidPressurePascals,
+    )
+    expect(floatingResult.samples[0].secondaryPressurePascals).toBeGreaterThan(
+      floatingResult.samples[0].fluidPressurePascals,
+    )
     expect(floatingResult.samples[0].objectDensityKilogramsPerCubicMeter)
       .toBeCloseTo(600)
     expect(floatingResult.samples[0].primaryRadiusMeters).toBeCloseTo(
-      Math.cbrt((3 * floating.objectVolumeCubicMeters) / (4 * Math.PI)),
+      initialSphereRadiusMeters,
     )
     expect(floatingResult.samples.at(-1)?.submergedFraction)
       .toBeCloseTo(0.6, 1)
@@ -649,6 +668,47 @@ describe('kinematics physics engine', () => {
     )
     expect(sinkingResult.samples[0].netForceNewtons).toBeLessThan(0)
     expect(sinkingResult.warnings[0]?.code).toBe('OBJECT_SINKS')
+  })
+
+  it('rebases hydrostatic motion from the live body state after parameter changes', () => {
+    const sinking: HydrostaticsBuoyancyParameters = {
+      depthMeters: 2,
+      fluidDensityKilogramsPerCubicMeter: 1000,
+      gravityMetersPerSecondSquared: 9.81,
+      objectMassKilograms: 120,
+      objectVolumeCubicMeters: 0.08,
+    }
+    const grounded = computeKinematicsSample(
+      'hydrostatics-buoyancy',
+      sinking,
+      4,
+    )
+    const expandedVolume: HydrostaticsBuoyancyParameters = {
+      ...sinking,
+      initialCenterZMeters: grounded.zMeters,
+      initialVelocityZMetersPerSecond: grounded.velocityZMetersPerSecond,
+      motionStartTimeSeconds: grounded.timeSeconds,
+      objectVolumeCubicMeters: 0.25,
+    }
+    const atChange = computeKinematicsSample(
+      'hydrostatics-buoyancy',
+      expandedVolume,
+      grounded.timeSeconds,
+    )
+    const afterChange = computeKinematicsSample(
+      'hydrostatics-buoyancy',
+      expandedVolume,
+      grounded.timeSeconds + 0.5,
+    )
+
+    expect(grounded.isGrounded).toBe(true)
+    expect(atChange.primaryRadiusMeters).toBeGreaterThan(
+      grounded.primaryRadiusMeters,
+    )
+    expect(atChange.zMeters - atChange.primaryRadiusMeters).toBeCloseTo(
+      -hydrostaticTankDepthMeters,
+    )
+    expect(afterChange.zMeters).toBeGreaterThan(atChange.zMeters)
   })
 
   it('computes continuity and Bernoulli pressure between tube sections', () => {

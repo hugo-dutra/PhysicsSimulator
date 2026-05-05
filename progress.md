@@ -2681,6 +2681,40 @@ Validacao:
 - Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
 - Executado `npm run test -- --reporter=dot`; 12 arquivos e 93 testes passaram.
 
+## 2026-05-05 - Reforco visual e conceitual de hidrostatica e empuxo
+
+Status: feito.
+
+Pedido reportado:
+
+- Tornar a simulacao `Mecanica > Fluidos basicos > Hidrostatica e empuxo` menos seca e mais didatica, deixando visiveis pressao com a profundidade, diferenca de pressao no corpo, volume deslocado, fluido mais presente e relacao entre peso e empuxo.
+
+Ajuste:
+
+- O motor de hidrostatica passou a expor pressao no topo, centro e base da esfera pelo mesmo sample que alimenta cena, graficos, tabela e formulas.
+- O grafico de pressao agora compara topo, centro e base do corpo, em vez de mostrar apenas a pressao central.
+- A cena Three.js recebeu fluido com gradiente de profundidade, faixas horizontais de nivel de pressao, superficie ondulada, volume deslocado destacado, mapa/aneis de pressao na esfera e setas pequenas na regiao submersa para mostrar a pressao normal do fluido.
+- O painel de leituras passou a mostrar pressao no centro, topo e base.
+- O fixture de formulas ganhou a formula de diferenca de pressoes e a teoria explica que ondulacoes e acomodacao visual nao representam CFD, viscosidade ou escoamento.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: os overlays novos consomem os campos do sample calculado; a cena nao altera regime fisico nem cria uma fonte paralela de movimento. O modo continua hidrostatico, com indicacao visual de pressao, volume deslocado e acomodacao de superficie.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizados `fixtures/simulations/mechanics-hydrostatics-buoyancy.json`, `src/content/simulations/mechanics/hydrostatics-buoyancy/theory.md` e este registro.
+- HLD/diagrama nao foi atualizado porque nao houve mudanca de arquitetura, servicos, pipeline ou fluxo de dados externo; a mudanca ficou no contrato local da simulacao, no renderer e na teoria.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/features/simulation-shell/kinematicsChartConfigs.test.ts src/features/simulation-shell/KinematicsScene.test.ts --reporter=dot`; 3 arquivos e 42 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test -- --reporter=dot`; 12 arquivos e 94 testes passaram.
+- Executado `node artifacts/hydrostatics-cdp-smoke.cjs`; capturas desktop/mobile e checagem de pixels do canvas passaram, gerando `artifacts/hydrostatics-buoyancy-desktop.png` e `artifacts/hydrostatics-buoyancy-mobile.png`.
+
 ## 2026-05-05 - Promocao de Continuidade e Bernoulli para ready
 
 Status: feito.
@@ -2924,3 +2958,36 @@ Validacao:
 - Executado `npm run lint`; passou.
 - Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
 - Executado `npm run test -- --reporter=dot`; 12 arquivos e 93 testes passaram.
+
+## 2026-05-05 - Continuidade de parametros em hidrostatica e empuxo
+
+Status: feito.
+
+Pedido reportado:
+
+- Ao alterar massa, volume, densidade ou outro parametro da simulacao `Mecanica > Fluidos basicos > Hidrostatica e empuxo`, a esfera nao deve reiniciar a experiencia; ela deve receber o novo parametro a partir da posicao atual. Exemplo: se estiver no fundo e o volume aumentar, a esfera deve crescer e subir em continuidade, evidenciando a reducao da densidade media e o novo empuxo.
+
+Ajuste:
+
+- O motor de hidrostatica passou a aceitar sementes internas opcionais de continuidade: centro atual em `z`, velocidade vertical atual e tempo global em que a nova dinamica comeca.
+- O tempo exibido na UI continua global, mas a equacao de subida/afundamento usa o tempo local desde a ultima mudanca fisica.
+- O shell captura o ultimo `KinematicsSample` vivo antes de aplicar alteracoes de parametro em `hydrostatics-buoyancy` e injeta essa semente no proximo timeline, sem incrementar `playbackResetVersion`.
+- Reset, troca de simulacao e preset continuam limpando a semente de continuidade, pois representam inicio explicito de outro cenario.
+- Adicionados testes para o caso de esfera no fundo que aumenta de volume mantendo contato com o fundo e depois sobe, alem de teste de shell garantindo que trocar volume nao aciona reset.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: samples, cena, graficos e readouts continuam vindo do mesmo motor, e a continuidade foi implementada no modelo/sample em vez de ser improvisada apenas no renderer.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Guides e HLD/diagramas nao foram atualizados porque nao houve mudanca estrutural de arquitetura, dados publicos, roadmap ou fluxo de servicos; a decisao operacional foi registrada neste historico.
+
+Validacao:
+
+- Executado `npm test -- --run src/lib/physics/kinematics.test.ts`; 1 arquivo e 33 testes passaram.
+- Executado `npm test -- --run src/features/simulation-shell/SimulationShell.test.tsx`; 1 arquivo e 3 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm test -- --reporter=dot`; 12 arquivos e 96 testes passaram.
