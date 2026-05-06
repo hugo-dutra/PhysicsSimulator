@@ -9,6 +9,9 @@ import {
   type CentripetalForceCurveParameters,
   type CollisionsParameters,
   type ContinuityBernoulliParameters,
+  type CoupledOscillatorsParameters,
+  type DampedOscillatorParameters,
+  type ForcedOscillatorResonanceParameters,
   type GravitationalFieldOrbitsParameters,
   type HydrostaticsBuoyancyParameters,
   type KinematicsSimulationId,
@@ -220,6 +223,107 @@ describe('kinematics physics engine', () => {
 
     expect(result.samples.at(-1)?.thermalEnergyJoules).toBeGreaterThan(0)
     expect(result.warnings[0]?.code).toBe('SPRING_DAMPING_ACTIVE')
+  })
+
+  it('classifies damped oscillator regimes against critical damping', () => {
+    const parameters: DampedOscillatorParameters = {
+      dampingPerSecond: 8,
+      initialDisplacementMeters: 0.25,
+      initialVelocityMetersPerSecond: 0,
+      massKilograms: 1,
+      springConstantNewtonsPerMeter: 16,
+    }
+    const criticalResult = computeKinematicsTimeline({
+      durationSeconds: 3,
+      parameters,
+      sampleRateHz: 120,
+      simulationId: 'damped-oscillator',
+    })
+    const overDampedResult = computeKinematicsTimeline({
+      durationSeconds: 3,
+      parameters: {
+        ...parameters,
+        dampingPerSecond: 12,
+      },
+      sampleRateHz: 120,
+      simulationId: 'damped-oscillator',
+    })
+
+    expect(criticalResult.warnings[0]?.code).toBe(
+      'OSCILLATOR_CRITICAL_DAMPING',
+    )
+    expect(overDampedResult.warnings[0]?.code).toBe('OSCILLATOR_OVERDAMPED')
+    expect(criticalResult.samples.at(-1)?.thermalEnergyJoules)
+      .toBeGreaterThan(0)
+  })
+
+  it('amplifies forced oscillator response near resonance', () => {
+    const parameters: ForcedOscillatorResonanceParameters = {
+      dampingPerSecond: 0.35,
+      driveAngularFrequencyRadiansPerSecond: 4,
+      driveForceNewtons: 1.4,
+      initialDisplacementMeters: 0,
+      initialVelocityMetersPerSecond: 0,
+      massKilograms: 1,
+      springConstantNewtonsPerMeter: 16,
+    }
+    const resonantResult = computeKinematicsTimeline({
+      durationSeconds: 18,
+      parameters,
+      sampleRateHz: 120,
+      simulationId: 'forced-oscillator-resonance',
+    })
+    const offResonantResult = computeKinematicsTimeline({
+      durationSeconds: 18,
+      parameters: {
+        ...parameters,
+        driveAngularFrequencyRadiansPerSecond: 2.2,
+      },
+      sampleRateHz: 120,
+      simulationId: 'forced-oscillator-resonance',
+    })
+    const readAmplitude = (samples: typeof resonantResult.samples) =>
+      Math.max(...samples.slice(samples.length / 2).map((sample) => Math.abs(sample.positionMeters)))
+
+    expect(resonantResult.warnings[0]?.code).toBe(
+      'FORCED_OSCILLATOR_NEAR_RESONANCE',
+    )
+    expect(readAmplitude(resonantResult.samples)).toBeGreaterThan(
+      readAmplitude(offResonantResult.samples) * 1.5,
+    )
+    expect(resonantResult.samples.at(-1)?.appliedWorkJoules)
+      .toBeGreaterThan(0)
+  })
+
+  it('conserves total energy while coupled oscillators exchange kinetic energy', () => {
+    const parameters: CoupledOscillatorsParameters = {
+      couplingSpringConstantNewtonsPerMeter: 5,
+      initialDisplacementOneMeters: 0.28,
+      initialDisplacementTwoMeters: 0,
+      initialVelocityOneMetersPerSecond: 0,
+      initialVelocityTwoMetersPerSecond: 0,
+      massKilograms: 0.8,
+      springConstantNewtonsPerMeter: 18,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 12,
+      parameters,
+      sampleRateHz: 120,
+      simulationId: 'coupled-oscillators',
+    })
+    const initialEnergy = result.samples[0].totalEnergyJoules
+    const maxEnergyDrift = Math.max(
+      ...result.samples.map((sample) =>
+        Math.abs(sample.totalEnergyJoules - initialEnergy),
+      ),
+    )
+    const maxSecondaryKineticEnergy = Math.max(
+      ...result.samples.map((sample) => sample.rightKineticEnergyJoules),
+    )
+
+    expect(maxEnergyDrift / initialEnergy).toBeLessThan(1e-6)
+    expect(maxSecondaryKineticEnergy).toBeGreaterThan(0.01)
+    expect(result.samples[0].displacementMeters).toBeCloseTo(0.28)
   })
 
   it('flags centripetal grip demand against available friction', () => {
@@ -1151,6 +1255,9 @@ describe('kinematics physics engine', () => {
       'centripetal-force-curve',
       'collisions-1d-2d',
       'continuity-bernoulli',
+      'coupled-oscillators',
+      'damped-oscillator',
+      'forced-oscillator-resonance',
       'gravitational-field-orbits',
       'hydrostatics-buoyancy',
       'mass-spring',
@@ -1289,6 +1396,34 @@ function readFixtureLikeParameters(
         inletAreaSquareMeters: 0.08,
         inletPressureKilopascals: 160,
         throatAreaSquareMeters: 0.04,
+      }
+    case 'coupled-oscillators':
+      return {
+        couplingSpringConstantNewtonsPerMeter: 5,
+        initialDisplacementOneMeters: 0.28,
+        initialDisplacementTwoMeters: 0,
+        initialVelocityOneMetersPerSecond: 0,
+        initialVelocityTwoMetersPerSecond: 0,
+        massKilograms: 0.8,
+        springConstantNewtonsPerMeter: 18,
+      }
+    case 'damped-oscillator':
+      return {
+        dampingPerSecond: 0.6,
+        initialDisplacementMeters: 0.28,
+        initialVelocityMetersPerSecond: 0,
+        massKilograms: 1,
+        springConstantNewtonsPerMeter: 16,
+      }
+    case 'forced-oscillator-resonance':
+      return {
+        dampingPerSecond: 0.35,
+        driveAngularFrequencyRadiansPerSecond: 4,
+        driveForceNewtons: 1.4,
+        initialDisplacementMeters: 0,
+        initialVelocityMetersPerSecond: 0,
+        massKilograms: 1,
+        springConstantNewtonsPerMeter: 16,
       }
     case 'gravitational-field-orbits':
       return {

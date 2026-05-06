@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   computeKinematicsTimeline,
+  type CoupledOscillatorsParameters,
+  type ForcedOscillatorResonanceParameters,
   type GravitationalFieldOrbitsParameters,
   type HydrostaticsBuoyancyParameters,
   type TorqueLeversCenterMassParameters,
@@ -171,6 +173,73 @@ describe('kinematics chart configs', () => {
     expect(readRange(velocityChart?.traces[1]?.y ?? [])).toBeLessThan(1e-12)
     expect(readRange(accelerationChart?.traces[0]?.y ?? [])).toBeLessThan(
       1e-12,
+    )
+  })
+
+  it('shows force and work traces for forced oscillators', () => {
+    const parameters: ForcedOscillatorResonanceParameters = {
+      dampingPerSecond: 0.35,
+      driveAngularFrequencyRadiansPerSecond: 4,
+      driveForceNewtons: 1.4,
+      initialDisplacementMeters: 0,
+      initialVelocityMetersPerSecond: 0,
+      massKilograms: 1,
+      springConstantNewtonsPerMeter: 16,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 2,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'forced-oscillator-resonance',
+    })
+    const charts = buildKinematicsChartConfigs(
+      result.samples,
+      'forced-oscillator-resonance',
+      true,
+    )
+    const forceChart = charts.find((chart) => chart.id === 'forces')
+    const energyChart = charts.find((chart) => chart.id === 'energy')
+
+    expect(forceChart?.traces.map((trace) => trace.name)).toContain(
+      'Forca externa periodica (N)',
+    )
+    expect(energyChart?.traces.map((trace) => trace.name)).toContain(
+      'Trabalho da forca externa (J)',
+    )
+  })
+
+  it('shows modal traces for coupled oscillators', () => {
+    const parameters: CoupledOscillatorsParameters = {
+      couplingSpringConstantNewtonsPerMeter: 5,
+      initialDisplacementOneMeters: 0.28,
+      initialDisplacementTwoMeters: 0,
+      initialVelocityOneMetersPerSecond: 0,
+      initialVelocityTwoMetersPerSecond: 0,
+      massKilograms: 0.8,
+      springConstantNewtonsPerMeter: 18,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 2,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'coupled-oscillators',
+    })
+    const charts = buildKinematicsChartConfigs(
+      result.samples,
+      'coupled-oscillators',
+      true,
+    )
+    const positionChart = charts.find((chart) => chart.id === 'position')
+    const energyChart = charts.find((chart) => chart.id === 'energy')
+
+    expect(positionChart?.traces.map((trace) => trace.name)).toEqual([
+      'Massa A (m)',
+      'Massa B (m)',
+      'Modo comum (m)',
+      'Modo relativo xA - xB (m)',
+    ])
+    expect(energyChart?.traces.map((trace) => trace.name)).toContain(
+      'Energia cinetica B (J)',
     )
   })
 })

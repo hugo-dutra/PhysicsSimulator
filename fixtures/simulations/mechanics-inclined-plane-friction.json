@@ -155,6 +155,52 @@
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "static-friction-holds",
+      "label": "Atrito estatico segura o bloco",
+      "condition": "Velocidade inicial nula e componente do peso no plano <= frictionCoefficient * normalForceNewtons.",
+      "transitionLimit": "weightParallelNewtons = frictionCoefficient * normalForceNewtons.",
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared",
+        "normalForceNewtons",
+        "frictionForceNewtons",
+        "netForceNewtons",
+        "isMoving"
+      ],
+      "warningCode": "STATIC_FRICTION_HOLDS"
+    },
+    {
+      "id": "sliding-on-plane",
+      "label": "Deslizamento no plano",
+      "condition": "Atrito nao segura o bloco ou velocidade inicial e diferente de zero.",
+      "transitionLimit": "O sentido do atrito troca conforme o sinal da velocidade no sample.",
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared",
+        "normalForceNewtons",
+        "frictionForceNewtons",
+        "thermalEnergyJoules",
+        "totalEnergyJoules",
+        "isMoving"
+      ]
+    },
+    {
+      "id": "end-stop-clamped",
+      "label": "Fim visual do plano atingido",
+      "condition": "positionMeters === planeLengthMeters no ultimo sample.",
+      "transitionLimit": "planeLengthMeters limita a posicao visual maxima do bloco.",
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared"
+      ],
+      "warningCode": "BLOCK_REACHED_END"
+    }
+  ],
   "limits": [
     "Bloco tratado como corpo rigido pontual para o calculo translacional.",
     "Atrito cinetico e estatico usam o mesmo coeficiente didatico.",

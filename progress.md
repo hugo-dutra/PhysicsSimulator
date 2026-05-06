@@ -3104,3 +3104,78 @@ Validacao:
 - Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
 - Executado `npm run test -- --reporter=dot --maxWorkers=1`; 12 arquivos e 102 testes passaram.
 - Smoke visual em `http://127.0.0.1:5192`: canvas do MCU renderizado, HUD `MCU ideal` presente, cameras `Topo` e `Seguir` ativadas, captura salva em `artifacts/mcu-smoke.png`.
+
+## 2026-05-06 - Gate de regimes da Fase 3
+
+Status: feito.
+
+Pedido reportado:
+
+- Executar `task-skill 1`, seguindo a proxima task pendente do roadmap.
+
+Ajuste:
+
+- A task selecionada foi `Validar que todos os modelos mecanicos declaram limites, aproximacoes e regimes conforme o gate de fidelidade`, a ultima pendencia da Fase 3.
+- Os fixtures mecanicos executaveis que ainda tinham apenas `limits` passaram a declarar `regimes` explicitamente.
+- Simulacoes ideais sem troca de regime agora declaram o regime ideal unico e a fronteira do que fica fora do modelo.
+- Simulacoes com transicoes, warnings ou aproximacoes ativas declaram condicao, limite de transicao, campos de sample afetados e `warningCode` quando aplicavel.
+- O teste de contrato do catalogo passou a exigir `limits` e ao menos um `regime` para toda simulacao mecanica `analysis` ou `ready`.
+- `guides/05-roadmap.md` marcou a validacao final da Fase 3 como concluida.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a auditoria foi registrada no contrato dos fixtures, conectando regimes e limites aos campos de sample consumidos por cena, graficos, tabela, formulas e warnings.
+- Nenhum motor, renderer, grafico, tabela, formula, teoria ou status de catalogo foi alterado; a mudanca foi contratual e de teste para impedir regressao.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/05-roadmap.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md`, `guides/issues.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizados `guides/05-roadmap.md` e este registro de progresso.
+- HLD/diagrama nao foi atualizado porque arquitetura, servicos, pipeline e fluxo de dados nao mudaram.
+
+Validacao:
+
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts --reporter=dot --maxWorkers=1`; 1 arquivo e 10 testes passaram.
+- Executado `npm run lint`; passou apos repetir com timeout maior, pois a primeira chamada excedeu a janela da ferramenta sem diagnostico.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test -- --reporter=dot --maxWorkers=1`; 12 arquivos e 103 testes passaram.
+
+## 2026-05-06 - Osciladores da Fase 4
+
+Status: feito.
+
+Pedido reportado:
+
+- Executar `task-skill 3`, seguindo as tres proximas tasks pendentes do roadmap.
+
+Ajuste:
+
+- As tasks selecionadas foram `Oscilador amortecido`, `Oscilador forcado e ressonancia` e `Osciladores acoplados`, em `Oscilacoes e Ondas > Oscilacoes`.
+- O catalogo promoveu as tres simulacoes de `planned` para `analysis`, com fixtures locais, teoria Markdown, formulas, regimes, limites, presets, graficos, vetores e parametros com ajuda.
+- O motor numerico passou a cobrir oscilador amortecido analitico, oscilador forcado com integracao RK4 e osciladores acoplados com troca modal de energia.
+- A cena 3D reutiliza a leitura de massa-mola vertical para osciladores simples e adiciona uma montagem acoplada com duas massas, molas, acoplamento, referencia e vetores sincronizados.
+- Graficos, readouts, tabela e formulas foram conectados aos novos campos de sample, incluindo energia, forcas, trabalho aplicado, energia termica, centro de massa e deslocamento relativo.
+- A navegacao da area `Oscilacoes e Ondas` passou a abrir as tres simulacoes novas pelo shell compartilhado.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: parametros zero-validos, regimes fisicos, warnings, samples, cena, graficos, tabela, formulas e teoria foram mantidos sincronizados antes da promocao para `analysis`.
+- O oscilador amortecido classifica regimes subamortecido, criticamente amortecido e superamortecido a partir do fator de amortecimento.
+- O oscilador forcado emite warning de quase ressonancia e separa energia mecanica, trabalho aplicado e dissipacao.
+- Os osciladores acoplados preservam energia no regime ideal e expõem coordenadas modal/relativa para validar troca de energia.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/05-roadmap.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md`, `guides/09-simulation-catalog-plan.md`, `guides/issues.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizados roadmap, catalog plan, produto, arquitetura, regras, dados/API, contratos, qualidade, issues e este registro de progresso para refletir a Fase 4 em `analysis`.
+- HLD/diagrama nao foi atualizado porque o fluxo estrutural de servicos e a arquitetura do shell nao mudaram; a entrega adicionou novas simulacoes dentro do pipeline existente.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/features/simulation-shell/kinematicsChartConfigs.test.ts src/simulation-registry/catalog.test.ts --reporter=dot --maxWorkers=1`; 3 arquivos e 53 testes passaram.
+- Executado `npm run test -- src/App.test.tsx -t "Fase 4 oscillators" --reporter=dot --maxWorkers=1`; 1 teste passou.
+- Executado `npm run test -- src/App.test.tsx --reporter=dot --maxWorkers=1`; 1 arquivo e 9 testes passaram.
+- Executado `npm run test -- src/features/simulation-shell/SimulationShell.test.tsx --reporter=dot --maxWorkers=1`; 1 arquivo e 4 testes passaram.
+- Executado `npm run test -- --reporter=dot --maxWorkers=1`; 12 arquivos e 110 testes passaram.
+- Executado `npm run lint`; passou apos repetir com timeout maior, pois a primeira chamada excedeu a janela da ferramenta sem diagnostico.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.

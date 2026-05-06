@@ -136,6 +136,40 @@
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "two-body-keplerian-orbit",
+      "label": "Orbita kepleriana de dois corpos",
+      "condition": "0 <= eccentricity <= highEccentricityWarningThreshold no campo central GM/r^2.",
+      "transitionLimit": "Excentricidade alta mantem a solucao de Kepler, mas destaca limite didatico do modelo sem perturbacoes.",
+      "sampleFields": [
+        "xMeters",
+        "zMeters",
+        "positionMeters",
+        "speedMetersPerSecond",
+        "gravitationalFieldNewtonsPerKilogram",
+        "kineticEnergyJoules",
+        "potentialEnergyJoules",
+        "totalEnergyJoules"
+      ]
+    },
+    {
+      "id": "high-eccentricity-warning",
+      "label": "Excentricidade alta didatica",
+      "condition": "eccentricity > highEccentricityWarningThreshold.",
+      "transitionLimit": "A orbita continua eliptica, mas perturbacoes e encontros proximos ficam fora do modelo.",
+      "sampleFields": [
+        "xMeters",
+        "zMeters",
+        "positionMeters",
+        "speedMetersPerSecond",
+        "gravitationalFieldNewtonsPerKilogram",
+        "secondaryXMeters",
+        "secondaryZMeters"
+      ],
+      "warningCode": "ORBIT_HIGH_ECCENTRICITY"
+    }
+  ],
   "limits": [
     "O modelo usa campo central de dois corpos para a orbita principal e ignora atmosfera, arrasto, oblatividade e perturbacoes de terceiros.",
     "A lua visual e um satelite didatico calculado no sample para leitura Sol-planeta-lua, mas nao perturba a orbita principal nem entra na energia orbital.",

@@ -14,6 +14,12 @@ import {
 } from './catalog'
 import type { SimulationFixture } from './types'
 
+const runnableSimulationFixtures = [
+  ['simple-pendulum', pendulumFixture],
+  ['inclined-plane-friction', inclinedPlaneFixture],
+  ...Object.entries(kinematicsFixtures),
+] satisfies Array<[string, SimulationFixture]>
+
 describe('simulation registry', () => {
   it('registers the simple pendulum as the ready core simulation', () => {
     expect(activeSimulation.id).toBe('simple-pendulum')
@@ -34,7 +40,7 @@ describe('simulation registry', () => {
     expect(allSimulations).toHaveLength(51)
     expect(
       allSimulations.filter((item) => item.status === 'analysis'),
-    ).toHaveLength(0)
+    ).toHaveLength(3)
     expect(
       allSimulations.filter((item) => item.status === 'ready'),
     ).toHaveLength(18)
@@ -170,6 +176,68 @@ describe('simulation registry', () => {
     })
   })
 
+  it('declares the Fase 4 oscillators as analysis simulations', () => {
+    const analysisOscillatorIds = [
+      'damped-oscillator',
+      'forced-oscillator-resonance',
+      'coupled-oscillators',
+    ] as const
+
+    analysisOscillatorIds.forEach((simulationId) => {
+      const simulation = findSimulation(simulationId)
+      const fixture = kinematicsFixtures[simulationId]
+
+      expect(simulation.status).toBe('analysis')
+      expect(simulation.topicPath[0]).toBe('Oscilacoes e Ondas')
+      expect(simulation.fixturePath).toBeDefined()
+      expect(simulation.theoryPath).toBeDefined()
+      expect(fixture.simulationId).toBe(simulationId)
+      expect(fixture.regimes?.length).toBeGreaterThan(0)
+      expect(fixture.formulas.length).toBeGreaterThan(0)
+    })
+  })
+
+  it('declares fidelity gate limits and regimes for every runnable fixture', () => {
+    runnableSimulationFixtures.forEach(([simulationId, fixture]) => {
+      const simulation = findSimulation(simulationId)
+      const regimes = fixture.regimes ?? []
+
+      expect(['Mecanica', 'Oscilacoes e Ondas']).toContain(
+        simulation.topicPath[0],
+      )
+      expect(['analysis', 'ready']).toContain(simulation.status)
+      expect(
+        fixture.limits.length,
+        `${simulationId} must declare model limits and approximations`,
+      ).toBeGreaterThan(0)
+      fixture.limits.forEach((limit) => {
+        expect(limit.trim().length).toBeGreaterThan(24)
+      })
+      expect(
+        regimes.length,
+        `${simulationId} must declare at least one physical regime`,
+      ).toBeGreaterThan(0)
+
+      regimes.forEach((regime) => {
+        expect(regime.id.trim().length).toBeGreaterThan(0)
+        expect(regime.label.trim().length).toBeGreaterThan(0)
+        expect(regime.condition.trim().length).toBeGreaterThan(16)
+        expect(regime.sampleFields.length).toBeGreaterThan(0)
+        regime.sampleFields.forEach((field) => {
+          expect(field.trim().length).toBeGreaterThan(0)
+        })
+
+        if (regime.transitionLimit) {
+          expect(regime.transitionLimit.trim().length).toBeGreaterThan(8)
+        }
+
+        if (regime.warningCode) {
+          expect(regime.warningCode.trim().length).toBeGreaterThan(0)
+        }
+      })
+    })
+  })
+
   it('declares rigid-body rotation movable mass and constant energy controls', () => {
     const fixture = kinematicsFixtures['rigid-body-rotation']
     const parameterIds = fixture.parameters.map((parameter) => parameter.id)
@@ -243,13 +311,7 @@ describe('simulation registry', () => {
   })
 
   it('requires help descriptions for every runnable simulation parameter', () => {
-    const fixtureEntries = [
-      ['simple-pendulum', pendulumFixture],
-      ['inclined-plane-friction', inclinedPlaneFixture],
-      ...Object.entries(kinematicsFixtures),
-    ] satisfies Array<[string, SimulationFixture]>
-
-    fixtureEntries.forEach(([simulationId, fixture]) => {
+    runnableSimulationFixtures.forEach(([simulationId, fixture]) => {
       const controls = [
         ...fixture.runtimeParameters,
         ...fixture.parameters,

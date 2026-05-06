@@ -155,6 +155,49 @@
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "pure-rolling",
+      "label": "Rolamento sem escorregamento",
+      "condition": "frictionForceNewtons <= maxStaticFrictionNewtons, ou gripRatio <= 1.",
+      "transitionLimit": "Atrito requerido igual ao atrito estatico maximo disponivel.",
+      "sampleFields": [
+        "positionMeters",
+        "speedMetersPerSecond",
+        "angularVelocityRadiansPerSecond",
+        "accelerationMetersPerSecondSquared",
+        "frictionForceNewtons",
+        "maxStaticFrictionNewtons",
+        "gripRatio",
+        "kineticEnergyJoules"
+      ],
+      "idealReferenceFields": [
+        "frictionForceNewtons",
+        "maxStaticFrictionNewtons"
+      ]
+    },
+    {
+      "id": "slipping-contact",
+      "label": "Escorregamento didatico no contato",
+      "condition": "frictionForceNewtons > maxStaticFrictionNewtons, ou gripRatio > 1.",
+      "transitionLimit": "Coeficiente de atrito insuficiente para impor v = omega R.",
+      "sampleFields": [
+        "positionMeters",
+        "speedMetersPerSecond",
+        "angularVelocityRadiansPerSecond",
+        "accelerationMetersPerSecondSquared",
+        "frictionForceNewtons",
+        "maxStaticFrictionNewtons",
+        "gripRatio",
+        "thermalEnergyJoules"
+      ],
+      "warningCode": "ROLLING_STATIC_FRICTION_LIMIT_EXCEEDED",
+      "idealReferenceFields": [
+        "frictionForceNewtons",
+        "maxStaticFrictionNewtons"
+      ]
+    }
+  ],
   "limits": [
     "A roda e modelada como cilindro solido, com I = 1/2 m R^2.",
     "O regime ideal usa rolamento sem escorregamento quando o atrito estatico requerido cabe no limite disponivel.",

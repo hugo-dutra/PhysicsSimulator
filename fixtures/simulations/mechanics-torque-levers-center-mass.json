@@ -156,6 +156,39 @@
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "rotational-equilibrium",
+      "label": "Equilibrio rotacional da alavanca",
+      "condition": "abs(netTorqueNewtonMeters) <= torqueToleranceNewtonMeters.",
+      "transitionLimit": "Soma dos torques em torno do apoio igual a zero dentro da tolerancia.",
+      "sampleFields": [
+        "leftArmMeters",
+        "rightArmMeters",
+        "appliedForceArmMeters",
+        "netTorqueNewtonMeters",
+        "centerOfMassMeters",
+        "angleRadians"
+      ]
+    },
+    {
+      "id": "rotational-imbalance",
+      "label": "Desequilibrio rotacional didatico",
+      "condition": "abs(netTorqueNewtonMeters) > torqueToleranceNewtonMeters.",
+      "transitionLimit": "Torque resultante acima da tolerancia inclina a barra no sample visual.",
+      "sampleFields": [
+        "leftArmMeters",
+        "rightArmMeters",
+        "appliedForceArmMeters",
+        "netTorqueNewtonMeters",
+        "centerOfMassMeters",
+        "angleRadians",
+        "leftGravitationalPotentialEnergyJoules",
+        "rightGravitationalPotentialEnergyJoules"
+      ],
+      "warningCode": "LEVER_ROTATIONAL_IMBALANCE"
+    }
+  ],
   "limits": [
     "A barra e rigida, leve e apoiada em um ponto fixo.",
     "As massas sao pontuais e atuam verticalmente nos bracos definidos.",

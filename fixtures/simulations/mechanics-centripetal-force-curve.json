@@ -136,6 +136,49 @@
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "adherent-circular-motion",
+      "label": "Aderencia suficiente na curva",
+      "condition": "centripetalForceNewtons <= maxStaticFrictionNewtons, ou gripRatio <= 1.",
+      "transitionLimit": "m v^2 / r = mu m g marca a velocidade critica de aderencia.",
+      "sampleFields": [
+        "xMeters",
+        "zMeters",
+        "velocityXMetersPerSecond",
+        "velocityZMetersPerSecond",
+        "centripetalForceNewtons",
+        "maxStaticFrictionNewtons",
+        "frictionForceNewtons",
+        "gripRatio"
+      ],
+      "idealReferenceFields": [
+        "centripetalForceNewtons",
+        "maxStaticFrictionNewtons"
+      ]
+    },
+    {
+      "id": "lost-grip-tangent-exit",
+      "label": "Perda de aderencia e saida pela tangente",
+      "condition": "centripetalForceNewtons > maxStaticFrictionNewtons, ou gripRatio > 1.",
+      "transitionLimit": "Com frictionCoefficient = 0 e speedMetersPerSecond > 0, a trajetoria real segue pela tangente.",
+      "sampleFields": [
+        "xMeters",
+        "zMeters",
+        "velocityXMetersPerSecond",
+        "velocityZMetersPerSecond",
+        "centripetalForceNewtons",
+        "maxStaticFrictionNewtons",
+        "frictionForceNewtons",
+        "gripRatio"
+      ],
+      "warningCode": "CENTRIPETAL_GRIP_LIMIT_EXCEEDED",
+      "idealReferenceFields": [
+        "centripetalForceNewtons",
+        "maxStaticFrictionNewtons"
+      ]
+    }
+  ],
   "limits": [
     "A curva e horizontal e o atrito estatico fornece a forca centripeta.",
     "O corpo e tratado como ponto material; inclinacao de pista e suspensao nao entram no modelo.",

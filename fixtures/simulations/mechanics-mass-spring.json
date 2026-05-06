@@ -141,6 +141,40 @@
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "ideal-undamped-oscillation",
+      "label": "Oscilacao ideal em torno do equilibrio",
+      "condition": "dampingPerSecond === 0.",
+      "transitionLimit": "dampingPerSecond > 0 troca para decaimento linear amortecido.",
+      "sampleFields": [
+        "positionMeters",
+        "zMeters",
+        "velocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared",
+        "springForceNewtons",
+        "weightNewtons",
+        "elasticPotentialEnergyJoules",
+        "gravitationalPotentialEnergyJoules",
+        "totalEnergyJoules"
+      ]
+    },
+    {
+      "id": "linear-damped-oscillation",
+      "label": "Oscilacao com amortecimento linear",
+      "condition": "dampingPerSecond > 0.",
+      "transitionLimit": "O amortecimento dissipa energia mecanica acumulada em thermalEnergyJoules.",
+      "sampleFields": [
+        "positionMeters",
+        "zMeters",
+        "velocityMetersPerSecond",
+        "springForceNewtons",
+        "thermalEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "warningCode": "SPRING_DAMPING_ACTIVE"
+    }
+  ],
   "limits": [
     "Modelo unidimensional vertical com mola ideal linear e massa esferica pontual.",
     "A coordenada principal e o deslocamento em relacao ao equilibrio estatico; a gravidade aparece deslocando esse equilibrio por mg/k.",

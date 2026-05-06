@@ -126,6 +126,39 @@
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "ballistic-flight",
+      "label": "Voo balistico sem arrasto",
+      "condition": "timeSeconds <= flightTimeSeconds calculado para z = 0.",
+      "transitionLimit": "zMeters = 0 marca o contato com o solo ideal.",
+      "sampleFields": [
+        "xMeters",
+        "zMeters",
+        "velocityXMetersPerSecond",
+        "velocityZMetersPerSecond",
+        "accelerationZMetersPerSecondSquared",
+        "kineticEnergyJoules",
+        "potentialEnergyJoules",
+        "totalEnergyJoules"
+      ]
+    },
+    {
+      "id": "grounded-after-flight",
+      "label": "Projetil apoiado no solo apos o voo",
+      "condition": "durationSeconds > flightTimeSeconds.",
+      "transitionLimit": "Apos zMeters chegar a 0, o sample fixa o corpo no plano de referencia.",
+      "sampleFields": [
+        "xMeters",
+        "zMeters",
+        "velocityXMetersPerSecond",
+        "velocityZMetersPerSecond",
+        "kineticEnergyJoules",
+        "potentialEnergyJoules"
+      ],
+      "warningCode": "PROJECTILE_REACHES_GROUND"
+    }
+  ],
   "limits": [
     "O primeiro modelo despreza resistencia do ar e vento.",
     "A gravidade e uniforme e aponta verticalmente para baixo.",

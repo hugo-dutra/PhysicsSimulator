@@ -1,0 +1,324 @@
+{
+  "simulationId": "forced-oscillator-resonance",
+  "durationSeconds": 30,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 12,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Horizonte calculado",
+      "description": "Horizonte de tempo pre-calculado pelo integrador para samples, graficos e tabela. Aumentar deixa a resposta de regime permanente aparecer melhor.",
+      "unit": "s",
+      "kind": "number",
+      "min": 10,
+      "max": 120,
+      "step": 1,
+      "defaultValue": 30
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra batimentos e crescimento de amplitude; diminuir foca na fase atual da forca externa.",
+      "unit": "s",
+      "kind": "number",
+      "min": 4,
+      "max": 60,
+      "step": 1,
+      "defaultValue": 12
+    }
+  ],
+  "defaultParameters": {
+    "massKilograms": 1,
+    "springConstantNewtonsPerMeter": 16,
+    "dampingPerSecond": 0.35,
+    "driveForceNewtons": 1.4,
+    "driveAngularFrequencyRadiansPerSecond": 4,
+    "initialDisplacementMeters": 0,
+    "initialVelocityMetersPerSecond": 0
+  },
+  "parameters": [
+    {
+      "id": "massKilograms",
+      "label": "Massa",
+      "description": "Massa ligada a mola. Aumentar reduz a frequencia natural e desloca o pico de ressonancia para frequencias menores.",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.05,
+      "max": 5,
+      "step": 0.05,
+      "defaultValue": 1
+    },
+    {
+      "id": "springConstantNewtonsPerMeter",
+      "label": "Constante elastica",
+      "description": "Rigidez k da mola. Aumentar eleva a frequencia natural e exige excitacao mais rapida para ressonancia.",
+      "unit": "N/m",
+      "kind": "number",
+      "min": 1,
+      "max": 120,
+      "step": 1,
+      "defaultValue": 16
+    },
+    {
+      "id": "dampingPerSecond",
+      "label": "Amortecimento",
+      "description": "Perda linear proporcional a velocidade. Zerar remove dissipacao e deixa a ressonancia ideal sem limite realista; aumentar alarga e reduz o pico de amplitude.",
+      "unit": "s^-1",
+      "kind": "number",
+      "min": 0,
+      "max": 6,
+      "step": 0.01,
+      "defaultValue": 0.35
+    },
+    {
+      "id": "driveForceNewtons",
+      "label": "Forca externa",
+      "description": "Amplitude da forca periodica aplicada a massa. Zerar transforma o sistema em oscilador amortecido livre; aumentar injeta mais energia por ciclo.",
+      "unit": "N",
+      "kind": "number",
+      "min": 0,
+      "max": 8,
+      "step": 0.05,
+      "defaultValue": 1.4
+    },
+    {
+      "id": "driveAngularFrequencyRadiansPerSecond",
+      "label": "Frequencia externa",
+      "description": "Frequencia angular da excitacao F0 cos(omega t). Aproximar de sqrt(k/m) aumenta a resposta de ressonancia quando ha amortecimento.",
+      "unit": "rad/s",
+      "kind": "number",
+      "min": 0.1,
+      "max": 14,
+      "step": 0.05,
+      "defaultValue": 4
+    },
+    {
+      "id": "initialDisplacementMeters",
+      "label": "Deslocamento inicial",
+      "description": "Posicao inicial relativa ao equilibrio. Zerar mostra a resposta causada apenas pela forca externa; valores diferentes adicionam transiente livre.",
+      "unit": "m",
+      "kind": "number",
+      "min": -0.8,
+      "max": 0.8,
+      "step": 0.01,
+      "defaultValue": 0
+    },
+    {
+      "id": "initialVelocityMetersPerSecond",
+      "label": "Velocidade inicial",
+      "description": "Velocidade inicial relativa ao equilibrio. Zerar inicia em repouso; valores diferentes mudam a fase do transiente antes do regime forcado dominar.",
+      "unit": "m/s",
+      "kind": "number",
+      "min": -4,
+      "max": 4,
+      "step": 0.02,
+      "defaultValue": 0
+    }
+  ],
+  "presets": [
+    {
+      "id": "near-resonance",
+      "label": "Perto da ressonancia",
+      "parameters": {
+        "massKilograms": 1,
+        "springConstantNewtonsPerMeter": 16,
+        "dampingPerSecond": 0.35,
+        "driveForceNewtons": 1.4,
+        "driveAngularFrequencyRadiansPerSecond": 4,
+        "initialDisplacementMeters": 0,
+        "initialVelocityMetersPerSecond": 0
+      }
+    },
+    {
+      "id": "below-resonance",
+      "label": "Excitacao lenta",
+      "parameters": {
+        "massKilograms": 1,
+        "springConstantNewtonsPerMeter": 16,
+        "dampingPerSecond": 0.35,
+        "driveForceNewtons": 1.4,
+        "driveAngularFrequencyRadiansPerSecond": 2.2,
+        "initialDisplacementMeters": 0,
+        "initialVelocityMetersPerSecond": 0
+      }
+    },
+    {
+      "id": "above-resonance",
+      "label": "Excitacao rapida",
+      "parameters": {
+        "massKilograms": 1,
+        "springConstantNewtonsPerMeter": 16,
+        "dampingPerSecond": 0.35,
+        "driveForceNewtons": 1.4,
+        "driveAngularFrequencyRadiansPerSecond": 6.4,
+        "initialDisplacementMeters": 0,
+        "initialVelocityMetersPerSecond": 0
+      }
+    }
+  ],
+  "regimes": [
+    {
+      "id": "drive-off",
+      "label": "Resposta livre amortecida",
+      "condition": "driveForceNewtons === 0.",
+      "transitionLimit": "driveForceNewtons > 0 injeta trabalho externo no sample.",
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "frictionForceNewtons",
+        "thermalEnergyJoules"
+      ]
+    },
+    {
+      "id": "off-resonance",
+      "label": "Excitacao fora da ressonancia",
+      "condition": "abs(driveAngularFrequencyRadiansPerSecond - sqrt(k / m)) / sqrt(k / m) >= 0.08.",
+      "transitionLimit": "A amplitude permanece menor e a fase depende do lado da frequencia natural.",
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "appliedForceNewtons",
+        "appliedWorkJoules",
+        "totalEnergyJoules"
+      ]
+    },
+    {
+      "id": "near-resonance",
+      "label": "Regiao de ressonancia",
+      "condition": "abs(driveAngularFrequencyRadiansPerSecond - sqrt(k / m)) / sqrt(k / m) < 0.08.",
+      "transitionLimit": "O amortecimento limita o crescimento de amplitude e transforma trabalho externo em dissipacao.",
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "appliedForceNewtons",
+        "appliedWorkJoules",
+        "thermalEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "warningCode": "FORCED_OSCILLATOR_NEAR_RESONANCE"
+    }
+  ],
+  "limits": [
+    "Integrador deterministico RK4 para um oscilador linear unidimensional com forca externa senoidal.",
+    "A mola e ideal e a forca externa e F0 cos(omega t); nao ha saturacao, fim de curso, atrito seco ou nao linearidade.",
+    "Com amortecimento zero e frequencia exatamente natural, a amplitude ideal cresce sem limite fisico dentro do horizonte calculado.",
+    "O grafico de trabalho externo representa energia acumulada pela forca aplicada no modelo, nao consumo eletrico de um atuador real."
+  ],
+  "formulas": [
+    {
+      "id": "forced-equation",
+      "title": "Equacao forcada",
+      "expressionLatex": "\\ddot{x} + \\gamma\\dot{x} + \\omega_0^2x = \\frac{F_0}{m}\\cos(\\omega t)",
+      "description": "O integrador usa esta equacao para gerar deslocamento, velocidade, forcas, trabalho externo e dissipacao.",
+      "variables": [
+        {
+          "symbol": "F_0",
+          "label": "amplitude da forca externa",
+          "unit": "N"
+        },
+        {
+          "symbol": "\\omega",
+          "label": "frequencia externa",
+          "unit": "rad/s"
+        },
+        {
+          "symbol": "\\omega_0",
+          "label": "frequencia natural",
+          "unit": "rad/s"
+        }
+      ],
+      "usedWhen": "Usar para interpretar a resposta transiente e a aproximacao ao regime permanente.",
+      "notUsedWhen": "Nao modela forcas externas nao senoidais, batente, saturacao de atuador ou mola nao linear.",
+      "parameterIds": [
+        "massKilograms",
+        "springConstantNewtonsPerMeter",
+        "dampingPerSecond",
+        "driveForceNewtons",
+        "driveAngularFrequencyRadiansPerSecond"
+      ],
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "appliedForceNewtons",
+        "appliedWorkJoules"
+      ],
+      "relatedChartIds": ["position-time", "forces-time", "energy-time"],
+      "relatedVectorIds": ["appliedForce", "friction", "tension"],
+      "example": "Com m = 1 kg e k = 16 N/m, omega0 = 4 rad/s; drive em 4 rad/s ativa o preset de ressonancia."
+    },
+    {
+      "id": "resonance-condition",
+      "title": "Condicao de ressonancia",
+      "expressionLatex": "\\omega \\approx \\omega_0 = \\sqrt{\\frac{k}{m}}",
+      "description": "A resposta fica maior quando a frequencia externa se aproxima da natural, com amplitude limitada pelo amortecimento.",
+      "variables": [
+        {
+          "symbol": "\\omega",
+          "label": "frequencia externa",
+          "unit": "rad/s"
+        },
+        {
+          "symbol": "k",
+          "label": "constante elastica",
+          "unit": "N/m"
+        },
+        {
+          "symbol": "m",
+          "label": "massa",
+          "unit": "kg"
+        }
+      ],
+      "usedWhen": "Usar para localizar o pico de amplitude ao ajustar a frequencia externa.",
+      "notUsedWhen": "Com amortecimento muito alto, o pico fica largo e menos pronunciado.",
+      "parameterIds": [
+        "driveAngularFrequencyRadiansPerSecond",
+        "springConstantNewtonsPerMeter",
+        "massKilograms",
+        "dampingPerSecond"
+      ],
+      "sampleFields": ["positionMeters", "frequencyHertz"],
+      "relatedChartIds": ["position-time"],
+      "example": "Dobrar k aumenta omega0 por raiz quadrada; dobrar m reduz omega0 por raiz quadrada."
+    },
+    {
+      "id": "power-work",
+      "title": "Trabalho da forca externa",
+      "expressionLatex": "P = F(t)v,\\quad W = \\int P\\,dt",
+      "description": "O sample acumula o trabalho externo e a energia dissipada para mostrar a troca de energia durante a ressonancia.",
+      "variables": [
+        {
+          "symbol": "P",
+          "label": "potencia instantanea",
+          "unit": "W"
+        },
+        {
+          "symbol": "W",
+          "label": "trabalho externo",
+          "unit": "J"
+        },
+        {
+          "symbol": "v",
+          "label": "velocidade",
+          "unit": "m/s"
+        }
+      ],
+      "usedWhen": "Usar para explicar por que a energia cresce quando forca e velocidade ficam em fase.",
+      "notUsedWhen": "Nao representa perdas eletricas ou eficiencia do mecanismo que aplica a forca.",
+      "parameterIds": [
+        "driveForceNewtons",
+        "driveAngularFrequencyRadiansPerSecond",
+        "dampingPerSecond"
+      ],
+      "sampleFields": [
+        "appliedForceNewtons",
+        "velocityMetersPerSecond",
+        "appliedWorkJoules",
+        "thermalEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "relatedChartIds": ["forces-time", "energy-time"],
+      "relatedVectorIds": ["appliedForce", "velocity"],
+      "example": "Quando F(t) e v tem mesmo sinal, W aumenta; quando tem sinais opostos, a forca retira energia."
+    }
+  ]
+}

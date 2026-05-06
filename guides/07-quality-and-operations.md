@@ -27,7 +27,7 @@ npm run test:e2e
 - Testes unitarios para o integrador do pendulo.
 - Testes unitarios para o modelo analitico/numerico por trechos do plano inclinado com atrito.
 - Testes unitarios para o motor analitico compartilhado de Cinematica, cobrindo MRU, MUV/queda livre, lancamento obliquo e MCU.
-- Testes unitarios para os modelos analiticos compartilhados de Dinamica/Energia/Estatica/Rotacao/Gravitacao/Fluidos/Oscilacoes, cobrindo massa-mola vertical, Maquina de Atwood, forca centripeta em curva, trabalho/energia em trilho, colisoes 1D/2D, equilibrio de particula, torque/alavancas/centro de massa, rotacao de corpo rigido, rolamento, campo gravitacional/orbitas, hidrostatica/empuxo e continuidade/Bernoulli.
+- Testes unitarios para os modelos analiticos/numericos compartilhados de Dinamica/Energia/Estatica/Rotacao/Gravitacao/Fluidos/Oscilacoes, cobrindo massa-mola vertical, oscilador amortecido, oscilador forcado/ressonancia, osciladores acoplados, Maquina de Atwood, forca centripeta em curva, trabalho/energia em trilho, colisoes 1D/2D, equilibrio de particula, torque/alavancas/centro de massa, rotacao de corpo rigido, rolamento, campo gravitacional/orbitas, hidrostatica/empuxo e continuidade/Bernoulli.
 - Testes de invariantes fisicos dentro do modelo declarado.
 - Testes de validacao de parametros e unidades.
 - Testes de valores limite fisicamente validos, como atrito zero, forca aplicada zero e velocidades iniciais nulas quando o modelo permitir.

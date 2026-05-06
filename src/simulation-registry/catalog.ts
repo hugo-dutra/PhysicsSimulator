@@ -3,6 +3,9 @@ import atwoodMachineFixtureJson from '../../fixtures/simulations/mechanics-atwoo
 import centripetalForceCurveFixtureJson from '../../fixtures/simulations/mechanics-centripetal-force-curve.json'
 import collisionsFixtureJson from '../../fixtures/simulations/mechanics-collisions-1d-2d.json'
 import continuityBernoulliFixtureJson from '../../fixtures/simulations/mechanics-continuity-bernoulli.json'
+import coupledOscillatorsFixtureJson from '../../fixtures/simulations/waves-coupled-oscillators.json'
+import dampedOscillatorFixtureJson from '../../fixtures/simulations/waves-damped-oscillator.json'
+import forcedOscillatorResonanceFixtureJson from '../../fixtures/simulations/waves-forced-oscillator-resonance.json'
 import gravitationalFieldOrbitsFixtureJson from '../../fixtures/simulations/mechanics-gravitational-field-orbits.json'
 import hydrostaticsBuoyancyFixtureJson from '../../fixtures/simulations/mechanics-hydrostatics-buoyancy.json'
 import inclinedPlaneFixtureJson from '../../fixtures/simulations/mechanics-inclined-plane-friction.json'
@@ -38,6 +41,10 @@ export const kinematicsFixtures = {
     centripetalForceCurveFixtureJson as SimulationFixture,
   'collisions-1d-2d': collisionsFixtureJson as SimulationFixture,
   'continuity-bernoulli': continuityBernoulliFixtureJson as SimulationFixture,
+  'coupled-oscillators': coupledOscillatorsFixtureJson as SimulationFixture,
+  'damped-oscillator': dampedOscillatorFixtureJson as SimulationFixture,
+  'forced-oscillator-resonance':
+    forcedOscillatorResonanceFixtureJson as SimulationFixture,
   'gravitational-field-orbits':
     gravitationalFieldOrbitsFixtureJson as SimulationFixture,
   'hydrostatics-buoyancy':

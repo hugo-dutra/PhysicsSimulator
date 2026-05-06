@@ -156,6 +156,37 @@
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "ideal-positive-pressure",
+      "label": "Venturi ideal com pressoes fisicas",
+      "condition": "secondaryPressurePascals >= 0 no estrangulamento.",
+      "transitionLimit": "secondaryPressurePascals = 0 marca o limite inferior do modelo ideal sem cavitacao.",
+      "sampleFields": [
+        "flowRateCubicMetersPerSecond",
+        "speedMetersPerSecond",
+        "secondarySpeedMetersPerSecond",
+        "pressurePascals",
+        "secondaryPressurePascals",
+        "netForceNewtons"
+      ]
+    },
+    {
+      "id": "negative-pressure-limit",
+      "label": "Pressao ideal negativa fora do regime fisico",
+      "condition": "secondaryPressurePascals < 0.",
+      "transitionLimit": "A combinacao de vazao, areas, densidade, altura e pressao de entrada cruza p2 = 0.",
+      "sampleFields": [
+        "flowRateCubicMetersPerSecond",
+        "speedMetersPerSecond",
+        "secondarySpeedMetersPerSecond",
+        "pressurePascals",
+        "secondaryPressurePascals",
+        "netForceNewtons"
+      ],
+      "warningCode": "BERNOULLI_NEGATIVE_PRESSURE"
+    }
+  ],
   "limits": [
     "O escoamento e incompressivel, estacionario e sem viscosidade no modelo de Bernoulli ideal.",
     "As velocidades sao medias por secao; perfil real de velocidade, perda de carga e turbulencia nao entram.",

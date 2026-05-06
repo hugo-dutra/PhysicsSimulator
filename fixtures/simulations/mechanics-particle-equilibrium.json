@@ -156,6 +156,36 @@
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "force-equilibrium",
+      "label": "Equilibrio translacional",
+      "condition": "netForceNewtons <= equilibriumForceToleranceNewtons.",
+      "transitionLimit": "Soma vetorial das forcas igual a zero dentro da tolerancia numerica.",
+      "sampleFields": [
+        "forceOneXNewtons",
+        "forceTwoXNewtons",
+        "forceThreeXNewtons",
+        "netForceNewtons",
+        "accelerationMetersPerSecondSquared"
+      ]
+    },
+    {
+      "id": "unbalanced-resultant",
+      "label": "Falha de equilibrio com aceleracao resultante",
+      "condition": "netForceNewtons > equilibriumForceToleranceNewtons.",
+      "transitionLimit": "Qualquer resultante acima da tolerancia gera aceleracao F_res/m.",
+      "sampleFields": [
+        "forceOneXNewtons",
+        "forceTwoXNewtons",
+        "forceThreeXNewtons",
+        "netForceNewtons",
+        "accelerationXMetersPerSecondSquared",
+        "accelerationZMetersPerSecondSquared"
+      ],
+      "warningCode": "PARTICLE_NOT_IN_EQUILIBRIUM"
+    }
+  ],
   "limits": [
     "A particula e pontual e todos os vetores de forca atuam no mesmo ponto.",
     "Forca zero e fisicamente valida e apenas remove aquele vetor do diagrama.",

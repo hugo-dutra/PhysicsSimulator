@@ -1,0 +1,304 @@
+{
+  "simulationId": "damped-oscillator",
+  "durationSeconds": 24,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 10,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Horizonte calculado",
+      "description": "Horizonte de tempo pre-calculado pelo motor para samples, graficos e tabela. Aumentar mostra mais retorno ao equilibrio; diminuir destaca o transiente inicial.",
+      "unit": "s",
+      "kind": "number",
+      "min": 8,
+      "max": 90,
+      "step": 1,
+      "defaultValue": 24
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado em graficos e tabela. Aumentar mostra mais ciclos amortecidos; diminuir evidencia amplitude e fase instantaneas.",
+      "unit": "s",
+      "kind": "number",
+      "min": 4,
+      "max": 45,
+      "step": 1,
+      "defaultValue": 10
+    }
+  ],
+  "defaultParameters": {
+    "massKilograms": 1,
+    "springConstantNewtonsPerMeter": 16,
+    "dampingPerSecond": 0.6,
+    "initialDisplacementMeters": 0.28,
+    "initialVelocityMetersPerSecond": 0
+  },
+  "parameters": [
+    {
+      "id": "massKilograms",
+      "label": "Massa",
+      "description": "Massa presa a mola ideal. Aumentar reduz a frequencia natural e deixa o retorno mais lento; diminuir torna o oscilador mais rapido.",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.05,
+      "max": 5,
+      "step": 0.05,
+      "defaultValue": 1
+    },
+    {
+      "id": "springConstantNewtonsPerMeter",
+      "label": "Constante elastica",
+      "description": "Rigidez k da mola linear. Aumentar eleva a frequencia natural e a forca restauradora; diminuir alonga o periodo.",
+      "unit": "N/m",
+      "kind": "number",
+      "min": 1,
+      "max": 120,
+      "step": 1,
+      "defaultValue": 16
+    },
+    {
+      "id": "dampingPerSecond",
+      "label": "Amortecimento",
+      "description": "Coeficiente linear por segundo na equacao x'' + gamma x' + omega0^2 x = 0. Zerar conserva energia; aumentar troca subamortecimento por regime critico e depois superamortecido.",
+      "unit": "s^-1",
+      "kind": "number",
+      "min": 0,
+      "max": 16,
+      "step": 0.05,
+      "defaultValue": 0.6
+    },
+    {
+      "id": "initialDisplacementMeters",
+      "label": "Deslocamento inicial",
+      "description": "Posicao inicial relativa ao equilibrio, positiva para baixo na cena. Zerar inicia no equilibrio; valores maiores aumentam a energia potencial inicial.",
+      "unit": "m",
+      "kind": "number",
+      "min": -0.8,
+      "max": 0.8,
+      "step": 0.01,
+      "defaultValue": 0.28
+    },
+    {
+      "id": "initialVelocityMetersPerSecond",
+      "label": "Velocidade inicial",
+      "description": "Velocidade inicial relativa ao equilibrio, positiva para baixo. Zerar solta a massa do deslocamento; valores diferentes mudam fase e energia cinetica inicial.",
+      "unit": "m/s",
+      "kind": "number",
+      "min": -4,
+      "max": 4,
+      "step": 0.02,
+      "defaultValue": 0
+    }
+  ],
+  "presets": [
+    {
+      "id": "underdamped-release",
+      "label": "Subamortecido",
+      "parameters": {
+        "massKilograms": 1,
+        "springConstantNewtonsPerMeter": 16,
+        "dampingPerSecond": 0.6,
+        "initialDisplacementMeters": 0.28,
+        "initialVelocityMetersPerSecond": 0
+      }
+    },
+    {
+      "id": "critical-return",
+      "label": "Critico",
+      "parameters": {
+        "massKilograms": 1,
+        "springConstantNewtonsPerMeter": 16,
+        "dampingPerSecond": 8,
+        "initialDisplacementMeters": 0.28,
+        "initialVelocityMetersPerSecond": 0
+      }
+    },
+    {
+      "id": "overdamped-return",
+      "label": "Superamortecido",
+      "parameters": {
+        "massKilograms": 1,
+        "springConstantNewtonsPerMeter": 16,
+        "dampingPerSecond": 12,
+        "initialDisplacementMeters": 0.28,
+        "initialVelocityMetersPerSecond": 0
+      }
+    }
+  ],
+  "regimes": [
+    {
+      "id": "undamped-reference",
+      "label": "Referencia sem amortecimento",
+      "condition": "dampingPerSecond === 0.",
+      "transitionLimit": "dampingPerSecond > 0 passa a dissipar energia mecanica.",
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "potentialEnergyJoules",
+        "kineticEnergyJoules",
+        "totalEnergyJoules"
+      ]
+    },
+    {
+      "id": "underdamped",
+      "label": "Subamortecido",
+      "condition": "0 < dampingPerSecond < 2 * sqrt(k / m).",
+      "transitionLimit": "A amplitude decai exponencialmente e ainda cruza o equilibrio.",
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "frictionForceNewtons",
+        "thermalEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "warningCode": "OSCILLATOR_UNDERDAMPED"
+    },
+    {
+      "id": "critical-damping",
+      "label": "Amortecimento critico",
+      "condition": "dampingPerSecond = 2 * sqrt(k / m).",
+      "transitionLimit": "E o limite entre retorno oscilatorio e retorno sem cruzamentos.",
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "thermalEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "warningCode": "OSCILLATOR_CRITICAL_DAMPING"
+    },
+    {
+      "id": "overdamped",
+      "label": "Superamortecido",
+      "condition": "dampingPerSecond > 2 * sqrt(k / m).",
+      "transitionLimit": "O retorno ao equilibrio fica nao oscilatorio e mais lento que o critico.",
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "frictionForceNewtons",
+        "thermalEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "warningCode": "OSCILLATOR_OVERDAMPED"
+    }
+  ],
+  "limits": [
+    "Modelo unidimensional de massa e mola ideal com amortecimento viscoso linear proporcional a velocidade.",
+    "A massa e pontual e a mola nao possui massa, fim de curso, atrito seco, deformacao plastica ou resistencia turbulenta.",
+    "O amortecimento critico usa gamma_c = 2 sqrt(k/m); mudar massa ou constante elastica desloca esse limite.",
+    "A energia dissipada e um acumulado didatico do modelo linear, nao uma simulacao termica do meio."
+  ],
+  "formulas": [
+    {
+      "id": "damped-equation",
+      "title": "Equacao do oscilador amortecido",
+      "expressionLatex": "\\ddot{x} + \\gamma\\dot{x} + \\omega_0^2 x = 0",
+      "description": "A equacao gera deslocamento, velocidade, aceleracao, forca elastica e amortecimento no mesmo sample.",
+      "variables": [
+        {
+          "symbol": "x",
+          "label": "deslocamento",
+          "unit": "m"
+        },
+        {
+          "symbol": "\\gamma",
+          "label": "amortecimento",
+          "unit": "s^{-1}"
+        },
+        {
+          "symbol": "\\omega_0",
+          "label": "frequencia natural angular",
+          "unit": "rad/s"
+        }
+      ],
+      "usedWhen": "Usar para comparar os regimes subamortecido, critico e superamortecido.",
+      "notUsedWhen": "Nao inclui forca externa periodica, atrito seco ou nao linearidade da mola.",
+      "parameterIds": [
+        "massKilograms",
+        "springConstantNewtonsPerMeter",
+        "dampingPerSecond",
+        "initialDisplacementMeters",
+        "initialVelocityMetersPerSecond"
+      ],
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared"
+      ],
+      "relatedChartIds": [
+        "position-time",
+        "velocity-time",
+        "acceleration-time"
+      ],
+      "relatedVectorIds": ["velocity", "acceleration", "friction"],
+      "example": "Com m = 1 kg e k = 16 N/m, omega0 = 4 rad/s e o amortecimento critico e gamma_c = 8 s^-1."
+    },
+    {
+      "id": "critical-damping",
+      "title": "Limite critico",
+      "expressionLatex": "\\gamma_c = 2\\omega_0 = 2\\sqrt{\\frac{k}{m}}",
+      "description": "Separa o retorno que ainda oscila do retorno que nao cruza o equilibrio.",
+      "variables": [
+        {
+          "symbol": "\\gamma_c",
+          "label": "amortecimento critico",
+          "unit": "s^{-1}"
+        },
+        {
+          "symbol": "k",
+          "label": "constante elastica",
+          "unit": "N/m"
+        },
+        {
+          "symbol": "m",
+          "label": "massa",
+          "unit": "kg"
+        }
+      ],
+      "usedWhen": "Usar para interpretar warnings de regime e presets critico/superamortecido.",
+      "notUsedWhen": "Nao substitui uma medida experimental de perdas nao lineares.",
+      "parameterIds": [
+        "massKilograms",
+        "springConstantNewtonsPerMeter",
+        "dampingPerSecond"
+      ],
+      "sampleFields": ["periodSeconds", "frequencyHertz"],
+      "relatedChartIds": ["position-time"],
+      "example": "Aumentar k aumenta gamma_c; aumentar m reduz gamma_c."
+    },
+    {
+      "id": "energy-dissipation",
+      "title": "Energia dissipada",
+      "expressionLatex": "E = K + U + E_t",
+      "description": "O sample conserva a energia rastreada somando energia mecanica instantanea e dissipacao acumulada.",
+      "variables": [
+        {
+          "symbol": "K",
+          "label": "energia cinetica",
+          "unit": "J"
+        },
+        {
+          "symbol": "U",
+          "label": "energia potencial elastica",
+          "unit": "J"
+        },
+        {
+          "symbol": "E_t",
+          "label": "energia dissipada",
+          "unit": "J"
+        }
+      ],
+      "usedWhen": "Usar para verificar que a amplitude decai enquanto a energia dissipada cresce.",
+      "notUsedWhen": "Nao representa aquecimento detalhado do amortecedor ou do ar.",
+      "parameterIds": ["massKilograms", "springConstantNewtonsPerMeter", "dampingPerSecond"],
+      "sampleFields": [
+        "kineticEnergyJoules",
+        "potentialEnergyJoules",
+        "thermalEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "relatedChartIds": ["energy-time"],
+      "example": "No regime sem amortecimento, E_t permanece zero e a energia mecanica total fica constante."
+    }
+  ]
+}

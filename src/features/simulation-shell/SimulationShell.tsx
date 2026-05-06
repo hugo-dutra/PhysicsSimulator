@@ -83,6 +83,9 @@ import atwoodMachineTheory from '../../content/simulations/mechanics/atwood-mach
 import centripetalForceCurveTheory from '../../content/simulations/mechanics/centripetal-force-curve/theory.md?raw'
 import collisionsTheory from '../../content/simulations/mechanics/collisions-1d-2d/theory.md?raw'
 import continuityBernoulliTheory from '../../content/simulations/mechanics/continuity-bernoulli/theory.md?raw'
+import coupledOscillatorsTheory from '../../content/simulations/waves/oscillations/coupled-oscillators/theory.md?raw'
+import dampedOscillatorTheory from '../../content/simulations/waves/oscillations/damped-oscillator/theory.md?raw'
+import forcedOscillatorResonanceTheory from '../../content/simulations/waves/oscillations/forced-oscillator-resonance/theory.md?raw'
 import {
   computePendulumTimeline,
   getPendulumVectorOverlays,
@@ -207,6 +210,9 @@ const kinematicsTheoryById = {
   'centripetal-force-curve': centripetalForceCurveTheory,
   'collisions-1d-2d': collisionsTheory,
   'continuity-bernoulli': continuityBernoulliTheory,
+  'coupled-oscillators': coupledOscillatorsTheory,
+  'damped-oscillator': dampedOscillatorTheory,
+  'forced-oscillator-resonance': forcedOscillatorResonanceTheory,
   'gravitational-field-orbits': gravitationalFieldOrbitsTheory,
   'hydrostatics-buoyancy': hydrostaticsBuoyancyTheory,
   'mass-spring': massSpringTheory,
@@ -522,6 +528,90 @@ const kinematicsVectorLegendItemsById = {
       label: 'Peso',
       color: themeTokens.danger,
       description: 'forca gravitacional constante que desloca o equilibrio',
+    },
+  ],
+  'damped-oscillator': [
+    {
+      id: 'velocity',
+      label: 'Velocidade',
+      color: themeTokens.cyan,
+      description: 'velocidade vertical do oscilador em torno do equilibrio',
+    },
+    {
+      id: 'acceleration',
+      label: 'Aceleracao',
+      color: themeTokens.warning,
+      description: 'aceleracao produzida por mola e amortecimento',
+    },
+    {
+      id: 'tension',
+      label: 'Forca elastica',
+      color: themeTokens.vector,
+      description: 'forca restauradora proporcional ao deslocamento',
+    },
+    {
+      id: 'friction',
+      label: 'Amortecimento',
+      color: themeTokens.danger,
+      description: 'forca linear oposta a velocidade',
+    },
+  ],
+  'forced-oscillator-resonance': [
+    {
+      id: 'velocity',
+      label: 'Velocidade',
+      color: themeTokens.cyan,
+      description: 'velocidade vertical da massa excitada externamente',
+    },
+    {
+      id: 'acceleration',
+      label: 'Aceleracao',
+      color: themeTokens.warning,
+      description: 'aceleracao resultante de mola, amortecimento e forca externa',
+    },
+    {
+      id: 'tension',
+      label: 'Forca elastica',
+      color: themeTokens.vector,
+      description: 'forca restauradora da mola',
+    },
+    {
+      id: 'friction',
+      label: 'Amortecimento',
+      color: themeTokens.danger,
+      description: 'perda linear proporcional a velocidade',
+    },
+    {
+      id: 'appliedForce',
+      label: 'Forca externa',
+      color: themeTokens.cyan,
+      description: 'excitacao periodica que injeta ou retira energia do sistema',
+    },
+  ],
+  'coupled-oscillators': [
+    {
+      id: 'velocity',
+      label: 'Velocidade A',
+      color: themeTokens.cyan,
+      description: 'velocidade da primeira massa',
+    },
+    {
+      id: 'secondaryVelocity',
+      label: 'Velocidade B',
+      color: '#818CF8',
+      description: 'velocidade da segunda massa acoplada',
+    },
+    {
+      id: 'resultant',
+      label: 'Resultante A',
+      color: themeTokens.warning,
+      description: 'resultante da mola externa e da mola de acoplamento em A',
+    },
+    {
+      id: 'tension',
+      label: 'Acoplamento',
+      color: themeTokens.vector,
+      description: 'forca trocada pela mola entre as duas massas',
     },
   ],
   'particle-equilibrium': [
@@ -4228,6 +4318,71 @@ function buildKinematicsReadoutMetrics({
       {
         label: 'Forca elastica',
         value: formatNumber(sample.springForceNewtons, 'N'),
+      },
+      ...energyMetric,
+      frameMetric,
+    ]
+  }
+
+  if (
+    simulationId === 'damped-oscillator' ||
+    simulationId === 'forced-oscillator-resonance'
+  ) {
+    return [
+      {
+        label: 'Deslocamento',
+        value: formatNumber(sample.positionMeters, 'm'),
+      },
+      {
+        label: 'Velocidade',
+        value: formatNumber(sample.velocityMetersPerSecond, 'm/s'),
+      },
+      {
+        label: 'Amortecimento',
+        value: formatNumber(sample.frictionForceNewtons, 'N'),
+      },
+      {
+        label: 'Forca elastica',
+        value: formatNumber(sample.springForceNewtons, 'N'),
+      },
+      ...(simulationId === 'forced-oscillator-resonance'
+        ? [
+            {
+              label: 'Forca externa',
+              value: formatNumber(sample.appliedForceNewtons, 'N'),
+            },
+            {
+              label: 'Trabalho externo',
+              value: formatEnergy(sample.appliedWorkJoules),
+            },
+          ]
+        : []),
+      ...energyMetric,
+      frameMetric,
+    ]
+  }
+
+  if (simulationId === 'coupled-oscillators') {
+    return [
+      {
+        label: 'Massa A',
+        value: formatNumber(sample.positionMeters, 'm'),
+      },
+      {
+        label: 'Massa B',
+        value: formatNumber(-sample.secondaryZMeters, 'm'),
+      },
+      {
+        label: 'Modo comum',
+        value: formatNumber(sample.centerOfMassMeters, 'm'),
+      },
+      {
+        label: 'Diferenca',
+        value: formatNumber(sample.displacementMeters, 'm'),
+      },
+      {
+        label: 'Acoplamento',
+        value: formatNumber(sample.tensionNewtons, 'N'),
       },
       ...energyMetric,
       frameMetric,

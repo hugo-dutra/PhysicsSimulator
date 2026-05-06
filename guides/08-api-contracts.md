@@ -200,7 +200,7 @@ type InclinedPlaneSample = {
 
 ## Exemplo de sample de Cinematica
 
-O nome historico `KinematicsSample` cobre hoje o motor analitico compartilhado de Cinematica, Dinamica, Energia/momento, Estatica, Rotacao, Gravitacao, Fluidos basicos e a oscilacao massa-mola vertical. Campos sem uso em uma simulacao ficam zerados, mas toda grandeza exibida em cena, grafico, tabela ou formula deve vir do sample.
+O nome historico `KinematicsSample` cobre hoje o motor analitico/numerico compartilhado de Cinematica, Dinamica, Energia/momento, Estatica, Rotacao, Gravitacao, Fluidos basicos, massa-mola vertical e os tres primeiros osciladores de `Oscilacoes e Ondas`. Campos sem uso em uma simulacao ficam zerados, mas toda grandeza exibida em cena, grafico, tabela ou formula deve vir do sample.
 
 ```ts
 type KinematicsSample = {

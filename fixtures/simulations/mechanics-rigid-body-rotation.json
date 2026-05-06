@@ -195,6 +195,50 @@
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "free-angular-dynamics",
+      "label": "Rotacao em eixo fixo com inercia total declarada",
+      "condition": "constantRotationalEnergy === false e angularDampingPerSecond === 0.",
+      "transitionLimit": "Torque aplicado ou mudanca de I altera alpha e omega conforme tau = I alpha.",
+      "sampleFields": [
+        "angleRadians",
+        "angularVelocityRadiansPerSecond",
+        "angularAccelerationRadiansPerSecondSquared",
+        "momentOfInertiaKilogramMetersSquared",
+        "netTorqueNewtonMeters",
+        "kineticEnergyJoules"
+      ]
+    },
+    {
+      "id": "damped-angular-dynamics",
+      "label": "Rotacao com amortecimento angular linear",
+      "condition": "angularDampingPerSecond > 0 e constantRotationalEnergy === false.",
+      "transitionLimit": "Amortecimento ativo transforma energia mecanica em thermalEnergyJoules.",
+      "sampleFields": [
+        "angleRadians",
+        "angularVelocityRadiansPerSecond",
+        "momentOfInertiaKilogramMetersSquared",
+        "thermalEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "warningCode": "ROTATION_DAMPING_ACTIVE"
+    },
+    {
+      "id": "constant-rotational-energy",
+      "label": "Modo de energia rotacional constante",
+      "condition": "constantRotationalEnergy === true.",
+      "transitionLimit": "Ao mudar I por massa movel, omega e recalculado para conservar K_rot.",
+      "sampleFields": [
+        "angularVelocityRadiansPerSecond",
+        "momentOfInertiaKilogramMetersSquared",
+        "primaryRadiusMeters",
+        "centerOfMassMeters",
+        "kineticEnergyJoules"
+      ],
+      "warningCode": "ROTATION_CONSTANT_ENERGY_ACTIVE"
+    }
+  ],
   "limits": [
     "O corpo gira em torno de eixo fixo e nao translada.",
     "O momento de inercia total e calculado como I = I_base + m r^2 para uma massa movel didatica sobre a barra.",

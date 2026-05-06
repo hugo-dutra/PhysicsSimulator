@@ -1051,33 +1051,153 @@
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Oscilacoes", "Oscilador amortecido"],
           "title": "Oscilador amortecido",
-          "status": "planned",
+          "status": "analysis",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
-          "description": "Regimes subamortecido, criticamente amortecido e superamortecido."
+          "fixturePath": "fixtures/simulations/waves-damped-oscillator.json",
+          "theoryPath": "src/content/simulations/waves/oscillations/damped-oscillator/theory.md",
+          "description": "Regimes subamortecido, criticamente amortecido e superamortecido com energia dissipada sincronizada.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Solucao analitica por regimes para massa-mola amortecido linear, reutilizando cena Three.js vertical e samples compartilhados."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Deslocamento por tempo",
+              "sampleFields": ["timeSeconds", "positionMeters", "zMeters"]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidade por tempo",
+              "sampleFields": ["timeSeconds", "velocityMetersPerSecond"]
+            },
+            {
+              "id": "forces-time",
+              "title": "Forcas do oscilador amortecido",
+              "sampleFields": [
+                "timeSeconds",
+                "springForceNewtons",
+                "frictionForceNewtons",
+                "netForceNewtons"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "potentialEnergyJoules",
+                "thermalEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
         },
         {
           "id": "forced-oscillator-resonance",
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Oscilacoes", "Oscilador forcado e ressonancia"],
           "title": "Oscilador forcado e ressonancia",
-          "status": "planned",
+          "status": "analysis",
           "level": "introductory",
           "modelKind": "numerical",
           "renderer": "three",
-          "description": "Frequencia externa, amplitude de resposta, fase e curva de ressonancia."
+          "fixturePath": "fixtures/simulations/waves-forced-oscillator-resonance.json",
+          "theoryPath": "src/content/simulations/waves/oscillations/forced-oscillator-resonance/theory.md",
+          "description": "Frequencia externa, amplitude de resposta, fase, trabalho externo e regiao de ressonancia.",
+          "technologyPlan": {
+            "engine": "custom-numerical",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Integrador RK4 deterministico para oscilador forcado amortecido, com trabalho externo e dissipacao no sample."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Deslocamento por tempo",
+              "sampleFields": ["timeSeconds", "positionMeters", "zMeters"]
+            },
+            {
+              "id": "forces-time",
+              "title": "Forcas do oscilador forcado",
+              "sampleFields": [
+                "timeSeconds",
+                "springForceNewtons",
+                "frictionForceNewtons",
+                "appliedForceNewtons",
+                "netForceNewtons"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia e trabalho externo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "potentialEnergyJoules",
+                "thermalEnergyJoules",
+                "appliedWorkJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
         },
         {
           "id": "coupled-oscillators",
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Oscilacoes", "Osciladores acoplados"],
           "title": "Osciladores acoplados",
-          "status": "planned",
+          "status": "analysis",
           "level": "introductory",
           "modelKind": "numerical",
           "renderer": "three",
-          "description": "Modos normais, batimentos, troca de energia e fase relativa."
+          "fixturePath": "fixtures/simulations/waves-coupled-oscillators.json",
+          "theoryPath": "src/content/simulations/waves/oscillations/coupled-oscillators/theory.md",
+          "description": "Duas massas acopladas com modos normais, batimentos, troca de energia e fase relativa.",
+          "technologyPlan": {
+            "engine": "custom-numerical",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Integrador RK4 para duas massas iguais com molas externas e mola central de acoplamento."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Deslocamentos e modos por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "positionMeters",
+                "secondaryZMeters",
+                "centerOfMassMeters",
+                "displacementMeters"
+              ]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidades por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "velocityMetersPerSecond",
+                "secondaryVelocityMetersPerSecond"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "leftKineticEnergyJoules",
+                "rightKineticEnergyJoules",
+                "potentialEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
         },
         {
           "id": "wave-on-string",

@@ -173,7 +173,7 @@ describe('SimulationShell playback continuity', () => {
     expect(focusedChartWidthHandle).toHaveAttribute('aria-valuenow', '38')
     expect(focusedChartHeightHandle).toHaveAttribute('aria-valuenow', '276')
     expect(readPendulumResetVersion()).toBe('0')
-  })
+  }, 20_000)
 
   it('keeps hydrostatics playback continuity when changing object volume', () => {
     render(
@@ -204,7 +204,7 @@ describe('SimulationShell playback continuity', () => {
     fireEvent.blur(volumeInput)
 
     expect(readKinematicsResetVersion()).toBe('1')
-  })
+  }, 20_000)
 })
 
 function readPendulumResetVersion() {

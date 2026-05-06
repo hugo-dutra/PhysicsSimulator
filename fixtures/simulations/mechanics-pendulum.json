@@ -129,6 +129,54 @@
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "nonlinear-numerical-pendulum",
+      "label": "Pendulo numerico com seno completo",
+      "condition": "Sempre ativo para o motor principal, independentemente da aproximacao de pequeno angulo.",
+      "transitionLimit": "|initialAngleRadians| > pi/6 invalida a formula de periodo de pequeno angulo como aproximacao principal.",
+      "sampleFields": [
+        "angleRadians",
+        "angularVelocityRadiansPerSecond",
+        "angularAccelerationRadiansPerSecondSquared",
+        "xMeters",
+        "yMeters",
+        "linearVelocityMetersPerSecond",
+        "totalAccelerationMetersPerSecondSquared"
+      ],
+      "idealReferenceFields": [
+        "angleRadians"
+      ]
+    },
+    {
+      "id": "small-angle-reference-limit",
+      "label": "Limite da aproximacao de pequeno angulo",
+      "condition": "|initialAngleRadians| > pi/6.",
+      "transitionLimit": "30 graus separa a referencia linear da leitura numerica recomendada.",
+      "sampleFields": [
+        "angleRadians",
+        "angularVelocityRadiansPerSecond"
+      ],
+      "warningCode": "SMALL_ANGLE_APPROXIMATION_LIMIT",
+      "idealReferenceFields": [
+        "angleRadians"
+      ]
+    },
+    {
+      "id": "linear-damping-active",
+      "label": "Amortecimento linear ativo",
+      "condition": "dampingPerSecond > 0.",
+      "transitionLimit": "Energia total deixa de ser conservada e decai conforme o termo proporcional a velocidade angular.",
+      "sampleFields": [
+        "angleRadians",
+        "angularVelocityRadiansPerSecond",
+        "kineticEnergyJoules",
+        "potentialEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "warningCode": "ENERGY_NOT_CONSERVED_WITH_DAMPING"
+    }
+  ],
   "limits": [
     "Massa pontual presa a fio ideal e inextensivel.",
     "Movimento em um plano sem resistencia do ar explicita.",

@@ -141,6 +141,35 @@
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "constant-acceleration",
+      "label": "Aceleracao constante com fio ideal",
+      "condition": "Nenhuma massa atinge 0 ou travelLimitMeters no horizonte calculado; a aceleracao pode ser zero quando as massas sao iguais.",
+      "transitionLimit": "positionMeters chega a 0 ou travelLimitMeters quando uma massa alcanca o limite visual do curso.",
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared",
+        "tensionNewtons",
+        "weightNewtons",
+        "kineticEnergyJoules",
+        "potentialEnergyJoules"
+      ]
+    },
+    {
+      "id": "travel-limit-reached",
+      "label": "Limite visual do curso atingido",
+      "condition": "positionMeters === 0 ou positionMeters === travelLimitMeters dentro do ciclo.",
+      "transitionLimit": "travelLimitMeters define o fim do deslocamento vertical disponivel.",
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared"
+      ],
+      "warningCode": "ATWOOD_TRAVEL_LIMIT_REACHED"
+    }
+  ],
   "limits": [
     "As massas sao tratadas como pontos ligados por fio ideal e inextensivel.",
     "A polia e ideal: sem massa, sem atrito e sem momento de inercia.",

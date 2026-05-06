@@ -31,6 +31,16 @@ export type KinematicsChartConfig = {
 
 const maxChartSamples = 480
 
+function isSingleSpringOscillatorSimulation(
+  simulationId: KinematicsSimulationId,
+) {
+  return (
+    simulationId === 'damped-oscillator' ||
+    simulationId === 'forced-oscillator-resonance' ||
+    simulationId === 'mass-spring'
+  )
+}
+
 export function prepareKinematicsChartSamples(samples: KinematicsSample[]) {
   return downsampleSamples(samples, maxChartSamples)
 }
@@ -521,7 +531,7 @@ export function buildKinematicsChartConfigs(
         yAxisTitle: 'Densidade relativa',
       },
     )
-  } else if (simulationId === 'mass-spring') {
+  } else if (isSingleSpringOscillatorSimulation(simulationId)) {
     charts.push(
       {
         id: 'position',
@@ -572,25 +582,140 @@ export function buildKinematicsChartConfigs(
       },
       {
         id: 'forces',
-        title: 'Forca elastica, peso e resultante',
+        title:
+          simulationId === 'mass-spring'
+            ? 'Forca elastica, peso e resultante'
+            : simulationId === 'forced-oscillator-resonance'
+              ? 'Forcas do oscilador forcado'
+              : 'Forcas do oscilador amortecido',
+        traces:
+          simulationId === 'mass-spring'
+            ? [
+                {
+                  lineColor: themeTokens.vector,
+                  name: 'Forca elastica da mola (N)',
+                  x: time,
+                  y: samples.map((sample) => sample.springForceNewtons),
+                },
+                {
+                  lineColor: themeTokens.danger,
+                  name: 'Peso da esfera (N)',
+                  x: time,
+                  y: samples.map((sample) => sample.weightNewtons),
+                },
+                {
+                  lineColor: themeTokens.warning,
+                  name: 'Forca resultante vertical (N)',
+                  x: time,
+                  y: samples.map((sample) => sample.netForceNewtons),
+                },
+              ]
+            : [
+                {
+                  lineColor: themeTokens.vector,
+                  name: 'Forca elastica restauradora (N)',
+                  x: time,
+                  y: samples.map((sample) => sample.springForceNewtons),
+                },
+                {
+                  lineColor: themeTokens.danger,
+                  name: 'Forca de amortecimento (N)',
+                  x: time,
+                  y: samples.map((sample) => sample.frictionForceNewtons),
+                },
+                ...(simulationId === 'forced-oscillator-resonance'
+                  ? [
+                      {
+                        lineColor: themeTokens.cyan,
+                        name: 'Forca externa periodica (N)',
+                        x: time,
+                        y: samples.map((sample) => sample.appliedForceNewtons),
+                      },
+                    ]
+                  : []),
+                {
+                  lineColor: themeTokens.warning,
+                  name: 'Forca resultante (N)',
+                  x: time,
+                  y: samples.map((sample) => sample.netForceNewtons),
+                },
+              ],
+        yAxisTitle: 'Forca (newtons)',
+      },
+    )
+  } else if (simulationId === 'coupled-oscillators') {
+    charts.push(
+      {
+        id: 'position',
+        title: 'Deslocamentos acoplados por tempo',
         traces: [
           {
-            lineColor: themeTokens.vector,
-            name: 'Forca elastica da mola (N)',
+            lineColor: themeTokens.teal,
+            name: 'Massa A (m)',
             x: time,
-            y: samples.map((sample) => sample.springForceNewtons),
+            y: samples.map((sample) => sample.positionMeters),
           },
           {
-            lineColor: themeTokens.danger,
-            name: 'Peso da esfera (N)',
+            lineColor: themeTokens.cyan,
+            name: 'Massa B (m)',
             x: time,
-            y: samples.map((sample) => sample.weightNewtons),
+            y: samples.map((sample) => -sample.secondaryZMeters),
+          },
+          {
+            lineColor: '#818CF8',
+            name: 'Modo comum (m)',
+            x: time,
+            y: samples.map((sample) => sample.centerOfMassMeters),
           },
           {
             lineColor: themeTokens.warning,
-            name: 'Forca resultante vertical (N)',
+            name: 'Modo relativo xA - xB (m)',
+            x: time,
+            y: samples.map((sample) => sample.displacementMeters),
+          },
+        ],
+        yAxisTitle: 'Deslocamento (metros)',
+      },
+      {
+        id: 'velocity',
+        title: 'Velocidades por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Velocidade A (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.velocityMetersPerSecond),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Velocidade B (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.secondaryVelocityMetersPerSecond),
+          },
+        ],
+        yAxisTitle: 'Velocidade (metros por segundo)',
+      },
+      {
+        id: 'forces',
+        title: 'Forcas de acoplamento',
+        traces: [
+          {
+            lineColor: themeTokens.warning,
+            name: 'Resultante em A (N)',
             x: time,
             y: samples.map((sample) => sample.netForceNewtons),
+          },
+          {
+            lineColor: themeTokens.danger,
+            name: 'Resultante em B (N)',
+            x: time,
+            y: samples.map((sample) => sample.forceTwoNewtons),
+          },
+          {
+            lineColor: themeTokens.vector,
+            name: 'Forca de acoplamento (N)',
+            x: time,
+            y: samples.map((sample) => sample.tensionNewtons),
           },
         ],
         yAxisTitle: 'Forca (newtons)',
@@ -1162,6 +1287,77 @@ export function buildKinematicsChartConfigs(
                 {
                   lineColor: themeTokens.cyan,
                   name: 'Energia mecanica rastreada (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.totalEnergyJoules),
+                },
+              ]
+          : simulationId === 'damped-oscillator' ||
+              simulationId === 'forced-oscillator-resonance'
+            ? [
+                {
+                  lineColor: themeTokens.vector,
+                  name: 'Energia cinetica (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.kineticEnergyJoules),
+                },
+                {
+                  lineColor: themeTokens.warning,
+                  name: 'Energia potencial elastica (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.potentialEnergyJoules),
+                },
+                {
+                  lineColor: themeTokens.danger,
+                  name: 'Energia dissipada (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.thermalEnergyJoules),
+                },
+                ...(simulationId === 'forced-oscillator-resonance'
+                  ? [
+                      {
+                        lineColor: '#818CF8',
+                        name: 'Trabalho da forca externa (J)',
+                        x: time,
+                        y: samples.map((sample) => sample.appliedWorkJoules),
+                      },
+                    ]
+                  : []),
+                {
+                  lineColor: themeTokens.cyan,
+                  name: 'Energia rastreada (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.totalEnergyJoules),
+                },
+              ]
+          : simulationId === 'coupled-oscillators'
+            ? [
+                {
+                  lineColor: themeTokens.vector,
+                  name: 'Energia cinetica total (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.kineticEnergyJoules),
+                },
+                {
+                  lineColor: themeTokens.teal,
+                  name: 'Energia cinetica A (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.leftKineticEnergyJoules),
+                },
+                {
+                  lineColor: '#818CF8',
+                  name: 'Energia cinetica B (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.rightKineticEnergyJoules),
+                },
+                {
+                  lineColor: themeTokens.warning,
+                  name: 'Energia potencial das molas (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.potentialEnergyJoules),
+                },
+                {
+                  lineColor: themeTokens.cyan,
+                  name: 'Energia mecanica total (J)',
                   x: time,
                   y: samples.map((sample) => sample.totalEnergyJoules),
                 },

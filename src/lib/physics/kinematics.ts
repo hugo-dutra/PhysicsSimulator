@@ -3,6 +3,9 @@ export type KinematicsSimulationId =
   | 'centripetal-force-curve'
   | 'collisions-1d-2d'
   | 'continuity-bernoulli'
+  | 'coupled-oscillators'
+  | 'damped-oscillator'
+  | 'forced-oscillator-resonance'
   | 'gravitational-field-orbits'
   | 'hydrostatics-buoyancy'
   | 'mass-spring'
@@ -55,6 +58,34 @@ export type ContinuityBernoulliParameters = {
   inletAreaSquareMeters: number
   inletPressureKilopascals: number
   throatAreaSquareMeters: number
+}
+
+export type DampedOscillatorParameters = {
+  dampingPerSecond: number
+  initialDisplacementMeters: number
+  initialVelocityMetersPerSecond: number
+  massKilograms: number
+  springConstantNewtonsPerMeter: number
+}
+
+export type ForcedOscillatorResonanceParameters = {
+  dampingPerSecond: number
+  driveAngularFrequencyRadiansPerSecond: number
+  driveForceNewtons: number
+  initialDisplacementMeters: number
+  initialVelocityMetersPerSecond: number
+  massKilograms: number
+  springConstantNewtonsPerMeter: number
+}
+
+export type CoupledOscillatorsParameters = {
+  couplingSpringConstantNewtonsPerMeter: number
+  initialDisplacementOneMeters: number
+  initialDisplacementTwoMeters: number
+  initialVelocityOneMetersPerSecond: number
+  initialVelocityTwoMetersPerSecond: number
+  massKilograms: number
+  springConstantNewtonsPerMeter: number
 }
 
 export type GravitationalFieldOrbitsParameters = {
@@ -170,6 +201,9 @@ export type KinematicsParameters =
   | CentripetalForceCurveParameters
   | CollisionsParameters
   | ContinuityBernoulliParameters
+  | CoupledOscillatorsParameters
+  | DampedOscillatorParameters
+  | ForcedOscillatorResonanceParameters
   | GravitationalFieldOrbitsParameters
   | HydrostaticsBuoyancyParameters
   | MassSpringParameters
@@ -333,6 +367,9 @@ const kinematicsSimulationIds = [
   'centripetal-force-curve',
   'collisions-1d-2d',
   'continuity-bernoulli',
+  'coupled-oscillators',
+  'damped-oscillator',
+  'forced-oscillator-resonance',
   'gravitational-field-orbits',
   'hydrostatics-buoyancy',
   'mass-spring',
@@ -561,6 +598,85 @@ export function toKinematicsParameters(
       }
 
       validateContinuityBernoulliParameters(parameters)
+      return parameters
+    }
+    case 'coupled-oscillators': {
+      const parameters: CoupledOscillatorsParameters = {
+        couplingSpringConstantNewtonsPerMeter: readNumber(
+          values,
+          'couplingSpringConstantNewtonsPerMeter',
+        ),
+        initialDisplacementOneMeters: readNumber(
+          values,
+          'initialDisplacementOneMeters',
+        ),
+        initialDisplacementTwoMeters: readNumber(
+          values,
+          'initialDisplacementTwoMeters',
+        ),
+        initialVelocityOneMetersPerSecond: readNumber(
+          values,
+          'initialVelocityOneMetersPerSecond',
+        ),
+        initialVelocityTwoMetersPerSecond: readNumber(
+          values,
+          'initialVelocityTwoMetersPerSecond',
+        ),
+        massKilograms: readNumber(values, 'massKilograms'),
+        springConstantNewtonsPerMeter: readNumber(
+          values,
+          'springConstantNewtonsPerMeter',
+        ),
+      }
+
+      validateCoupledOscillatorsParameters(parameters)
+      return parameters
+    }
+    case 'damped-oscillator': {
+      const parameters: DampedOscillatorParameters = {
+        dampingPerSecond: readNumber(values, 'dampingPerSecond'),
+        initialDisplacementMeters: readNumber(
+          values,
+          'initialDisplacementMeters',
+        ),
+        initialVelocityMetersPerSecond: readNumber(
+          values,
+          'initialVelocityMetersPerSecond',
+        ),
+        massKilograms: readNumber(values, 'massKilograms'),
+        springConstantNewtonsPerMeter: readNumber(
+          values,
+          'springConstantNewtonsPerMeter',
+        ),
+      }
+
+      validateDampedOscillatorParameters(parameters)
+      return parameters
+    }
+    case 'forced-oscillator-resonance': {
+      const parameters: ForcedOscillatorResonanceParameters = {
+        dampingPerSecond: readNumber(values, 'dampingPerSecond'),
+        driveAngularFrequencyRadiansPerSecond: readNumber(
+          values,
+          'driveAngularFrequencyRadiansPerSecond',
+        ),
+        driveForceNewtons: readNumber(values, 'driveForceNewtons'),
+        initialDisplacementMeters: readNumber(
+          values,
+          'initialDisplacementMeters',
+        ),
+        initialVelocityMetersPerSecond: readNumber(
+          values,
+          'initialVelocityMetersPerSecond',
+        ),
+        massKilograms: readNumber(values, 'massKilograms'),
+        springConstantNewtonsPerMeter: readNumber(
+          values,
+          'springConstantNewtonsPerMeter',
+        ),
+      }
+
+      validateForcedOscillatorResonanceParameters(parameters)
       return parameters
     }
     case 'gravitational-field-orbits': {
@@ -827,6 +943,44 @@ export function computeKinematicsTimeline({
     }
   }
 
+  if (simulationId === 'forced-oscillator-resonance') {
+    const result = computeForcedOscillatorSamples({
+      durationSeconds,
+      parameters: parameters as ForcedOscillatorResonanceParameters,
+      sampleRateHz,
+    })
+    const initialState = result.samples[0]
+
+    if (!initialState) {
+      throw new Error('Kinematics timeline must contain at least one sample.')
+    }
+
+    return {
+      initialState,
+      samples: result.samples,
+      warnings: getKinematicsWarnings(simulationId, parameters, durationSeconds),
+    }
+  }
+
+  if (simulationId === 'coupled-oscillators') {
+    const result = computeCoupledOscillatorSamples({
+      durationSeconds,
+      parameters: parameters as CoupledOscillatorsParameters,
+      sampleRateHz,
+    })
+    const initialState = result.samples[0]
+
+    if (!initialState) {
+      throw new Error('Kinematics timeline must contain at least one sample.')
+    }
+
+    return {
+      initialState,
+      samples: result.samples,
+      warnings: getKinematicsWarnings(simulationId, parameters, durationSeconds),
+    }
+  }
+
   const sampleIntervalSeconds = 1 / sampleRateHz
   const sampleCount = Math.floor(durationSeconds * sampleRateHz) + 1
   const samples: KinematicsSample[] = []
@@ -882,6 +1036,21 @@ export function computeKinematicsSample(
     case 'continuity-bernoulli':
       return computeContinuityBernoulliSample(
         parameters as ContinuityBernoulliParameters,
+        timeSeconds,
+      )
+    case 'coupled-oscillators':
+      return computeCoupledOscillatorSample(
+        parameters as CoupledOscillatorsParameters,
+        timeSeconds,
+      )
+    case 'damped-oscillator':
+      return computeDampedOscillatorSample(
+        parameters as DampedOscillatorParameters,
+        timeSeconds,
+      )
+    case 'forced-oscillator-resonance':
+      return computeForcedOscillatorSample(
+        parameters as ForcedOscillatorResonanceParameters,
         timeSeconds,
       )
     case 'gravitational-field-orbits':
@@ -1184,6 +1353,128 @@ export function getKinematicsVectorOverlays(
         id: 'resultant',
         label: 'Resultante vertical',
         magnitude: Math.abs(sample.netForceNewtons),
+        unit: 'N',
+      },
+    ]
+  }
+
+  if (
+    simulationId === 'damped-oscillator' ||
+    simulationId === 'forced-oscillator-resonance'
+  ) {
+    const velocityDirection = Math.sign(sample.velocityMetersPerSecond)
+    const accelerationDirection = Math.sign(
+      sample.accelerationMetersPerSecondSquared,
+    )
+    const springDirection = Math.sign(sample.springForceNewtons)
+    const dampingDirection = Math.sign(sample.frictionForceNewtons)
+    const driveDirection = Math.sign(sample.appliedForceNewtons)
+    const overlays: KinematicsVectorOverlay[] = [
+      {
+        direction: {
+          x: 0,
+          z: -velocityDirection,
+        },
+        id: 'velocity',
+        label: 'Velocidade da massa',
+        magnitude: sample.speedMetersPerSecond,
+        unit: 'm/s',
+      },
+      {
+        direction: {
+          x: 0,
+          z: -accelerationDirection,
+        },
+        id: 'acceleration',
+        label: 'Aceleracao da massa',
+        magnitude: Math.abs(sample.accelerationMetersPerSecondSquared),
+        unit: 'm/s^2',
+      },
+      {
+        direction: {
+          x: 0,
+          z: springDirection,
+        },
+        id: 'tension',
+        label: 'Forca elastica',
+        magnitude: Math.abs(sample.springForceNewtons),
+        unit: 'N',
+      },
+      {
+        direction: {
+          x: 0,
+          z: dampingDirection,
+        },
+        id: 'friction',
+        label: 'Amortecimento',
+        magnitude: Math.abs(sample.frictionForceNewtons),
+        unit: 'N',
+      },
+    ]
+
+    if (simulationId === 'forced-oscillator-resonance') {
+      overlays.push({
+        direction: {
+          x: 0,
+          z: -driveDirection,
+        },
+        id: 'appliedForce',
+        label: 'Forca externa',
+        magnitude: Math.abs(sample.appliedForceNewtons),
+        unit: 'N',
+      })
+    }
+
+    return overlays
+  }
+
+  if (simulationId === 'coupled-oscillators') {
+    const primaryVelocityDirection = Math.sign(sample.velocityMetersPerSecond)
+    const secondaryVelocityDirection = Math.sign(
+      sample.secondaryVelocityMetersPerSecond,
+    )
+    const primaryForceDirection = Math.sign(sample.netForceNewtons)
+    const couplingForceDirection = Math.sign(sample.tensionNewtons)
+
+    return [
+      {
+        direction: {
+          x: 0,
+          z: -primaryVelocityDirection,
+        },
+        id: 'velocity',
+        label: 'Velocidade da massa A',
+        magnitude: sample.speedMetersPerSecond,
+        unit: 'm/s',
+      },
+      {
+        direction: {
+          x: 0,
+          z: -secondaryVelocityDirection,
+        },
+        id: 'secondaryVelocity',
+        label: 'Velocidade da massa B',
+        magnitude: Math.abs(sample.secondaryVelocityMetersPerSecond),
+        unit: 'm/s',
+      },
+      {
+        direction: {
+          x: 0,
+          z: -primaryForceDirection,
+        },
+        id: 'resultant',
+        label: 'Resultante em A',
+        magnitude: Math.abs(sample.netForceNewtons),
+        unit: 'N',
+      },
+      {
+        direction: {
+          x: 0,
+          z: couplingForceDirection,
+        },
+        id: 'tension',
+        label: 'Acoplamento',
+        magnitude: Math.abs(sample.tensionNewtons),
         unit: 'N',
       },
     ]
@@ -2467,6 +2758,537 @@ function computeMassSpringSample(
     weightNewtons,
     xMeters: 0,
     zMeters: -motion.displacementMeters,
+  })
+}
+
+function computeDampedOscillatorSample(
+  parameters: DampedOscillatorParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const naturalAngularFrequency =
+    Math.sqrt(parameters.springConstantNewtonsPerMeter / parameters.massKilograms)
+  const motion = solveDampedHarmonicMotion({
+    dampingPerSecond: parameters.dampingPerSecond,
+    initialDisplacementMeters: parameters.initialDisplacementMeters,
+    initialVelocityMetersPerSecond: parameters.initialVelocityMetersPerSecond,
+    naturalAngularFrequency,
+    timeSeconds,
+  })
+  const initialMechanicalEnergyJoules =
+    0.5 *
+      parameters.massKilograms *
+      parameters.initialVelocityMetersPerSecond ** 2 +
+    0.5 *
+      parameters.springConstantNewtonsPerMeter *
+      parameters.initialDisplacementMeters ** 2
+
+  return buildSingleOscillatorSample({
+    appliedWorkJoules: 0,
+    dampingPerSecond: parameters.dampingPerSecond,
+    displacementMeters: motion.displacementMeters,
+    driveForceNewtons: 0,
+    massKilograms: parameters.massKilograms,
+    naturalAngularFrequency,
+    springConstantNewtonsPerMeter: parameters.springConstantNewtonsPerMeter,
+    thermalEnergyJoules: Math.max(
+      0,
+      initialMechanicalEnergyJoules -
+        readSingleOscillatorMechanicalEnergy({
+          displacementMeters: motion.displacementMeters,
+          massKilograms: parameters.massKilograms,
+          springConstantNewtonsPerMeter:
+            parameters.springConstantNewtonsPerMeter,
+          velocityMetersPerSecond: motion.velocityMetersPerSecond,
+        }),
+    ),
+    timeSeconds,
+    velocityMetersPerSecond: motion.velocityMetersPerSecond,
+  })
+}
+
+function computeForcedOscillatorSample(
+  parameters: ForcedOscillatorResonanceParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const result = computeForcedOscillatorSamples({
+    durationSeconds: timeSeconds,
+    parameters,
+    sampleRateHz: 240,
+  })
+  const sample = result.samples.at(-1)
+
+  if (!sample) {
+    throw new Error('Forced oscillator sample could not be computed.')
+  }
+
+  return sample
+}
+
+function computeCoupledOscillatorSample(
+  parameters: CoupledOscillatorsParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const result = computeCoupledOscillatorSamples({
+    durationSeconds: timeSeconds,
+    parameters,
+    sampleRateHz: 240,
+  })
+  const sample = result.samples.at(-1)
+
+  if (!sample) {
+    throw new Error('Coupled oscillator sample could not be computed.')
+  }
+
+  return sample
+}
+
+type ForcedOscillatorState = {
+  displacementMeters: number
+  thermalEnergyJoules: number
+  velocityMetersPerSecond: number
+  workJoules: number
+}
+
+function computeForcedOscillatorSamples({
+  durationSeconds,
+  parameters,
+  sampleRateHz,
+}: {
+  durationSeconds: number
+  parameters: ForcedOscillatorResonanceParameters
+  sampleRateHz: number
+}) {
+  const sampleIntervalSeconds = 1 / sampleRateHz
+  const sampleCount = Math.floor(durationSeconds * sampleRateHz) + 1
+  const naturalAngularFrequency =
+    Math.sqrt(parameters.springConstantNewtonsPerMeter / parameters.massKilograms)
+  const samples: KinematicsSample[] = []
+  let state: ForcedOscillatorState = {
+    displacementMeters: parameters.initialDisplacementMeters,
+    thermalEnergyJoules: 0,
+    velocityMetersPerSecond: parameters.initialVelocityMetersPerSecond,
+    workJoules: 0,
+  }
+  let timeSeconds = 0
+
+  for (let index = 0; index < sampleCount; index += 1) {
+    samples.push(
+      buildSingleOscillatorSample({
+        appliedWorkJoules: state.workJoules,
+        dampingPerSecond: parameters.dampingPerSecond,
+        displacementMeters: state.displacementMeters,
+        driveForceNewtons: readForcedOscillatorDriveForce(
+          parameters,
+          timeSeconds,
+        ),
+        massKilograms: parameters.massKilograms,
+        naturalAngularFrequency,
+        springConstantNewtonsPerMeter:
+          parameters.springConstantNewtonsPerMeter,
+        thermalEnergyJoules: state.thermalEnergyJoules,
+        timeSeconds,
+        velocityMetersPerSecond: state.velocityMetersPerSecond,
+      }),
+    )
+
+    if (index < sampleCount - 1) {
+      state = advanceForcedOscillatorState(
+        state,
+        timeSeconds,
+        sampleIntervalSeconds,
+        parameters,
+      )
+      timeSeconds += sampleIntervalSeconds
+    }
+  }
+
+  return { samples }
+}
+
+function advanceForcedOscillatorState(
+  state: ForcedOscillatorState,
+  timeSeconds: number,
+  stepSeconds: number,
+  parameters: ForcedOscillatorResonanceParameters,
+): ForcedOscillatorState {
+  const derivative = (
+    localState: ForcedOscillatorState,
+    localTimeSeconds: number,
+  ) => {
+    const driveForceNewtons = readForcedOscillatorDriveForce(
+      parameters,
+      localTimeSeconds,
+    )
+    const accelerationMetersPerSecondSquared =
+      (driveForceNewtons -
+        parameters.springConstantNewtonsPerMeter *
+          localState.displacementMeters -
+        parameters.massKilograms *
+          parameters.dampingPerSecond *
+          localState.velocityMetersPerSecond) /
+      parameters.massKilograms
+
+    return {
+      displacementMeters: localState.velocityMetersPerSecond,
+      thermalEnergyJoules:
+        parameters.massKilograms *
+        parameters.dampingPerSecond *
+        localState.velocityMetersPerSecond ** 2,
+      velocityMetersPerSecond: accelerationMetersPerSecondSquared,
+      workJoules: driveForceNewtons * localState.velocityMetersPerSecond,
+    }
+  }
+  const addScaled = (
+    localState: ForcedOscillatorState,
+    delta: ForcedOscillatorState,
+    scale: number,
+  ): ForcedOscillatorState => ({
+    displacementMeters:
+      localState.displacementMeters + delta.displacementMeters * scale,
+    thermalEnergyJoules:
+      localState.thermalEnergyJoules + delta.thermalEnergyJoules * scale,
+    velocityMetersPerSecond:
+      localState.velocityMetersPerSecond +
+      delta.velocityMetersPerSecond * scale,
+    workJoules: localState.workJoules + delta.workJoules * scale,
+  })
+  const k1 = derivative(state, timeSeconds)
+  const k2 = derivative(addScaled(state, k1, stepSeconds / 2), timeSeconds + stepSeconds / 2)
+  const k3 = derivative(addScaled(state, k2, stepSeconds / 2), timeSeconds + stepSeconds / 2)
+  const k4 = derivative(addScaled(state, k3, stepSeconds), timeSeconds + stepSeconds)
+
+  return {
+    displacementMeters:
+      state.displacementMeters +
+      (stepSeconds / 6) *
+        (k1.displacementMeters +
+          2 * k2.displacementMeters +
+          2 * k3.displacementMeters +
+          k4.displacementMeters),
+    thermalEnergyJoules:
+      state.thermalEnergyJoules +
+      (stepSeconds / 6) *
+        (k1.thermalEnergyJoules +
+          2 * k2.thermalEnergyJoules +
+          2 * k3.thermalEnergyJoules +
+          k4.thermalEnergyJoules),
+    velocityMetersPerSecond:
+      state.velocityMetersPerSecond +
+      (stepSeconds / 6) *
+        (k1.velocityMetersPerSecond +
+          2 * k2.velocityMetersPerSecond +
+          2 * k3.velocityMetersPerSecond +
+          k4.velocityMetersPerSecond),
+    workJoules:
+      state.workJoules +
+      (stepSeconds / 6) *
+        (k1.workJoules + 2 * k2.workJoules + 2 * k3.workJoules + k4.workJoules),
+  }
+}
+
+function readForcedOscillatorDriveForce(
+  parameters: ForcedOscillatorResonanceParameters,
+  timeSeconds: number,
+) {
+  return (
+    parameters.driveForceNewtons *
+    Math.cos(parameters.driveAngularFrequencyRadiansPerSecond * timeSeconds)
+  )
+}
+
+function buildSingleOscillatorSample({
+  appliedWorkJoules,
+  dampingPerSecond,
+  displacementMeters,
+  driveForceNewtons,
+  massKilograms,
+  naturalAngularFrequency,
+  springConstantNewtonsPerMeter,
+  thermalEnergyJoules,
+  timeSeconds,
+  velocityMetersPerSecond,
+}: {
+  appliedWorkJoules: number
+  dampingPerSecond: number
+  displacementMeters: number
+  driveForceNewtons: number
+  massKilograms: number
+  naturalAngularFrequency: number
+  springConstantNewtonsPerMeter: number
+  thermalEnergyJoules: number
+  timeSeconds: number
+  velocityMetersPerSecond: number
+}) {
+  const springForceNewtons =
+    springConstantNewtonsPerMeter * displacementMeters
+  const frictionForceNewtons =
+    massKilograms * dampingPerSecond * velocityMetersPerSecond
+  const netForceNewtons =
+    driveForceNewtons - springForceNewtons - frictionForceNewtons
+  const accelerationMetersPerSecondSquared = netForceNewtons / massKilograms
+  const kineticEnergyJoules =
+    0.5 * massKilograms * velocityMetersPerSecond ** 2
+  const potentialEnergyJoules =
+    0.5 * springConstantNewtonsPerMeter * displacementMeters ** 2
+  const mechanicalEnergyJoules = kineticEnergyJoules + potentialEnergyJoules
+  const criticalDampingPerSecond = 2 * naturalAngularFrequency
+  const dampedFrequency =
+    dampingPerSecond < criticalDampingPerSecond
+      ? Math.sqrt(
+          naturalAngularFrequency ** 2 - (dampingPerSecond / 2) ** 2,
+        )
+      : 0
+  const periodSeconds =
+    dampedFrequency > 0 ? (2 * Math.PI) / dampedFrequency : 0
+
+  return buildSample({
+    accelerationMetersPerSecondSquared,
+    accelerationZMetersPerSecondSquared:
+      -accelerationMetersPerSecondSquared,
+    appliedForceNewtons: driveForceNewtons,
+    appliedForceZNewtons: -driveForceNewtons,
+    appliedWorkJoules,
+    displacementMeters,
+    elasticPotentialEnergyJoules: potentialEnergyJoules,
+    frequencyHertz: periodSeconds > 0 ? 1 / periodSeconds : 0,
+    frictionForceNewtons,
+    kineticEnergyJoules,
+    netForceNewtons,
+    periodSeconds,
+    positionMeters: displacementMeters,
+    potentialEnergyJoules,
+    primaryRadiusMeters: massSpringVisualNaturalLengthMeters,
+    speedMetersPerSecond: Math.abs(velocityMetersPerSecond),
+    springForceNewtons,
+    tensionNewtons: Math.abs(springForceNewtons),
+    thermalEnergyJoules,
+    timeSeconds,
+    totalEnergyJoules: mechanicalEnergyJoules + thermalEnergyJoules,
+    velocityMetersPerSecond,
+    velocityZMetersPerSecond: -velocityMetersPerSecond,
+    xMeters: 0,
+    zMeters: -displacementMeters,
+  })
+}
+
+function readSingleOscillatorMechanicalEnergy({
+  displacementMeters,
+  massKilograms,
+  springConstantNewtonsPerMeter,
+  velocityMetersPerSecond,
+}: {
+  displacementMeters: number
+  massKilograms: number
+  springConstantNewtonsPerMeter: number
+  velocityMetersPerSecond: number
+}) {
+  return (
+    0.5 * massKilograms * velocityMetersPerSecond ** 2 +
+    0.5 * springConstantNewtonsPerMeter * displacementMeters ** 2
+  )
+}
+
+type CoupledOscillatorState = {
+  displacementOneMeters: number
+  displacementTwoMeters: number
+  velocityOneMetersPerSecond: number
+  velocityTwoMetersPerSecond: number
+}
+
+function computeCoupledOscillatorSamples({
+  durationSeconds,
+  parameters,
+  sampleRateHz,
+}: {
+  durationSeconds: number
+  parameters: CoupledOscillatorsParameters
+  sampleRateHz: number
+}) {
+  const sampleIntervalSeconds = 1 / sampleRateHz
+  const sampleCount = Math.floor(durationSeconds * sampleRateHz) + 1
+  const samples: KinematicsSample[] = []
+  let state: CoupledOscillatorState = {
+    displacementOneMeters: parameters.initialDisplacementOneMeters,
+    displacementTwoMeters: parameters.initialDisplacementTwoMeters,
+    velocityOneMetersPerSecond: parameters.initialVelocityOneMetersPerSecond,
+    velocityTwoMetersPerSecond: parameters.initialVelocityTwoMetersPerSecond,
+  }
+  let timeSeconds = 0
+
+  for (let index = 0; index < sampleCount; index += 1) {
+    samples.push(buildCoupledOscillatorSample(parameters, state, timeSeconds))
+
+    if (index < sampleCount - 1) {
+      state = advanceCoupledOscillatorState(
+        state,
+        sampleIntervalSeconds,
+        parameters,
+      )
+      timeSeconds += sampleIntervalSeconds
+    }
+  }
+
+  return { samples }
+}
+
+function advanceCoupledOscillatorState(
+  state: CoupledOscillatorState,
+  stepSeconds: number,
+  parameters: CoupledOscillatorsParameters,
+): CoupledOscillatorState {
+  const derivative = (localState: CoupledOscillatorState) => {
+    const forceOneNewtons =
+      -parameters.springConstantNewtonsPerMeter *
+        localState.displacementOneMeters -
+      parameters.couplingSpringConstantNewtonsPerMeter *
+        (localState.displacementOneMeters - localState.displacementTwoMeters)
+    const forceTwoNewtons =
+      -parameters.springConstantNewtonsPerMeter *
+        localState.displacementTwoMeters -
+      parameters.couplingSpringConstantNewtonsPerMeter *
+        (localState.displacementTwoMeters - localState.displacementOneMeters)
+
+    return {
+      displacementOneMeters: localState.velocityOneMetersPerSecond,
+      displacementTwoMeters: localState.velocityTwoMetersPerSecond,
+      velocityOneMetersPerSecond: forceOneNewtons / parameters.massKilograms,
+      velocityTwoMetersPerSecond: forceTwoNewtons / parameters.massKilograms,
+    }
+  }
+  const addScaled = (
+    localState: CoupledOscillatorState,
+    delta: CoupledOscillatorState,
+    scale: number,
+  ): CoupledOscillatorState => ({
+    displacementOneMeters:
+      localState.displacementOneMeters + delta.displacementOneMeters * scale,
+    displacementTwoMeters:
+      localState.displacementTwoMeters + delta.displacementTwoMeters * scale,
+    velocityOneMetersPerSecond:
+      localState.velocityOneMetersPerSecond +
+      delta.velocityOneMetersPerSecond * scale,
+    velocityTwoMetersPerSecond:
+      localState.velocityTwoMetersPerSecond +
+      delta.velocityTwoMetersPerSecond * scale,
+  })
+  const k1 = derivative(state)
+  const k2 = derivative(addScaled(state, k1, stepSeconds / 2))
+  const k3 = derivative(addScaled(state, k2, stepSeconds / 2))
+  const k4 = derivative(addScaled(state, k3, stepSeconds))
+
+  return {
+    displacementOneMeters:
+      state.displacementOneMeters +
+      (stepSeconds / 6) *
+        (k1.displacementOneMeters +
+          2 * k2.displacementOneMeters +
+          2 * k3.displacementOneMeters +
+          k4.displacementOneMeters),
+    displacementTwoMeters:
+      state.displacementTwoMeters +
+      (stepSeconds / 6) *
+        (k1.displacementTwoMeters +
+          2 * k2.displacementTwoMeters +
+          2 * k3.displacementTwoMeters +
+          k4.displacementTwoMeters),
+    velocityOneMetersPerSecond:
+      state.velocityOneMetersPerSecond +
+      (stepSeconds / 6) *
+        (k1.velocityOneMetersPerSecond +
+          2 * k2.velocityOneMetersPerSecond +
+          2 * k3.velocityOneMetersPerSecond +
+          k4.velocityOneMetersPerSecond),
+    velocityTwoMetersPerSecond:
+      state.velocityTwoMetersPerSecond +
+      (stepSeconds / 6) *
+        (k1.velocityTwoMetersPerSecond +
+          2 * k2.velocityTwoMetersPerSecond +
+          2 * k3.velocityTwoMetersPerSecond +
+          k4.velocityTwoMetersPerSecond),
+  }
+}
+
+function buildCoupledOscillatorSample(
+  parameters: CoupledOscillatorsParameters,
+  state: CoupledOscillatorState,
+  timeSeconds: number,
+) {
+  const couplingStretchMeters =
+    state.displacementOneMeters - state.displacementTwoMeters
+  const primarySpringForceNewtons =
+    -parameters.springConstantNewtonsPerMeter *
+    state.displacementOneMeters
+  const couplingForceOnPrimaryNewtons =
+    -parameters.couplingSpringConstantNewtonsPerMeter * couplingStretchMeters
+  const primaryNetForceNewtons =
+    primarySpringForceNewtons + couplingForceOnPrimaryNewtons
+  const secondarySpringForceNewtons =
+    -parameters.springConstantNewtonsPerMeter *
+    state.displacementTwoMeters
+  const couplingForceOnSecondaryNewtons =
+    parameters.couplingSpringConstantNewtonsPerMeter * couplingStretchMeters
+  const secondaryNetForceNewtons =
+    secondarySpringForceNewtons + couplingForceOnSecondaryNewtons
+  const kineticEnergyJoules =
+    0.5 * parameters.massKilograms * state.velocityOneMetersPerSecond ** 2 +
+    0.5 * parameters.massKilograms * state.velocityTwoMetersPerSecond ** 2
+  const potentialEnergyJoules =
+    0.5 *
+      parameters.springConstantNewtonsPerMeter *
+      state.displacementOneMeters ** 2 +
+    0.5 *
+      parameters.springConstantNewtonsPerMeter *
+      state.displacementTwoMeters ** 2 +
+    0.5 *
+      parameters.couplingSpringConstantNewtonsPerMeter *
+      couplingStretchMeters ** 2
+  const inPhaseAngularFrequency =
+    Math.sqrt(parameters.springConstantNewtonsPerMeter / parameters.massKilograms)
+  const outOfPhaseAngularFrequency = Math.sqrt(
+    (parameters.springConstantNewtonsPerMeter +
+      2 * parameters.couplingSpringConstantNewtonsPerMeter) /
+      parameters.massKilograms,
+  )
+
+  return buildSample({
+    accelerationMetersPerSecondSquared:
+      primaryNetForceNewtons / parameters.massKilograms,
+    accelerationZMetersPerSecondSquared:
+      -primaryNetForceNewtons / parameters.massKilograms,
+    centerOfMassMeters:
+      (state.displacementOneMeters + state.displacementTwoMeters) / 2,
+    displacementMeters: couplingStretchMeters,
+    elasticPotentialEnergyJoules: potentialEnergyJoules,
+    forceOneNewtons: primaryNetForceNewtons,
+    forceTwoNewtons: secondaryNetForceNewtons,
+    frequencyHertz: outOfPhaseAngularFrequency / (2 * Math.PI),
+    kineticEnergyJoules,
+    leftKineticEnergyJoules:
+      0.5 * parameters.massKilograms * state.velocityOneMetersPerSecond ** 2,
+    netForceNewtons: primaryNetForceNewtons,
+    periodSeconds: (2 * Math.PI) / inPhaseAngularFrequency,
+    positionMeters: state.displacementOneMeters,
+    potentialEnergyJoules,
+    primaryRadiusMeters: massSpringVisualNaturalLengthMeters,
+    rightKineticEnergyJoules:
+      0.5 * parameters.massKilograms * state.velocityTwoMetersPerSecond ** 2,
+    secondarySpeedMetersPerSecond: Math.abs(
+      state.velocityTwoMetersPerSecond,
+    ),
+    secondaryVelocityMetersPerSecond: state.velocityTwoMetersPerSecond,
+    secondaryVelocityZMetersPerSecond:
+      -state.velocityTwoMetersPerSecond,
+    secondaryXMeters: 1.45,
+    secondaryZMeters: -state.displacementTwoMeters,
+    speedMetersPerSecond: Math.abs(state.velocityOneMetersPerSecond),
+    springForceNewtons: -primarySpringForceNewtons,
+    tensionNewtons: -couplingForceOnPrimaryNewtons,
+    timeSeconds,
+    totalEnergyJoules: kineticEnergyJoules + potentialEnergyJoules,
+    velocityMetersPerSecond: state.velocityOneMetersPerSecond,
+    velocityZMetersPerSecond: -state.velocityOneMetersPerSecond,
+    xMeters: -1.45,
+    zMeters: -state.displacementOneMeters,
   })
 }
 
@@ -4067,6 +4889,100 @@ function getKinematicsWarnings(
     return []
   }
 
+  if (simulationId === 'damped-oscillator') {
+    const oscillatorParameters = parameters as DampedOscillatorParameters
+    const naturalAngularFrequency = Math.sqrt(
+      oscillatorParameters.springConstantNewtonsPerMeter /
+        oscillatorParameters.massKilograms,
+    )
+    const criticalDampingPerSecond = 2 * naturalAngularFrequency
+
+    if (
+      oscillatorParameters.dampingPerSecond >
+      criticalDampingPerSecond + massSpringDampingTolerance
+    ) {
+      return [
+        {
+          code: 'OSCILLATOR_OVERDAMPED',
+          message:
+            'O amortecimento supera o valor critico; o corpo retorna ao equilibrio sem cruzar repetidamente a origem.',
+        },
+      ]
+    }
+
+    if (
+      Math.abs(
+        oscillatorParameters.dampingPerSecond - criticalDampingPerSecond,
+      ) <= massSpringDampingTolerance
+    ) {
+      return [
+        {
+          code: 'OSCILLATOR_CRITICAL_DAMPING',
+          message:
+            'O amortecimento esta no limite critico; o retorno ao equilibrio e o mais rapido sem oscilacao.',
+        },
+      ]
+    }
+
+    if (oscillatorParameters.dampingPerSecond > 0) {
+      return [
+        {
+          code: 'OSCILLATOR_UNDERDAMPED',
+          message:
+            'O amortecimento linear esta ativo abaixo do critico; a amplitude decai e a energia dissipada aparece nos samples.',
+        },
+      ]
+    }
+
+    return []
+  }
+
+  if (simulationId === 'forced-oscillator-resonance') {
+    const forcedParameters =
+      parameters as ForcedOscillatorResonanceParameters
+    const naturalAngularFrequency = Math.sqrt(
+      forcedParameters.springConstantNewtonsPerMeter /
+        forcedParameters.massKilograms,
+    )
+    const relativeDetuning = Math.abs(
+      forcedParameters.driveAngularFrequencyRadiansPerSecond -
+        naturalAngularFrequency,
+    ) / naturalAngularFrequency
+
+    if (relativeDetuning < 0.08) {
+      return [
+        {
+          code: 'FORCED_OSCILLATOR_NEAR_RESONANCE',
+          message:
+            'A frequencia externa esta perto da frequencia natural; a amplitude cresce ate o amortecimento equilibrar a energia injetada.',
+        },
+      ]
+    }
+
+    return []
+  }
+
+  if (simulationId === 'coupled-oscillators') {
+    const coupledParameters = parameters as CoupledOscillatorsParameters
+
+    if (
+      Math.abs(coupledParameters.initialDisplacementOneMeters) > 0 &&
+      Math.abs(coupledParameters.initialDisplacementTwoMeters) > 0 &&
+      Math.sign(coupledParameters.initialDisplacementOneMeters) !==
+        Math.sign(coupledParameters.initialDisplacementTwoMeters)
+    ) {
+      return [
+        {
+          code: 'COUPLED_OUT_OF_PHASE_MODE',
+          message:
+            'As massas partem em sentidos opostos; o modo fora de fase destaca a mola de acoplamento e a frequencia maior.',
+        },
+      ]
+    }
+
+    return []
+  }
+
   if (simulationId === 'particle-equilibrium') {
     const sample = computeParticleEquilibriumSample(
       parameters as ParticleEquilibriumParameters,
@@ -4244,6 +5160,21 @@ function validateKinematicsParameters(
         parameters as ContinuityBernoulliParameters,
       )
       return
+    case 'coupled-oscillators':
+      validateCoupledOscillatorsParameters(
+        parameters as CoupledOscillatorsParameters,
+      )
+      return
+    case 'damped-oscillator':
+      validateDampedOscillatorParameters(
+        parameters as DampedOscillatorParameters,
+      )
+      return
+    case 'forced-oscillator-resonance':
+      validateForcedOscillatorResonanceParameters(
+        parameters as ForcedOscillatorResonanceParameters,
+      )
+      return
     case 'gravitational-field-orbits':
       validateGravitationalFieldOrbitsParameters(
         parameters as GravitationalFieldOrbitsParameters,
@@ -4402,6 +5333,66 @@ function validateContinuityBernoulliParameters(
   assertFinitePositive(
     'throatAreaSquareMeters',
     parameters.throatAreaSquareMeters,
+  )
+}
+
+function validateDampedOscillatorParameters(
+  parameters: DampedOscillatorParameters,
+) {
+  assertFiniteNonNegative('dampingPerSecond', parameters.dampingPerSecond)
+  assertFinite(
+    'initialDisplacementMeters',
+    parameters.initialDisplacementMeters,
+  )
+  assertFinite(
+    'initialVelocityMetersPerSecond',
+    parameters.initialVelocityMetersPerSecond,
+  )
+  assertFinitePositive('massKilograms', parameters.massKilograms)
+  assertFinitePositive(
+    'springConstantNewtonsPerMeter',
+    parameters.springConstantNewtonsPerMeter,
+  )
+}
+
+function validateForcedOscillatorResonanceParameters(
+  parameters: ForcedOscillatorResonanceParameters,
+) {
+  validateDampedOscillatorParameters(parameters)
+  assertFinitePositive(
+    'driveAngularFrequencyRadiansPerSecond',
+    parameters.driveAngularFrequencyRadiansPerSecond,
+  )
+  assertFiniteNonNegative('driveForceNewtons', parameters.driveForceNewtons)
+}
+
+function validateCoupledOscillatorsParameters(
+  parameters: CoupledOscillatorsParameters,
+) {
+  assertFiniteNonNegative(
+    'couplingSpringConstantNewtonsPerMeter',
+    parameters.couplingSpringConstantNewtonsPerMeter,
+  )
+  assertFinite(
+    'initialDisplacementOneMeters',
+    parameters.initialDisplacementOneMeters,
+  )
+  assertFinite(
+    'initialDisplacementTwoMeters',
+    parameters.initialDisplacementTwoMeters,
+  )
+  assertFinite(
+    'initialVelocityOneMetersPerSecond',
+    parameters.initialVelocityOneMetersPerSecond,
+  )
+  assertFinite(
+    'initialVelocityTwoMetersPerSecond',
+    parameters.initialVelocityTwoMetersPerSecond,
+  )
+  assertFinitePositive('massKilograms', parameters.massKilograms)
+  assertFinitePositive(
+    'springConstantNewtonsPerMeter',
+    parameters.springConstantNewtonsPerMeter,
   )
 }
 

@@ -96,6 +96,23 @@
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "ideal-uniform-linear-motion",
+      "label": "MRU ideal sem forca resultante",
+      "condition": "velocityMetersPerSecond constante e accelerationMetersPerSecondSquared === 0.",
+      "transitionLimit": "Nao ha troca de regime; aceleracao, atrito e colisao ficam fora do modelo declarado.",
+      "sampleFields": [
+        "xMeters",
+        "positionMeters",
+        "displacementMeters",
+        "velocityMetersPerSecond",
+        "speedMetersPerSecond",
+        "accelerationMetersPerSecondSquared",
+        "kineticEnergyJoules"
+      ]
+    }
+  ],
   "limits": [
     "O corpo e tratado como ponto material em uma linha reta.",
     "A velocidade e constante; forcas externas resultantes ficam fora do modelo.",

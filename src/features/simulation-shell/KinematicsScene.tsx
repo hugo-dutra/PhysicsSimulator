@@ -290,7 +290,7 @@ const vectorIds = [
 ] as const
 const bodySize = 0.22
 const atwoodPulleyRadius = 0.34
-const atwoodRopePointCapacity = 96
+const atwoodRopePointCapacity = 192
 const atwoodRopeArcSegments = 28
 const massSpringCoilSegments = 72
 const massSpringCoilTurns = 9
@@ -1913,7 +1913,11 @@ function getKinematicsVectorOrigin(
   vectorId: KinematicsVectorOverlay['id'],
   fallbackPosition: THREE.Vector3,
 ) {
-  if (simulationId === 'collisions-1d-2d' && vectorId === 'secondaryVelocity') {
+  if (
+    (simulationId === 'collisions-1d-2d' ||
+      simulationId === 'coupled-oscillators') &&
+    vectorId === 'secondaryVelocity'
+  ) {
     return objects.secondaryBody.position.clone()
   }
 
@@ -2059,8 +2063,10 @@ function updateConstrainedBodyObjects(
   const isAtwood = simulationId === 'atwood-machine'
   const isBernoulli = simulationId === 'continuity-bernoulli'
   const isCollision = simulationId === 'collisions-1d-2d'
+  const isCoupledOscillator = simulationId === 'coupled-oscillators'
   const isHydrostatics = simulationId === 'hydrostatics-buoyancy'
-  const isMassSpring = simulationId === 'mass-spring'
+  const isSingleSpringOscillator =
+    isSingleSpringOscillatorSimulation(simulationId)
   const isOrbit = simulationId === 'gravitational-field-orbits'
   const isRigidRotation = simulationId === 'rigid-body-rotation'
   const isRolling = simulationId === 'rolling-without-slipping'
@@ -2071,13 +2077,17 @@ function updateConstrainedBodyObjects(
     simulationId === 'uniformly-accelerated-motion'
 
   setRigidBodyRotationObjectsVisible(objects, isRigidRotation)
-  objects.secondaryBody.visible = isAtwood || isCollision || isOrbit
+  objects.secondaryBody.visible =
+    isAtwood || isCollision || isCoupledOscillator || isOrbit
   objects.rollingPlane.visible = isRolling
   objects.rollingPlaneEdges.visible = isRolling
   objects.pulley.visible = isAtwood
-  objects.rope.visible = isAtwood || isMassSpring
-  objects.supportBar.visible = isAtwood || isMassSpring
-  objects.supportStem.visible = isAtwood || isMassSpring
+  objects.rope.visible =
+    isAtwood || isCoupledOscillator || isSingleSpringOscillator
+  objects.supportBar.visible =
+    isAtwood || isCoupledOscillator || isSingleSpringOscillator
+  objects.supportStem.visible =
+    isAtwood || isCoupledOscillator || isSingleSpringOscillator
   objects.hydroDisplacedVolume.visible = isHydrostatics
   objects.hydroPressureBaseRing.visible = isHydrostatics
   objects.hydroPressureField.visible = isHydrostatics
@@ -2205,8 +2215,13 @@ function updateConstrainedBodyObjects(
     return
   }
 
-  if (isMassSpring) {
+  if (isSingleSpringOscillator) {
     updateMassSpringObjects(objects, sample)
+    return
+  }
+
+  if (isCoupledOscillator) {
+    updateCoupledOscillatorObjects(objects, sample)
     return
   }
 
@@ -3755,6 +3770,16 @@ function positiveModulo(value: number, divisor: number) {
   return ((value % divisor) + divisor) % divisor
 }
 
+function isSingleSpringOscillatorSimulation(
+  simulationId: KinematicsSimulationId,
+) {
+  return (
+    simulationId === 'damped-oscillator' ||
+    simulationId === 'forced-oscillator-resonance' ||
+    simulationId === 'mass-spring'
+  )
+}
+
 function updateMassSpringObjects(
   objects: SceneObjects,
   sample: KinematicsSample,
@@ -3778,6 +3803,72 @@ function updateMassSpringObjects(
 
   objects.body.position.copy(massPosition)
   objects.body.scale.setScalar(1)
+  objects.supportBar.position.set(0, 0, supportZ)
+  objects.supportBar.scale.set(supportWidth, 0.075, 0.075)
+  objects.supportStem.position.set(0, 0, (springTopZ + supportZ) / 2)
+  objects.supportStem.scale.set(0.075, 0.075, Math.max(0.12, supportZ - springTopZ))
+
+  ropePoints.forEach((point, index) => {
+    const offset = index * 3
+
+    objects.ropePositions[offset] = point.x
+    objects.ropePositions[offset + 1] = point.y
+    objects.ropePositions[offset + 2] = point.z
+  })
+  objects.rope.geometry.setDrawRange(0, ropePoints.length)
+  objects.ropePositionAttribute.needsUpdate = true
+}
+
+function updateCoupledOscillatorObjects(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+) {
+  const scale = objects.sceneProjection.positionScale
+  const primaryPosition = toKinematicsScenePosition(sample, objects.sceneProjection)
+  const secondaryPosition = toKinematicsScenePosition(
+    {
+      ...sample,
+      xMeters: sample.secondaryXMeters,
+      zMeters: sample.secondaryZMeters,
+    },
+    objects.sceneProjection,
+  )
+  const bodyRadius = objects.bodyRadius
+  const springTopZ = sample.primaryRadiusMeters * scale
+  const supportZ = springTopZ + Math.max(0.18, bodyRadius * 0.9)
+  const supportWidth =
+    Math.abs(primaryPosition.x - secondaryPosition.x) + bodyRadius * 5.4
+  const primarySpringBottomZ = Math.min(
+    springTopZ - 0.12,
+    primaryPosition.z + bodyRadius * 0.82,
+  )
+  const secondarySpringBottomZ = Math.min(
+    springTopZ - 0.12,
+    secondaryPosition.z + bodyRadius * 0.82,
+  )
+  const coilRadius = clamp(bodyRadius * 0.58, 0.07, 0.18)
+  const ropePoints = createCoupledOscillatorSpringPoints({
+    coilRadius,
+    primaryBottom: new THREE.Vector3(
+      primaryPosition.x,
+      0,
+      primarySpringBottomZ,
+    ),
+    primaryMass: primaryPosition,
+    primaryTop: new THREE.Vector3(primaryPosition.x, 0, springTopZ),
+    secondaryBottom: new THREE.Vector3(
+      secondaryPosition.x,
+      0,
+      secondarySpringBottomZ,
+    ),
+    secondaryMass: secondaryPosition,
+    secondaryTop: new THREE.Vector3(secondaryPosition.x, 0, springTopZ),
+  })
+
+  objects.body.position.copy(primaryPosition)
+  objects.body.scale.setScalar(1)
+  objects.secondaryBody.position.copy(secondaryPosition)
+  objects.secondaryBody.scale.setScalar(1)
   objects.supportBar.position.set(0, 0, supportZ)
   objects.supportBar.scale.set(supportWidth, 0.075, 0.075)
   objects.supportStem.position.set(0, 0, (springTopZ + supportZ) / 2)
@@ -3853,6 +3944,82 @@ function createMassSpringCoilPoints({
   }
 
   return points.slice(0, atwoodRopePointCapacity)
+}
+
+function createCoupledOscillatorSpringPoints({
+  coilRadius,
+  primaryBottom,
+  primaryMass,
+  primaryTop,
+  secondaryBottom,
+  secondaryMass,
+  secondaryTop,
+}: {
+  coilRadius: number
+  primaryBottom: THREE.Vector3
+  primaryMass: THREE.Vector3
+  primaryTop: THREE.Vector3
+  secondaryBottom: THREE.Vector3
+  secondaryMass: THREE.Vector3
+  secondaryTop: THREE.Vector3
+}) {
+  const primaryCoil = createMassSpringCoilPoints({
+    bottom: primaryBottom,
+    radius: coilRadius,
+    top: primaryTop,
+  }).map((point) => point.add(new THREE.Vector3(primaryTop.x, 0, 0)))
+  const secondaryCoil = createMassSpringCoilPoints({
+    bottom: secondaryBottom,
+    radius: coilRadius,
+    top: secondaryTop,
+  }).map((point) => point.add(new THREE.Vector3(secondaryTop.x, 0, 0)))
+  const couplingStart = primaryMass
+    .clone()
+    .add(new THREE.Vector3(Math.max(0.11, coilRadius), 0, 0))
+  const couplingEnd = secondaryMass
+    .clone()
+    .add(new THREE.Vector3(-Math.max(0.11, coilRadius), 0, 0))
+  const couplingPoints = createHorizontalCoilPoints({
+    end: couplingEnd,
+    radius: coilRadius * 0.72,
+    start: couplingStart,
+  })
+
+  return [
+    ...primaryCoil,
+    ...couplingPoints,
+    ...secondaryCoil.reverse(),
+  ].slice(0, atwoodRopePointCapacity)
+}
+
+function createHorizontalCoilPoints({
+  end,
+  radius,
+  start,
+}: {
+  end: THREE.Vector3
+  radius: number
+  start: THREE.Vector3
+}) {
+  const points: THREE.Vector3[] = []
+  const segments = 36
+  const turns = 6
+
+  for (let index = 0; index <= segments; index += 1) {
+    const ratio = index / segments
+    const angle = ratio * Math.PI * 2 * turns
+    const endRadius = index === 0 || index === segments ? 0 : radius
+
+    points.push(
+      new THREE.Vector3(
+        lerp(start.x, end.x, ratio),
+        endRadius * Math.sin(angle),
+        lerp(start.z, end.z, ratio),
+      ),
+    )
+  }
+
+  return points
 }
 
 function updateTrace(
@@ -4505,8 +4672,12 @@ function createReferencePath(
     return createUniformlyAcceleratedMotionReferencePath(samples, sceneProjection)
   }
 
-  if (simulationId === 'mass-spring') {
+  if (isSingleSpringOscillatorSimulation(simulationId)) {
     return createMassSpringReferencePath(samples, sceneProjection)
+  }
+
+  if (simulationId === 'coupled-oscillators') {
+    return createCoupledOscillatorReferencePath(samples, sceneProjection)
   }
 
   if (simulationId === 'hydrostatics-buoyancy') {
@@ -5051,6 +5222,65 @@ function createMassSpringReferencePath(
   return group
 }
 
+function createCoupledOscillatorReferencePath(
+  samples: KinematicsSample[],
+  sceneProjection: KinematicsSceneProjection,
+) {
+  const firstSample = samples[0]
+  const group = new THREE.Group()
+  const scale = sceneProjection.positionScale
+  const springTopZ = (firstSample?.primaryRadiusMeters ?? 1) * scale
+  const minZ = Math.min(
+    0,
+    ...samples.map((sample) =>
+      Math.min(sample.zMeters * scale, sample.secondaryZMeters * scale),
+    ),
+  )
+  const maxZ = Math.max(
+    springTopZ,
+    ...samples.map((sample) =>
+      Math.max(sample.zMeters * scale, sample.secondaryZMeters * scale),
+    ),
+  )
+  const leftX = (firstSample?.xMeters ?? -1.45) * scale
+  const rightX = (firstSample?.secondaryXMeters ?? 1.45) * scale
+
+  group.add(
+    createSceneLine(
+      new THREE.Vector3(leftX, -0.1, 0),
+      new THREE.Vector3(leftX, -0.1, springTopZ),
+      0xe6e8ec,
+      0.16,
+    ),
+  )
+  group.add(
+    createSceneLine(
+      new THREE.Vector3(rightX, -0.1, 0),
+      new THREE.Vector3(rightX, -0.1, springTopZ),
+      0xe6e8ec,
+      0.16,
+    ),
+  )
+  group.add(
+    createSceneLine(
+      new THREE.Vector3(leftX, -0.18, 0),
+      new THREE.Vector3(rightX, -0.18, 0),
+      0x2dd4bf,
+      0.46,
+    ),
+  )
+  group.add(
+    createSceneLine(
+      new THREE.Vector3(0, -0.22, minZ),
+      new THREE.Vector3(0, -0.22, maxZ),
+      0x818cf8,
+      0.18,
+    ),
+  )
+
+  return group
+}
+
 function createCollisionReferencePath(
   samples: KinematicsSample[],
   sceneProjection: KinematicsSceneProjection,
@@ -5506,7 +5736,7 @@ function estimateSceneBounds(
     }
   }
 
-  if (simulationId === 'mass-spring') {
+  if (isSingleSpringOscillatorSimulation(simulationId)) {
     const firstSample = samples[0]
 
     if (firstSample) {
@@ -5517,6 +5747,28 @@ function estimateSceneBounds(
       positions.push(
         new THREE.Vector3(-0.9, -0.55, minZ - 0.35),
         new THREE.Vector3(0.9, 0.55, topZ + 0.55),
+      )
+    }
+  }
+
+  if (simulationId === 'coupled-oscillators') {
+    const firstSample = samples[0]
+
+    if (firstSample) {
+      const scale = sceneProjection.positionScale
+      const topZ = firstSample.primaryRadiusMeters * scale
+      const minZ = Math.min(
+        0,
+        ...samples.map((sample) =>
+          Math.min(sample.zMeters * scale, sample.secondaryZMeters * scale),
+        ),
+      )
+      const leftX = firstSample.xMeters * scale
+      const rightX = firstSample.secondaryXMeters * scale
+
+      positions.push(
+        new THREE.Vector3(leftX - 0.5, -0.55, minZ - 0.35),
+        new THREE.Vector3(rightX + 0.5, 0.55, topZ + 0.55),
       )
     }
   }
@@ -5875,8 +6127,9 @@ function getInitialCameraYawRadians(
   }
 
   return simulationId === 'atwood-machine' ||
+    simulationId === 'coupled-oscillators' ||
     simulationId === 'hydrostatics-buoyancy' ||
-    simulationId === 'mass-spring'
+    isSingleSpringOscillatorSimulation(simulationId)
     ? -Math.PI / 2
     : initialCameraYawRadians
 }
@@ -5931,6 +6184,18 @@ function getKinematicsCanvasAriaLabel(simulationId: KinematicsSimulationId) {
 
   if (simulationId === 'mass-spring') {
     return 'Cena 3D do massa-mola vertical com arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'damped-oscillator') {
+    return 'Cena 3D do oscilador amortecido com mola, massa, vetores de amortecimento e energia dissipada, arraste para orbitar, e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'forced-oscillator-resonance') {
+    return 'Cena 3D do oscilador forcado com mola, massa, forca externa periodica, amortecimento e ressonancia, arraste para orbitar, e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'coupled-oscillators') {
+    return 'Cena 3D dos osciladores acoplados com duas massas, molas, modo comum, modo relativo, arraste para orbitar, e Shift + scroll para zoom'
   }
 
   if (simulationId === 'torque-levers-center-mass') {

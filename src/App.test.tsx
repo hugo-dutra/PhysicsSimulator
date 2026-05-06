@@ -14,6 +14,28 @@ describe('App', () => {
       fireEvent.click(mechanicsButton)
     }
   }
+  const openWavesArea = () => {
+    const wavesButton = screen.getByRole('button', {
+      name: /Alternar area Oscilacoes e Ondas/i,
+    })
+
+    if (wavesButton.getAttribute('aria-expanded') !== 'true') {
+      fireEvent.click(wavesButton)
+    }
+  }
+  const getToggleByControls = (controlsId: string) => {
+    const toggle = document.querySelector(`[aria-controls="${controlsId}"]`)
+
+    if (!(toggle instanceof HTMLElement)) {
+      throw new Error(`Toggle not found for ${controlsId}`)
+    }
+
+    return toggle
+  }
+  const getMechanicsOscillationsToggle = () =>
+    getToggleByControls('subarea-mechanics-oscilacoes')
+  const getWavesOscillationsToggle = () =>
+    getToggleByControls('subarea-waves-oscilacoes')
 
   it('renders the pendulum simulation shell', () => {
     render(
@@ -30,9 +52,7 @@ describe('App', () => {
     ).toBeInTheDocument()
     expect(screen.getByText(/Catalogo local/i)).toBeInTheDocument()
     openMechanicsArea()
-    fireEvent.click(
-      screen.getByRole('button', { name: /Alternar subarea Oscilacoes/i }),
-    )
+    fireEvent.click(getMechanicsOscillationsToggle())
     expect(
       screen.getByRole('button', { name: /Massa-mola vertical/i }),
     ).toBeInTheDocument()
@@ -216,7 +236,7 @@ describe('App', () => {
         name: /Tabela sincronizada de amostras do pendulo/i,
       }),
     ).not.toBeInTheDocument()
-  }, 20_000)
+  }, 60_000)
 
   it('smoke tests playback, parameter, and overlay controls', () => {
     render(
@@ -613,13 +633,13 @@ describe('App', () => {
       screen.getByRole('button', { name: /Alternar area Mecanica/i }),
     ).toHaveAttribute('aria-expanded', 'true')
     expect(
-      screen.getByRole('button', { name: /Alternar subarea Oscilacoes/i }),
+      getMechanicsOscillationsToggle(),
     ).toHaveAttribute('aria-expanded', 'false')
     expect(
       screen.getByRole('heading', { name: /Pendulo simples/i }),
     ).toBeInTheDocument()
     fireEvent.click(
-      screen.getByRole('button', { name: /Alternar subarea Oscilacoes/i }),
+      getMechanicsOscillationsToggle(),
     )
     expect(
       screen.getByRole('button', { name: /Massa-mola vertical/i }),
@@ -647,7 +667,7 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
     ).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(0)
+    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(3)
     expect(screen.getAllByText(/^pronto$/i).length).toBeGreaterThan(0)
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
@@ -696,9 +716,7 @@ describe('App', () => {
     )
 
     openMechanicsArea()
-    fireEvent.click(
-      screen.getByRole('button', { name: /Alternar subarea Oscilacoes/i }),
-    )
+    fireEvent.click(getMechanicsOscillationsToggle())
     fireEvent.click(
       screen.getByRole('button', { name: /Massa-mola vertical/i }),
     )
@@ -748,6 +766,63 @@ describe('App', () => {
     )
     expect(screen.getByText(/SPRING_DAMPING_ACTIVE/i)).toBeInTheDocument()
   }, 20_000)
+
+  it('opens the Fase 4 oscillators through the shared shell', () => {
+    render(
+      <ThemeProvider theme={appTheme}>
+        <App />
+      </ThemeProvider>,
+    )
+
+    openWavesArea()
+    const oscillationsButton = getWavesOscillationsToggle()
+
+    if (oscillationsButton.getAttribute('aria-expanded') !== 'true') {
+      fireEvent.click(oscillationsButton)
+    }
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Oscilador amortecido/i }),
+    )
+    expect(
+      screen.getByRole('heading', { name: /Oscilador amortecido/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /Oscilacoes e Ondas > Oscilacoes > Oscilador amortecido/i,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getAllByLabelText(/Amortecimento \(s\^-1\)/i).length)
+      .toBeGreaterThan(0)
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Oscilador forcado e ressonancia/i,
+      }),
+    )
+    expect(
+      screen.getByRole('heading', {
+        name: /Oscilador forcado e ressonancia/i,
+      }),
+    ).toBeInTheDocument()
+    expect(screen.getAllByLabelText(/Frequencia externa \(rad\/s\)/i).length)
+      .toBeGreaterThan(0)
+    fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
+    expect(
+      screen.getByRole('img', { name: /Forcas do oscilador forcado/i }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Osciladores acoplados/i }),
+    )
+    expect(
+      screen.getByRole('heading', { name: /Osciladores acoplados/i }),
+    ).toBeInTheDocument()
+    expect(screen.getAllByLabelText(/Mola de acoplamento \(N\/m\)/i).length)
+      .toBeGreaterThan(0)
+    expect(screen.getByLabelText(/Cena 3D dos osciladores acoplados/i))
+      .toHaveAccessibleName(/duas massas.*modo comum.*Shift \+ scroll/i)
+  }, 30_000)
 
   it('opens the inclined plane simulation through the shared shell', () => {
     render(

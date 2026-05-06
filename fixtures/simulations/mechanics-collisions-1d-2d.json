@@ -215,6 +215,64 @@
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "free-flight-no-contact",
+      "label": "Movimento livre sem contato no ciclo",
+      "condition": "As velocidades relativas nao aproximam os centros ate r1 + r2 dentro do ciclo.",
+      "transitionLimit": "collisionTimeSeconds nao e finito quando nao ha aproximacao normal suficiente.",
+      "sampleFields": [
+        "xMeters",
+        "zMeters",
+        "secondaryXMeters",
+        "secondaryZMeters",
+        "velocityXMetersPerSecond",
+        "secondaryVelocityXMetersPerSecond"
+      ],
+      "warningCode": "COLLISION_NOT_REACHED"
+    },
+    {
+      "id": "contact-after-cycle",
+      "label": "Contato previsto fora do horizonte calculado",
+      "condition": "collisionTimeSeconds > durationSeconds.",
+      "transitionLimit": "durationSeconds menor que o tempo de contato calculado.",
+      "sampleFields": [
+        "xMeters",
+        "zMeters",
+        "secondaryXMeters",
+        "secondaryZMeters",
+        "primaryRadiusMeters",
+        "secondaryRadiusMeters"
+      ],
+      "warningCode": "COLLISION_AFTER_CYCLE"
+    },
+    {
+      "id": "elastic-contact",
+      "label": "Contato elastico ideal",
+      "condition": "collisionTimeSeconds <= durationSeconds e coefficientOfRestitution === 1.",
+      "transitionLimit": "Distancia entre centros igual a radiusOneMeters + radiusTwoMeters.",
+      "sampleFields": [
+        "impulseNewtonSeconds",
+        "momentumKilogramMetersPerSecond",
+        "kineticEnergyJoules",
+        "velocityXMetersPerSecond",
+        "secondaryVelocityXMetersPerSecond"
+      ]
+    },
+    {
+      "id": "inelastic-contact",
+      "label": "Contato com perda de energia cinetica",
+      "condition": "collisionTimeSeconds <= durationSeconds e coefficientOfRestitution < 1.",
+      "transitionLimit": "Coeficiente de restituicao menor que 1 dissipa parte da energia cinetica.",
+      "sampleFields": [
+        "impulseNewtonSeconds",
+        "momentumKilogramMetersPerSecond",
+        "kineticEnergyJoules",
+        "kineticEnergyLostJoules"
+      ],
+      "warningCode": "COLLISION_INELASTIC_LOSS"
+    }
+  ],
   "limits": [
     "O corpo 2 inicia no centro da cena; o corpo 1 se aproxima e o contato ocorre quando a distancia entre centros chega a r1 + r2.",
     "Os corpos sao esferas/circulos rigidos didaticos e so trocam impulso no eixo normal do contato.",

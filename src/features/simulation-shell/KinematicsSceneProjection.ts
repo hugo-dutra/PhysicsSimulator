@@ -301,7 +301,11 @@ function estimateRawSceneBounds(
     }
   }
 
-  if (simulationId === 'mass-spring') {
+  if (
+    simulationId === 'damped-oscillator' ||
+    simulationId === 'forced-oscillator-resonance' ||
+    simulationId === 'mass-spring'
+  ) {
     const firstSample = samples[0]
     const springTopMeters = firstSample?.primaryRadiusMeters ?? 1
     const minZ = Math.min(0, ...samples.map((sample) => sample.zMeters))
@@ -312,6 +316,30 @@ function estimateRawSceneBounds(
 
     return {
       span: Math.max(1, maxZ - minZ, springTopMeters),
+    }
+  }
+
+  if (simulationId === 'coupled-oscillators') {
+    const firstSample = samples[0]
+    const springTopMeters = firstSample?.primaryRadiusMeters ?? 1
+    const minZ = Math.min(
+      0,
+      ...samples.map((sample) =>
+        Math.min(sample.zMeters, sample.secondaryZMeters),
+      ),
+    )
+    const maxZ = Math.max(
+      springTopMeters,
+      ...samples.map((sample) =>
+        Math.max(sample.zMeters, sample.secondaryZMeters),
+      ),
+    )
+    const horizontalSpan = firstSample
+      ? Math.abs(firstSample.secondaryXMeters - firstSample.xMeters)
+      : 2.9
+
+    return {
+      span: Math.max(1, maxZ - minZ, springTopMeters, horizontalSpan),
     }
   }
 

@@ -111,6 +111,25 @@
       }
     }
   ],
+  "regimes": [
+    {
+      "id": "ideal-uniform-circular-motion",
+      "label": "MCU ideal de raio e modulo angular constantes",
+      "condition": "radiusMeters > 0 e angularVelocityRadiansPerSecond constante durante todo o ciclo.",
+      "transitionLimit": "Nao ha troca de regime; torque variavel, atrito e raio variavel ficam fora do modelo declarado.",
+      "sampleFields": [
+        "angleRadians",
+        "xMeters",
+        "zMeters",
+        "velocityXMetersPerSecond",
+        "velocityZMetersPerSecond",
+        "centripetalAccelerationMetersPerSecondSquared",
+        "periodSeconds",
+        "frequencyHertz",
+        "kineticEnergyJoules"
+      ]
+    }
+  ],
   "limits": [
     "O corpo e tratado como ponto material preso a uma trajetoria circular ideal.",
     "O modulo da velocidade angular e constante durante todo o ciclo.",
