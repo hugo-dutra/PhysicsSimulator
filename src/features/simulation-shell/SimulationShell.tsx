@@ -75,6 +75,9 @@ import {
   type KinematicsSample,
   type KinematicsSimulationId,
   type KinematicsVectorOverlay,
+  type UniformCircularMotionParameters,
+  type UniformLinearMotionParameters,
+  type UniformlyAcceleratedMotionParameters,
 } from '../../lib/physics/kinematics'
 import atwoodMachineTheory from '../../content/simulations/mechanics/atwood-machine/theory.md?raw'
 import centripetalForceCurveTheory from '../../content/simulations/mechanics/centripetal-force-curve/theory.md?raw'
@@ -110,7 +113,11 @@ import { FormulaGuide } from './FormulaGuide'
 import { InclinedPlaneCharts } from './InclinedPlaneCharts'
 import { InclinedPlaneScene, type InclinedPlaneFrameStats } from './InclinedPlaneScene'
 import { KinematicsCharts } from './KinematicsCharts'
-import { KinematicsScene, type KinematicsFrameStats } from './KinematicsScene'
+import {
+  KinematicsScene,
+  type KinematicsCameraViewMode,
+  type KinematicsFrameStats,
+} from './KinematicsScene'
 import { LiveLineChart } from './LiveLineChart'
 import { ChartFocusButton, PendulumCharts } from './PendulumCharts'
 import {
@@ -3416,6 +3423,12 @@ function KinematicsRuntime({
   const [focusedChartId, setFocusedChartId] =
     useState<KinematicsChartId | null>(null)
   const [readoutsExpanded, setReadoutsExpanded] = useState(false)
+  const [cameraViewMode, setCameraViewMode] =
+    useState<KinematicsCameraViewMode>('cinematic')
+  const effectiveCameraViewMode = resolveKinematicsCameraViewMode(
+    simulationId,
+    cameraViewMode,
+  )
 
   const handleSampleChange = useCallback(
     (sample: KinematicsSample, stats: KinematicsFrameStats) => {
@@ -3551,9 +3564,9 @@ function KinematicsRuntime({
 
   return (
     <>
-      <Box
-        aria-hidden={shouldHideSimulationCard ? true : undefined}
-        aria-label="Kinematics numerical viewport"
+        <Box
+          aria-hidden={shouldHideSimulationCard ? true : undefined}
+          aria-label="Kinematics numerical viewport"
         sx={[
           {
             border: `1px solid ${themeTokens.border}`,
@@ -3631,6 +3644,13 @@ function KinematicsRuntime({
               onChange={onCameraProjectionModeChange}
               value={cameraProjectionMode}
             />
+            {supportsKinematicsCameraViewMode(simulationId) ? (
+              <KinematicsCameraViewSwitch
+                onChange={setCameraViewMode}
+                simulationId={simulationId}
+                value={effectiveCameraViewMode}
+              />
+            ) : null}
             <ReadoutToggleButton
               expanded={readoutsExpanded}
               onToggle={handleReadoutsToggle}
@@ -3709,6 +3729,7 @@ function KinematicsRuntime({
           <Box sx={{ minHeight: 0, minWidth: 0, position: 'relative' }}>
             <KinematicsScene
               cameraProjectionMode={cameraProjectionMode}
+              cameraViewMode={effectiveCameraViewMode}
               durationSeconds={durationSeconds}
               isPlaying={isPlaying}
               modelTimeScale={modelTimeScale}
@@ -3726,6 +3747,26 @@ function KinematicsRuntime({
             ) : null}
             {simulationId === 'work-energy-track' && overlays.energy ? (
               <WorkEnergyTrackHud sample={liveSample} />
+            ) : null}
+            {simulationId === 'uniform-linear-motion' ? (
+              <UniformLinearMotionHud
+                durationSeconds={durationSeconds}
+                parameters={parameters as UniformLinearMotionParameters}
+                sample={liveSample}
+              />
+            ) : null}
+            {simulationId === 'uniformly-accelerated-motion' ? (
+              <UniformlyAcceleratedMotionHud
+                durationSeconds={durationSeconds}
+                parameters={parameters as UniformlyAcceleratedMotionParameters}
+                sample={liveSample}
+              />
+            ) : null}
+            {simulationId === 'uniform-circular-motion' ? (
+              <UniformCircularMotionHud
+                parameters={parameters as UniformCircularMotionParameters}
+                sample={liveSample}
+              />
             ) : null}
           </Box>
           {focusedChart ? (
@@ -4006,6 +4047,44 @@ function buildKinematicsReadoutMetrics({
         },
       ]
     : []
+
+  if (simulationId === 'uniform-circular-motion') {
+    const normalizedAngleDegrees = normalizeDegrees(
+      radiansToDegrees(sample.angleRadians),
+    )
+    const completedTurns =
+      sample.periodSeconds > 0
+        ? Math.floor(Math.max(0, sample.timeSeconds / sample.periodSeconds))
+        : 0
+
+    return [
+      { label: 'Angulo atual', value: formatDegrees(normalizedAngleDegrees) },
+      {
+        label: 'Raio',
+        value: formatNumber(Math.hypot(sample.xMeters, sample.zMeters), 'm'),
+      },
+      {
+        label: 'Velocidade angular',
+        value: formatNumber(sample.angularVelocityRadiansPerSecond, 'rad/s'),
+      },
+      {
+        label: 'Velocidade tangencial',
+        value: formatNumber(sample.speedMetersPerSecond, 'm/s'),
+      },
+      {
+        label: 'Aceleracao centripeta',
+        value: formatNumber(
+          sample.centripetalAccelerationMetersPerSecondSquared,
+          'm/s^2',
+        ),
+      },
+      { label: 'Periodo', value: formatNumber(sample.periodSeconds, 's') },
+      { label: 'Frequencia', value: formatNumber(sample.frequencyHertz, 'Hz') },
+      { label: 'Voltas', value: String(completedTurns) },
+      ...energyMetric,
+      frameMetric,
+    ]
+  }
 
   if (simulationId === 'collisions-1d-2d') {
     return [
@@ -5169,6 +5248,523 @@ function WorkEnergyTrackHud({ sample }: { sample: KinematicsSample }) {
   )
 }
 
+function UniformLinearMotionHud({
+  durationSeconds,
+  parameters,
+  sample,
+}: {
+  durationSeconds: number
+  parameters: UniformLinearMotionParameters
+  sample: KinematicsSample
+}) {
+  const progressRatio =
+    durationSeconds > 0
+      ? Math.min(1, Math.max(0, sample.timeSeconds / durationSeconds))
+      : 0
+  const markerCount = Math.min(20, Math.max(1, Math.floor(durationSeconds)))
+  const markers = Array.from(
+    { length: markerCount + 1 },
+    (_, index) => (durationSeconds * index) / markerCount,
+  )
+  const metrics = [
+    { label: 't', value: formatNumber(sample.timeSeconds, 's') },
+    { label: 's0', value: formatNumber(parameters.initialPositionMeters, 'm') },
+    { label: 'v', value: formatNumber(sample.velocityMetersPerSecond, 'm/s') },
+    { label: 's(t)', value: formatNumber(sample.positionMeters, 'm') },
+    { label: 'a', value: formatNumber(0, 'm/s^2') },
+  ]
+
+  return (
+    <Box
+      aria-label="Painel visual do movimento retilineo uniforme"
+      sx={{
+        bgcolor: alpha(themeTokens.background, 0.82),
+        border: `1px solid ${alpha(themeTokens.text, 0.16)}`,
+        borderRadius: 1,
+        bottom: { xs: 8, sm: 10 },
+        display: 'grid',
+        gap: 0.75,
+        left: { xs: 8, sm: 10 },
+        maxWidth: { xs: 'calc(100% - 16px)', sm: 330 },
+        minWidth: { xs: 228, sm: 292 },
+        p: 1,
+        pointerEvents: 'none',
+        position: 'absolute',
+        zIndex: 1,
+      }}
+    >
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          minWidth: 0,
+        }}
+      >
+        <Typography sx={{ fontWeight: 800 }} variant="caption">
+          s = s0 + v.t
+        </Typography>
+        <Typography color="text.secondary" variant="caption">
+          Delta s {formatNumber(sample.displacementMeters, 'm')}
+        </Typography>
+      </Stack>
+      <Box
+        sx={{
+          columnGap: 0.75,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+          minWidth: 0,
+        }}
+      >
+        {metrics.map((metric) => (
+          <Box
+            key={metric.label}
+            sx={{
+              bgcolor: alpha(themeTokens.panel, 0.62),
+              border: `1px solid ${alpha(themeTokens.text, 0.1)}`,
+              borderRadius: 0.75,
+              minWidth: 0,
+              p: 0.55,
+            }}
+          >
+            <Typography color="text.secondary" variant="caption">
+              {metric.label}
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {metric.value}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+      <Box
+        aria-hidden
+        sx={{
+          bgcolor: alpha(themeTokens.text, 0.12),
+          borderRadius: 999,
+          height: 8,
+          mt: 0.15,
+          overflow: 'hidden',
+          position: 'relative',
+        }}
+      >
+        <Box
+          sx={{
+            bgcolor: themeTokens.teal,
+            height: '100%',
+            opacity: 0.9,
+            width: `${progressRatio * 100}%`,
+          }}
+        />
+        {markers.map((markerSecond) => {
+          const markerRatio =
+            durationSeconds > 0 ? markerSecond / durationSeconds : 0
+
+          return (
+            <Box
+              key={markerSecond.toFixed(3)}
+              sx={{
+                bgcolor:
+                  markerSecond <= sample.timeSeconds
+                    ? themeTokens.cyan
+                    : alpha(themeTokens.text, 0.38),
+                borderRadius: '50%',
+                height: 6,
+                left: `${Math.min(100, markerRatio * 100)}%`,
+                position: 'absolute',
+                top: 1,
+                transform: 'translateX(-50%)',
+                width: 6,
+              }}
+            />
+          )
+        })}
+      </Box>
+    </Box>
+  )
+}
+
+function UniformCircularMotionHud({
+  parameters,
+  sample,
+}: {
+  parameters: UniformCircularMotionParameters
+  sample: KinematicsSample
+}) {
+  const cycleProgress =
+    sample.periodSeconds > 0
+      ? (sample.timeSeconds % sample.periodSeconds) / sample.periodSeconds
+      : 0
+  const completedTurns =
+    sample.periodSeconds > 0
+      ? Math.floor(Math.max(0, sample.timeSeconds / sample.periodSeconds))
+      : 0
+  const metrics = [
+    { label: 'r', value: formatNumber(parameters.radiusMeters, 'm') },
+    {
+      label: 'omega',
+      value: formatNumber(sample.angularVelocityRadiansPerSecond, 'rad/s'),
+    },
+    { label: 'v', value: formatNumber(sample.speedMetersPerSecond, 'm/s') },
+    {
+      label: 'a_c',
+      value: formatNumber(
+        sample.centripetalAccelerationMetersPerSecondSquared,
+        'm/s^2',
+      ),
+    },
+    { label: 'T', value: formatNumber(sample.periodSeconds, 's') },
+    { label: 'f', value: formatNumber(sample.frequencyHertz, 'Hz') },
+  ]
+  const formulaVelocity = `v = omega.r = ${formatNumber(
+    sample.speedMetersPerSecond,
+    'm/s',
+  )}`
+  const formulaAcceleration = `a_c = omega^2.r = ${formatNumber(
+    sample.centripetalAccelerationMetersPerSecondSquared,
+    'm/s^2',
+  )}`
+
+  return (
+    <Box
+      aria-label="Painel visual do movimento circular uniforme"
+      sx={{
+        bgcolor: alpha(themeTokens.background, 0.84),
+        border: `1px solid ${alpha(themeTokens.text, 0.16)}`,
+        borderRadius: 1,
+        bottom: { xs: 8, sm: 10 },
+        display: 'grid',
+        gap: 0.75,
+        left: { xs: 8, sm: 10 },
+        maxWidth: { xs: 'calc(100% - 16px)', sm: 392 },
+        minWidth: { xs: 248, sm: 356 },
+        p: 1,
+        pointerEvents: 'none',
+        position: 'absolute',
+        zIndex: 1,
+      }}
+    >
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          minWidth: 0,
+        }}
+      >
+        <Typography sx={{ fontWeight: 800 }} variant="caption">
+          MCU ideal
+        </Typography>
+        <Typography color="text.secondary" variant="caption">
+          volta {completedTurns}
+        </Typography>
+      </Stack>
+      <Stack spacing={0.35} sx={{ minWidth: 0 }}>
+        <Typography
+          sx={{
+            color: themeTokens.cyan,
+            fontSize: '0.68rem',
+            fontWeight: 800,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {formulaVelocity}
+        </Typography>
+        <Typography
+          sx={{
+            color: themeTokens.warning,
+            fontSize: '0.68rem',
+            fontWeight: 800,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {formulaAcceleration}
+        </Typography>
+      </Stack>
+      <Box
+        sx={{
+          columnGap: 0.75,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          rowGap: 0.55,
+          minWidth: 0,
+        }}
+      >
+        {metrics.map((metric) => (
+          <Box
+            key={metric.label}
+            sx={{
+              bgcolor: alpha(themeTokens.panel, 0.62),
+              border: `1px solid ${alpha(themeTokens.text, 0.1)}`,
+              borderRadius: 0.75,
+              minWidth: 0,
+              p: 0.55,
+            }}
+          >
+            <Typography color="text.secondary" variant="caption">
+              {metric.label}
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {metric.value}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+      <Box
+        aria-hidden
+        sx={{
+          bgcolor: alpha(themeTokens.text, 0.12),
+          borderRadius: 999,
+          height: 8,
+          mt: 0.15,
+          overflow: 'hidden',
+          position: 'relative',
+        }}
+      >
+        <Box
+          sx={{
+            bgcolor: themeTokens.teal,
+            height: '100%',
+            opacity: 0.9,
+            width: `${cycleProgress * 100}%`,
+          }}
+        />
+        {[0, 0.25, 0.5, 0.75, 1].map((markerRatio) => (
+          <Box
+            key={markerRatio}
+            sx={{
+              bgcolor:
+                markerRatio <= cycleProgress
+                  ? themeTokens.cyan
+                  : alpha(themeTokens.text, 0.38),
+              borderRadius: '50%',
+              height: 6,
+              left: `${markerRatio * 100}%`,
+              position: 'absolute',
+              top: 1,
+              transform: 'translateX(-50%)',
+              width: 6,
+            }}
+          />
+        ))}
+      </Box>
+    </Box>
+  )
+}
+
+function UniformlyAcceleratedMotionHud({
+  durationSeconds,
+  parameters,
+  sample,
+}: {
+  durationSeconds: number
+  parameters: UniformlyAcceleratedMotionParameters
+  sample: KinematicsSample
+}) {
+  const progressRatio =
+    durationSeconds > 0
+      ? Math.min(1, Math.max(0, sample.timeSeconds / durationSeconds))
+      : 0
+  const markerCount = Math.min(12, Math.max(1, Math.ceil(durationSeconds)))
+  const markers = Array.from(
+    { length: markerCount + 1 },
+    (_, index) => (durationSeconds * index) / markerCount,
+  )
+  const metrics = [
+    { label: 't', value: formatNumber(sample.timeSeconds, 's') },
+    { label: 'z', value: formatNumber(sample.positionMeters, 'm') },
+    { label: 'v', value: formatNumber(sample.velocityZMetersPerSecond, 'm/s') },
+    {
+      label: 'a',
+      value: formatNumber(
+        sample.accelerationZMetersPerSecondSquared,
+        'm/s^2',
+      ),
+    },
+  ]
+  const formulaPosition = `z = ${formatNumber(
+    parameters.initialPositionMeters,
+    'm',
+  )} + ${formatNumber(
+    parameters.initialVelocityMetersPerSecond,
+    'm/s',
+  )}.t + 1/2.${formatNumber(
+    parameters.accelerationMetersPerSecondSquared,
+    'm/s^2',
+  )}.t^2`
+  const formulaVelocity = `v = ${formatNumber(
+    parameters.initialVelocityMetersPerSecond,
+    'm/s',
+  )} + ${formatNumber(
+    parameters.accelerationMetersPerSecondSquared,
+    'm/s^2',
+  )}.t`
+
+  return (
+    <Box
+      aria-label="Painel visual do MUV e queda livre"
+      sx={{
+        bgcolor: alpha(themeTokens.background, 0.84),
+        border: `1px solid ${alpha(themeTokens.text, 0.16)}`,
+        borderRadius: 1,
+        bottom: { xs: 8, sm: 10 },
+        display: 'grid',
+        gap: 0.75,
+        left: { xs: 8, sm: 10 },
+        maxWidth: { xs: 'calc(100% - 16px)', sm: 392 },
+        minWidth: { xs: 248, sm: 338 },
+        p: 1,
+        pointerEvents: 'none',
+        position: 'absolute',
+        zIndex: 1,
+      }}
+    >
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          minWidth: 0,
+        }}
+      >
+        <Typography sx={{ fontWeight: 800 }} variant="caption">
+          MUV vertical
+        </Typography>
+        <Typography color="text.secondary" variant="caption">
+          altura {formatNumber(Math.max(0, sample.zMeters), 'm')}
+        </Typography>
+      </Stack>
+      <Stack spacing={0.35} sx={{ minWidth: 0 }}>
+        <Typography
+          sx={{
+            color: themeTokens.vector,
+            fontSize: '0.68rem',
+            fontWeight: 800,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {formulaPosition}
+        </Typography>
+        <Typography
+          sx={{
+            color: themeTokens.cyan,
+            fontSize: '0.68rem',
+            fontWeight: 800,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {formulaVelocity}
+        </Typography>
+      </Stack>
+      <Box
+        sx={{
+          columnGap: 0.75,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+          minWidth: 0,
+        }}
+      >
+        {metrics.map((metric) => (
+          <Box
+            key={metric.label}
+            sx={{
+              bgcolor: alpha(themeTokens.panel, 0.62),
+              border: `1px solid ${alpha(themeTokens.text, 0.1)}`,
+              borderRadius: 0.75,
+              minWidth: 0,
+              p: 0.55,
+            }}
+          >
+            <Typography color="text.secondary" variant="caption">
+              {metric.label}
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {metric.value}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+      <Box
+        aria-hidden
+        sx={{
+          bgcolor: alpha(themeTokens.text, 0.12),
+          borderRadius: 999,
+          height: 8,
+          mt: 0.15,
+          overflow: 'hidden',
+          position: 'relative',
+        }}
+      >
+        <Box
+          sx={{
+            bgcolor: sample.isGrounded ? themeTokens.teal : themeTokens.cyan,
+            height: '100%',
+            opacity: 0.9,
+            width: `${progressRatio * 100}%`,
+          }}
+        />
+        {markers.map((markerSecond) => {
+          const markerRatio =
+            durationSeconds > 0 ? markerSecond / durationSeconds : 0
+
+          return (
+            <Box
+              key={markerSecond.toFixed(3)}
+              sx={{
+                bgcolor:
+                  markerSecond <= sample.timeSeconds
+                    ? themeTokens.warning
+                    : alpha(themeTokens.text, 0.38),
+                borderRadius: '50%',
+                height: 6,
+                left: `${Math.min(100, markerRatio * 100)}%`,
+                position: 'absolute',
+                top: 1,
+                transform: 'translateX(-50%)',
+                width: 6,
+              }}
+            />
+          )
+        })}
+      </Box>
+    </Box>
+  )
+}
+
 function renderEmptyTableCells() {
   return sampleTableColumnIds.map((columnId) => (
     <TableCell key={columnId} sx={{ color: 'text.disabled' }}>
@@ -5495,6 +6091,169 @@ function CameraProjectionSwitch({
   )
 }
 
+function resolveKinematicsCameraViewMode(
+  simulationId: KinematicsSimulationId,
+  value: KinematicsCameraViewMode,
+): KinematicsCameraViewMode {
+  if (simulationId === 'uniform-circular-motion') {
+    return value === 'top' || value === 'follow' ? value : 'cinematic'
+  }
+
+  if (supportsKinematicsCameraViewMode(simulationId)) {
+    return value === 'side' || value === 'top' ? value : 'cinematic'
+  }
+
+  return 'cinematic'
+}
+
+function supportsKinematicsCameraViewMode(simulationId: KinematicsSimulationId) {
+  return (
+    simulationId === 'uniform-linear-motion' ||
+    simulationId === 'uniformly-accelerated-motion' ||
+    simulationId === 'uniform-circular-motion'
+  )
+}
+
+function KinematicsCameraViewSwitch({
+  onChange,
+  simulationId,
+  value,
+}: {
+  onChange: (mode: KinematicsCameraViewMode) => void
+  simulationId: KinematicsSimulationId
+  value: KinematicsCameraViewMode
+}) {
+  const isCircularMotion = simulationId === 'uniform-circular-motion'
+  const isVerticalMotion = simulationId === 'uniformly-accelerated-motion'
+  const modes: Array<{
+    ariaLabel: string
+    label: string
+    value: KinematicsCameraViewMode
+  }> = isCircularMotion
+    ? [
+        {
+          ariaLabel: 'Camera em perspectiva do MCU',
+          label: 'Persp.',
+          value: 'cinematic',
+        },
+        {
+          ariaLabel: 'Camera superior do MCU',
+          label: 'Topo',
+          value: 'top',
+        },
+        {
+          ariaLabel: 'Camera acompanhando o corpo no MCU',
+          label: 'Seguir',
+          value: 'follow',
+        },
+      ]
+    : [
+        {
+          ariaLabel: isVerticalMotion
+            ? 'Camera cinematografica do MUV e queda livre'
+            : 'Camera cinematografica do MRU',
+          label: 'Cine',
+          value: 'cinematic',
+        },
+        {
+          ariaLabel: isVerticalMotion
+            ? 'Camera lateral do MUV e queda livre'
+            : 'Camera lateral do MRU',
+          label: 'Lateral',
+          value: 'side',
+        },
+        {
+          ariaLabel: isVerticalMotion
+            ? 'Camera frontal do MUV e queda livre'
+            : 'Camera superior do MRU',
+          label: isVerticalMotion ? 'Frontal' : 'Topo',
+          value: 'top',
+        },
+      ]
+  const activeIndex = Math.max(
+    0,
+    modes.findIndex((mode) => mode.value === value),
+  )
+
+  return (
+    <Tooltip
+      title={
+        isCircularMotion
+          ? 'Visual da camera: perspectiva, superior ou acompanhamento'
+          : isVerticalMotion
+          ? 'Visual da camera: cinematografica, lateral ou frontal'
+          : 'Visual da camera: cinematografica, lateral ou superior'
+      }
+    >
+      <Box
+        aria-label="Modo visual da camera de cinematica"
+        role="group"
+        sx={{
+          bgcolor: alpha(themeTokens.background, 0.82),
+          border: `1px solid ${alpha(themeTokens.text, 0.16)}`,
+          borderRadius: 999,
+          display: 'flex',
+          flex: '0 0 auto',
+          height: 30,
+          overflow: 'hidden',
+          p: '2px',
+          position: 'relative',
+          width: { xs: 178, sm: 206 },
+        }}
+      >
+        <Box
+          aria-hidden
+          sx={{
+            bgcolor: alpha(themeTokens.cyan, 0.18),
+            border: `1px solid ${alpha(themeTokens.cyan, 0.6)}`,
+            borderRadius: 999,
+            bottom: 2,
+            left: 2,
+            position: 'absolute',
+            top: 2,
+            transform: `translateX(${activeIndex * 100}%)`,
+            transition: 'transform 160ms ease',
+            width: 'calc(33.333% - 2px)',
+            zIndex: 0,
+          }}
+        />
+        {modes.map((mode) => {
+          const active = mode.value === value
+
+          return (
+            <ButtonBase
+              aria-label={mode.ariaLabel}
+              aria-pressed={active}
+              key={mode.value}
+              onClick={() => {
+                onChange(mode.value)
+              }}
+              sx={{
+                borderRadius: 999,
+                color: active ? 'info.main' : 'text.secondary',
+                flex: '1 1 0',
+                fontSize: '0.68rem',
+                fontWeight: 800,
+                minWidth: 0,
+                position: 'relative',
+                textTransform: 'uppercase',
+                zIndex: 1,
+                '&:focus-visible': {
+                  outline: `2px solid ${themeTokens.cyan}`,
+                  outlineOffset: 1,
+                },
+              }}
+              type="button"
+            >
+              {mode.label}
+            </ButtonBase>
+          )
+        })}
+      </Box>
+    </Tooltip>
+  )
+}
+
 function groupSimulationsBySubarea(simulations: SimulationDefinition[]) {
   const subareas = new Map<string, SimulationDefinition[]>()
 
@@ -5583,6 +6342,12 @@ function getModelKindLabel(modelKind: SimulationDefinition['modelKind']) {
 
 function radiansToDegrees(value: number) {
   return (value * 180) / Math.PI
+}
+
+function normalizeDegrees(value: number) {
+  const normalized = value % 360
+
+  return normalized < 0 ? normalized + 360 : normalized
 }
 
 function formatDegrees(value: number) {

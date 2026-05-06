@@ -2991,3 +2991,116 @@ Validacao:
 - Executado `npm run lint`; passou.
 - Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
 - Executado `npm test -- --reporter=dot`; 12 arquivos e 96 testes passaram.
+
+## 2026-05-06 - Ajuste visual didatico do MRU
+
+Status: feito.
+
+Pedido reportado:
+
+- Melhorar `Mecanica > Cinematica > Movimento retilineo uniforme` para deixar claro, visualmente, que o objeto percorre distancias iguais em tempos iguais, com velocidade constante e aceleracao nula.
+- Priorizar pista cinematica neon, regua no chao, marcas estroboscopicas a cada segundo, vetor velocidade constante, rastro luminoso, painel numerico, linha do tempo e modos de camera.
+
+Ajuste:
+
+- A cena do MRU passou a renderizar uma pista reta iluminada sobre a grade 3D, com trilhos ciano/teal, marcacoes em metros e marcador inicial `s0`.
+- Foram adicionadas marcas estroboscopicas derivadas dos samples do motor em segundos inteiros, com rotulos `t=...s`, preservando o espacamento igual quando a velocidade e constante.
+- O objeto foi reposicionado como corpo sobre a pista, com sombra, marcador `s(t)`, faixa de deslocamento `Delta s` e rastro luminoso continuo do deslocamento.
+- O HUD do MRU mostra `s = s0 + v.t`, `Delta s`, tempo, posicao inicial, velocidade, posicao atual, aceleracao zero e uma linha do tempo com pontos dos instantes.
+- A viewport ganhou modos de camera especificos para MRU: cinematografico, lateral e superior.
+- O vetor de deslocamento do MRU foi corrigido para seguir o sinal do deslocamento, nao o sinal da posicao absoluta; isso preserva a leitura quando `s0` e positivo e a velocidade e negativa.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: marcadores, pista, HUD, vetor e rastro usam os mesmos samples do motor numerico; o renderer nao inventa posicoes nem acelera o movimento visualmente.
+- A aceleracao permanece nula no vetor, no HUD e nos dados da simulacao.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Guides e HLD/diagramas nao foram atualizados porque nao houve mudanca estrutural de arquitetura, dados publicos, roadmap ou fluxo de servicos; a decisao operacional foi registrada neste historico.
+
+Validacao:
+
+- Executado `npm run test -- src/features/simulation-shell/KinematicsScene.test.ts src/lib/physics/kinematics.test.ts --reporter=dot`; 2 arquivos e 42 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test -- --reporter=dot --maxWorkers=1`; 12 arquivos e 99 testes passaram.
+- Smoke visual em `http://127.0.0.1:5173`: canvas do MRU renderizado, seletor `CINE/LATERAL/TOPO` presente, HUD do MRU presente e captura salva em `artifacts/mru-smoke.png`.
+
+## 2026-05-06 - Torre experimental para MUV e queda livre
+
+Status: feito.
+
+Pedido reportado:
+
+- Melhorar `Mecanica > Cinematica > Movimento uniformemente variado e queda livre` para deixar visualmente claro que, em tempos iguais, os deslocamentos crescem quando ha aceleracao constante.
+- Priorizar torre/régua vertical, solo, marcas estroboscopicas, vetor velocidade crescendo, vetor aceleracao constante, rastro, HUD numerico e camera didatica.
+
+Ajuste:
+
+- A cena de MUV/queda livre ganhou uma torre vertical graduada em metros, plataforma de solo, zona de impacto, marcador inicial `z0`, corpo mais brilhante e marcadores estroboscopicos em tempos iguais derivados dos samples.
+- O rastro vertical agora liga a posicao inicial a posicao atual com intensidade crescente, e o viewport mostra etiquetas vivas de `z(t)`, altura restante, `v` e `a`.
+- Os vetores de MUV foram corrigidos para usar o sinal real de deslocamento, velocidade vertical e aceleracao vertical, com magnitudes absolutas nos overlays.
+- O HUD do MUV mostra `z = z0 + v0.t + 1/2.a.t^2`, `v = v0 + a.t`, leituras de `t`, `z`, `v`, `a` e linha do tempo compacta.
+- O seletor de camera agora tambem atende MUV/queda livre com modos cinematografico, lateral e frontal.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: torre, marcadores, rastro, HUD, etiquetas e vetores consomem os mesmos samples do motor; o renderer nao cria posicoes ou valores paralelos.
+- Adicionados testes para comprovar que as marcas estroboscopicas da queda livre ficam progressivamente mais espacadas e que os vetores apontam no sentido fisico correto.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Guides e HLD/diagramas nao foram atualizados porque nao houve mudanca estrutural de arquitetura, dados publicos, roadmap ou fluxo de servicos; a decisao operacional foi registrada neste historico.
+
+Validacao:
+
+- Executado `npm run test -- src/features/simulation-shell/KinematicsScene.test.ts src/lib/physics/kinematics.test.ts --reporter=dot`; 2 arquivos e 43 testes passaram.
+- Executado `npm run test -- src/App.test.tsx -t "opens the first kinematics simulations through the shared shell" --reporter=dot`; 1 teste passou e 7 foram ignorados pelo filtro.
+- Executado `npm run test -- --reporter=dot --maxWorkers=1`; apos corrigir o label acessivel do canvas para preservar `Cinematica`, 12 arquivos e 100 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Smoke visual em `http://127.0.0.1:5173`: canvas de MUV/queda livre renderizado, HUD `MUV vertical` presente, seletor `Frontal` presente, checagem de pixels passou e captura salva em `artifacts/muv-free-fall-smoke.png`.
+
+## 2026-05-06 - Plataforma didatica para MCU
+
+Status: feito.
+
+Pedido reportado:
+
+- Melhorar `Mecanica > Cinematica > Movimento circular uniforme` para comunicar raio constante, velocidade tangencial de modulo constante, aceleracao centripeta apontando para o centro, direcao variavel da velocidade e periodicidade angular.
+- Priorizar marcas temporais igualmente espacadas, vetor centripeto claro, marcacao angular, arco percorrido, painel com `omega`, `v`, `a_c`, `T` e `f`, graficos sincronizados e vistas superior/perspectiva/acompanhamento.
+
+Ajuste:
+
+- A cena do MCU passou a usar uma plataforma circular de laboratorio, com disco translucido, aneis de referencia, orbita neon, nucleo central, eixo fixo e marcas angulares de 30 graus com referencias principais em 0, 90, 180 e 270 graus.
+- O raio agora nasce no centro fixo e liga ate o corpo com label `r = ... m`, reforcando que a distancia radial permanece estruturalmente constante.
+- O corpo em movimento recebeu material mais brilhante e emissivo, com sombra e leitura visual mais forte sobre a pista circular.
+- O vetor de velocidade tangencial sai do corpo, fica tangente a orbita e tem escala constante; marcadores estroboscopicos exibem pequenas direcoes tangenciais anteriores para evidenciar que o modulo permanece constante enquanto a direcao muda.
+- O vetor de aceleracao centripeta foi reposicionado para nascer no corpo e apontar sempre para o centro, com comprimento constante enquanto os parametros nao mudam.
+- A orbita ganhou marcadores temporais igualmente espacados ao longo de um periodo, labels discretos `t=...s`, arco angular dinamico, label `theta = ... deg` e pulso sutil ao completar voltas.
+- O HUD especifico do MCU mostra formulas `v = omega.r` e `a_c = omega^2.r`, leituras de `r`, `omega`, `v`, `a_c`, `T`, `f` e progresso do ciclo com quarto de volta.
+- Os graficos do MCU agora cobrem angulo/arco, velocidades constantes, aceleracao centripeta e projecoes cartesianas `x(t)` e `y(t)`.
+- A viewport ganhou modos de camera especificos para MCU: perspectiva, topo e acompanhamento do corpo mantendo o centro em leitura.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: plataforma, arco, labels, vetores, marcadores, HUD e graficos derivam dos samples do motor numerico e dos parametros fisicos da fixture; o renderer nao cria uma dinamica paralela.
+- Adicionado teste para garantir que as marcas estroboscopicas do MCU ficam igualmente espacadas em angulo ao longo de um periodo.
+- Adicionado teste para garantir que os graficos do MCU exibem angulo, taxas constantes, aceleracao centripeta e projecoes senoidal/cossenoidal.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Guides e HLD/diagramas nao foram atualizados porque nao houve mudanca estrutural de arquitetura, dados publicos, roadmap ou fluxo de servicos; a decisao operacional foi registrada neste historico.
+
+Validacao:
+
+- Executado `npm run test -- src/features/simulation-shell/KinematicsScene.test.ts src/features/simulation-shell/kinematicsChartConfigs.test.ts src/lib/physics/kinematics.test.ts --reporter=dot`; 3 arquivos e 48 testes passaram.
+- Executado `npm run test -- src/App.test.tsx -t "opens the first kinematics simulations through the shared shell" --reporter=dot`; 1 teste passou e 7 foram ignorados pelo filtro.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test -- --reporter=dot --maxWorkers=1`; 12 arquivos e 102 testes passaram.
+- Smoke visual em `http://127.0.0.1:5192`: canvas do MCU renderizado, HUD `MCU ideal` presente, cameras `Topo` e `Seguir` ativadas, captura salva em `artifacts/mcu-smoke.png`.

@@ -95,6 +95,186 @@ export function toKinematicsSceneDirection(
   return new THREE.Vector3(vector.direction.x, 0, vector.direction.z)
 }
 
+export type UniformLinearMotionTrackRange = {
+  maxMeters: number
+  minMeters: number
+  tickStepMeters: number
+}
+
+export type UniformlyAcceleratedMotionTowerRange = {
+  maxMeters: number
+  minMeters: number
+  tickStepMeters: number
+}
+
+export function getUniformLinearMotionTrackRange(
+  samples: KinematicsSample[],
+): UniformLinearMotionTrackRange {
+  const positions = samples.flatMap((sample) => [
+    sample.positionMeters,
+    sample.positionMeters - sample.displacementMeters,
+  ])
+  const minPositionMeters = Math.min(0, ...positions)
+  const maxPositionMeters = Math.max(0, ...positions)
+  const paddedMinMeters = Math.floor(minPositionMeters - 1)
+  const paddedMaxMeters = Math.ceil(maxPositionMeters + 1)
+  const spanMeters = Math.max(1, paddedMaxMeters - paddedMinMeters)
+
+  return {
+    maxMeters: paddedMaxMeters,
+    minMeters: paddedMinMeters,
+    tickStepMeters: spanMeters > 40 ? 5 : spanMeters > 24 ? 2 : 1,
+  }
+}
+
+export function getUniformlyAcceleratedMotionTowerRange(
+  samples: KinematicsSample[],
+): UniformlyAcceleratedMotionTowerRange {
+  const positions = samples.flatMap((sample) => [
+    sample.zMeters,
+    sample.positionMeters,
+    sample.positionMeters - sample.displacementMeters,
+  ])
+  const minPositionMeters = Math.min(0, ...positions)
+  const maxPositionMeters = Math.max(0, ...positions)
+  const rawSpanMeters = Math.max(1, maxPositionMeters - minPositionMeters)
+  const paddingMeters = Math.max(0.6, rawSpanMeters * 0.08)
+  const paddedMinMeters = Math.floor(minPositionMeters - paddingMeters)
+  const paddedMaxMeters = Math.ceil(maxPositionMeters + paddingMeters)
+  const spanMeters = Math.max(1, paddedMaxMeters - paddedMinMeters)
+
+  return {
+    maxMeters: paddedMaxMeters,
+    minMeters: paddedMinMeters,
+    tickStepMeters: spanMeters > 48 ? 10 : spanMeters > 24 ? 5 : spanMeters > 10 ? 2 : 1,
+  }
+}
+
+export function selectUniformLinearMotionStrobeSamples(
+  samples: KinematicsSample[],
+  maxMarkers = 20,
+) {
+  const firstSample = samples[0]
+  const lastSample = samples.at(-1)
+
+  if (!firstSample || !lastSample) {
+    return []
+  }
+
+  const finalSecond = Math.max(0, Math.floor(lastSample.timeSeconds))
+  const markerStepSeconds = Math.max(
+    1,
+    Math.ceil(finalSecond / Math.max(1, maxMarkers)),
+  )
+
+  return Array.from(
+    { length: Math.floor(finalSecond / markerStepSeconds) + 1 },
+    (_, index) =>
+      findNearestSampleByTime(samples, index * markerStepSeconds) ??
+      firstSample,
+  )
+}
+
+export function selectUniformlyAcceleratedMotionStrobeSamples(
+  samples: KinematicsSample[],
+  maxMarkers = 12,
+) {
+  const firstSample = samples[0]
+  const lastSample = samples.at(-1)
+
+  if (!firstSample || !lastSample) {
+    return []
+  }
+
+  const firstGroundedSample = samples.find((sample) => sample.isGrounded)
+  const finalActiveTimeSeconds =
+    firstGroundedSample?.timeSeconds ?? lastSample.timeSeconds
+  const markerStepSeconds = Math.max(
+    1,
+    Math.ceil(finalActiveTimeSeconds / Math.max(1, maxMarkers)),
+  )
+  const markerTimes: number[] = []
+
+  for (
+    let timeSeconds = 0;
+    timeSeconds < finalActiveTimeSeconds - 1e-9;
+    timeSeconds += markerStepSeconds
+  ) {
+    markerTimes.push(timeSeconds)
+  }
+
+  if (
+    markerTimes.length === 0 ||
+    Math.abs(markerTimes[markerTimes.length - 1] - finalActiveTimeSeconds) >
+      1e-6
+  ) {
+    markerTimes.push(finalActiveTimeSeconds)
+  }
+
+  return markerTimes
+    .slice(0, maxMarkers + 1)
+    .map((timeSeconds) => findNearestSampleByTime(samples, timeSeconds) ?? firstSample)
+}
+
+export function selectUniformCircularMotionStrobeSamples(
+  samples: KinematicsSample[],
+  maxMarkers = 12,
+) {
+  const firstSample = samples[0]
+  const lastSample = samples.at(-1)
+
+  if (!firstSample || !lastSample) {
+    return []
+  }
+
+  const availableDurationSeconds = Math.max(
+    0,
+    lastSample.timeSeconds - firstSample.timeSeconds,
+  )
+  const periodSeconds = firstSample.periodSeconds
+  const hasFullPeriod =
+    Number.isFinite(periodSeconds) &&
+    periodSeconds > 0 &&
+    availableDurationSeconds + 1e-6 >= periodSeconds
+  const markerCount = hasFullPeriod
+    ? Math.max(4, maxMarkers)
+    : Math.max(
+        2,
+        Math.min(maxMarkers, Math.floor(availableDurationSeconds) + 1),
+      )
+  const markerStepSeconds = hasFullPeriod
+    ? periodSeconds / markerCount
+    : markerCount > 1
+      ? availableDurationSeconds / (markerCount - 1)
+      : 0
+
+  return Array.from({ length: markerCount }, (_, index) => {
+    const targetTimeSeconds =
+      firstSample.timeSeconds + markerStepSeconds * index
+
+    return findNearestSampleByTime(samples, targetTimeSeconds) ?? firstSample
+  })
+}
+
+function findNearestSampleByTime(
+  samples: KinematicsSample[],
+  targetTimeSeconds: number,
+) {
+  let nearestSample = samples[0]
+  let nearestDistance = Number.POSITIVE_INFINITY
+
+  for (const sample of samples) {
+    const distance = Math.abs(sample.timeSeconds - targetTimeSeconds)
+
+    if (distance < nearestDistance) {
+      nearestDistance = distance
+      nearestSample = sample
+    }
+  }
+
+  return nearestSample
+}
+
 function estimateRawSceneBounds(
   samples: KinematicsSample[],
   horizontalPlane: boolean,

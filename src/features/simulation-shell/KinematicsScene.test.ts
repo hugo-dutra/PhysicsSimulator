@@ -7,10 +7,16 @@ import {
   type GravitationalFieldOrbitsParameters,
   type TorqueLeversCenterMassParameters,
   type UniformCircularMotionParameters,
+  type UniformLinearMotionParameters,
   type UniformlyAcceleratedMotionParameters,
 } from '../../lib/physics/kinematics'
 import {
   createKinematicsSceneProjection,
+  selectUniformCircularMotionStrobeSamples,
+  getUniformLinearMotionTrackRange,
+  getUniformlyAcceleratedMotionTowerRange,
+  selectUniformLinearMotionStrobeSamples,
+  selectUniformlyAcceleratedMotionStrobeSamples,
   toKinematicsSceneDirection,
   toKinematicsScenePosition,
   toOrbitSatelliteScenePosition,
@@ -24,6 +30,68 @@ import {
 } from './rigidBodyRotationSceneGeometry'
 
 describe('KinematicsScene projection helpers', () => {
+  it('selects equally spaced stroboscopic marks for MRU', () => {
+    const parameters: UniformLinearMotionParameters = {
+      initialPositionMeters: 0,
+      massKilograms: 1,
+      velocityMetersPerSecond: 1.2,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 20,
+      parameters,
+      sampleRateHz: 120,
+      simulationId: 'uniform-linear-motion',
+    })
+    const strobeSamples = selectUniformLinearMotionStrobeSamples(
+      result.samples,
+      20,
+    )
+    const trackRange = getUniformLinearMotionTrackRange(result.samples)
+
+    expect(strobeSamples).toHaveLength(21)
+    expect(strobeSamples[0].timeSeconds).toBeCloseTo(0)
+    expect(strobeSamples[1].timeSeconds).toBeCloseTo(1)
+    expect(strobeSamples[1].positionMeters - strobeSamples[0].positionMeters)
+      .toBeCloseTo(1.2)
+    expect(strobeSamples[2].positionMeters - strobeSamples[1].positionMeters)
+      .toBeCloseTo(1.2)
+    expect(trackRange.minMeters).toBeLessThanOrEqual(0)
+    expect(trackRange.maxMeters).toBeGreaterThanOrEqual(24)
+    expect(trackRange.tickStepMeters).toBe(2)
+  })
+
+  it('points MRU displacement by displacement sign instead of origin sign', () => {
+    const parameters: UniformLinearMotionParameters = {
+      initialPositionMeters: 6,
+      massKilograms: 1,
+      velocityMetersPerSecond: -1,
+    }
+    const sample = computeKinematicsSample(
+      'uniform-linear-motion',
+      parameters,
+      2,
+    )
+    const displacement = getKinematicsVectorOverlays(
+      sample,
+      'uniform-linear-motion',
+    ).find((vector) => vector.id === 'displacement')
+    const velocity = getKinematicsVectorOverlays(
+      sample,
+      'uniform-linear-motion',
+    ).find((vector) => vector.id === 'velocity')
+
+    if (!displacement || !velocity) {
+      throw new Error('Expected MRU displacement and velocity vectors.')
+    }
+
+    expect(sample.positionMeters).toBeCloseTo(4)
+    expect(sample.displacementMeters).toBeCloseTo(-2)
+    expect(displacement.direction.x).toBe(-1)
+    expect(displacement.magnitude).toBeCloseTo(2)
+    expect(velocity.direction.x).toBe(-1)
+    expect(velocity.magnitude).toBeCloseTo(1)
+  })
+
   it('keeps MUV and free-fall trajectories ending on the ground plane', () => {
     const parameters: UniformlyAcceleratedMotionParameters = {
       accelerationMetersPerSecondSquared: -9.81,
@@ -60,6 +128,62 @@ describe('KinematicsScene projection helpers', () => {
     expect(firstPosition.z).toBeGreaterThan(lastPosition.z)
     expect(lastPosition.z).toBeCloseTo(0)
     expect(result.samples.every((sample) => sample.zMeters >= 0)).toBe(true)
+  })
+
+  it('selects increasingly spaced stroboscopic marks for free fall', () => {
+    const parameters: UniformlyAcceleratedMotionParameters = {
+      accelerationMetersPerSecondSquared: -9.81,
+      initialPositionMeters: 16,
+      initialVelocityMetersPerSecond: 0,
+      massKilograms: 1,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 4,
+      parameters,
+      sampleRateHz: 120,
+      simulationId: 'uniformly-accelerated-motion',
+    })
+    const strobeSamples = selectUniformlyAcceleratedMotionStrobeSamples(
+      result.samples,
+      12,
+    )
+    const towerRange = getUniformlyAcceleratedMotionTowerRange(result.samples)
+    const displacement = getKinematicsVectorOverlays(
+      result.samples[120],
+      'uniformly-accelerated-motion',
+    ).find((vector) => vector.id === 'displacement')
+    const velocity = getKinematicsVectorOverlays(
+      result.samples[120],
+      'uniformly-accelerated-motion',
+    ).find((vector) => vector.id === 'velocity')
+    const acceleration = getKinematicsVectorOverlays(
+      result.samples[120],
+      'uniformly-accelerated-motion',
+    ).find((vector) => vector.id === 'acceleration')
+
+    if (!displacement || !velocity || !acceleration) {
+      throw new Error('Expected MUV displacement, velocity and acceleration.')
+    }
+
+    expect(strobeSamples.length).toBeGreaterThanOrEqual(3)
+    expect(strobeSamples[0].timeSeconds).toBeCloseTo(0)
+    expect(strobeSamples[1].timeSeconds).toBeCloseTo(1)
+    expect(strobeSamples.at(-1)?.isGrounded).toBe(true)
+    expect(strobeSamples[0].zMeters - strobeSamples[1].zMeters).toBeCloseTo(
+      4.905,
+      2,
+    )
+    expect(
+      strobeSamples[1].zMeters - (strobeSamples.at(-1)?.zMeters ?? 0),
+    ).toBeGreaterThan(strobeSamples[0].zMeters - strobeSamples[1].zMeters)
+    expect(towerRange.minMeters).toBeLessThanOrEqual(0)
+    expect(towerRange.maxMeters).toBeGreaterThanOrEqual(16)
+    expect(towerRange.tickStepMeters).toBe(2)
+    expect(displacement.direction.z).toBe(-1)
+    expect(displacement.magnitude).toBeCloseTo(4.905)
+    expect(velocity.direction.z).toBe(-1)
+    expect(acceleration.direction.z).toBe(-1)
+    expect(acceleration.magnitude).toBeCloseTo(9.81)
   })
 
   it('projects uniform circular motion onto the horizontal plane', () => {
@@ -99,6 +223,46 @@ describe('KinematicsScene projection helpers', () => {
     )
     expect(direction.z).toBeCloseTo(0)
     expect(Math.hypot(direction.x, direction.y)).toBeCloseTo(1)
+  })
+
+  it('selects equal-angle stroboscopic marks across one MCU period', () => {
+    const parameters: UniformCircularMotionParameters = {
+      angularVelocityRadiansPerSecond: 2,
+      initialAngleDegrees: 0,
+      massKilograms: 1,
+      radiusMeters: 1.5,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 4,
+      parameters,
+      sampleRateHz: 240,
+      simulationId: 'uniform-circular-motion',
+    })
+    const strobeSamples = selectUniformCircularMotionStrobeSamples(
+      result.samples,
+      12,
+    )
+    const angleStep =
+      strobeSamples[1].angleRadians - strobeSamples[0].angleRadians
+
+    expect(strobeSamples).toHaveLength(12)
+    expect(strobeSamples[0].timeSeconds).toBeCloseTo(0)
+    expect(angleStep).toBeCloseTo((Math.PI * 2) / 12, 2)
+    strobeSamples.slice(1).forEach((sample, index) => {
+      const previousSample = strobeSamples[index]
+
+      expect(sample.timeSeconds - previousSample.timeSeconds).toBeCloseTo(
+        strobeSamples[1].timeSeconds - strobeSamples[0].timeSeconds,
+        1,
+      )
+      expect(sample.angleRadians - previousSample.angleRadians).toBeCloseTo(
+        angleStep,
+        1,
+      )
+      expect(Math.hypot(sample.xMeters, sample.zMeters)).toBeCloseTo(
+        parameters.radiusMeters,
+      )
+    })
   })
 
   it('projects gravitational planet and satellite markers onto the horizontal plane', () => {

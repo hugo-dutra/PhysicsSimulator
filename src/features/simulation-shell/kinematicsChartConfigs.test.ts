@@ -4,6 +4,7 @@ import {
   type GravitationalFieldOrbitsParameters,
   type HydrostaticsBuoyancyParameters,
   type TorqueLeversCenterMassParameters,
+  type UniformCircularMotionParameters,
 } from '../../lib/physics/kinematics'
 import { buildKinematicsChartConfigs } from './kinematicsChartConfigs'
 
@@ -127,4 +128,53 @@ describe('kinematics chart configs', () => {
       firstSample.secondaryPressurePascals,
     )
   })
+
+  it('shows MCU angle, constant rates, centripetal acceleration and projections', () => {
+    const parameters: UniformCircularMotionParameters = {
+      angularVelocityRadiansPerSecond: 1.8,
+      initialAngleDegrees: 0,
+      massKilograms: 0.5,
+      radiusMeters: 1.4,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 2,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'uniform-circular-motion',
+    })
+    const charts = buildKinematicsChartConfigs(
+      result.samples,
+      'uniform-circular-motion',
+      true,
+    )
+    const angleChart = charts.find((chart) => chart.id === 'angle')
+    const velocityChart = charts.find((chart) => chart.id === 'velocity')
+    const accelerationChart = charts.find((chart) => chart.id === 'acceleration')
+    const positionChart = charts.find((chart) => chart.id === 'position')
+
+    expect(angleChart?.traces.map((trace) => trace.name)).toEqual([
+      'Angulo atual (rad)',
+      'Arco percorrido (m)',
+    ])
+    expect(velocityChart?.traces.map((trace) => trace.name)).toEqual([
+      'Velocidade angular (rad/s)',
+      'Velocidade tangencial (m/s)',
+    ])
+    expect(accelerationChart?.traces[0]?.name).toBe(
+      'Aceleracao centripeta (m/s^2)',
+    )
+    expect(positionChart?.traces.map((trace) => trace.name)).toEqual([
+      'Posicao x(t) (m)',
+      'Posicao y(t) no plano (m)',
+    ])
+    expect(readRange(velocityChart?.traces[0]?.y ?? [])).toBeLessThan(1e-12)
+    expect(readRange(velocityChart?.traces[1]?.y ?? [])).toBeLessThan(1e-12)
+    expect(readRange(accelerationChart?.traces[0]?.y ?? [])).toBeLessThan(
+      1e-12,
+    )
+  })
 })
+
+function readRange(values: number[]) {
+  return Math.max(...values) - Math.min(...values)
+}

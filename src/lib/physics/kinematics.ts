@@ -1488,6 +1488,76 @@ export function getKinematicsVectorOverlays(
     ]
   }
 
+  if (simulationId === 'uniform-linear-motion') {
+    return [
+      {
+        direction: {
+          x: Math.sign(sample.displacementMeters),
+          z: 0,
+        },
+        id: 'displacement',
+        label: 'Deslocamento',
+        magnitude: Math.abs(sample.displacementMeters),
+        unit: 'm',
+      },
+      {
+        direction: normalizeVector({
+          x: sample.velocityXMetersPerSecond,
+          z: sample.velocityZMetersPerSecond,
+        }),
+        id: 'velocity',
+        label: 'Velocidade',
+        magnitude: sample.speedMetersPerSecond,
+        unit: 'm/s',
+      },
+      {
+        direction: {
+          x: 0,
+          z: 0,
+        },
+        id: 'acceleration',
+        label: 'Aceleracao',
+        magnitude: 0,
+        unit: 'm/s^2',
+      },
+    ]
+  }
+
+  if (simulationId === 'uniformly-accelerated-motion') {
+    return [
+      {
+        direction: {
+          x: 0,
+          z: Math.sign(sample.displacementMeters) || 0,
+        },
+        id: 'displacement',
+        label: 'Deslocamento vertical',
+        magnitude: Math.abs(sample.displacementMeters),
+        unit: 'm',
+      },
+      {
+        direction: {
+          x: 0,
+          z: Math.sign(sample.velocityZMetersPerSecond) || 0,
+        },
+        id: 'velocity',
+        label: 'Velocidade vertical',
+        magnitude: sample.speedMetersPerSecond,
+        unit: 'm/s',
+      },
+      {
+        direction: {
+          x: 0,
+          z: Math.sign(sample.accelerationZMetersPerSecondSquared) || 0,
+        },
+        id: 'acceleration',
+        label: 'Aceleracao constante',
+        magnitude: Math.abs(sample.accelerationZMetersPerSecondSquared),
+        unit: 'm/s^2',
+      },
+    ]
+  }
+
   const displacementDirection = normalizeVector({
     x: sample.xMeters,
     z: sample.zMeters,

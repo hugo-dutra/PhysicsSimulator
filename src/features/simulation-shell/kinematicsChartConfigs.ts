@@ -841,11 +841,11 @@ export function buildKinematicsChartConfigs(
     charts.push(
       {
         id: 'angle',
-        title: 'Angulo por tempo',
+        title: 'Angulo e arco por tempo',
         traces: [
           {
             lineColor: themeTokens.teal,
-            name: 'Angulo angular (rad)',
+            name: 'Angulo atual (rad)',
             x: time,
             y: samples.map((sample) => sample.angleRadians),
           },
@@ -860,8 +860,14 @@ export function buildKinematicsChartConfigs(
       },
       {
         id: 'velocity',
-        title: 'Velocidade tangencial por tempo',
+        title: 'Velocidades constantes por tempo',
         traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Velocidade angular (rad/s)',
+            x: time,
+            y: samples.map((sample) => sample.angularVelocityRadiansPerSecond),
+          },
           {
             lineColor: themeTokens.cyan,
             name: 'Velocidade tangencial (m/s)',
@@ -869,7 +875,7 @@ export function buildKinematicsChartConfigs(
             y: samples.map((sample) => sample.speedMetersPerSecond),
           },
         ],
-        yAxisTitle: 'Velocidade (metros por segundo)',
+        yAxisTitle: 'Velocidade angular e tangencial',
       },
       {
         id: 'acceleration',
@@ -885,7 +891,26 @@ export function buildKinematicsChartConfigs(
             ),
           },
         ],
-        yAxisTitle: 'Aceleracao centripeta (m/s^2)',
+        yAxisTitle: 'Aceleracao (metros por segundo ao quadrado)',
+      },
+      {
+        id: 'position',
+        title: 'Projecoes cartesianas por tempo',
+        traces: [
+          {
+            lineColor: themeTokens.teal,
+            name: 'Posicao x(t) (m)',
+            x: time,
+            y: samples.map((sample) => sample.xMeters),
+          },
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Posicao y(t) no plano (m)',
+            x: time,
+            y: samples.map((sample) => sample.zMeters),
+          },
+        ],
+        yAxisTitle: 'Posicao (metros)',
       },
     )
   } else if (simulationId === 'work-energy-track') {

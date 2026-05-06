@@ -55,6 +55,11 @@ import {
 } from './rigidBodyRotationSceneGeometry'
 import {
   createKinematicsSceneProjection,
+  getUniformLinearMotionTrackRange,
+  getUniformlyAcceleratedMotionTowerRange,
+  selectUniformCircularMotionStrobeSamples,
+  selectUniformLinearMotionStrobeSamples,
+  selectUniformlyAcceleratedMotionStrobeSamples,
   toKinematicsSceneDirection,
   toKinematicsScenePosition,
   toOrbitSatelliteScenePosition,
@@ -63,9 +68,15 @@ import {
 import { ViewportOriginLegend } from './ViewportOriginLegend'
 
 export type KinematicsFrameStats = FrameStats
+export type KinematicsCameraViewMode =
+  | 'cinematic'
+  | 'follow'
+  | 'side'
+  | 'top'
 
 type KinematicsSceneProps = {
   cameraProjectionMode: CameraProjectionMode
+  cameraViewMode?: KinematicsCameraViewMode
   durationSeconds: number
   isPlaying: boolean
   modelTimeScale?: number
@@ -179,6 +190,24 @@ type SceneObjects = {
   traceColors: Float32Array
   tracePositionAttribute: THREE.BufferAttribute
   tracePositions: Float32Array
+  uniformCircularAngleArc: THREE.Line
+  uniformCircularAngleArcPositionAttribute: THREE.BufferAttribute
+  uniformCircularAngleArcPositions: Float32Array
+  uniformCircularAngleLabel: THREE.Sprite
+  uniformCircularLapPulse: THREE.Mesh
+  uniformCircularRadiusLabel: THREE.Sprite
+  acceleratedMotionAccelerationLabel: THREE.Sprite
+  acceleratedMotionBodyShadow: THREE.Mesh
+  acceleratedMotionCurrentLabel: THREE.Sprite
+  acceleratedMotionHeightBand: THREE.Mesh
+  acceleratedMotionHeightLabel: THREE.Sprite
+  acceleratedMotionImpactRing: THREE.Mesh
+  acceleratedMotionVelocityLabel: THREE.Sprite
+  uniformMotionBodyShadow: THREE.Mesh
+  uniformMotionCurrentLabel: THREE.Sprite
+  uniformMotionCurrentMarker: THREE.Mesh
+  uniformMotionDisplacementBand: THREE.Mesh
+  uniformMotionDisplacementLabel: THREE.Sprite
   atwoodMassHalfHeight: number
   workEnergyBodyLift: number
   workEnergyMaxThermalEnergyJoules: number
@@ -187,6 +216,7 @@ type SceneObjects = {
 }
 
 type RuntimeProps = {
+  cameraViewMode: KinematicsCameraViewMode
   durationSeconds: number
   modelTimeScale: number
   onSampleChange: (sample: KinematicsSample, stats: KinematicsFrameStats) => void
@@ -267,6 +297,8 @@ const massSpringCoilTurns = 9
 const maxPathPoints = 360
 const maxTracePoints = 120
 const traceFadeSeconds = 2.4
+const uniformLinearTracePointCount = 48
+const constantAccelerationTracePointCount = 72
 const orbitalTraceFadeSeconds = 900
 const traceMinOpacity = 0.04
 const traceMaxOpacity = 0.58
@@ -310,6 +342,7 @@ const leverSupportPivotHoleX = 0
 const leverBoardDepth = 0.16
 const leverBoardThickness = 0.085
 const rigidRotationAngleArcSegments = 72
+const uniformCircularAngleArcSegments = 96
 const rigidRotationBaseThickness = 0.12
 const rigidRotationCurvedArrowSegments = 36
 const rigidRotationAxisHeight = 0.7
@@ -350,6 +383,7 @@ const bernoulliThroatWidthMeters = 0.95
 
 export function KinematicsScene({
   cameraProjectionMode,
+  cameraViewMode = 'cinematic',
   durationSeconds,
   isPlaying,
   modelTimeScale = 1,
@@ -365,6 +399,7 @@ export function KinematicsScene({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const objectsRef = useRef<SceneObjects | null>(null)
   const runtimeRef = useRef<RuntimeProps>({
+    cameraViewMode,
     durationSeconds,
     modelTimeScale,
     onSampleChange,
@@ -381,8 +416,8 @@ export function KinematicsScene({
   const lastFrameTimeRef = useRef<number | null>(null)
   const lastReadoutTimeRef = useRef(0)
   const cameraPoseRef = useRef<OrbitCameraPose>({
-    pitchRadians: getInitialCameraPitchRadians(simulationId),
-    yawRadians: getInitialCameraYawRadians(simulationId),
+    pitchRadians: getInitialCameraPitchRadians(simulationId, cameraViewMode),
+    yawRadians: getInitialCameraYawRadians(simulationId, cameraViewMode),
   })
   const dragStateRef = useRef<DragState | null>(null)
   const statsWindowRef = useRef(createFrameStatsWindow())
@@ -430,6 +465,7 @@ export function KinematicsScene({
       showVectors: runtime.showVectors,
       simulationId: runtime.simulationId,
     })
+    updateFollowCamera(objects, sample, runtime)
     objects.renderer.render(objects.scene, objects.camera)
 
     if (notify) {
@@ -547,6 +583,7 @@ export function KinematicsScene({
   useEffect(() => {
     timelineSamplesRef.current = samples
     runtimeRef.current = {
+      cameraViewMode,
       durationSeconds,
       modelTimeScale,
       onSampleChange,
@@ -571,6 +608,7 @@ export function KinematicsScene({
     showTrace,
     showVectors,
     simulationId,
+    cameraViewMode,
   ])
 
   useEffect(() => {
@@ -909,9 +947,31 @@ export function KinematicsScene({
             16,
           ),
       new THREE.MeshStandardMaterial({
-        color: 0x2dd4bf,
-        metalness: 0.08,
-        roughness: 0.42,
+        color:
+          simulationId === 'uniformly-accelerated-motion' ||
+          simulationId === 'uniform-circular-motion'
+            ? 0x67e8f9
+            : 0x2dd4bf,
+        emissive:
+          simulationId === 'uniformly-accelerated-motion' ||
+          simulationId === 'uniform-circular-motion'
+            ? 0x083344
+            : 0x000000,
+        emissiveIntensity:
+          simulationId === 'uniformly-accelerated-motion' ||
+          simulationId === 'uniform-circular-motion'
+            ? 0.32
+            : 0,
+        metalness:
+          simulationId === 'uniformly-accelerated-motion' ||
+          simulationId === 'uniform-circular-motion'
+            ? 0.28
+            : 0.08,
+        roughness:
+          simulationId === 'uniformly-accelerated-motion' ||
+          simulationId === 'uniform-circular-motion'
+            ? 0.28
+            : 0.42,
       }),
     )
     addRollingWheelHoleMarkers({
@@ -1307,6 +1367,177 @@ export function KinematicsScene({
     )
     scene.add(trace)
 
+    const acceleratedMotionBodyShadow = new THREE.Mesh(
+      new THREE.CircleGeometry(sceneBodySize * 1.22, 36),
+      new THREE.MeshBasicMaterial({
+        color: 0x020617,
+        depthWrite: false,
+        transparent: true,
+        opacity: 0.52,
+      }),
+    )
+    const acceleratedMotionHeightBand = new THREE.Mesh(
+      new THREE.BoxGeometry(0.055, 0.045, 1),
+      new THREE.MeshBasicMaterial({
+        color: 0xa3e635,
+        depthWrite: false,
+        transparent: true,
+        opacity: 0.52,
+      }),
+    )
+    const acceleratedMotionImpactRing = new THREE.Mesh(
+      new THREE.TorusGeometry(sceneBodySize * 1.22, 0.018, 8, 64),
+      new THREE.MeshBasicMaterial({
+        color: 0x2dd4bf,
+        depthWrite: false,
+        transparent: true,
+        opacity: 0.88,
+      }),
+    )
+    const acceleratedMotionCurrentLabel = createSceneTextSprite('z(t)', {
+      background: 'rgba(15, 17, 21, 0.72)',
+      color: '#E6E8EC',
+      scale: 0.2,
+    })
+    const acceleratedMotionHeightLabel = createSceneTextSprite(
+      'altura restante = 0 m',
+      {
+        background: 'rgba(15, 17, 21, 0.72)',
+        color: '#A3E635',
+        scale: 0.18,
+      },
+    )
+    const acceleratedMotionVelocityLabel = createSceneTextSprite('v = 0 m/s', {
+      background: 'rgba(15, 17, 21, 0.72)',
+      color: '#38BDF8',
+      scale: 0.17,
+    })
+    const acceleratedMotionAccelerationLabel = createSceneTextSprite(
+      'a = 0 m/s^2',
+      {
+        background: 'rgba(15, 17, 21, 0.72)',
+        color: '#FDBA74',
+        scale: 0.17,
+      },
+    )
+
+    ;[
+      acceleratedMotionBodyShadow,
+      acceleratedMotionHeightBand,
+      acceleratedMotionImpactRing,
+      acceleratedMotionCurrentLabel,
+      acceleratedMotionHeightLabel,
+      acceleratedMotionVelocityLabel,
+      acceleratedMotionAccelerationLabel,
+    ].forEach((object) => {
+      object.renderOrder = 8
+      object.visible = false
+      scene.add(object)
+    })
+
+    const uniformMotionCurrentMarker = new THREE.Mesh(
+      new THREE.TorusGeometry(sceneBodySize * 0.88, 0.012, 8, 48),
+      new THREE.MeshBasicMaterial({
+        color: 0x2dd4bf,
+        depthWrite: false,
+        transparent: true,
+        opacity: 0.9,
+      }),
+    )
+    const uniformMotionDisplacementBand = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 0.07, 0.035),
+      new THREE.MeshBasicMaterial({
+        color: 0xa3e635,
+        depthWrite: false,
+        transparent: true,
+        opacity: 0.58,
+      }),
+    )
+    const uniformMotionBodyShadow = new THREE.Mesh(
+      new THREE.CircleGeometry(sceneBodySize * 1.18, 36),
+      new THREE.MeshBasicMaterial({
+        color: 0x020617,
+        depthWrite: false,
+        transparent: true,
+        opacity: 0.5,
+      }),
+    )
+    const uniformMotionCurrentLabel = createSceneTextSprite('s(t)', {
+      background: 'rgba(15, 17, 21, 0.72)',
+      color: '#E6E8EC',
+      scale: 0.2,
+    })
+    const uniformMotionDisplacementLabel = createSceneTextSprite('Delta s = 0 m', {
+      background: 'rgba(15, 17, 21, 0.72)',
+      color: '#A3E635',
+      scale: 0.19,
+    })
+
+    ;[
+      uniformMotionCurrentMarker,
+      uniformMotionDisplacementBand,
+      uniformMotionBodyShadow,
+      uniformMotionCurrentLabel,
+      uniformMotionDisplacementLabel,
+    ].forEach((object) => {
+      object.renderOrder = 8
+      object.visible = false
+      scene.add(object)
+    })
+
+    const uniformCircularAngleArcPositions = new Float32Array(
+      (uniformCircularAngleArcSegments + 1) * 3,
+    )
+    const uniformCircularAngleArcGeometry = new THREE.BufferGeometry()
+    const uniformCircularAngleArcPositionAttribute =
+      new THREE.BufferAttribute(uniformCircularAngleArcPositions, 3)
+
+    uniformCircularAngleArcPositionAttribute.setUsage(THREE.DynamicDrawUsage)
+    uniformCircularAngleArcGeometry.setAttribute(
+      'position',
+      uniformCircularAngleArcPositionAttribute,
+    )
+    uniformCircularAngleArcGeometry.setDrawRange(0, 0)
+    const uniformCircularAngleArc = new THREE.Line(
+      uniformCircularAngleArcGeometry,
+      new THREE.LineBasicMaterial({
+        color: 0x2dd4bf,
+        depthWrite: false,
+        opacity: 0.9,
+        transparent: true,
+      }),
+    )
+    const uniformCircularAngleLabel = createSceneTextSprite('theta = 0 deg', {
+      background: 'rgba(15, 17, 21, 0.74)',
+      color: '#2DD4BF',
+      scale: 0.17,
+    })
+    const uniformCircularRadiusLabel = createSceneTextSprite('r = 0 m', {
+      background: 'rgba(15, 17, 21, 0.74)',
+      color: '#A3E635',
+      scale: 0.17,
+    })
+    const uniformCircularLapPulse = new THREE.Mesh(
+      new THREE.TorusGeometry(1, 0.025, 8, 72),
+      new THREE.MeshBasicMaterial({
+        color: 0x2dd4bf,
+        depthWrite: false,
+        opacity: 0.22,
+        transparent: true,
+      }),
+    )
+
+    ;[
+      uniformCircularAngleArc,
+      uniformCircularAngleLabel,
+      uniformCircularLapPulse,
+      uniformCircularRadiusLabel,
+    ].forEach((object) => {
+      object.renderOrder = 9
+      object.visible = false
+      scene.add(object)
+    })
+
     const arrows = Object.fromEntries(
       vectorIds.map((vectorId) => [
         vectorId,
@@ -1416,6 +1647,24 @@ export function KinematicsScene({
       traceColors,
       tracePositionAttribute,
       tracePositions,
+      uniformCircularAngleArc,
+      uniformCircularAngleArcPositionAttribute,
+      uniformCircularAngleArcPositions,
+      uniformCircularAngleLabel,
+      uniformCircularLapPulse,
+      uniformCircularRadiusLabel,
+      acceleratedMotionAccelerationLabel,
+      acceleratedMotionBodyShadow,
+      acceleratedMotionCurrentLabel,
+      acceleratedMotionHeightBand,
+      acceleratedMotionHeightLabel,
+      acceleratedMotionImpactRing,
+      acceleratedMotionVelocityLabel,
+      uniformMotionBodyShadow,
+      uniformMotionCurrentLabel,
+      uniformMotionCurrentMarker,
+      uniformMotionDisplacementBand,
+      uniformMotionDisplacementLabel,
       atwoodMassHalfHeight: atwoodMassSize / 2,
       workEnergyBodyLift: sceneBodySize * 0.55,
       workEnergyMaxThermalEnergyJoules: Math.max(
@@ -1427,8 +1676,8 @@ export function KinematicsScene({
     }
 
     cameraPoseRef.current = {
-      pitchRadians: getInitialCameraPitchRadians(simulationId),
-      yawRadians: getInitialCameraYawRadians(simulationId),
+      pitchRadians: getInitialCameraPitchRadians(simulationId, cameraViewMode),
+      yawRadians: getInitialCameraYawRadians(simulationId, cameraViewMode),
     }
     observer.observe(parent)
     updateOrbitCamera(objectsRef.current, cameraPoseRef.current)
@@ -1445,7 +1694,7 @@ export function KinematicsScene({
       renderer.dispose()
       objectsRef.current = null
     }
-  }, [parameters, renderCurrentFrame, samples, simulationId])
+  }, [cameraViewMode, parameters, renderCurrentFrame, samples, simulationId])
 
   useEffect(() => {
     if (import.meta.env.MODE === 'test') {
@@ -1611,7 +1860,13 @@ function updateKinematicsObjects({
     objects.body.rotation.y = sample.angleRadians
   }
 
-  updateConstrainedBodyObjects(objects, sample, simulationId, showVectors)
+  updateConstrainedBodyObjects(
+    objects,
+    sample,
+    simulationId,
+    showTrace,
+    showVectors,
+  )
   Object.values(objects.arrows).forEach((arrow) => {
     arrow.visible = false
   })
@@ -1640,7 +1895,11 @@ function updateKinematicsObjects({
         ),
       )
       arrow.setDirection(direction.normalize())
-      arrow.setLength(getVectorDisplayLength(vector), 0.08, 0.045)
+      arrow.setLength(
+        getVectorDisplayLength(vector, objects, sample, simulationId),
+        0.08,
+        0.045,
+      )
     })
   }
 
@@ -1656,6 +1915,46 @@ function getKinematicsVectorOrigin(
 ) {
   if (simulationId === 'collisions-1d-2d' && vectorId === 'secondaryVelocity') {
     return objects.secondaryBody.position.clone()
+  }
+
+  if (simulationId === 'uniform-linear-motion' && vectorId === 'displacement') {
+    const scale = objects.sceneProjection.positionScale
+    const startX = (sample.positionMeters - sample.displacementMeters) * scale
+
+    return new THREE.Vector3(startX, 0.22, objects.bodyRadius + 0.12)
+  }
+
+  if (simulationId === 'uniform-circular-motion') {
+    if (vectorId === 'displacement') {
+      return new THREE.Vector3(0, 0, 0.09)
+    }
+
+    if (vectorId === 'velocity') {
+      return fallbackPosition.clone().add(new THREE.Vector3(0, 0, 0.08))
+    }
+
+    if (vectorId === 'centripetal') {
+      return fallbackPosition.clone().add(new THREE.Vector3(0, 0, 0.1))
+    }
+  }
+
+  if (simulationId === 'uniformly-accelerated-motion') {
+    const scale = objects.sceneProjection.positionScale
+    const initialZ = (sample.zMeters - sample.displacementMeters) * scale
+
+    if (vectorId === 'displacement') {
+      return new THREE.Vector3(objects.bodyRadius * 1.35, 0.2, initialZ)
+    }
+
+    if (vectorId === 'velocity') {
+      return fallbackPosition.clone().add(new THREE.Vector3(-objects.bodyRadius, 0, 0))
+    }
+
+    if (vectorId === 'acceleration') {
+      return fallbackPosition
+        .clone()
+        .add(new THREE.Vector3(objects.bodyRadius, 0, 0))
+    }
   }
 
   if (simulationId === 'torque-levers-center-mass') {
@@ -1681,10 +1980,80 @@ function getKinematicsVectorOrigin(
   return fallbackPosition.clone()
 }
 
+function updateUniformCircularMotionObjects(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+  showVectors: boolean,
+) {
+  const radiusScene = Math.max(
+    0.001,
+    Math.hypot(sample.xMeters, sample.zMeters) *
+      objects.sceneProjection.positionScale,
+  )
+  const initialAngleRadians =
+    sample.angleRadians -
+    sample.angularVelocityRadiansPerSecond * sample.timeSeconds
+  const cycleSweepRadians = normalizePositiveRadians(
+    sample.angleRadians - initialAngleRadians,
+  )
+  const pointCount = updateArcLineGeometry({
+    endAngleRadians: initialAngleRadians + cycleSweepRadians,
+    positions: objects.uniformCircularAngleArcPositions,
+    radius: radiusScene * 0.44,
+    segmentCapacity: uniformCircularAngleArcSegments,
+    startAngleRadians: initialAngleRadians,
+    z: 0.08,
+  })
+  const midAngleRadians = initialAngleRadians + cycleSweepRadians / 2
+  const currentAngleDegrees = normalizeDegrees(
+    radiansToDegrees(sample.angleRadians),
+  )
+  const currentLaps =
+    sample.periodSeconds > 0
+      ? Math.floor(Math.max(0, sample.timeSeconds / sample.periodSeconds))
+      : 0
+  const pulsePhase =
+    sample.periodSeconds > 0
+      ? (sample.timeSeconds % sample.periodSeconds) / sample.periodSeconds
+      : 0
+  const pulseIntensity = clamp(1 - Math.min(pulsePhase, 1 - pulsePhase) * 14, 0, 1)
+  const pulseMaterial =
+    objects.uniformCircularLapPulse.material as THREE.MeshBasicMaterial
+
+  objects.uniformCircularAngleArc.geometry.setDrawRange(0, pointCount)
+  objects.uniformCircularAngleArcPositionAttribute.needsUpdate = true
+  objects.uniformCircularAngleLabel.position.set(
+    Math.cos(midAngleRadians) * radiusScene * 0.58,
+    Math.sin(midAngleRadians) * radiusScene * 0.58,
+    0.26,
+  )
+  updateSceneTextSprite(
+    objects.uniformCircularAngleLabel,
+    `theta = ${formatSceneDynamicNumber(currentAngleDegrees)} deg`,
+  )
+  objects.uniformCircularRadiusLabel.visible = showVectors
+  objects.uniformCircularRadiusLabel.position.set(
+    sample.xMeters * objects.sceneProjection.positionScale * 0.5,
+    sample.zMeters * objects.sceneProjection.positionScale * 0.5,
+    0.24,
+  )
+  updateSceneTextSprite(
+    objects.uniformCircularRadiusLabel,
+    `r = ${formatSceneNumber(Math.hypot(sample.xMeters, sample.zMeters))} m`,
+  )
+  objects.uniformCircularLapPulse.position.set(0, 0, 0.07)
+  objects.uniformCircularLapPulse.scale.setScalar(
+    radiusScene * (0.19 + pulseIntensity * 0.065),
+  )
+  pulseMaterial.opacity = 0.16 + pulseIntensity * 0.42
+  objects.uniformCircularLapPulse.visible = currentLaps > 0 || pulseIntensity > 0
+}
+
 function updateConstrainedBodyObjects(
   objects: SceneObjects,
   sample: KinematicsSample,
   simulationId: KinematicsSimulationId,
+  showTrace: boolean,
   showVectors: boolean,
 ) {
   const isAtwood = simulationId === 'atwood-machine'
@@ -1696,6 +2065,10 @@ function updateConstrainedBodyObjects(
   const isRigidRotation = simulationId === 'rigid-body-rotation'
   const isRolling = simulationId === 'rolling-without-slipping'
   const isTorqueLever = simulationId === 'torque-levers-center-mass'
+  const isUniformCircularMotion = simulationId === 'uniform-circular-motion'
+  const isUniformLinearMotion = simulationId === 'uniform-linear-motion'
+  const isUniformlyAcceleratedMotion =
+    simulationId === 'uniformly-accelerated-motion'
 
   setRigidBodyRotationObjectsVisible(objects, isRigidRotation)
   objects.secondaryBody.visible = isAtwood || isCollision || isOrbit
@@ -1730,9 +2103,48 @@ function updateConstrainedBodyObjects(
   objects.leverSupport.visible = isTorqueLever
   objects.orbitCentralBody.visible = isOrbit
   objects.orbitSatellitePath.visible = isOrbit
+  objects.acceleratedMotionAccelerationLabel.visible =
+    isUniformlyAcceleratedMotion && showVectors
+  objects.acceleratedMotionBodyShadow.visible = isUniformlyAcceleratedMotion
+  objects.acceleratedMotionCurrentLabel.visible = isUniformlyAcceleratedMotion
+  objects.acceleratedMotionHeightBand.visible = false
+  objects.acceleratedMotionHeightLabel.visible = false
+  objects.acceleratedMotionImpactRing.visible = isUniformlyAcceleratedMotion
+  objects.acceleratedMotionVelocityLabel.visible =
+    isUniformlyAcceleratedMotion && showVectors
+  objects.uniformMotionBodyShadow.visible = isUniformLinearMotion
+  objects.uniformMotionCurrentLabel.visible = isUniformLinearMotion
+  objects.uniformMotionCurrentMarker.visible = isUniformLinearMotion
+  objects.uniformMotionDisplacementBand.visible = false
+  objects.uniformMotionDisplacementLabel.visible = false
+  objects.uniformCircularAngleArc.visible = isUniformCircularMotion
+  objects.uniformCircularAngleLabel.visible = isUniformCircularMotion
+  objects.uniformCircularLapPulse.visible = isUniformCircularMotion
+  objects.uniformCircularRadiusLabel.visible =
+    isUniformCircularMotion && showVectors
 
   if (isRigidRotation) {
     updateRigidBodyRotationObjects(objects, sample, showVectors)
+    return
+  }
+
+  if (isUniformCircularMotion) {
+    updateUniformCircularMotionObjects(objects, sample, showVectors)
+    return
+  }
+
+  if (isUniformLinearMotion) {
+    updateUniformLinearMotionObjects(objects, sample, showTrace)
+    return
+  }
+
+  if (isUniformlyAcceleratedMotion) {
+    updateUniformlyAcceleratedMotionObjects(
+      objects,
+      sample,
+      showTrace,
+      showVectors,
+    )
     return
   }
 
@@ -1873,6 +2285,159 @@ function updateConstrainedBodyObjects(
   })
   objects.rope.geometry.setDrawRange(0, ropePoints.length)
   objects.ropePositionAttribute.needsUpdate = true
+}
+
+function updateUniformLinearMotionObjects(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+  showTrace: boolean,
+) {
+  const scale = objects.sceneProjection.positionScale
+  const bodyLift = objects.bodyRadius + 0.07
+  const currentX = sample.positionMeters * scale
+  const startX = (sample.positionMeters - sample.displacementMeters) * scale
+  const displacementLength = Math.abs(currentX - startX)
+  const displacementCenterX = (currentX + startX) / 2
+
+  objects.body.position.set(currentX, 0, bodyLift)
+  objects.body.scale.setScalar(1.08)
+  objects.uniformMotionBodyShadow.position.set(currentX, 0, 0.055)
+  objects.uniformMotionBodyShadow.scale.set(
+    1.12,
+    clamp(0.62 + sample.speedMetersPerSecond * 0.08, 0.62, 1.1),
+    1,
+  )
+  objects.uniformMotionCurrentMarker.position.set(currentX, 0, 0.092)
+  objects.uniformMotionCurrentLabel.position.set(
+    currentX,
+    objects.bodyRadius * 2.05,
+    bodyLift + objects.bodyRadius * 1.35,
+  )
+  updateSceneTextSprite(
+    objects.uniformMotionCurrentLabel,
+    `s(t) = ${formatSceneDynamicNumber(sample.positionMeters)} m`,
+  )
+
+  if (showTrace && displacementLength > 0.004) {
+    objects.uniformMotionDisplacementBand.visible = true
+    objects.uniformMotionDisplacementBand.position.set(
+      displacementCenterX,
+      -0.26,
+      0.082,
+    )
+    objects.uniformMotionDisplacementBand.scale.set(displacementLength, 1, 1)
+    objects.uniformMotionDisplacementLabel.visible = true
+    objects.uniformMotionDisplacementLabel.position.set(
+      displacementCenterX,
+      -0.55,
+      0.29,
+    )
+    updateSceneTextSprite(
+      objects.uniformMotionDisplacementLabel,
+      `Delta s = ${formatSceneDynamicNumber(sample.displacementMeters)} m`,
+    )
+  }
+}
+
+function updateUniformlyAcceleratedMotionObjects(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+  showTrace: boolean,
+  showVectors: boolean,
+) {
+  const scale = objects.sceneProjection.positionScale
+  const currentZ = sample.zMeters * scale
+  const initialZ = (sample.zMeters - sample.displacementMeters) * scale
+  const displacementLength = Math.abs(currentZ - initialZ)
+  const displacementCenterZ = (currentZ + initialZ) / 2
+  const bodyLift = objects.bodyRadius
+  const bodyX = 0
+  const readingX = objects.bodyRadius * 2.65
+  const labelY = objects.bodyRadius * 1.42
+  const heightLabelZ = Math.max(currentZ * 0.5, 0.26)
+  const impactMaterial = objects.acceleratedMotionImpactRing
+    .material as THREE.MeshBasicMaterial
+  const impactPulse = sample.isGrounded
+    ? 1.12 + Math.sin(sample.timeSeconds * 12) * 0.045
+    : 0.92
+
+  objects.body.position.set(bodyX, 0, currentZ + bodyLift)
+  objects.body.scale.setScalar(1.12)
+  objects.acceleratedMotionBodyShadow.position.set(bodyX, 0, 0.046)
+  objects.acceleratedMotionBodyShadow.scale.set(
+    clamp(1.12 - currentZ * 0.018, 0.62, 1.12),
+    clamp(0.54 + sample.speedMetersPerSecond * 0.018, 0.54, 1.2),
+    1,
+  )
+  objects.acceleratedMotionImpactRing.position.set(bodyX, 0, 0.055)
+  objects.acceleratedMotionImpactRing.scale.setScalar(impactPulse)
+  impactMaterial.opacity = sample.isGrounded ? 0.9 : 0.34
+
+  objects.acceleratedMotionCurrentLabel.position.set(
+    readingX,
+    labelY,
+    currentZ + bodyLift * 1.85,
+  )
+  updateSceneTextSprite(
+    objects.acceleratedMotionCurrentLabel,
+    `z(t) = ${formatSceneDynamicNumber(sample.zMeters)} m`,
+  )
+
+  if (showTrace && displacementLength > 0.004) {
+    objects.acceleratedMotionHeightBand.visible = true
+    objects.acceleratedMotionHeightBand.position.set(
+      readingX * 0.62,
+      0.02,
+      displacementCenterZ,
+    )
+    objects.acceleratedMotionHeightBand.scale.set(1, 1, displacementLength)
+    objects.acceleratedMotionHeightLabel.visible = true
+    objects.acceleratedMotionHeightLabel.position.set(
+      readingX * 1.45,
+      labelY,
+      heightLabelZ,
+    )
+    updateSceneTextSprite(
+      objects.acceleratedMotionHeightLabel,
+      sample.zMeters >= 0
+        ? `altura restante = ${formatSceneDynamicNumber(sample.zMeters)} m`
+        : `Delta z = ${formatSceneDynamicNumber(sample.displacementMeters)} m`,
+    )
+  }
+
+  if (showVectors) {
+    const velocityLabelZ =
+      currentZ +
+      bodyLift +
+      (sample.velocityZMetersPerSecond < 0 ? -bodyLift * 1.85 : bodyLift * 1.85)
+    const accelerationLabelZ =
+      currentZ +
+      bodyLift +
+      (sample.accelerationZMetersPerSecondSquared < 0
+        ? -bodyLift * 3.1
+        : bodyLift * 3.1)
+
+    objects.acceleratedMotionVelocityLabel.position.set(
+      -readingX,
+      labelY,
+      velocityLabelZ,
+    )
+    objects.acceleratedMotionAccelerationLabel.position.set(
+      -readingX * 1.08,
+      labelY,
+      accelerationLabelZ,
+    )
+    updateSceneTextSprite(
+      objects.acceleratedMotionVelocityLabel,
+      `v = ${formatSceneDynamicNumber(sample.velocityZMetersPerSecond)} m/s`,
+    )
+    updateSceneTextSprite(
+      objects.acceleratedMotionAccelerationLabel,
+      `a = ${formatSceneDynamicNumber(
+        sample.accelerationZMetersPerSecondSquared,
+      )} m/s^2`,
+    )
+  }
 }
 
 function updateOrbitSatellitePath(
@@ -3303,6 +3868,21 @@ function updateTrace(
     return
   }
 
+  if (simulationId === 'uniform-linear-motion') {
+    updateUniformLinearMotionTrace(
+      objects,
+      samples[0] ?? currentSample,
+      currentSample,
+      showTrace,
+    )
+    return
+  }
+
+  if (simulationId === 'uniformly-accelerated-motion') {
+    updateUniformlyAcceleratedMotionTrace(objects, currentSample, showTrace)
+    return
+  }
+
   if (!showTrace || sampleIndex < 1) {
     objects.trace.visible = false
     objects.trace.geometry.setDrawRange(0, 0)
@@ -3367,6 +3947,95 @@ function updateTrace(
     objects.traceColors[colorOffset + 2] = color.blue
     objects.traceColors[colorOffset + 3] = opacity
   })
+
+  objects.trace.visible = true
+  objects.trace.geometry.setDrawRange(0, drawCount)
+  objects.tracePositionAttribute.needsUpdate = true
+  objects.traceColorAttribute.needsUpdate = true
+}
+
+function updateUniformLinearMotionTrace(
+  objects: SceneObjects,
+  startSample: KinematicsSample,
+  currentSample: KinematicsSample,
+  showTrace: boolean,
+) {
+  const displacementMeters =
+    currentSample.positionMeters -
+    (startSample.positionMeters - startSample.displacementMeters)
+
+  if (!showTrace || Math.abs(displacementMeters) < 0.004) {
+    objects.trace.visible = false
+    objects.trace.geometry.setDrawRange(0, 0)
+    return
+  }
+
+  const scale = objects.sceneProjection.positionScale
+  const startX =
+    (startSample.positionMeters - startSample.displacementMeters) * scale
+  const endX = currentSample.positionMeters * scale
+  const drawCount = Math.min(uniformLinearTracePointCount, maxTracePoints)
+
+  for (let index = 0; index < drawCount; index += 1) {
+    const ratio = drawCount <= 1 ? 1 : index / (drawCount - 1)
+    const positionOffset = index * 3
+    const colorOffset = index * 4
+    const opacity =
+      traceMinOpacity + ratio * (traceMaxOpacity - traceMinOpacity)
+
+    objects.tracePositions[positionOffset] = lerp(startX, endX, ratio)
+    objects.tracePositions[positionOffset + 1] = 0.02
+    objects.tracePositions[positionOffset + 2] = 0.128
+    objects.traceColors[colorOffset] = traceColor.red
+    objects.traceColors[colorOffset + 1] = traceColor.green
+    objects.traceColors[colorOffset + 2] = traceColor.blue
+    objects.traceColors[colorOffset + 3] = opacity
+  }
+
+  objects.trace.visible = true
+  objects.trace.geometry.setDrawRange(0, drawCount)
+  objects.tracePositionAttribute.needsUpdate = true
+  objects.traceColorAttribute.needsUpdate = true
+}
+
+function updateUniformlyAcceleratedMotionTrace(
+  objects: SceneObjects,
+  currentSample: KinematicsSample,
+  showTrace: boolean,
+) {
+  if (!showTrace || Math.abs(currentSample.displacementMeters) < 0.004) {
+    objects.trace.visible = false
+    objects.trace.geometry.setDrawRange(0, 0)
+    return
+  }
+
+  const scale = objects.sceneProjection.positionScale
+  const startZ =
+    (currentSample.zMeters - currentSample.displacementMeters) * scale
+  const endZ = currentSample.zMeters * scale
+  const drawCount = Math.min(constantAccelerationTracePointCount, maxTracePoints)
+
+  for (let index = 0; index < drawCount; index += 1) {
+    const ratio = drawCount <= 1 ? 1 : index / (drawCount - 1)
+    const speedRatio = clamp(
+      currentSample.speedMetersPerSecond / 24,
+      0,
+      1,
+    )
+    const color = blendRgb(traceColor, thermalTraceStartColor, ratio * speedRatio)
+    const positionOffset = index * 3
+    const colorOffset = index * 4
+    const opacity =
+      traceMinOpacity + ratio * (traceMaxOpacity - traceMinOpacity)
+
+    objects.tracePositions[positionOffset] = 0
+    objects.tracePositions[positionOffset + 1] = 0.018
+    objects.tracePositions[positionOffset + 2] = lerp(startZ, endZ, ratio)
+    objects.traceColors[colorOffset] = color.red
+    objects.traceColors[colorOffset + 1] = color.green
+    objects.traceColors[colorOffset + 2] = color.blue
+    objects.traceColors[colorOffset + 3] = opacity
+  }
 
   objects.trace.visible = true
   objects.trace.geometry.setDrawRange(0, drawCount)
@@ -3828,6 +4497,14 @@ function createReferencePath(
     return createWorkEnergyTrackReference(workEnergyProfile)
   }
 
+  if (simulationId === 'uniform-linear-motion') {
+    return createUniformLinearMotionReferencePath(samples, sceneProjection)
+  }
+
+  if (simulationId === 'uniformly-accelerated-motion') {
+    return createUniformlyAcceleratedMotionReferencePath(samples, sceneProjection)
+  }
+
   if (simulationId === 'mass-spring') {
     return createMassSpringReferencePath(samples, sceneProjection)
   }
@@ -3879,6 +4556,353 @@ function createReferencePath(
   })
 
   return new THREE.Line(geometry, material)
+}
+
+function createUniformLinearMotionReferencePath(
+  samples: KinematicsSample[],
+  sceneProjection: KinematicsSceneProjection,
+) {
+  const group = new THREE.Group()
+  const firstSample = samples[0]
+
+  if (!firstSample) {
+    return group
+  }
+
+  const scale = sceneProjection.positionScale
+  const range = getUniformLinearMotionTrackRange(samples)
+  const minX = range.minMeters * scale
+  const maxX = range.maxMeters * scale
+  const trackLength = Math.max(0.1, maxX - minX)
+  const trackCenterX = (minX + maxX) / 2
+  const trackMaterial = new THREE.MeshStandardMaterial({
+    color: 0x0f766e,
+    emissive: 0x0f766e,
+    emissiveIntensity: 0.48,
+    metalness: 0.18,
+    roughness: 0.36,
+  })
+  const track = new THREE.Mesh(
+    new THREE.BoxGeometry(trackLength, 0.26, 0.04),
+    trackMaterial,
+  )
+
+  track.position.set(trackCenterX, 0, 0.028)
+  group.add(track)
+  group.add(
+    createSceneLine(
+      new THREE.Vector3(minX, -0.19, 0.075),
+      new THREE.Vector3(maxX, -0.19, 0.075),
+      0x38bdf8,
+      0.48,
+    ),
+  )
+  group.add(
+    createSceneLine(
+      new THREE.Vector3(minX, 0.19, 0.075),
+      new THREE.Vector3(maxX, 0.19, 0.075),
+      0x2dd4bf,
+      0.58,
+    ),
+  )
+
+  const tickMaterial = new THREE.MeshBasicMaterial({
+    color: 0xe6e8ec,
+    transparent: true,
+    opacity: 0.72,
+  })
+  const firstTickMeters =
+    Math.ceil(range.minMeters / range.tickStepMeters) * range.tickStepMeters
+
+  for (
+    let meters = firstTickMeters;
+    meters <= range.maxMeters + 1e-9;
+    meters += range.tickStepMeters
+  ) {
+    const isOrigin = Math.abs(meters) < 1e-9
+    const tick = new THREE.Mesh(
+      new THREE.BoxGeometry(0.018, isOrigin ? 0.62 : 0.42, 0.026),
+      tickMaterial,
+    )
+
+    tick.position.set(meters * scale, 0, 0.09)
+    group.add(tick)
+
+    const label = createSceneTextSprite(`${formatSceneNumber(meters)} m`, {
+      background: 'rgba(15, 17, 21, 0.58)',
+      color: isOrigin ? '#2DD4BF' : '#CBD5E1',
+      scale: 0.14,
+    })
+
+    label.position.set(meters * scale, -0.48, 0.21)
+    group.add(label)
+  }
+
+  const startX = firstSample.positionMeters * scale
+  const startMarker = new THREE.Mesh(
+    new THREE.TorusGeometry(0.17, 0.012, 8, 48),
+    new THREE.MeshBasicMaterial({
+      color: 0xa3e635,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.94,
+    }),
+  )
+  const startPole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.012, 0.012, 0.42, 10),
+    new THREE.MeshBasicMaterial({
+      color: 0xa3e635,
+      transparent: true,
+      opacity: 0.8,
+    }),
+  )
+  const startLabel = createSceneTextSprite('s0', {
+    background: 'rgba(15, 17, 21, 0.68)',
+    color: '#A3E635',
+    scale: 0.18,
+  })
+
+  startMarker.position.set(startX, 0, 0.098)
+  startPole.rotation.x = Math.PI / 2
+  startPole.position.set(startX, 0.28, 0.31)
+  startLabel.position.set(startX, 0.44, 0.58)
+  group.add(startMarker)
+  group.add(startPole)
+  group.add(startLabel)
+
+  const ghostMaterial = new THREE.MeshStandardMaterial({
+    color: 0x38bdf8,
+    depthWrite: false,
+    emissive: 0x083344,
+    emissiveIntensity: 0.36,
+    metalness: 0.04,
+    opacity: 0.24,
+    roughness: 0.48,
+    transparent: true,
+  })
+
+  selectUniformLinearMotionStrobeSamples(samples, 20).forEach(
+    (sample, index) => {
+      if (sample.timeSeconds < 0.5) {
+        return
+      }
+
+      const ghost = new THREE.Mesh(
+        new THREE.SphereGeometry(0.12, 18, 12),
+        ghostMaterial,
+      )
+      const label = createSceneTextSprite(
+        `t=${formatSceneNumber(sample.timeSeconds)}s`,
+        {
+          background: 'rgba(15, 17, 21, 0.62)',
+          color: '#93C5FD',
+          scale: 0.135,
+        },
+      )
+      const labelYOffset = index % 2 === 0 ? 0.34 : 0.58
+
+      ghost.position.set(sample.positionMeters * scale, 0, 0.22)
+      label.position.set(sample.positionMeters * scale, labelYOffset, 0.44)
+      group.add(ghost)
+      group.add(label)
+    },
+  )
+
+  const accelerationLabel = createSceneTextSprite('a = 0 m/s^2', {
+    background: 'rgba(15, 17, 21, 0.68)',
+    color: '#FDBA74',
+    scale: 0.16,
+  })
+
+  accelerationLabel.position.set(maxX, 0.56, 0.38)
+  group.add(accelerationLabel)
+
+  return group
+}
+
+function createUniformlyAcceleratedMotionReferencePath(
+  samples: KinematicsSample[],
+  sceneProjection: KinematicsSceneProjection,
+) {
+  const group = new THREE.Group()
+  const firstSample = samples[0]
+
+  if (!firstSample) {
+    return group
+  }
+
+  const scale = sceneProjection.positionScale
+  const range = getUniformlyAcceleratedMotionTowerRange(samples)
+  const minZ = range.minMeters * scale
+  const maxZ = range.maxMeters * scale
+  const towerHeight = Math.max(0.1, maxZ - minZ)
+  const rulerX = -0.72
+  const rulerY = -0.36
+  const tickStartMeters =
+    Math.ceil(range.minMeters / range.tickStepMeters) *
+    range.tickStepMeters
+  const platformSize = clamp(towerHeight * 0.26, 1.7, 4.2)
+  const platform = new THREE.Mesh(
+    new THREE.BoxGeometry(platformSize, platformSize, 0.055),
+    new THREE.MeshStandardMaterial({
+      color: 0x20242d,
+      emissive: 0x071016,
+      emissiveIntensity: 0.18,
+      metalness: 0.16,
+      roughness: 0.52,
+    }),
+  )
+
+  platform.position.set(0, 0, -0.028)
+  group.add(platform)
+
+  const impactZone = new THREE.Mesh(
+    new THREE.TorusGeometry(0.42, 0.018, 8, 72),
+    new THREE.MeshBasicMaterial({
+      color: 0x2dd4bf,
+      depthWrite: false,
+      opacity: 0.62,
+      transparent: true,
+    }),
+  )
+
+  impactZone.position.set(0, 0, 0.048)
+  group.add(impactZone)
+
+  const towerMaterial = new THREE.MeshStandardMaterial({
+    color: 0x94a3b8,
+    emissive: 0x0f172a,
+    emissiveIntensity: 0.24,
+    metalness: 0.18,
+    opacity: 0.82,
+    roughness: 0.42,
+    transparent: true,
+  })
+  const tower = new THREE.Mesh(
+    new THREE.BoxGeometry(0.035, 0.05, towerHeight),
+    towerMaterial,
+  )
+
+  tower.position.set(rulerX, rulerY, (minZ + maxZ) / 2)
+  group.add(tower)
+  group.add(
+    createSceneLine(
+      new THREE.Vector3(0, 0, Math.max(0, minZ)),
+      new THREE.Vector3(0, 0, maxZ),
+      0x2dd4bf,
+      0.52,
+    ),
+  )
+
+  const tickMaterial = new THREE.MeshBasicMaterial({
+    color: 0xe6e8ec,
+    opacity: 0.76,
+    transparent: true,
+  })
+
+  for (
+    let meters = tickStartMeters;
+    meters <= range.maxMeters + 1e-9;
+    meters += range.tickStepMeters
+  ) {
+    const isGround = Math.abs(meters) < 1e-9
+    const tickZ = meters * scale
+    const tick = new THREE.Mesh(
+      new THREE.BoxGeometry(isGround ? 0.34 : 0.24, 0.026, 0.018),
+      tickMaterial,
+    )
+    const label = createSceneTextSprite(`${formatSceneNumber(meters)} m`, {
+      background: 'rgba(15, 17, 21, 0.58)',
+      color: isGround ? '#2DD4BF' : '#CBD5E1',
+      scale: 0.135,
+    })
+
+    tick.position.set(rulerX + 0.1, rulerY, tickZ)
+    label.position.set(rulerX - 0.32, rulerY, tickZ)
+    group.add(tick)
+    group.add(label)
+  }
+
+  const towerLabel = createSceneTextSprite('torre z (m)', {
+    background: 'rgba(15, 17, 21, 0.68)',
+    color: '#E6E8EC',
+    scale: 0.15,
+  })
+
+  towerLabel.position.set(rulerX, rulerY, maxZ + 0.34)
+  group.add(towerLabel)
+
+  const initialMarker = new THREE.Mesh(
+    new THREE.TorusGeometry(0.18, 0.012, 8, 48),
+    new THREE.MeshBasicMaterial({
+      color: 0xa3e635,
+      depthWrite: false,
+      opacity: 0.92,
+      transparent: true,
+    }),
+  )
+  const initialZ = firstSample.zMeters * scale
+  const initialLabel = createSceneTextSprite('z0', {
+    background: 'rgba(15, 17, 21, 0.68)',
+    color: '#A3E635',
+    scale: 0.17,
+  })
+
+  initialMarker.position.set(0, 0, initialZ + 0.02)
+  initialLabel.position.set(0.42, -0.24, initialZ + 0.28)
+  group.add(initialMarker)
+  group.add(initialLabel)
+
+  selectUniformlyAcceleratedMotionStrobeSamples(samples, 12).forEach(
+    (sample, index, strobeSamples) => {
+      const ratio =
+        strobeSamples.length <= 1 ? 0 : index / (strobeSamples.length - 1)
+      const ghost = new THREE.Mesh(
+        new THREE.SphereGeometry(0.12, 20, 14),
+        new THREE.MeshStandardMaterial({
+          color: 0x38bdf8,
+          depthWrite: false,
+          emissive: 0x082f49,
+          emissiveIntensity: 0.32 + ratio * 0.24,
+          metalness: 0.08,
+          opacity: 0.22 + ratio * 0.34,
+          roughness: 0.42,
+          transparent: true,
+        }),
+      )
+      const label = createSceneTextSprite(
+        `t=${formatSceneNumber(sample.timeSeconds)}s`,
+        {
+          background: 'rgba(15, 17, 21, 0.62)',
+          color: sample.isGrounded ? '#2DD4BF' : '#93C5FD',
+          scale: 0.13,
+        },
+      )
+      const labelX = index % 2 === 0 ? 0.56 : -0.44
+      const labelY = index % 2 === 0 ? 0.26 : 0.36
+
+      ghost.position.set(0, 0, sample.zMeters * scale + 0.12)
+      label.position.set(labelX, labelY, sample.zMeters * scale + 0.28)
+      group.add(ghost)
+      group.add(label)
+    },
+  )
+
+  const accelerationCue = createSceneTextSprite(
+    `a constante = ${formatSceneDynamicNumber(
+      firstSample.accelerationZMetersPerSecondSquared,
+    )} m/s^2`,
+    {
+      background: 'rgba(15, 17, 21, 0.68)',
+      color: '#FDBA74',
+      scale: 0.15,
+    },
+  )
+
+  accelerationCue.position.set(0.68, -0.34, Math.max(0.34, maxZ * 0.38))
+  group.add(accelerationCue)
+
+  return group
 }
 
 function addRollingWheelHoleMarkers({
@@ -4164,6 +5188,10 @@ function createCircularReferencePath(
     return new THREE.Group()
   }
 
+  if (simulationId === 'uniform-circular-motion') {
+    return createUniformCircularMotionReferencePath(samples, sceneProjection)
+  }
+
   const radiusMeters = firstSample
     ? Math.hypot(firstSample.xMeters, firstSample.zMeters)
     : 1
@@ -4199,6 +5227,226 @@ function createCircularReferencePath(
   })
 
   return new THREE.Line(geometry, material)
+}
+
+function createUniformCircularMotionReferencePath(
+  samples: KinematicsSample[],
+  sceneProjection: KinematicsSceneProjection,
+) {
+  const firstSample = samples[0]
+  const group = new THREE.Group()
+
+  if (!firstSample) {
+    return group
+  }
+
+  const scale = sceneProjection.positionScale
+  const radiusMeters = Math.hypot(firstSample.xMeters, firstSample.zMeters)
+  const radiusScene = Math.max(0.1, radiusMeters * scale)
+  const platform = new THREE.Mesh(
+    new THREE.CylinderGeometry(radiusScene * 1.16, radiusScene * 1.16, 0.035, 96),
+    new THREE.MeshStandardMaterial({
+      color: 0x17202a,
+      emissive: 0x06141a,
+      emissiveIntensity: 0.28,
+      metalness: 0.12,
+      opacity: 0.62,
+      roughness: 0.52,
+      transparent: true,
+    }),
+  )
+
+  platform.rotation.x = Math.PI / 2
+  platform.position.z = -0.035
+  group.add(platform)
+
+  const halo = new THREE.Mesh(
+    new THREE.TorusGeometry(radiusScene * 1.01, 0.028, 10, 160),
+    new THREE.MeshStandardMaterial({
+      color: 0xa3e635,
+      emissive: 0x365314,
+      emissiveIntensity: 0.46,
+      metalness: 0.04,
+      opacity: 0.82,
+      roughness: 0.34,
+      transparent: true,
+    }),
+  )
+  const innerGuide = new THREE.Mesh(
+    new THREE.TorusGeometry(radiusScene * 0.86, 0.009, 8, 128),
+    new THREE.MeshBasicMaterial({
+      color: 0x2dd4bf,
+      depthWrite: false,
+      opacity: 0.28,
+      transparent: true,
+    }),
+  )
+  const outerGuide = new THREE.Mesh(
+    new THREE.TorusGeometry(radiusScene * 1.16, 0.012, 8, 128),
+    new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      depthWrite: false,
+      opacity: 0.24,
+      transparent: true,
+    }),
+  )
+
+  halo.position.z = 0.035
+  innerGuide.position.z = 0.041
+  outerGuide.position.z = 0.039
+  group.add(halo)
+  group.add(innerGuide)
+  group.add(outerGuide)
+
+  const centerCore = new THREE.Mesh(
+    new THREE.SphereGeometry(0.085, 24, 14),
+    new THREE.MeshStandardMaterial({
+      color: 0xe6e8ec,
+      emissive: 0x2dd4bf,
+      emissiveIntensity: 0.42,
+      metalness: 0.22,
+      roughness: 0.28,
+    }),
+  )
+  const centerAxis = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.014, 0.014, 0.58, 14),
+    new THREE.MeshBasicMaterial({
+      color: 0xe6e8ec,
+      opacity: 0.58,
+      transparent: true,
+    }),
+  )
+
+  centerCore.position.z = 0.09
+  centerAxis.rotation.x = Math.PI / 2
+  centerAxis.position.z = 0.29
+  group.add(centerCore)
+  group.add(centerAxis)
+
+  for (let degrees = 0; degrees < 360; degrees += 30) {
+    const angle = (degrees * Math.PI) / 180
+    const major = degrees % 90 === 0
+    const startRadius = radiusScene * (major ? 0.76 : 0.88)
+    const endRadius = radiusScene * 1.12
+    const color = major ? 0x38bdf8 : 0x64748b
+    const opacity = major ? 0.46 : 0.22
+
+    group.add(
+      createSceneLine(
+        new THREE.Vector3(
+          Math.cos(angle) * startRadius,
+          Math.sin(angle) * startRadius,
+          0.06,
+        ),
+        new THREE.Vector3(
+          Math.cos(angle) * endRadius,
+          Math.sin(angle) * endRadius,
+          0.06,
+        ),
+        color,
+        opacity,
+      ),
+    )
+
+    if (major) {
+      const label = createSceneTextSprite(`${degrees} deg`, {
+        background: 'rgba(15, 17, 21, 0.62)',
+        color: degrees === 0 ? '#2DD4BF' : '#CBD5E1',
+        scale: 0.13,
+      })
+
+      label.position.set(
+        Math.cos(angle) * radiusScene * 1.32,
+        Math.sin(angle) * radiusScene * 1.32,
+        0.18,
+      )
+      group.add(label)
+    }
+  }
+
+  group.add(
+    createSceneLine(
+      new THREE.Vector3(0, 0, 0.07),
+      new THREE.Vector3(radiusScene, 0, 0.07),
+      0xa3e635,
+      0.32,
+    ),
+  )
+
+  const strobeSamples = selectUniformCircularMotionStrobeSamples(samples, 12)
+  const ghostMaterial = new THREE.MeshStandardMaterial({
+    color: 0x67e8f9,
+    depthWrite: false,
+    emissive: 0x083344,
+    emissiveIntensity: 0.36,
+    metalness: 0.12,
+    opacity: 0.24,
+    roughness: 0.34,
+    transparent: true,
+  })
+
+  strobeSamples.forEach((sample, index) => {
+    const position = toKinematicsScenePosition(sample, sceneProjection)
+    const ratio =
+      strobeSamples.length <= 1 ? 0 : index / (strobeSamples.length - 1)
+    const ghost = new THREE.Mesh(
+      new THREE.SphereGeometry(0.07 + ratio * 0.025, 18, 12),
+      ghostMaterial,
+    )
+    const tangentDirection = new THREE.Vector3(
+      -Math.sin(sample.angleRadians),
+      Math.cos(sample.angleRadians),
+      0,
+    )
+    const tangentLength = radiusScene * 0.23
+    const tangentStart = position
+      .clone()
+      .addScaledVector(tangentDirection, tangentLength * 0.12)
+    const tangentEnd = position
+      .clone()
+      .addScaledVector(tangentDirection, tangentLength)
+
+    tangentStart.z = 0.16
+    tangentEnd.z = 0.16
+    ghost.position.copy(position)
+    ghost.position.z = 0.14
+    group.add(ghost)
+    group.add(createSceneLine(tangentStart, tangentEnd, 0x38bdf8, 0.2))
+
+    if (index % 3 === 0) {
+      const label = createSceneTextSprite(
+        index === 0
+          ? 't=0'
+          : `t=${formatSceneNumber(sample.timeSeconds)}s`,
+        {
+          background: 'rgba(15, 17, 21, 0.62)',
+          color: '#93C5FD',
+          scale: 0.12,
+        },
+      )
+
+      label.position.set(
+        position.x * 1.08,
+        position.y * 1.08,
+        0.3 + (index % 2) * 0.05,
+      )
+      group.add(label)
+    }
+  })
+
+  const periodLabel = createSceneTextSprite(
+    `T = ${formatSceneNumber(firstSample.periodSeconds)} s`,
+    {
+      background: 'rgba(15, 17, 21, 0.68)',
+      color: '#2DD4BF',
+      scale: 0.15,
+    },
+  )
+
+  periodLabel.position.set(0, -radiusScene * 1.34, 0.22)
+  group.add(periodLabel)
+
+  return group
 }
 
 function downsamplePath(samples: KinematicsSample[]) {
@@ -4404,7 +5652,34 @@ function findTraceStartIndex(
 
   return 0
 }
-function getVectorDisplayLength(vector: KinematicsVectorOverlay) {
+function getVectorDisplayLength(
+  vector: KinematicsVectorOverlay,
+  objects?: SceneObjects,
+  sample?: KinematicsSample,
+  simulationId?: KinematicsSimulationId,
+) {
+  if (
+    objects &&
+    sample &&
+    simulationId === 'uniform-circular-motion'
+  ) {
+    const radiusScene =
+      Math.hypot(sample.xMeters, sample.zMeters) *
+      objects.sceneProjection.positionScale
+
+    if (vector.id === 'displacement') {
+      return Math.max(0.16, radiusScene)
+    }
+
+    if (vector.id === 'velocity') {
+      return clamp(vector.magnitude * 0.18, 0.28, radiusScene * 0.74)
+    }
+
+    if (vector.id === 'centripetal') {
+      return clamp(vector.magnitude * 0.12, 0.3, radiusScene * 0.7)
+    }
+  }
+
   const scale = vector.unit === 'm' ? 0.32 : vector.unit === 'm/s' ? 0.18 : 0.14
 
   return clamp(vector.magnitude * scale, 0.18, 1.35)
@@ -4553,7 +5828,52 @@ function updateOrbitCamera(
   positionOrbitCamera(objects, pose)
 }
 
-function getInitialCameraYawRadians(simulationId: KinematicsSimulationId) {
+function updateFollowCamera(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+  runtime: RuntimeProps,
+) {
+  if (
+    runtime.simulationId !== 'uniform-circular-motion' ||
+    runtime.cameraViewMode !== 'follow'
+  ) {
+    return
+  }
+
+  updateOrbitCamera(objects, {
+    pitchRadians: Math.atan2(0.42, 0.9),
+    yawRadians: sample.angleRadians - 0.86,
+  })
+}
+
+function getInitialCameraYawRadians(
+  simulationId: KinematicsSimulationId,
+  cameraViewMode: KinematicsCameraViewMode,
+) {
+  if (simulationId === 'uniformly-accelerated-motion') {
+    if (cameraViewMode === 'side') {
+      return 0
+    }
+
+    return cameraViewMode === 'top' ? -Math.PI / 2 : -0.42
+  }
+
+  if (simulationId === 'uniform-linear-motion') {
+    return cameraViewMode === 'cinematic' ? -0.42 : -Math.PI / 2
+  }
+
+  if (simulationId === 'uniform-circular-motion') {
+    if (cameraViewMode === 'top') {
+      return -Math.PI / 2
+    }
+
+    if (cameraViewMode === 'follow') {
+      return -0.78
+    }
+
+    return -0.52
+  }
+
   return simulationId === 'atwood-machine' ||
     simulationId === 'hydrostatics-buoyancy' ||
     simulationId === 'mass-spring'
@@ -4561,13 +5881,54 @@ function getInitialCameraYawRadians(simulationId: KinematicsSimulationId) {
     : initialCameraYawRadians
 }
 
-function getInitialCameraPitchRadians(simulationId: KinematicsSimulationId) {
+function getInitialCameraPitchRadians(
+  simulationId: KinematicsSimulationId,
+  cameraViewMode: KinematicsCameraViewMode,
+) {
+  if (simulationId === 'uniformly-accelerated-motion') {
+    return cameraViewMode === 'cinematic'
+      ? Math.atan2(0.42, 0.9)
+      : Math.atan2(0.12, 0.99)
+  }
+
+  if (simulationId === 'uniform-linear-motion') {
+    if (cameraViewMode === 'top') {
+      return Math.PI / 2 - 0.14
+    }
+
+    return cameraViewMode === 'side'
+      ? Math.atan2(0.14, 0.99)
+      : Math.atan2(0.32, 0.95)
+  }
+
+  if (simulationId === 'uniform-circular-motion') {
+    if (cameraViewMode === 'top') {
+      return Math.PI / 2 - 0.1
+    }
+
+    return cameraViewMode === 'follow'
+      ? Math.atan2(0.42, 0.9)
+      : Math.atan2(0.56, 0.82)
+  }
+
   return simulationId === 'rigid-body-rotation'
     ? Math.atan2(0.68, 0.74)
     : initialCameraPitchRadians
 }
 
 function getKinematicsCanvasAriaLabel(simulationId: KinematicsSimulationId) {
+  if (simulationId === 'uniformly-accelerated-motion') {
+    return 'Cena 3D de Cinematica para MUV e queda livre com torre graduada, solo, marcas estroboscopicas, vetores de velocidade e aceleracao, arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'uniform-linear-motion') {
+    return 'Cena 3D de Cinematica do MRU com pista retilinea, regua, marcas estroboscopicas, vetor velocidade, arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'uniform-circular-motion') {
+    return 'Cena 3D de Cinematica do MCU com plataforma circular, centro fixo, raio, angulo, marcas temporais, vetores tangencial e centripeto, arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom'
+  }
+
   if (simulationId === 'mass-spring') {
     return 'Cena 3D do massa-mola vertical com arraste para orbitar em torno, por cima e por baixo, e Shift + scroll para zoom'
   }
@@ -4621,6 +5982,157 @@ function normalizeWheelDeltaY(event: ReactWheelEvent<HTMLCanvasElement>) {
   return event.deltaY
 }
 
+type SceneTextSpriteOptions = {
+  background: string
+  color: string
+  fontSize?: number
+  paddingX?: number
+  paddingY?: number
+  scale?: number
+}
+
+function createSceneTextSprite(
+  text: string,
+  options: SceneTextSpriteOptions,
+) {
+  const resolvedOptions = resolveSceneTextSpriteOptions(options)
+  const textureData = createSceneTextTexture(text, resolvedOptions)
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      depthWrite: false,
+      map: textureData.texture,
+      transparent: true,
+    }),
+  )
+
+  sprite.userData.sceneText = {
+    options: resolvedOptions,
+    text,
+  }
+  sprite.scale.set(
+    resolvedOptions.scale * textureData.aspectRatio,
+    resolvedOptions.scale,
+    1,
+  )
+
+  return sprite
+}
+
+function updateSceneTextSprite(sprite: THREE.Sprite, text: string) {
+  const sceneText = sprite.userData.sceneText as
+    | { options: Required<SceneTextSpriteOptions>; text: string }
+    | undefined
+
+  if (!sceneText || sceneText.text === text) {
+    return
+  }
+
+  const material = sprite.material as THREE.SpriteMaterial
+  const previousTexture = material.map
+  const textureData = createSceneTextTexture(text, sceneText.options)
+
+  material.map = textureData.texture
+  material.needsUpdate = true
+  previousTexture?.dispose()
+  sprite.scale.set(
+    sceneText.options.scale * textureData.aspectRatio,
+    sceneText.options.scale,
+    1,
+  )
+  sceneText.text = text
+}
+
+function resolveSceneTextSpriteOptions(options: SceneTextSpriteOptions) {
+  return {
+    fontSize: 42,
+    paddingX: 18,
+    paddingY: 10,
+    scale: 0.18,
+    ...options,
+  }
+}
+
+function createSceneTextTexture(
+  text: string,
+  options: Required<SceneTextSpriteOptions>,
+) {
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
+
+  if (!context) {
+    throw new Error('Canvas 2D context is required for scene labels.')
+  }
+
+  context.font = `700 ${options.fontSize}px Inter, Segoe UI, Arial, sans-serif`
+  const metrics = context.measureText(text)
+  const width = Math.ceil(metrics.width + options.paddingX * 2)
+  const height = Math.ceil(options.fontSize + options.paddingY * 2)
+
+  canvas.width = width
+  canvas.height = height
+  context.font = `700 ${options.fontSize}px Inter, Segoe UI, Arial, sans-serif`
+  context.textAlign = 'center'
+  context.textBaseline = 'middle'
+  context.fillStyle = options.background
+  roundRect(context, 0, 0, width, height, height * 0.24)
+  context.fill()
+  context.fillStyle = options.color
+  context.fillText(text, width / 2, height / 2)
+
+  const texture = new THREE.CanvasTexture(canvas)
+
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.needsUpdate = true
+
+  return {
+    aspectRatio: width / height,
+    texture,
+  }
+}
+
+function roundRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  context.beginPath()
+  context.moveTo(x + radius, y)
+  context.arcTo(x + width, y, x + width, y + height, radius)
+  context.arcTo(x + width, y + height, x, y + height, radius)
+  context.arcTo(x, y + height, x, y, radius)
+  context.arcTo(x, y, x + width, y, radius)
+  context.closePath()
+}
+
+function formatSceneNumber(value: number) {
+  if (!Number.isFinite(value)) {
+    return '0'
+  }
+
+  const absoluteValue = Math.abs(value)
+
+  if (absoluteValue >= 100) {
+    return value.toFixed(0)
+  }
+
+  if (absoluteValue >= 10) {
+    return value.toFixed(1).replace(/\.0$/, '')
+  }
+
+  return value.toFixed(2).replace(/\.?0+$/, '')
+}
+
+function formatSceneDynamicNumber(value: number) {
+  if (!Number.isFinite(value)) {
+    return '0'
+  }
+
+  return value.toFixed(1).replace(/\.0$/, '')
+}
+
 function disposeScene(scene: THREE.Scene) {
   scene.traverse((object) => {
     if ('geometry' in object) {
@@ -4637,13 +6149,25 @@ function disposeScene(scene: THREE.Scene) {
 
       if (Array.isArray(material)) {
         material.forEach((item) => {
+          disposeMaterialTextures(item)
           item.dispose()
         })
       } else {
+        if (material) {
+          disposeMaterialTextures(material)
+        }
         material?.dispose()
       }
     }
   })
+}
+
+function disposeMaterialTextures(material: THREE.Material) {
+  const materialWithMap = material as THREE.Material & {
+    map?: THREE.Texture | null
+  }
+
+  materialWithMap.map?.dispose()
 }
 
 function blendRgb(
@@ -4660,6 +6184,22 @@ function blendRgb(
 
 function lerp(start: number, end: number, ratio: number) {
   return start + (end - start) * ratio
+}
+
+function radiansToDegrees(value: number) {
+  return (value * 180) / Math.PI
+}
+
+function normalizeDegrees(value: number) {
+  const normalized = value % 360
+
+  return normalized < 0 ? normalized + 360 : normalized
+}
+
+function normalizePositiveRadians(value: number) {
+  const normalized = value % (Math.PI * 2)
+
+  return normalized < 0 ? normalized + Math.PI * 2 : normalized
 }
 
 function clamp(value: number, min: number, max: number) {
