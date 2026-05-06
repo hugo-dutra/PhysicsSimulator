@@ -2144,12 +2144,14 @@ function SidebarSimulationItem({
   simulation: SimulationDefinition
 }) {
   const isRunnable = isRunnableSimulation(simulation)
+  const statusAccent = getSidebarStatusAccent(simulation.status)
   const commonSx = {
     bgcolor: active
-      ? alpha(themeTokens.teal, 0.12)
+      ? alpha(statusAccent, 0.14)
       : alpha(themeTokens.panel, 0.42),
-    border: `1px solid ${active ? themeTokens.teal : themeTokens.border}`,
+    border: `1px solid ${active ? statusAccent : themeTokens.border}`,
     borderRadius: 1,
+    boxShadow: active ? `inset 3px 0 0 ${statusAccent}` : 'none',
     color: isRunnable ? 'text.primary' : 'text.secondary',
     display: 'block',
     minWidth: 0,
@@ -2201,11 +2203,11 @@ function SidebarSimulationItem({
           cursor: 'pointer',
           font: 'inherit',
           '&:focus-visible': {
-            outline: `2px solid ${themeTokens.teal}`,
+            outline: `2px solid ${statusAccent}`,
             outlineOffset: -2,
           },
           '&:hover': {
-            bgcolor: alpha(themeTokens.teal, 0.1),
+            bgcolor: alpha(statusAccent, active ? 0.18 : 0.08),
           },
         }}
         type="button"
@@ -2220,6 +2222,18 @@ function SidebarSimulationItem({
       {content}
     </Box>
   )
+}
+
+function getSidebarStatusAccent(status: SimulationStatus) {
+  if (status === 'analysis') {
+    return themeTokens.warning
+  }
+
+  if (status === 'ready') {
+    return themeTokens.teal
+  }
+
+  return themeTokens.border
 }
 
 function PendulumRuntime({

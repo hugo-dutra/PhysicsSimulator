@@ -82,7 +82,7 @@ Sistemas massa-mola verticais devem parecer um diagrama fisico pendurado, nao um
 - Vetores de peso, forca elastica, velocidade e aceleracao devem acompanhar a massa esferica e usar a mesma fonte de sample dos graficos e tabela.
 - Se houver amortecimento ou limite geometrico de extensao/compressao, o motor deve declarar o regime e a cena deve refletir esse estado.
 
-Aplicacao imediata: `Mecanica > Oscilacoes > Massa-mola vertical` deve mostrar uma mola presa no topo, oscilando no eixo vertical com massa esferica na extremidade inferior.
+Aplicacao imediata: `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical` deve mostrar uma mola presa no topo, oscilando no eixo vertical com massa esferica na extremidade inferior.
 
 ## Guia para perda de restricao
 

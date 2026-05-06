@@ -24,7 +24,7 @@
 
 ## Decisoes registradas
 
-- O primeiro core sera `Mecanica > Pendulo simples`.
+- O primeiro core sera o pendulo simples; no menu atual, fica em `Oscilacoes e Ondas > Oscilacoes > Pendulo simples`.
 - O catalogo planejado usa quatro areas principais: `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo`.
 - `Fluidos basicos` entra como subarea planejada, nao como area principal antes da prova do core.
 - Eletricidade e magnetismo ficam agrupados em `Eletromagnetismo`.
@@ -38,8 +38,8 @@
 - Viewport, graficos, tabela, formulas e apendice teorico seguem o padrao de painel maximizavel: apenas um fica em foco na janela, os demais paineis ficam invisiveis, e minimizar restaura o shell anterior sem perder sincronizacao.
 - `fixtures/simulations/catalog.json` deve listar todas as simulacoes planejadas do catalogo curricular; simulacoes com motor, cena, graficos, tabela, formulas, teoria e validacao ficam como `analysis` ate teste manual, e so depois podem virar `ready`.
 - A sidebar inicia abertas apenas as subareas com simulacoes em `analysis`; subareas apenas `ready` ou `planned` iniciam fechadas.
-- `Mecanica > Pendulo simples` fica como `ready` apos teste manual do dono do projeto.
-- A fatia de `Massa-mola vertical` foi antecipada em `Mecanica > Oscilacoes` e marcada como `ready` apos aprovacao manual: suporte superior fixo, mola helicoidal, massa esferica e oscilacao vertical em torno do equilibrio.
+- `Oscilacoes e Ondas > Oscilacoes > Pendulo simples` fica como `ready` apos teste manual do dono do projeto.
+- A fatia de `Massa-mola vertical` foi antecipada e marcada como `ready` apos aprovacao manual: suporte superior fixo, mola helicoidal, massa esferica e oscilacao vertical em torno do equilibrio. No menu atual, ela fica em `Oscilacoes e Ondas > Oscilacoes`, junto do pendulo e dos osciladores mais avancados.
 - Tabelas sincronizadas em playback devem manter quantidade fixa de linhas visiveis para evitar piscadas e deslocamento de layout; slots sem amostra podem aparecer vazios ate haver dados suficientes.
 - O pendulo simples deve expor, alem da velocidade angular, velocidade linear tangencial e aceleracoes tangencial/radial/total em graficos e tabela, calculadas no sample do motor.
 - Vetores exibidos na cena devem ter legenda visivel com cor, modulo atual e significado fisico.
@@ -53,8 +53,8 @@
 - O segundo lote da Fase 3 mantem `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho` como `ready`; `Trabalho e energia em trilho` foi aprovada manualmente apos ser alterada para rampa em U com perda percentual. Todas reutilizam o motor analitico compartilhado com campos extras de forca, tensao, atrito, trabalho, dissipacao, percentual de perda e limites de modelo.
 - O terceiro lote da Fase 3 mantem `Colisoes 1D e 2D`, `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido` como `ready`, ampliando o motor compartilhado com momento linear, impulso, componentes de forca, centro de massa, torque, momento de inercia e grandezas angulares.
 - O quarto lote da Fase 3 mantem `Rolamento sem escorregamento`, `Campo gravitacional e orbitas`, `Hidrostatica e empuxo` e `Continuidade e Bernoulli` como `ready` apos aprovacao manual, ampliando o motor compartilhado com aderencia/escorregamento, campo gravitacional, pressao, vazao, empuxo, fracao submersa, visual Venturi e warnings de limite de modelo.
-- `Mecanica > Oscilacoes > Massa-mola vertical` fica como `ready`, ampliando o motor compartilhado com equilibrio estatico `mg/k`, forca elastica, energia elastica/gravitacional, mola helicoidal sincronizada e warning de amortecimento.
-- `Oscilacoes e Ondas > Oscilacoes` inicia com `Oscilador amortecido`, `Oscilador forcado e ressonancia` e `Osciladores acoplados` em `analysis`, usando fixtures locais, live-canvas, cena Three.js de molas, regimes de amortecimento/ressonancia/acoplamento e teoria Markdown com KaTeX.
+- `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical` fica como `ready`, ampliando o motor compartilhado com equilibrio estatico `mg/k`, forca elastica, energia elastica/gravitacional, mola helicoidal sincronizada e warning de amortecimento.
+- `Oscilacoes e Ondas > Oscilacoes` concentra `Pendulo simples`, `Massa-mola vertical`, `Oscilador amortecido`, `Oscilador forcado e ressonancia` e `Osciladores acoplados`, usando fixtures locais, live-canvas, cenas Three.js de osciladores, regimes de amortecimento/ressonancia/acoplamento e teoria Markdown com KaTeX.
 - Simulacoes `analysis` ou `ready` devem ser auditadas pelo guia `10-simulation-fidelity-adjustment-guide.md`: parametros fisicamente validos em zero nao devem ser bloqueados por conveniencia visual, falhas de restricao devem trocar o regime no motor, e toda task futura de simulacao deve registrar essa auditoria antes de ser considerada pronta.
 - Em `Forca centripeta em curva`, atrito zero e valido. Quando `v^2/r > mu g`, o corpo deixa a curva ideal; com `mu = 0`, sai pela tangente em linha reta.
 - Em `Maquina de Atwood`, a representacao visual deve seguir o formato didatico de suporte fixo, polia fixa, fio passando pelo arco superior e massas em blocos alinhadas aos trechos verticais.
@@ -65,7 +65,7 @@
 - Definir se a aplicacao deve ser apenas web ou tambem empacotavel como desktop no futuro.
 - Definir estrategia final de testes e2e apos inicializar o frontend.
 - Definir criterios objetivos para quando PixiJS, Rapier, Matter.js, D3.js ou Manim deixam de ser opcionais e entram no bundle.
-- Definir se a proxima fatia deve ir para `Oscilacoes e Ondas` propriamente dita ou se vale fazer uma rodada de polimento visual nas simulacoes mecanicas ja prontas.
+- Definir se a proxima fatia deve seguir para ondas mecanicas/som/optica ou se vale fazer uma rodada de polimento visual nas simulacoes prontas.
 
 ## Gaps deixados para depois
 

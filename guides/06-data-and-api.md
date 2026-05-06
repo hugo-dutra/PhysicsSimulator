@@ -55,18 +55,24 @@ Toda simulacao nova ou alterada deve passar pelo `Simulation Fidelity Adjustment
 {
   "areas": [
     {
-      "id": "mechanics",
-      "label": "Mecanica",
+      "id": "waves",
+      "label": "Oscilacoes e Ondas",
       "simulations": [
         {
           "id": "simple-pendulum",
           "label": "Pendulo simples",
-          "topicPath": ["Mecanica", "Oscilacoes", "Pendulo simples"],
+          "topicPath": ["Oscilacoes e Ondas", "Oscilacoes", "Pendulo simples"],
           "status": "ready",
           "level": "introductory",
           "modelKind": "numerical",
           "renderer": "three"
-        },
+        }
+      ]
+    },
+    {
+      "id": "mechanics",
+      "label": "Mecanica",
+      "simulations": [
         {
           "id": "projectile-motion",
           "label": "Lancamento obliquo",

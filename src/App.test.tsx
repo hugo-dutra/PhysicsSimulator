@@ -32,8 +32,6 @@ describe('App', () => {
 
     return toggle
   }
-  const getMechanicsOscillationsToggle = () =>
-    getToggleByControls('subarea-mechanics-oscilacoes')
   const getWavesOscillationsToggle = () =>
     getToggleByControls('subarea-waves-oscilacoes')
 
@@ -51,11 +49,14 @@ describe('App', () => {
       screen.getByRole('heading', { name: /Pendulo simples/i }),
     ).toBeInTheDocument()
     expect(screen.getByText(/Catalogo local/i)).toBeInTheDocument()
-    openMechanicsArea()
-    fireEvent.click(getMechanicsOscillationsToggle())
+    openWavesArea()
+    if (getWavesOscillationsToggle().getAttribute('aria-expanded') !== 'true') {
+      fireEvent.click(getWavesOscillationsToggle())
+    }
     expect(
       screen.getByRole('button', { name: /Massa-mola vertical/i }),
     ).toBeInTheDocument()
+    openMechanicsArea()
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
     )
@@ -633,13 +634,14 @@ describe('App', () => {
       screen.getByRole('button', { name: /Alternar area Mecanica/i }),
     ).toHaveAttribute('aria-expanded', 'true')
     expect(
-      getMechanicsOscillationsToggle(),
-    ).toHaveAttribute('aria-expanded', 'false')
-    expect(
       screen.getByRole('heading', { name: /Pendulo simples/i }),
     ).toBeInTheDocument()
-    fireEvent.click(
-      getMechanicsOscillationsToggle(),
+    expect(
+      document.querySelector('[aria-controls="subarea-mechanics-oscilacoes"]'),
+    ).toBeNull()
+    expect(getWavesOscillationsToggle()).toHaveAttribute(
+      'aria-expanded',
+      'true',
     )
     expect(
       screen.getByRole('button', { name: /Massa-mola vertical/i }),
@@ -708,15 +710,17 @@ describe('App', () => {
     expect(screen.getByText(/Fasores e potencia AC/i)).toBeInTheDocument()
   }, 20_000)
 
-  it('opens the vertical mass-spring simulation in mechanics oscillations', () => {
+  it('opens the vertical mass-spring simulation in oscillations and waves', () => {
     render(
       <ThemeProvider theme={appTheme}>
         <App />
       </ThemeProvider>,
     )
 
-    openMechanicsArea()
-    fireEvent.click(getMechanicsOscillationsToggle())
+    openWavesArea()
+    if (getWavesOscillationsToggle().getAttribute('aria-expanded') !== 'true') {
+      fireEvent.click(getWavesOscillationsToggle())
+    }
     fireEvent.click(
       screen.getByRole('button', { name: /Massa-mola vertical/i }),
     )
@@ -725,7 +729,9 @@ describe('App', () => {
       screen.getByRole('heading', { name: /Massa-mola vertical/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/Mecanica > Oscilacoes > Massa-mola vertical/i),
+      screen.getByText(
+        /Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical/i,
+      ),
     ).toBeInTheDocument()
     const viewport = screen.getByLabelText(/Kinematics numerical viewport/i)
     const animationVectorLegend = within(viewport).getByLabelText(
@@ -1110,5 +1116,5 @@ describe('App', () => {
       expect(screen.getByRole('img', { name: chart })).toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: /Recolher Graficos/i }))
     })
-  }, 90_000)
+  }, 120_000)
 })

@@ -15,7 +15,7 @@ export type SidebarSubarea = {
   simulations: SimulationDefinition[]
 }
 
-export type StatusChipColor = 'default' | 'info' | 'primary'
+export type StatusChipColor = 'default' | 'primary' | 'warning'
 
 export function groupSimulationsBySubarea(
   simulations: SimulationDefinition[],
@@ -71,7 +71,7 @@ export function getStatusChipColor(status: SimulationStatus): StatusChipColor {
   }
 
   if (status === 'analysis') {
-    return 'info'
+    return 'warning'
   }
 
   return 'default'

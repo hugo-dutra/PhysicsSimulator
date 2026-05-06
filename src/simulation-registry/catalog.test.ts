@@ -25,11 +25,11 @@ describe('simulation registry', () => {
     expect(activeSimulation.id).toBe('simple-pendulum')
     expect(activeSimulation.status).toBe('ready')
     expect(activeSimulation.topicPath).toEqual([
-      'Mecanica',
+      'Oscilacoes e Ondas',
       'Oscilacoes',
       'Pendulo simples',
     ])
-    expect(getAreaForSimulation('simple-pendulum').id).toBe('mechanics')
+    expect(getAreaForSimulation('simple-pendulum').id).toBe('waves')
   })
 
   it('keeps planned catalog items separate from runnable simulations', () => {
@@ -54,9 +54,9 @@ describe('simulation registry', () => {
       simulationCatalog.areas.map((area) => [area.id, area.simulations]),
     )
 
-    expect(simulationsByArea.get('mechanics')).toHaveLength(18)
+    expect(simulationsByArea.get('mechanics')).toHaveLength(16)
     expect(simulationsByArea.get('thermodynamics')).toHaveLength(10)
-    expect(simulationsByArea.get('waves')).toHaveLength(11)
+    expect(simulationsByArea.get('waves')).toHaveLength(13)
     expect(simulationsByArea.get('electromagnetism')).toHaveLength(12)
     expect(findSimulation('continuity-bernoulli').topicPath).toEqual([
       'Mecanica',
@@ -157,7 +157,9 @@ describe('simulation registry', () => {
       const fixture = kinematicsFixtures[simulationId]
 
       expect(simulation.status).toBe('ready')
-      expect(simulation.topicPath[0]).toBe('Mecanica')
+      expect(simulation.topicPath[0]).toBe(
+        simulationId === 'mass-spring' ? 'Oscilacoes e Ondas' : 'Mecanica',
+      )
       expect(simulation.technologyPlan?.engine).toBe('custom-analytic')
       expect(simulation.technologyPlan?.charting).toBe('live-canvas')
       expect(fixture.simulationId).toBe(simulationId)

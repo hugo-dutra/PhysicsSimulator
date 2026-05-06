@@ -67,8 +67,15 @@ describe('simulation sidebar model', () => {
     expect(getStatusLabel('planned')).toBe('planejado')
 
     expect(getStatusChipColor('ready')).toBe('primary')
-    expect(getStatusChipColor('analysis')).toBe('info')
+    expect(getStatusChipColor('analysis')).toBe('warning')
     expect(getStatusChipColor('planned')).toBe('default')
+    expect(
+      new Set([
+        getStatusChipColor('ready'),
+        getStatusChipColor('analysis'),
+        getStatusChipColor('planned'),
+      ]).size,
+    ).toBe(3)
 
     expect(getModelKindLabel('analytic')).toBe('analitico')
     expect(getModelKindLabel('field-sampling')).toBe('campo')

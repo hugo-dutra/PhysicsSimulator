@@ -28,7 +28,7 @@ O core e uma simulacao completa e local que prove a experiencia principal:
 
 > Alterar parametros fisicos em uma simulacao de Mecanica deve atualizar, de forma sincronizada, a animacao, os vetores, os graficos, a tabela de amostras, as formulas aplicadas e o apendice teorico.
 
-Se essa parte falhar, o produto inteiro perde sentido. Por isso, o MVP deve comecar por uma simulacao exemplar de `Mecanica > Pendulo simples`. Depois da prova inicial, a Fase 2 adicionou `Mecanica > Dinamica > Plano inclinado com atrito` para validar que o contrato, o shell e o runtime visual suportam mais de uma simulacao funcional. A Fase 3 iniciou a expansao com quatro simulacoes analiticas de Cinematica e depois adicionou dinamica, energia, momento, estatica, rotacao, gravitacao e fluidos basicos, validando que o mesmo shell tambem suporta familias mecanicas diferentes sem perder formulas, teoria e sincronizacao.
+Se essa parte falhar, o produto inteiro perde sentido. Por isso, o MVP comecou por uma simulacao exemplar de pendulo simples; no menu consolidado atual, ela fica em `Oscilacoes e Ondas > Oscilacoes > Pendulo simples`. Depois da prova inicial, a Fase 2 adicionou `Mecanica > Dinamica > Plano inclinado com atrito` para validar que o contrato, o shell e o runtime visual suportam mais de uma simulacao funcional. A Fase 3 iniciou a expansao com quatro simulacoes analiticas de Cinematica e depois adicionou dinamica, energia, momento, estatica, rotacao, gravitacao e fluidos basicos, validando que o mesmo shell tambem suporta familias mecanicas diferentes sem perder formulas, teoria e sincronizacao.
 
 ## Escopo curricular planejado
 

@@ -93,7 +93,7 @@ Depois da prova do core, cada nova simulacao promovida para `analysis` ou `ready
 - O modo maximizado de viewport, graficos, tabela, formulas e apendice teorico deve mostrar apenas o painel em foco dentro da janela e voltar ao layout anterior ao minimizar.
 - A sidebar deve permitir expandir areas e subareas planejadas sem confundir itens planejados com simulacoes em analise ou prontas.
 - A sidebar deve iniciar abertas apenas as subareas com simulacoes em `analysis`; subareas somente `ready` ou `planned` devem iniciar recolhidas.
-- A sidebar deve permitir trocar entre pendulo simples, massa-mola vertical, plano inclinado com atrito, as simulacoes de Cinematica prontas ou em analise, Maquina de Atwood, forca centripeta em curva, trabalho/energia em trilho, colisoes 1D/2D, equilibrio de particula, torque/alavancas/centro de massa e rotacao de corpo rigido sem abandonar o shell compartilhado.
+- A sidebar deve permitir trocar entre as simulacoes de `Oscilacoes e Ondas > Oscilacoes` (pendulo simples, massa-mola vertical, oscilador amortecido, oscilador forcado/ressonancia e osciladores acoplados), plano inclinado com atrito, as simulacoes de Cinematica prontas ou em analise, Maquina de Atwood, forca centripeta em curva, trabalho/energia em trilho, colisoes 1D/2D, equilibrio de particula, torque/alavancas/centro de massa e rotacao de corpo rigido sem abandonar o shell compartilhado.
 - A tabela de amostras nao deve variar sua altura durante playback por mudar a quantidade de linhas.
 - Formulas devem permanecer legiveis e indicar quando usar cada equacao.
 - Layout nao deve quebrar em desktop comum.

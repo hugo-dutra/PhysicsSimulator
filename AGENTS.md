@@ -11,7 +11,7 @@ Para qualquer task que implemente, ajuste, revise ou promova uma simulacao, leia
 
 ## Regra core-first
 
-A primeira entrega funcional deve provar `Mecanica > Pendulo simples` com mocks/fixtures locais. Nao priorize login, auth, cadastros, dashboard administrativo, backend, billing ou catalogo amplo antes da prova do core.
+A primeira entrega funcional deve provar o `Pendulo simples` com mocks/fixtures locais. No menu atual, simulacoes de oscilacao ficam consolidadas em `Oscilacoes e Ondas > Oscilacoes`, incluindo o pendulo. Nao priorize login, auth, cadastros, dashboard administrativo, backend, billing ou catalogo amplo antes da prova do core.
 
 ## Stack planejada
 

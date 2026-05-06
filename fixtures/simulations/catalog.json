@@ -6,112 +6,6 @@
       "description": "Modelos de movimento, forcas, energia, rotacao e fluidos.",
       "simulations": [
         {
-          "id": "simple-pendulum",
-          "areaId": "mechanics",
-          "topicPath": ["Mecanica", "Oscilacoes", "Pendulo simples"],
-          "title": "Pendulo simples",
-          "status": "ready",
-          "level": "introductory",
-          "modelKind": "analytic",
-          "renderer": "three",
-          "fixturePath": "fixtures/simulations/mechanics-pendulum.json",
-          "theoryPath": "src/content/simulations/mechanics/pendulum/theory.md",
-          "description": "Oscilador mecanico com massa pontual presa a um fio ideal.",
-          "technologyPlan": {
-            "engine": "custom-numerical",
-            "charting": "live-canvas",
-            "content": "mdx-katex",
-            "notes": "Motor proprio deterministico e graficos progressivos em canvas para provar o core antes de engines externas."
-          },
-          "charts": [
-            {
-              "id": "angle-time",
-              "title": "Angulo por tempo",
-              "sampleFields": ["timeSeconds", "angleRadians"]
-            },
-            {
-              "id": "angular-velocity-time",
-              "title": "Velocidade angular por tempo",
-              "sampleFields": [
-                "timeSeconds",
-                "angularVelocityRadiansPerSecond"
-              ]
-            },
-            {
-              "id": "energy-time",
-              "title": "Energia por tempo",
-              "sampleFields": [
-                "timeSeconds",
-                "kineticEnergyJoules",
-                "potentialEnergyJoules",
-                "totalEnergyJoules"
-              ]
-            }
-          ]
-        },
-        {
-          "id": "mass-spring",
-          "areaId": "mechanics",
-          "topicPath": ["Mecanica", "Oscilacoes", "Massa-mola vertical"],
-          "title": "Massa-mola vertical",
-          "status": "ready",
-          "level": "introductory",
-          "modelKind": "analytic",
-          "renderer": "three",
-          "fixturePath": "fixtures/simulations/mechanics-mass-spring.json",
-          "theoryPath": "src/content/simulations/mechanics/mass-spring/theory.md",
-          "description": "Oscilador massa-mola vertical com suporte fixo, mola helicoidal, esfera, equilibrio estatico e energia sincronizada.",
-          "technologyPlan": {
-            "engine": "custom-analytic",
-            "charting": "live-canvas",
-            "content": "mdx-katex",
-            "notes": "Solucao analitica em torno do equilibrio estatico mg/k, reutilizando o shell compartilhado e cena Three.js especializada."
-          },
-          "charts": [
-            {
-              "id": "position-time",
-              "title": "Deslocamento por tempo",
-              "sampleFields": ["timeSeconds", "positionMeters", "zMeters"]
-            },
-            {
-              "id": "velocity-time",
-              "title": "Velocidade por tempo",
-              "sampleFields": ["timeSeconds", "velocityMetersPerSecond"]
-            },
-            {
-              "id": "acceleration-time",
-              "title": "Aceleracao por tempo",
-              "sampleFields": [
-                "timeSeconds",
-                "accelerationMetersPerSecondSquared"
-              ]
-            },
-            {
-              "id": "forces-time",
-              "title": "Forca elastica, peso e resultante",
-              "sampleFields": [
-                "timeSeconds",
-                "springForceNewtons",
-                "weightNewtons",
-                "netForceNewtons"
-              ]
-            },
-            {
-              "id": "energy-time",
-              "title": "Energia por tempo",
-              "sampleFields": [
-                "timeSeconds",
-                "kineticEnergyJoules",
-                "potentialEnergyJoules",
-                "elasticPotentialEnergyJoules",
-                "gravitationalPotentialEnergyJoules",
-                "thermalEnergyJoules",
-                "totalEnergyJoules"
-              ]
-            }
-          ]
-        },
-        {
           "id": "uniform-linear-motion",
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Cinematica", "Movimento retilineo uniforme"],
@@ -1046,6 +940,112 @@
       "label": "Oscilacoes e Ondas",
       "description": "Sistemas periodicos, ondas mecanicas, som e optica basica.",
       "simulations": [
+        {
+          "id": "simple-pendulum",
+          "areaId": "waves",
+          "topicPath": ["Oscilacoes e Ondas", "Oscilacoes", "Pendulo simples"],
+          "title": "Pendulo simples",
+          "status": "ready",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "fixturePath": "fixtures/simulations/mechanics-pendulum.json",
+          "theoryPath": "src/content/simulations/mechanics/pendulum/theory.md",
+          "description": "Oscilador mecanico com massa pontual presa a um fio ideal.",
+          "technologyPlan": {
+            "engine": "custom-numerical",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Motor proprio deterministico e graficos progressivos em canvas para provar o core antes de engines externas."
+          },
+          "charts": [
+            {
+              "id": "angle-time",
+              "title": "Angulo por tempo",
+              "sampleFields": ["timeSeconds", "angleRadians"]
+            },
+            {
+              "id": "angular-velocity-time",
+              "title": "Velocidade angular por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "angularVelocityRadiansPerSecond"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "potentialEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mass-spring",
+          "areaId": "waves",
+          "topicPath": ["Oscilacoes e Ondas", "Oscilacoes", "Massa-mola vertical"],
+          "title": "Massa-mola vertical",
+          "status": "ready",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "fixturePath": "fixtures/simulations/mechanics-mass-spring.json",
+          "theoryPath": "src/content/simulations/mechanics/mass-spring/theory.md",
+          "description": "Oscilador massa-mola vertical com suporte fixo, mola helicoidal, esfera, equilibrio estatico e energia sincronizada.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Solucao analitica em torno do equilibrio estatico mg/k, reutilizando o shell compartilhado e cena Three.js especializada."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Deslocamento por tempo",
+              "sampleFields": ["timeSeconds", "positionMeters", "zMeters"]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidade por tempo",
+              "sampleFields": ["timeSeconds", "velocityMetersPerSecond"]
+            },
+            {
+              "id": "acceleration-time",
+              "title": "Aceleracao por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "accelerationMetersPerSecondSquared"
+              ]
+            },
+            {
+              "id": "forces-time",
+              "title": "Forca elastica, peso e resultante",
+              "sampleFields": [
+                "timeSeconds",
+                "springForceNewtons",
+                "weightNewtons",
+                "netForceNewtons"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "kineticEnergyJoules",
+                "potentialEnergyJoules",
+                "elasticPotentialEnergyJoules",
+                "gravitationalPotentialEnergyJoules",
+                "thermalEnergyJoules",
+                "totalEnergyJoules"
+              ]
+            }
+          ]
+        },
         {
           "id": "damped-oscillator",
           "areaId": "waves",

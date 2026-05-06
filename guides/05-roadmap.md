@@ -23,7 +23,7 @@ Objetivo: alinhar tese, arquitetura, escopo e validacao antes de implementar.
 Tasks:
 
 - `[x]` Criar pacote inicial de guides.
-- `[x]` Definir core como `Mecanica > Pendulo simples`.
+- `[x]` Definir core como pendulo simples; no menu atual, `Oscilacoes e Ondas > Oscilacoes > Pendulo simples`.
 - `[x]` Registrar stack recomendada e alternativas.
 - `[x]` Registrar riscos e premissas abertas.
 - `[x]` Inicializar projeto frontend com React + TypeScript + Vite.
@@ -42,7 +42,7 @@ Tasks:
 
 - `[x]` Criar shell da aplicacao com sidebar, topbar, area central e painel de controles.
 - `[x]` Criar registry local de areas e simulacoes via JSON.
-- `[x]` Implementar `Mecanica > Pendulo simples` no registry.
+- `[x]` Implementar `Oscilacoes e Ondas > Oscilacoes > Pendulo simples` no registry.
 - `[x]` Implementar modelo numerico do pendulo com integrador deterministico.
 - `[x]` Gerar samples de tempo, angulo, velocidade, posicao e energia.
 - `[x]` Renderizar cena do pendulo em Three.js.
@@ -121,11 +121,11 @@ Criterio de saida:
 
 Objetivo: validar sistemas periodicos, propagacao de ondas, som e optica basica com modelos visuais leves.
 
-Primeira fatia visual antecipada: `Mecanica > Oscilacoes > Massa-mola vertical`, aproveitando o aprendizado do pendulo para outro oscilador harmonico simples no ponto da sidebar onde o usuario pediu. A cena segue a referencia visual proposta: suporte fixo no topo, mola helicoidal pendurada, massa esferica presa na extremidade inferior e oscilacao vertical em torno da posicao de equilibrio. A area `Oscilacoes e Ondas` iniciou com oscilador amortecido, oscilador forcado/ressonancia e osciladores acoplados em `analysis`, todos com fixtures locais, formulas, teoria, regimes e gate de fidelidade; ondas mecanicas, som e optica seguem planejados.
+Primeira fatia visual antecipada: `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical`, aproveitando o aprendizado do pendulo para outro oscilador harmonico simples. A subarea de oscilacoes tambem concentra o pendulo simples e os tres osciladores da Fase 4, evitando duplicacao entre Mecanica e Oscilacoes e Ondas. A cena segue a referencia visual proposta: suporte fixo no topo, mola helicoidal pendurada, massa esferica presa na extremidade inferior e oscilacao vertical em torno da posicao de equilibrio. A area `Oscilacoes e Ondas` iniciou com oscilador amortecido, oscilador forcado/ressonancia e osciladores acoplados em `analysis`, todos com fixtures locais, formulas, teoria, regimes e gate de fidelidade; ondas mecanicas, som e optica seguem planejados.
 
 Tasks:
 
-- `[x]` Implementar `Mecanica > Oscilacoes > Massa-mola vertical`, com suporte superior fixo, mola helicoidal, massa esferica, vetores e energia sincronizados.
+- `[x]` Implementar `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical`, com suporte superior fixo, mola helicoidal, massa esferica, vetores e energia sincronizados.
 - `[x]` Implementar `Oscilacoes e Ondas > Oscilacoes > Oscilador amortecido`.
 - `[x]` Implementar `Oscilacoes e Ondas > Oscilacoes > Oscilador forcado e ressonancia`.
 - `[x]` Implementar `Oscilacoes e Ondas > Oscilacoes > Osciladores acoplados`.

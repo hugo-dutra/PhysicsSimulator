@@ -3179,3 +3179,38 @@ Validacao:
 - Executado `npm run test -- --reporter=dot --maxWorkers=1`; 12 arquivos e 110 testes passaram.
 - Executado `npm run lint`; passou apos repetir com timeout maior, pois a primeira chamada excedeu a janela da ferramenta sem diagnostico.
 - Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+
+## 2026-05-06 - Consolidacao das oscilacoes na sidebar
+
+Status: feito.
+
+Pedido reportado:
+
+- Mover as simulacoes do menu de Mecanica para a parte de oscilacao, deixando tudo junto e removendo repeticao.
+
+Ajuste:
+
+- `Pendulo simples` e `Massa-mola vertical` sairam de `Mecanica > Oscilacoes` no catalogo local.
+- As duas simulacoes agora ficam em `Oscilacoes e Ondas > Oscilacoes`, junto de `Oscilador amortecido`, `Oscilador forcado e ressonancia` e `Osciladores acoplados`.
+- A subarea repetida `Oscilacoes` deixou de aparecer dentro de Mecanica; o catalogo de Mecanica ficou com 16 simulacoes e `Oscilacoes e Ondas` ficou com 13.
+- Os testes de sidebar, registry e App foram atualizados para o novo caminho e para garantir que `subarea-mechanics-oscilacoes` nao exista mais.
+- O timeout do smoke mais pesado de App foi ajustado de 90 s para 120 s porque a suite completa estava ficando mais lenta sob carga, embora o teste isolado passasse.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide` como checklist de impacto: a mudanca foi apenas de taxonomia/menu e nao alterou parametros, motores, regimes, samples, cena, graficos, tabela, formulas, teoria, warnings nem status das simulacoes.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/05-roadmap.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md`, `guides/09-simulation-catalog-plan.md`, `guides/issues.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizados `AGENTS.md`, produto, estrategia, arquitetura, regras, roadmap, dados/API, qualidade, catalog plan, fidelity guide, issues e este registro de progresso para refletir a consolidacao.
+- HLD/diagrama nao foi atualizado porque arquitetura, servicos, pipeline, integracoes e fluxo de dados nao mudaram.
+
+Validacao:
+
+- Executado `npx vitest run src/simulation-registry/catalog.test.ts src/features/simulation-shell/simulationSidebarModel.test.ts`; 2 arquivos e 15 testes passaram.
+- Executado `npx vitest run src/App.test.tsx`; 1 arquivo e 9 testes passaram.
+- Executado `npm run test`; 13 arquivos e 114 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; falhou por estrutura SDD ausente ja conhecida neste repositorio (`README.md`, `.agent`, `tasks`, `adr`), nao por inconsistencia dos guias alterados.
