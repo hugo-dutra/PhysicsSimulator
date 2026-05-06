@@ -10,6 +10,7 @@ import { Box } from '@mui/material'
 import * as THREE from 'three'
 import {
   computeGravitationalOrbitPathSamples,
+  computeMechanicalWaveProfile,
   computeKinematicsSample,
   computeKinematicsTimeline,
   getKinematicsVectorOverlays,
@@ -20,6 +21,9 @@ import {
   type KinematicsSample,
   type KinematicsSimulationId,
   type KinematicsVectorOverlay,
+  type StandingWavesParameters,
+  type SuperpositionInterferenceParameters,
+  type WaveOnStringParameters,
 } from '../../lib/physics/kinematics'
 import {
   cancelAnimationFrameSafe,
@@ -190,6 +194,21 @@ type SceneObjects = {
   traceColors: Float32Array
   tracePositionAttribute: THREE.BufferAttribute
   tracePositions: Float32Array
+  waveComponentOne: THREE.Line
+  waveComponentOnePositionAttribute: THREE.BufferAttribute
+  waveComponentOnePositions: Float32Array
+  waveComponentTwo: THREE.Line
+  waveComponentTwoPositionAttribute: THREE.BufferAttribute
+  waveComponentTwoPositions: Float32Array
+  waveEnvelopeLower: THREE.Line
+  waveEnvelopeLowerPositionAttribute: THREE.BufferAttribute
+  waveEnvelopeLowerPositions: Float32Array
+  waveEnvelopeUpper: THREE.Line
+  waveEnvelopeUpperPositionAttribute: THREE.BufferAttribute
+  waveEnvelopeUpperPositions: Float32Array
+  waveString: THREE.Line
+  waveStringPositionAttribute: THREE.BufferAttribute
+  waveStringPositions: Float32Array
   uniformCircularAngleArc: THREE.Line
   uniformCircularAngleArcPositionAttribute: THREE.BufferAttribute
   uniformCircularAngleArcPositions: Float32Array
@@ -296,6 +315,7 @@ const massSpringCoilSegments = 72
 const massSpringCoilTurns = 9
 const maxPathPoints = 360
 const maxTracePoints = 120
+const waveStringPointCapacity = 128
 const traceFadeSeconds = 2.4
 const uniformLinearTracePointCount = 48
 const constantAccelerationTracePointCount = 72
@@ -458,6 +478,7 @@ export function KinematicsScene({
 
     updateKinematicsObjects({
       objects,
+      parameters: runtime.parameters,
       sample,
       sampleIndex: traceSamplesRef.current.length - 1,
       samples: traceSamplesRef.current,
@@ -1367,6 +1388,76 @@ export function KinematicsScene({
     )
     scene.add(trace)
 
+    const waveStringPositions = new Float32Array(waveStringPointCapacity * 3)
+    const waveComponentOnePositions = new Float32Array(
+      waveStringPointCapacity * 3,
+    )
+    const waveComponentTwoPositions = new Float32Array(
+      waveStringPointCapacity * 3,
+    )
+    const waveEnvelopeUpperPositions = new Float32Array(
+      waveStringPointCapacity * 3,
+    )
+    const waveEnvelopeLowerPositions = new Float32Array(
+      waveStringPointCapacity * 3,
+    )
+    const waveStringPositionAttribute = new THREE.BufferAttribute(
+      waveStringPositions,
+      3,
+    )
+    const waveComponentOnePositionAttribute = new THREE.BufferAttribute(
+      waveComponentOnePositions,
+      3,
+    )
+    const waveComponentTwoPositionAttribute = new THREE.BufferAttribute(
+      waveComponentTwoPositions,
+      3,
+    )
+    const waveEnvelopeUpperPositionAttribute = new THREE.BufferAttribute(
+      waveEnvelopeUpperPositions,
+      3,
+    )
+    const waveEnvelopeLowerPositionAttribute = new THREE.BufferAttribute(
+      waveEnvelopeLowerPositions,
+      3,
+    )
+    const waveString = createDynamicWaveLine(
+      waveStringPositionAttribute,
+      0x2dd4bf,
+      0.96,
+    )
+    const waveComponentOne = createDynamicWaveLine(
+      waveComponentOnePositionAttribute,
+      0x38bdf8,
+      0.38,
+    )
+    const waveComponentTwo = createDynamicWaveLine(
+      waveComponentTwoPositionAttribute,
+      0x818cf8,
+      0.38,
+    )
+    const waveEnvelopeUpper = createDynamicWaveLine(
+      waveEnvelopeUpperPositionAttribute,
+      0xf59e0b,
+      0.3,
+    )
+    const waveEnvelopeLower = createDynamicWaveLine(
+      waveEnvelopeLowerPositionAttribute,
+      0xf59e0b,
+      0.3,
+    )
+
+    ;[
+      waveString,
+      waveComponentOne,
+      waveComponentTwo,
+      waveEnvelopeUpper,
+      waveEnvelopeLower,
+    ].forEach((line) => {
+      line.visible = false
+      scene.add(line)
+    })
+
     const acceleratedMotionBodyShadow = new THREE.Mesh(
       new THREE.CircleGeometry(sceneBodySize * 1.22, 36),
       new THREE.MeshBasicMaterial({
@@ -1647,6 +1738,21 @@ export function KinematicsScene({
       traceColors,
       tracePositionAttribute,
       tracePositions,
+      waveComponentOne,
+      waveComponentOnePositionAttribute,
+      waveComponentOnePositions,
+      waveComponentTwo,
+      waveComponentTwoPositionAttribute,
+      waveComponentTwoPositions,
+      waveEnvelopeLower,
+      waveEnvelopeLowerPositionAttribute,
+      waveEnvelopeLowerPositions,
+      waveEnvelopeUpper,
+      waveEnvelopeUpperPositionAttribute,
+      waveEnvelopeUpperPositions,
+      waveString,
+      waveStringPositionAttribute,
+      waveStringPositions,
       uniformCircularAngleArc,
       uniformCircularAngleArcPositionAttribute,
       uniformCircularAngleArcPositions,
@@ -1820,6 +1926,7 @@ export function KinematicsScene({
 
 function updateKinematicsObjects({
   objects,
+  parameters,
   sample,
   sampleIndex,
   samples,
@@ -1828,6 +1935,7 @@ function updateKinematicsObjects({
   simulationId,
 }: {
   objects: SceneObjects
+  parameters: KinematicsParameters
   sample: KinematicsSample
   sampleIndex: number
   samples: KinematicsSample[]
@@ -1862,6 +1970,7 @@ function updateKinematicsObjects({
 
   updateConstrainedBodyObjects(
     objects,
+    parameters,
     sample,
     simulationId,
     showTrace,
@@ -2055,6 +2164,7 @@ function updateUniformCircularMotionObjects(
 
 function updateConstrainedBodyObjects(
   objects: SceneObjects,
+  parameters: KinematicsParameters,
   sample: KinematicsSample,
   simulationId: KinematicsSimulationId,
   showTrace: boolean,
@@ -2067,6 +2177,7 @@ function updateConstrainedBodyObjects(
   const isHydrostatics = simulationId === 'hydrostatics-buoyancy'
   const isSingleSpringOscillator =
     isSingleSpringOscillatorSimulation(simulationId)
+  const isMechanicalWave = isMechanicalWaveSimulation(simulationId)
   const isOrbit = simulationId === 'gravitational-field-orbits'
   const isRigidRotation = simulationId === 'rigid-body-rotation'
   const isRolling = simulationId === 'rolling-without-slipping'
@@ -2132,6 +2243,15 @@ function updateConstrainedBodyObjects(
   objects.uniformCircularLapPulse.visible = isUniformCircularMotion
   objects.uniformCircularRadiusLabel.visible =
     isUniformCircularMotion && showVectors
+  objects.waveString.visible = isMechanicalWave
+  objects.waveComponentOne.visible =
+    simulationId === 'superposition-interference' && showTrace
+  objects.waveComponentTwo.visible =
+    simulationId === 'superposition-interference' && showTrace
+  objects.waveEnvelopeUpper.visible =
+    simulationId === 'standing-waves' && showTrace
+  objects.waveEnvelopeLower.visible =
+    simulationId === 'standing-waves' && showTrace
 
   if (isRigidRotation) {
     updateRigidBodyRotationObjects(objects, sample, showVectors)
@@ -2222,6 +2342,11 @@ function updateConstrainedBodyObjects(
 
   if (isCoupledOscillator) {
     updateCoupledOscillatorObjects(objects, sample)
+    return
+  }
+
+  if (isMechanicalWave) {
+    updateMechanicalWaveObjects(objects, parameters, sample, simulationId)
     return
   }
 
@@ -3780,6 +3905,19 @@ function isSingleSpringOscillatorSimulation(
   )
 }
 
+function isMechanicalWaveSimulation(
+  simulationId: KinematicsSimulationId,
+): simulationId is
+  | 'standing-waves'
+  | 'superposition-interference'
+  | 'wave-on-string' {
+  return (
+    simulationId === 'standing-waves' ||
+    simulationId === 'superposition-interference' ||
+    simulationId === 'wave-on-string'
+  )
+}
+
 function updateMassSpringObjects(
   objects: SceneObjects,
   sample: KinematicsSample,
@@ -3883,6 +4021,89 @@ function updateCoupledOscillatorObjects(
   })
   objects.rope.geometry.setDrawRange(0, ropePoints.length)
   objects.ropePositionAttribute.needsUpdate = true
+}
+
+function updateMechanicalWaveObjects(
+  objects: SceneObjects,
+  parameters: KinematicsParameters,
+  sample: KinematicsSample,
+  simulationId: KinematicsSimulationId,
+) {
+  if (!isMechanicalWaveSimulation(simulationId)) {
+    return
+  }
+
+  const profile = computeMechanicalWaveProfile(
+    simulationId,
+    parameters as
+      | StandingWavesParameters
+      | SuperpositionInterferenceParameters
+      | WaveOnStringParameters,
+    sample.timeSeconds,
+    waveStringPointCapacity,
+  )
+
+  profile.forEach((point, index) => {
+    writeWavePoint(objects.waveStringPositions, index, objects, {
+      xMeters: point.xMeters,
+      zMeters: point.zMeters,
+    })
+    writeWavePoint(objects.waveComponentOnePositions, index, objects, {
+      xMeters: point.xMeters,
+      zMeters: point.componentOneMeters,
+    })
+    writeWavePoint(objects.waveComponentTwoPositions, index, objects, {
+      xMeters: point.xMeters,
+      zMeters: point.componentTwoMeters,
+    })
+    writeWavePoint(objects.waveEnvelopeUpperPositions, index, objects, {
+      xMeters: point.xMeters,
+      zMeters: point.envelopeMeters,
+    })
+    writeWavePoint(objects.waveEnvelopeLowerPositions, index, objects, {
+      xMeters: point.xMeters,
+      zMeters: -point.envelopeMeters,
+    })
+  })
+
+  ;[
+    objects.waveString,
+    objects.waveComponentOne,
+    objects.waveComponentTwo,
+    objects.waveEnvelopeUpper,
+    objects.waveEnvelopeLower,
+  ].forEach((line) => {
+    line.geometry.setDrawRange(0, profile.length)
+  })
+  objects.waveStringPositionAttribute.needsUpdate = true
+  objects.waveComponentOnePositionAttribute.needsUpdate = true
+  objects.waveComponentTwoPositionAttribute.needsUpdate = true
+  objects.waveEnvelopeUpperPositionAttribute.needsUpdate = true
+  objects.waveEnvelopeLowerPositionAttribute.needsUpdate = true
+
+  objects.body.position.copy(toKinematicsScenePosition(sample, objects.sceneProjection))
+  objects.body.scale.setScalar(0.72)
+}
+
+function writeWavePoint(
+  positions: Float32Array,
+  index: number,
+  objects: SceneObjects,
+  point: { xMeters: number; zMeters: number },
+) {
+  const scale = objects.sceneProjection.positionScale
+  const offset = index * 3
+
+  if (objects.sceneProjection.horizontalPlane) {
+    positions[offset] = point.xMeters * scale
+    positions[offset + 1] = point.zMeters * scale
+    positions[offset + 2] = 0
+    return
+  }
+
+  positions[offset] = point.xMeters * scale
+  positions[offset + 1] = 0
+  positions[offset + 2] = point.zMeters * scale
 }
 
 function createAtwoodRopePoints({
@@ -4358,6 +4579,28 @@ function createSceneReferencePathSamples(
     )
   }
 
+  if (isMechanicalWaveSimulation(simulationId)) {
+    const firstSample =
+      samples[0] ?? computeKinematicsSample(simulationId, parameters, 0)
+    const profile = computeMechanicalWaveProfile(
+      simulationId,
+      parameters as
+        | StandingWavesParameters
+        | SuperpositionInterferenceParameters
+        | WaveOnStringParameters,
+      firstSample?.timeSeconds ?? 0,
+      waveStringPointCapacity,
+    )
+
+    return profile.map((point) => ({
+      ...firstSample,
+      xMeters: point.xMeters,
+      zMeters: point.zMeters,
+      secondaryXMeters: point.xMeters,
+      secondaryZMeters: point.envelopeMeters,
+    })) as KinematicsSample[]
+  }
+
   return samples
 }
 
@@ -4640,6 +4883,28 @@ function createSceneLine(
     geometry,
     new THREE.LineBasicMaterial({
       color,
+      opacity,
+      transparent: opacity < 1,
+    }),
+  )
+}
+
+function createDynamicWaveLine(
+  positionAttribute: THREE.BufferAttribute,
+  color: number,
+  opacity: number,
+) {
+  positionAttribute.setUsage(THREE.DynamicDrawUsage)
+  const geometry = new THREE.BufferGeometry()
+
+  geometry.setAttribute('position', positionAttribute)
+  geometry.setDrawRange(0, 0)
+
+  return new THREE.Line(
+    geometry,
+    new THREE.LineBasicMaterial({
+      color,
+      linewidth: 2,
       opacity,
       transparent: opacity < 1,
     }),
@@ -6129,6 +6394,7 @@ function getInitialCameraYawRadians(
   return simulationId === 'atwood-machine' ||
     simulationId === 'coupled-oscillators' ||
     simulationId === 'hydrostatics-buoyancy' ||
+    isMechanicalWaveSimulation(simulationId) ||
     isSingleSpringOscillatorSimulation(simulationId)
     ? -Math.PI / 2
     : initialCameraYawRadians
@@ -6196,6 +6462,18 @@ function getKinematicsCanvasAriaLabel(simulationId: KinematicsSimulationId) {
 
   if (simulationId === 'coupled-oscillators') {
     return 'Cena 3D dos osciladores acoplados com duas massas, molas, modo comum, modo relativo, arraste para orbitar, e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'wave-on-string') {
+    return 'Cena 3D de onda em corda com perfil senoidal viajante, probe sincronizado, componentes de velocidade transversal e arraste para orbitar, e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'superposition-interference') {
+    return 'Cena 3D de superposicao e interferencia com duas ondas componentes, soma resultante na corda, probe sincronizado, arraste para orbitar e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'standing-waves') {
+    return 'Cena 3D de ondas estacionarias com nos, ventres, envelope modal, probe sincronizado, arraste para orbitar e Shift + scroll para zoom'
   }
 
   if (simulationId === 'torque-levers-center-mass') {

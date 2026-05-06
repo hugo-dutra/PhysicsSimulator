@@ -1,0 +1,215 @@
+{
+  "simulationId": "wave-on-string",
+  "durationSeconds": 16,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 8,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Horizonte calculado",
+      "description": "Tempo pre-calculado para a onda viajante. Aumentar mostra mais passagens de cristas pelo probe; diminuir concentra a leitura nos primeiros ciclos.",
+      "unit": "s",
+      "kind": "number",
+      "min": 6,
+      "max": 60,
+      "step": 1,
+      "defaultValue": 16
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente exibido em graficos e tabela. Aumentar compara mais ciclos; diminuir destaca fase, velocidade transversal e aceleracao locais.",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 30,
+      "step": 1,
+      "defaultValue": 8
+    }
+  ],
+  "defaultParameters": {
+    "amplitudeMeters": 0.32,
+    "wavelengthMeters": 2.4,
+    "frequencyHertz": 0.7,
+    "phaseDegrees": 0,
+    "stringLengthMeters": 6,
+    "probePositionMeters": 3
+  },
+  "parameters": [
+    {
+      "id": "amplitudeMeters",
+      "label": "Amplitude",
+      "description": "Deslocamento transversal maximo da corda em relacao ao equilibrio. Zerar produz uma corda reta; aumentar eleva cristas, vales, velocidade transversal e aceleracao local.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 0.8,
+      "step": 0.01,
+      "defaultValue": 0.32
+    },
+    {
+      "id": "wavelengthMeters",
+      "label": "Comprimento de onda",
+      "description": "Distancia entre cristas consecutivas. Aumentar alonga a forma espacial; diminuir coloca mais oscilacoes dentro da mesma corda e altera a velocidade v = lambda f.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0.6,
+      "max": 6,
+      "step": 0.05,
+      "defaultValue": 2.4
+    },
+    {
+      "id": "frequencyHertz",
+      "label": "Frequencia",
+      "description": "Numero de ciclos por segundo. Zerar congela o perfil; aumentar faz as cristas cruzarem o probe mais rapidamente e aumenta v = lambda f.",
+      "unit": "Hz",
+      "kind": "number",
+      "min": 0,
+      "max": 4,
+      "step": 0.05,
+      "defaultValue": 0.7
+    },
+    {
+      "id": "phaseDegrees",
+      "label": "Fase inicial",
+      "description": "Desloca a onda no tempo/espaco sem mudar amplitude, comprimento de onda ou frequencia. Alterar a fase muda o que o probe le em t = 0.",
+      "unit": "deg",
+      "kind": "number",
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "defaultValue": 0
+    },
+    {
+      "id": "stringLengthMeters",
+      "label": "Comprimento da corda",
+      "description": "Comprimento visual e fisico do trecho de corda mostrado. Aumentar exibe mais cristas e vales; diminuir concentra o mesmo modelo em um trecho menor.",
+      "unit": "m",
+      "kind": "number",
+      "min": 3,
+      "max": 8,
+      "step": 0.1,
+      "defaultValue": 6
+    },
+    {
+      "id": "probePositionMeters",
+      "label": "Probe na corda",
+      "description": "Ponto da corda usado por graficos, tabela e vetores. Mover o probe troca a fase local lida sem criar outra fonte de dados.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 3,
+      "step": 0.05,
+      "defaultValue": 3
+    }
+  ],
+  "presets": [
+    {
+      "id": "slow-traveling-wave",
+      "label": "Onda lenta",
+      "parameters": {
+        "amplitudeMeters": 0.32,
+        "wavelengthMeters": 2.4,
+        "frequencyHertz": 0.7,
+        "phaseDegrees": 0,
+        "stringLengthMeters": 6,
+        "probePositionMeters": 3
+      }
+    },
+    {
+      "id": "short-wavelength",
+      "label": "Mais cristas",
+      "parameters": {
+        "amplitudeMeters": 0.24,
+        "wavelengthMeters": 1.2,
+        "frequencyHertz": 1.1,
+        "phaseDegrees": 30,
+        "stringLengthMeters": 6,
+        "probePositionMeters": 2.5
+      }
+    },
+    {
+      "id": "static-profile",
+      "label": "Perfil parado",
+      "parameters": {
+        "amplitudeMeters": 0.35,
+        "wavelengthMeters": 2,
+        "frequencyHertz": 0,
+        "phaseDegrees": 0,
+        "stringLengthMeters": 6,
+        "probePositionMeters": 3
+      }
+    }
+  ],
+  "regimes": [
+    {
+      "id": "ideal-traveling-wave",
+      "label": "Onda viajante senoidal ideal",
+      "condition": "amplitudeMeters >= 0, wavelengthMeters > 0 e frequencyHertz >= 0.",
+      "transitionLimit": "frequencyHertz = 0 congela o perfil e amplitudeMeters = 0 deixa a corda no equilibrio.",
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared",
+        "speedMetersPerSecond",
+        "frequencyHertz"
+      ]
+    }
+  ],
+  "limits": [
+    "Modelo senoidal 1D ideal: y(x,t) = A sin(kx - omega t + phi), sem reflexao, amortecimento, dispersao ou tensao variavel.",
+    "A velocidade de propagacao e declarada como v = lambda f; o modelo nao deriva v de tensao e densidade linear nesta primeira fatia.",
+    "A cena desenha o perfil espacial pelo helper fisico do motor; graficos e tabela leem o mesmo probe da corda.",
+    "Amplitude zero e frequencia zero sao parametros fisicamente validos e mudam o sample para corda reta ou perfil congelado."
+  ],
+  "formulas": [
+    {
+      "id": "traveling-wave",
+      "title": "Onda viajante",
+      "expressionLatex": "y(x,t)=A\\sin(kx-\\omega t+\\phi)",
+      "description": "Define o deslocamento transversal da corda em cada ponto e no probe usado pelos graficos.",
+      "variables": [
+        { "symbol": "A", "label": "amplitude", "unit": "m" },
+        { "symbol": "k", "label": "numero de onda", "unit": "rad/m" },
+        { "symbol": "\\omega", "label": "frequencia angular", "unit": "rad/s" },
+        { "symbol": "\\phi", "label": "fase inicial", "unit": "rad" }
+      ],
+      "usedWhen": "Usar para ondas senoidais 1D em meio ideal, longe de reflexoes e perdas.",
+      "notUsedWhen": "Nao descreve pulsos nao senoidais, cordas com extremidade refletora ou meios dispersivos.",
+      "parameterIds": [
+        "amplitudeMeters",
+        "wavelengthMeters",
+        "frequencyHertz",
+        "phaseDegrees",
+        "probePositionMeters"
+      ],
+      "sampleFields": [
+        "positionMeters",
+        "zMeters",
+        "velocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared"
+      ],
+      "relatedChartIds": ["position", "velocity", "acceleration"],
+      "relatedVectorIds": ["displacement", "velocity", "acceleration"],
+      "example": "Com A = 0,32 m, lambda = 2,4 m e f = 0,7 Hz, a crista se propaga a v = 1,68 m/s."
+    },
+    {
+      "id": "wave-speed",
+      "title": "Velocidade de propagacao",
+      "expressionLatex": "v=\\lambda f",
+      "description": "Relaciona comprimento de onda, frequencia e velocidade horizontal das cristas.",
+      "variables": [
+        { "symbol": "v", "label": "velocidade da onda", "unit": "m/s" },
+        { "symbol": "\\lambda", "label": "comprimento de onda", "unit": "m" },
+        { "symbol": "f", "label": "frequencia", "unit": "Hz" }
+      ],
+      "usedWhen": "Usar para ler como mudar lambda ou f altera a passagem das cristas pelo probe.",
+      "notUsedWhen": "Nao substitui a relacao v = sqrt(T/mu) quando a tensao e densidade linear forem controles do modelo.",
+      "parameterIds": ["wavelengthMeters", "frequencyHertz"],
+      "sampleFields": ["speedMetersPerSecond", "velocityXMetersPerSecond"],
+      "relatedChartIds": ["velocity"],
+      "relatedVectorIds": ["secondaryVelocity"],
+      "example": "Se lambda dobra com f fixa, a velocidade de propagacao tambem dobra."
+    }
+  ]
+}

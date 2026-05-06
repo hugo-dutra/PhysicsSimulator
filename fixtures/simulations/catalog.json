@@ -1204,33 +1204,138 @@
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Ondas mecanicas", "Onda em corda"],
           "title": "Onda em corda",
-          "status": "planned",
+          "status": "analysis",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
-          "description": "Comprimento de onda, frequencia, velocidade, amplitude e pulso viajante."
+          "fixturePath": "fixtures/simulations/waves-wave-on-string.json",
+          "theoryPath": "src/content/simulations/waves/mechanical-waves/wave-on-string/theory.md",
+          "description": "Comprimento de onda, frequencia, velocidade, amplitude e perfil senoidal viajante sincronizado por probe.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Solucao senoidal 1D com helper de perfil espacial no physics-core e cena Three.js renderer-first."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Deslocamento da corda por tempo",
+              "sampleFields": ["timeSeconds", "positionMeters", "zMeters"]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidade transversal e propagacao",
+              "sampleFields": [
+                "timeSeconds",
+                "velocityMetersPerSecond",
+                "speedMetersPerSecond"
+              ]
+            },
+            {
+              "id": "acceleration-time",
+              "title": "Aceleracao transversal",
+              "sampleFields": [
+                "timeSeconds",
+                "accelerationMetersPerSecondSquared"
+              ]
+            }
+          ]
         },
         {
           "id": "superposition-interference",
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Ondas mecanicas", "Superposicao e interferencia"],
           "title": "Superposicao e interferencia",
-          "status": "planned",
+          "status": "analysis",
           "level": "introductory",
           "modelKind": "analytic",
-          "renderer": "pixi",
-          "description": "Interferencia construtiva/destrutiva e principio de superposicao."
+          "renderer": "three",
+          "fixturePath": "fixtures/simulations/waves-superposition-interference.json",
+          "theoryPath": "src/content/simulations/waves/mechanical-waves/superposition-interference/theory.md",
+          "description": "Duas ondas contra-propagantes, soma linear, interferencia construtiva/destrutiva e probe sincronizado.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo analitico de superposicao linear em Three.js; PixiJS segue opcional para mapas 2D densos futuros."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Superposicao no probe por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "positionMeters",
+                "secondaryZMeters",
+                "displacementMeters"
+              ]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidade transversal e propagacao",
+              "sampleFields": [
+                "timeSeconds",
+                "velocityMetersPerSecond",
+                "speedMetersPerSecond"
+              ]
+            },
+            {
+              "id": "acceleration-time",
+              "title": "Aceleracao transversal",
+              "sampleFields": [
+                "timeSeconds",
+                "accelerationMetersPerSecondSquared"
+              ]
+            }
+          ]
         },
         {
           "id": "standing-waves",
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Ondas mecanicas", "Ondas estacionarias"],
           "title": "Ondas estacionarias",
-          "status": "planned",
+          "status": "analysis",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
-          "description": "Nos, ventres, harmonicos, frequencia fundamental e modos."
+          "fixturePath": "fixtures/simulations/waves-standing-waves.json",
+          "theoryPath": "src/content/simulations/waves/mechanical-waves/standing-waves/theory.md",
+          "description": "Nos, ventres, harmonicos, frequencia modal, tensao, densidade linear e envelope sincronizado.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Solucao analitica de corda fixa nas extremidades com v = sqrt(T/mu), modos normais e cena Three.js."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Deslocamento estacionario por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "positionMeters",
+                "secondaryZMeters"
+              ]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidade transversal e propagacao",
+              "sampleFields": [
+                "timeSeconds",
+                "velocityMetersPerSecond",
+                "speedMetersPerSecond"
+              ]
+            },
+            {
+              "id": "acceleration-time",
+              "title": "Aceleracao transversal",
+              "sampleFields": [
+                "timeSeconds",
+                "accelerationMetersPerSecondSquared"
+              ]
+            }
+          ]
         },
         {
           "id": "beats",

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   computeKinematicsSample,
   computeKinematicsTimeline,
+  computeMechanicalWaveProfile,
   getKinematicsVectorOverlays,
   hydrostaticTankDepthMeters,
   toKinematicsParameters,
@@ -20,10 +21,13 @@ import {
   type ProjectileMotionParameters,
   type RigidBodyRotationParameters,
   type RollingWithoutSlippingParameters,
+  type StandingWavesParameters,
+  type SuperpositionInterferenceParameters,
   type TorqueLeversCenterMassParameters,
   type UniformCircularMotionParameters,
   type UniformLinearMotionParameters,
   type UniformlyAcceleratedMotionParameters,
+  type WaveOnStringParameters,
   type WorkEnergyTrackParameters,
 } from './kinematics'
 
@@ -324,6 +328,96 @@ describe('kinematics physics engine', () => {
     expect(maxEnergyDrift / initialEnergy).toBeLessThan(1e-6)
     expect(maxSecondaryKineticEnergy).toBeGreaterThan(0.01)
     expect(result.samples[0].displacementMeters).toBeCloseTo(0.28)
+  })
+
+  it('computes a traveling wave on a string from one analytic profile', () => {
+    const parameters: WaveOnStringParameters = {
+      amplitudeMeters: 0.2,
+      frequencyHertz: 0.5,
+      phaseDegrees: 0,
+      probePositionMeters: 1,
+      stringLengthMeters: 4,
+      wavelengthMeters: 2,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 4,
+      simulationId: 'wave-on-string',
+    })
+    const midSample = result.samples[2]
+    const profile = computeMechanicalWaveProfile(
+      'wave-on-string',
+      parameters,
+      midSample.timeSeconds,
+      9,
+    )
+
+    expect(midSample.speedMetersPerSecond).toBeCloseTo(1)
+    expect(midSample.positionMeters).toBeCloseTo(0.2)
+    expect(midSample.accelerationMetersPerSecondSquared).toBeCloseTo(
+      -(Math.PI ** 2) * 0.2,
+    )
+    expect(profile[2].zMeters).toBeCloseTo(midSample.positionMeters)
+  })
+
+  it('sums counter-propagating waves and reports destructive phase', () => {
+    const parameters: SuperpositionInterferenceParameters = {
+      amplitudeOneMeters: 0.2,
+      amplitudeTwoMeters: 0.2,
+      frequencyHertz: 0.5,
+      phaseDifferenceDegrees: 180,
+      probePositionMeters: 0.5,
+      stringLengthMeters: 4,
+      wavelengthMeters: 2,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 4,
+      simulationId: 'superposition-interference',
+    })
+    const firstSample = result.samples[0]
+
+    expect(firstSample.secondaryZMeters).toBeCloseTo(0.2)
+    expect(firstSample.displacementMeters).toBeCloseTo(-0.2)
+    expect(firstSample.positionMeters).toBeCloseTo(0)
+    expect(result.warnings[0]?.code).toBe('INTERFERENCE_DESTRUCTIVE_PHASE')
+  })
+
+  it('computes standing-wave nodes, antinodes, and modal frequency', () => {
+    const parameters: StandingWavesParameters = {
+      amplitudeMeters: 0.3,
+      harmonicMode: 2,
+      linearDensityKilogramsPerMeter: 0.08,
+      phaseDegrees: 0,
+      probePositionMeters: 2,
+      stringLengthMeters: 4,
+      tensionNewtons: 18,
+    }
+    const nodeResult = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 4,
+      simulationId: 'standing-waves',
+    })
+    const antinodeSample = computeKinematicsSample(
+      'standing-waves',
+      {
+        ...parameters,
+        probePositionMeters: 1,
+      },
+      0,
+    )
+    const expectedWaveSpeed = Math.sqrt(18 / 0.08)
+
+    expect(nodeResult.samples[0].positionMeters).toBeCloseTo(0)
+    expect(nodeResult.samples[0].secondaryZMeters).toBeCloseTo(0)
+    expect(antinodeSample.positionMeters).toBeCloseTo(0.3)
+    expect(antinodeSample.frequencyHertz).toBeCloseTo(
+      (2 * expectedWaveSpeed) / (2 * 4),
+    )
+    expect(antinodeSample.speedMetersPerSecond).toBeCloseTo(expectedWaveSpeed)
   })
 
   it('flags centripetal grip demand against available friction', () => {
@@ -1424,6 +1518,35 @@ function readFixtureLikeParameters(
         initialVelocityMetersPerSecond: 0,
         massKilograms: 1,
         springConstantNewtonsPerMeter: 16,
+      }
+    case 'wave-on-string':
+      return {
+        amplitudeMeters: 0.22,
+        frequencyHertz: 1.2,
+        phaseDegrees: 0,
+        probePositionMeters: 1.5,
+        stringLengthMeters: 4,
+        wavelengthMeters: 2,
+      }
+    case 'superposition-interference':
+      return {
+        amplitudeOneMeters: 0.18,
+        amplitudeTwoMeters: 0.18,
+        frequencyHertz: 1,
+        phaseDifferenceDegrees: 90,
+        probePositionMeters: 1.4,
+        stringLengthMeters: 4,
+        wavelengthMeters: 2,
+      }
+    case 'standing-waves':
+      return {
+        amplitudeMeters: 0.24,
+        harmonic: 2,
+        linearDensityKilogramsPerMeter: 0.08,
+        phaseDegrees: 0,
+        probePositionMeters: 1,
+        stringLengthMeters: 4,
+        tensionNewtons: 18,
       }
     case 'gravitational-field-orbits':
       return {

@@ -19,6 +19,7 @@
 - `Oscilacoes e Ondas > Oscilacoes` concentra `Pendulo simples`, `Massa-mola vertical`, `Oscilador amortecido`, `Oscilador forcado e ressonancia` e `Osciladores acoplados`, sem manter uma subarea repetida de oscilacoes dentro de Mecanica.
 - `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical` fica como simulacao `ready` apos aprovacao manual, com suporte fixo, mola helicoidal, massa esferica, equilibrio `mg/k`, vetores, energia e warning de amortecimento sincronizados pelos mesmos samples.
 - `Oscilacoes e Ondas > Oscilacoes` inicia a Fase 4 com `Oscilador amortecido`, `Oscilador forcado e ressonancia` e `Osciladores acoplados` em `analysis`; cada uma deve manter regimes, warnings, graficos, tabela, formulas, teoria e cena derivados dos samples antes de qualquer promocao para `ready`.
+- `Oscilacoes e Ondas > Ondas mecanicas` inicia com `Onda em corda`, `Superposicao e interferencia` e `Ondas estacionarias` em `analysis`; cada uma deve manter perfil 1D, probe, vetores, graficos, tabela, formulas, teoria, regimes e warnings derivados do motor compartilhado. PixiJS permanece opcional para futuras ondas 2D densas, nao como dependencia obrigatoria dessa fatia.
 - A taxonomia principal do catalogo deve usar `Mecanica`, `Termodinamica`, `Oscilacoes e Ondas` e `Eletromagnetismo`; fluidos basicos entram como subarea, nao como prioridade separada antes do core.
 
 ## Regras de fisica

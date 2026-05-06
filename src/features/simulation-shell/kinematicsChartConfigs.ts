@@ -41,6 +41,14 @@ function isSingleSpringOscillatorSimulation(
   )
 }
 
+function isMechanicalWaveSimulation(simulationId: KinematicsSimulationId) {
+  return (
+    simulationId === 'standing-waves' ||
+    simulationId === 'superposition-interference' ||
+    simulationId === 'wave-on-string'
+  )
+}
+
 export function prepareKinematicsChartSamples(samples: KinematicsSample[]) {
   return downsampleSamples(samples, maxChartSamples)
 }
@@ -719,6 +727,97 @@ export function buildKinematicsChartConfigs(
           },
         ],
         yAxisTitle: 'Forca (newtons)',
+      },
+    )
+  } else if (isMechanicalWaveSimulation(simulationId)) {
+    charts.push(
+      {
+        id: 'position',
+        title:
+          simulationId === 'superposition-interference'
+            ? 'Superposicao no probe por tempo'
+            : simulationId === 'standing-waves'
+              ? 'Deslocamento estacionario por tempo'
+              : 'Deslocamento da corda por tempo',
+        traces:
+          simulationId === 'superposition-interference'
+            ? [
+                {
+                  lineColor: themeTokens.teal,
+                  name: 'Soma y1 + y2 no probe (m)',
+                  x: time,
+                  y: samples.map((sample) => sample.positionMeters),
+                },
+                {
+                  lineColor: themeTokens.cyan,
+                  name: 'Onda A no probe (m)',
+                  x: time,
+                  y: samples.map((sample) => sample.secondaryZMeters),
+                },
+                {
+                  lineColor: '#818CF8',
+                  name: 'Onda B no probe (m)',
+                  x: time,
+                  y: samples.map((sample) => sample.displacementMeters),
+                },
+              ]
+            : [
+                {
+                  lineColor: themeTokens.teal,
+                  name: 'Deslocamento transversal no probe (m)',
+                  x: time,
+                  y: samples.map((sample) => sample.positionMeters),
+                },
+                ...(simulationId === 'standing-waves'
+                  ? [
+                      {
+                        lineColor: themeTokens.warning,
+                        name: 'Envelope modal local (m)',
+                        x: time,
+                        y: samples.map((sample) => sample.secondaryZMeters),
+                      },
+                    ]
+                  : []),
+              ],
+        yAxisMode: 'zero-centered',
+        yAxisTitle: 'Deslocamento (metros)',
+      },
+      {
+        id: 'velocity',
+        title: 'Velocidade transversal e propagacao',
+        traces: [
+          {
+            lineColor: themeTokens.cyan,
+            name: 'Velocidade transversal no probe (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.velocityMetersPerSecond),
+          },
+          {
+            lineColor: themeTokens.vector,
+            name:
+              simulationId === 'standing-waves'
+                ? 'Velocidade de onda na corda (m/s)'
+                : 'Velocidade de propagacao (m/s)',
+            x: time,
+            y: samples.map((sample) => sample.speedMetersPerSecond),
+          },
+        ],
+        yAxisTitle: 'Velocidade (metros por segundo)',
+      },
+      {
+        id: 'acceleration',
+        title: 'Aceleracao transversal',
+        traces: [
+          {
+            lineColor: themeTokens.warning,
+            name: 'Aceleracao transversal no probe (m/s^2)',
+            x: time,
+            y: samples.map(
+              (sample) => sample.accelerationMetersPerSecondSquared,
+            ),
+          },
+        ],
+        yAxisTitle: 'Aceleracao (metros por segundo ao quadrado)',
       },
     )
   } else if (simulationId === 'particle-equilibrium') {

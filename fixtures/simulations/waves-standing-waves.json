@@ -1,0 +1,236 @@
+{
+  "simulationId": "standing-waves",
+  "durationSeconds": 18,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 8,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Horizonte calculado",
+      "description": "Tempo pre-calculado para o modo estacionario. Aumentar mostra mais oscilacoes do mesmo harmonico; diminuir foca os primeiros ciclos.",
+      "unit": "s",
+      "kind": "number",
+      "min": 6,
+      "max": 60,
+      "step": 1,
+      "defaultValue": 18
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado nos graficos e tabela. Aumentar compara varios periodos; diminuir evidencia o movimento local do probe.",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 30,
+      "step": 1,
+      "defaultValue": 8
+    }
+  ],
+  "defaultParameters": {
+    "amplitudeMeters": 0.32,
+    "harmonicMode": 2,
+    "tensionNewtons": 18,
+    "linearDensityKilogramsPerMeter": 0.08,
+    "phaseDegrees": 0,
+    "stringLengthMeters": 4,
+    "probePositionMeters": 2
+  },
+  "parameters": [
+    {
+      "id": "amplitudeMeters",
+      "label": "Amplitude",
+      "description": "Amplitude maxima nos ventres da onda estacionaria. Zerar deixa a corda no equilibrio; aumentar amplia deslocamento, velocidade e aceleracao transversal.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 0.8,
+      "step": 0.01,
+      "defaultValue": 0.32
+    },
+    {
+      "id": "harmonicMode",
+      "label": "Harmonico",
+      "description": "Numero inteiro n do modo normal em uma corda fixa nas duas extremidades. Aumentar cria mais nos e ventres e eleva a frequencia f_n.",
+      "kind": "number",
+      "min": 1,
+      "max": 8,
+      "step": 1,
+      "defaultValue": 2
+    },
+    {
+      "id": "tensionNewtons",
+      "label": "Tensao",
+      "description": "Tensao ideal da corda. Aumentar eleva a velocidade de onda sqrt(T/mu) e a frequencia do harmonico; diminuir torna o modo mais lento.",
+      "unit": "N",
+      "kind": "number",
+      "min": 1,
+      "max": 80,
+      "step": 1,
+      "defaultValue": 18
+    },
+    {
+      "id": "linearDensityKilogramsPerMeter",
+      "label": "Densidade linear",
+      "description": "Massa por comprimento da corda. Aumentar reduz a velocidade de onda e a frequencia modal; diminuir faz o modo oscilar mais rapido.",
+      "unit": "kg/m",
+      "kind": "number",
+      "min": 0.02,
+      "max": 0.5,
+      "step": 0.01,
+      "defaultValue": 0.08
+    },
+    {
+      "id": "phaseDegrees",
+      "label": "Fase inicial",
+      "description": "Fase temporal do modo em t = 0. Alterar muda se a corda comeca em deslocamento maximo, passando pelo equilibrio ou em estado intermediario.",
+      "unit": "deg",
+      "kind": "number",
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "defaultValue": 0
+    },
+    {
+      "id": "stringLengthMeters",
+      "label": "Comprimento da corda",
+      "description": "Comprimento entre extremidades fixas. Aumentar reduz a frequencia fundamental e afasta os nos; diminuir eleva a frequencia para a mesma tensao.",
+      "unit": "m",
+      "kind": "number",
+      "min": 2,
+      "max": 6,
+      "step": 0.1,
+      "defaultValue": 4
+    },
+    {
+      "id": "probePositionMeters",
+      "label": "Probe na corda",
+      "description": "Ponto usado por graficos e tabela. Posicionar sobre um no deixa y, v_y e a_y proximos de zero; posicionar em ventre mostra amplitude maxima.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 2,
+      "step": 0.05,
+      "defaultValue": 2
+    }
+  ],
+  "presets": [
+    {
+      "id": "fundamental",
+      "label": "Fundamental",
+      "parameters": {
+        "amplitudeMeters": 0.32,
+        "harmonicMode": 1,
+        "tensionNewtons": 18,
+        "linearDensityKilogramsPerMeter": 0.08,
+        "phaseDegrees": 0,
+        "stringLengthMeters": 4,
+        "probePositionMeters": 2
+      }
+    },
+    {
+      "id": "second-harmonic",
+      "label": "Segundo harmonico",
+      "parameters": {
+        "amplitudeMeters": 0.32,
+        "harmonicMode": 2,
+        "tensionNewtons": 18,
+        "linearDensityKilogramsPerMeter": 0.08,
+        "phaseDegrees": 0,
+        "stringLengthMeters": 4,
+        "probePositionMeters": 1
+      }
+    },
+    {
+      "id": "high-tension",
+      "label": "Corda tensionada",
+      "parameters": {
+        "amplitudeMeters": 0.24,
+        "harmonicMode": 3,
+        "tensionNewtons": 48,
+        "linearDensityKilogramsPerMeter": 0.08,
+        "phaseDegrees": 45,
+        "stringLengthMeters": 4,
+        "probePositionMeters": 1.5
+      }
+    }
+  ],
+  "regimes": [
+    {
+      "id": "fixed-end-standing-wave",
+      "label": "Corda fixa nas duas extremidades",
+      "condition": "harmonicMode >= 1, tensionNewtons > 0, linearDensityKilogramsPerMeter > 0 e stringLengthMeters > 0.",
+      "transitionLimit": "harmonicMode alto aumenta nos/ventres; a cena permanece ideal e nao inclui perdas ou rigidez real.",
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared",
+        "secondaryZMeters",
+        "frequencyHertz",
+        "speedMetersPerSecond"
+      ],
+      "warningCode": "STANDING_WAVE_HIGH_HARMONIC"
+    }
+  ],
+  "limits": [
+    "Modelo analitico de onda estacionaria em corda ideal fixa nas duas extremidades, sem amortecimento, rigidez real ou excitacao transiente.",
+    "A frequencia modal usa f_n = n v / 2L com v = sqrt(T/mu), portanto tensao e densidade linear mudam o sample real.",
+    "Nos e ventres sao desenhados pelo mesmo perfil y_n(x,t) usado para o probe, graficos, tabela e formulas.",
+    "Harmonicos altos sao permitidos ate n = 8 para manter a leitura visual e a densidade de pontos da corda."
+  ],
+  "formulas": [
+    {
+      "id": "standing-wave-shape",
+      "title": "Modo estacionario",
+      "expressionLatex": "y_n(x,t)=A\\sin\\left(\\frac{n\\pi x}{L}\\right)\\cos(\\omega_n t+\\phi)",
+      "description": "Define o perfil espacial com nos fixos e a oscilacao temporal de cada ponto da corda.",
+      "variables": [
+        { "symbol": "n", "label": "harmonico", "unit": "" },
+        { "symbol": "L", "label": "comprimento da corda", "unit": "m" },
+        { "symbol": "A", "label": "amplitude do ventre", "unit": "m" },
+        { "symbol": "\\omega_n", "label": "frequencia angular modal", "unit": "rad/s" }
+      ],
+      "usedWhen": "Usar para cordas ideais com extremidades fixas e modo normal ja estabelecido.",
+      "notUsedWhen": "Nao descreve corda com extremidade livre, perdas, rigidez real ou mistura transiente de muitos modos.",
+      "parameterIds": [
+        "amplitudeMeters",
+        "harmonicMode",
+        "stringLengthMeters",
+        "phaseDegrees",
+        "probePositionMeters"
+      ],
+      "sampleFields": [
+        "positionMeters",
+        "secondaryZMeters",
+        "velocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared"
+      ],
+      "relatedChartIds": ["position", "velocity", "acceleration"],
+      "relatedVectorIds": ["displacement", "velocity", "acceleration", "tension"],
+      "example": "No segundo harmonico, ha um no central em x = L/2 e dois ventres laterais."
+    },
+    {
+      "id": "modal-frequency",
+      "title": "Frequencia do harmonico",
+      "expressionLatex": "f_n=\\frac{n}{2L}\\sqrt{\\frac{T}{\\mu}}",
+      "description": "Conecta tensao, densidade linear, comprimento da corda e numero do harmonico a frequencia exibida.",
+      "variables": [
+        { "symbol": "T", "label": "tensao", "unit": "N" },
+        { "symbol": "\\mu", "label": "densidade linear", "unit": "kg/m" },
+        { "symbol": "L", "label": "comprimento", "unit": "m" },
+        { "symbol": "n", "label": "harmonico", "unit": "" }
+      ],
+      "usedWhen": "Usar para comparar como tensionar a corda ou escolher outro harmonico muda a frequencia modal.",
+      "notUsedWhen": "Nao inclui perdas, rigidez flexural, corda grossa ou dispersao.",
+      "parameterIds": [
+        "harmonicMode",
+        "tensionNewtons",
+        "linearDensityKilogramsPerMeter",
+        "stringLengthMeters"
+      ],
+      "sampleFields": ["frequencyHertz", "speedMetersPerSecond", "periodSeconds"],
+      "relatedChartIds": ["velocity"],
+      "example": "Dobrar T aumenta a frequencia por um fator sqrt(2), nao por fator 2."
+    }
+  ]
+}

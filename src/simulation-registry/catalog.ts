@@ -15,10 +15,13 @@ import pendulumFixtureJson from '../../fixtures/simulations/mechanics-pendulum.j
 import projectileMotionFixtureJson from '../../fixtures/simulations/mechanics-projectile-motion.json'
 import rigidBodyRotationFixtureJson from '../../fixtures/simulations/mechanics-rigid-body-rotation.json'
 import rollingWithoutSlippingFixtureJson from '../../fixtures/simulations/mechanics-rolling-without-slipping.json'
+import standingWavesFixtureJson from '../../fixtures/simulations/waves-standing-waves.json'
+import superpositionInterferenceFixtureJson from '../../fixtures/simulations/waves-superposition-interference.json'
 import torqueLeversCenterMassFixtureJson from '../../fixtures/simulations/mechanics-torque-levers-center-mass.json'
 import uniformCircularMotionFixtureJson from '../../fixtures/simulations/mechanics-uniform-circular-motion.json'
 import uniformLinearMotionFixtureJson from '../../fixtures/simulations/mechanics-uniform-linear-motion.json'
 import uniformlyAcceleratedMotionFixtureJson from '../../fixtures/simulations/mechanics-uniformly-accelerated-motion.json'
+import waveOnStringFixtureJson from '../../fixtures/simulations/waves-wave-on-string.json'
 import workEnergyTrackFixtureJson from '../../fixtures/simulations/mechanics-work-energy-track.json'
 import type { KinematicsSimulationId } from '../lib/physics/kinematics'
 import type {
@@ -55,6 +58,9 @@ export const kinematicsFixtures = {
   'rigid-body-rotation': rigidBodyRotationFixtureJson as SimulationFixture,
   'rolling-without-slipping':
     rollingWithoutSlippingFixtureJson as SimulationFixture,
+  'standing-waves': standingWavesFixtureJson as SimulationFixture,
+  'superposition-interference':
+    superpositionInterferenceFixtureJson as SimulationFixture,
   'torque-levers-center-mass':
     torqueLeversCenterMassFixtureJson as SimulationFixture,
   'uniform-circular-motion':
@@ -62,6 +68,7 @@ export const kinematicsFixtures = {
   'uniform-linear-motion': uniformLinearMotionFixtureJson as SimulationFixture,
   'uniformly-accelerated-motion':
     uniformlyAcceleratedMotionFixtureJson as SimulationFixture,
+  'wave-on-string': waveOnStringFixtureJson as SimulationFixture,
   'work-energy-track': workEnergyTrackFixtureJson as SimulationFixture,
 } satisfies Record<KinematicsSimulationId, SimulationFixture>
 

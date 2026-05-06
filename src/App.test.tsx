@@ -669,7 +669,7 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
     ).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(3)
+    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(6)
     expect(screen.getAllByText(/^pronto$/i).length).toBeGreaterThan(0)
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
@@ -828,6 +828,59 @@ describe('App', () => {
       .toBeGreaterThan(0)
     expect(screen.getByLabelText(/Cena 3D dos osciladores acoplados/i))
       .toHaveAccessibleName(/duas massas.*modo comum.*Shift \+ scroll/i)
+  }, 30_000)
+
+  it('opens the mechanical waves through the shared shell', () => {
+    render(
+      <ThemeProvider theme={appTheme}>
+        <App />
+      </ThemeProvider>,
+    )
+
+    openWavesArea()
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Alternar subarea Ondas mecanicas/i,
+      }),
+    )
+
+    const waveCases = [
+      {
+        title: /Onda em corda/i,
+        chart: /Deslocamento da corda por tempo/i,
+        control: /Comprimento de onda \(m\)/i,
+        canvas: /Cena 3D de onda em corda/i,
+      },
+      {
+        title: /Superposicao e interferencia/i,
+        chart: /Superposicao no probe por tempo/i,
+        control: /Fase relativa \(deg\)/i,
+        canvas: /Cena 3D de superposicao e interferencia/i,
+      },
+      {
+        title: /Ondas estacionarias/i,
+        chart: /Deslocamento estacionario por tempo/i,
+        control: /Harmonico/i,
+        canvas: /Cena 3D de ondas estacionarias/i,
+      },
+    ]
+
+    waveCases.forEach(({ title, chart, control, canvas }) => {
+      fireEvent.click(screen.getByRole('button', { name: title }))
+
+      expect(screen.getByRole('heading', { name: title })).toBeInTheDocument()
+      expect(screen.getByLabelText(canvas)).toHaveAccessibleName(
+        /Shift \+ scroll para zoom/i,
+      )
+      expect(screen.getAllByLabelText(control).length).toBeGreaterThan(0)
+      expect(
+        screen.getAllByRole('button', { name: /Ajuda:/i }).length,
+      ).toBeGreaterThan(0)
+
+      fireEvent.click(screen.getByRole('button', { name: /Abrir Graficos/i }))
+      expect(screen.getByRole('img', { name: chart })).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /Recolher Graficos/i }))
+    })
   }, 30_000)
 
   it('opens the inclined plane simulation through the shared shell', () => {

@@ -86,6 +86,9 @@ import continuityBernoulliTheory from '../../content/simulations/mechanics/conti
 import coupledOscillatorsTheory from '../../content/simulations/waves/oscillations/coupled-oscillators/theory.md?raw'
 import dampedOscillatorTheory from '../../content/simulations/waves/oscillations/damped-oscillator/theory.md?raw'
 import forcedOscillatorResonanceTheory from '../../content/simulations/waves/oscillations/forced-oscillator-resonance/theory.md?raw'
+import standingWavesTheory from '../../content/simulations/waves/mechanical-waves/standing-waves/theory.md?raw'
+import superpositionInterferenceTheory from '../../content/simulations/waves/mechanical-waves/superposition-interference/theory.md?raw'
+import waveOnStringTheory from '../../content/simulations/waves/mechanical-waves/wave-on-string/theory.md?raw'
 import {
   computePendulumTimeline,
   getPendulumVectorOverlays,
@@ -226,10 +229,13 @@ const kinematicsTheoryById = {
   'projectile-motion': projectileMotionTheory,
   'rigid-body-rotation': rigidBodyRotationTheory,
   'rolling-without-slipping': rollingWithoutSlippingTheory,
+  'standing-waves': standingWavesTheory,
+  'superposition-interference': superpositionInterferenceTheory,
   'torque-levers-center-mass': torqueLeversCenterMassTheory,
   'uniform-circular-motion': uniformCircularMotionTheory,
   'uniform-linear-motion': uniformLinearMotionTheory,
   'uniformly-accelerated-motion': uniformlyAcceleratedMotionTheory,
+  'wave-on-string': waveOnStringTheory,
   'work-energy-track': workEnergyTrackTheory,
 } satisfies Record<KinematicsSimulationId, string>
 
@@ -803,6 +809,84 @@ const kinematicsVectorLegendItemsById = {
       label: 'Aceleracao',
       color: themeTokens.warning,
       description: 'vetor constante que curva x(t) no MUV',
+    },
+  ],
+  'wave-on-string': [
+    {
+      id: 'displacement',
+      label: 'y',
+      color: themeTokens.vector,
+      description: 'deslocamento transversal do probe calculado por y(x,t)',
+    },
+    {
+      id: 'velocity',
+      label: 'v_y',
+      color: themeTokens.cyan,
+      description: 'velocidade transversal local da corda no probe',
+    },
+    {
+      id: 'acceleration',
+      label: 'a_y',
+      color: themeTokens.warning,
+      description: 'aceleracao transversal local derivada da mesma onda',
+    },
+    {
+      id: 'secondaryVelocity',
+      label: 'v_onda',
+      color: '#818CF8',
+      description: 'velocidade de propagacao v = lambda f',
+    },
+  ],
+  'superposition-interference': [
+    {
+      id: 'displacement',
+      label: 'Soma',
+      color: themeTokens.vector,
+      description: 'deslocamento resultante y1 + y2 no probe',
+    },
+    {
+      id: 'forceOne',
+      label: 'Onda A',
+      color: themeTokens.cyan,
+      description: 'componente que viaja para a direita',
+    },
+    {
+      id: 'forceTwo',
+      label: 'Onda B',
+      color: '#818CF8',
+      description: 'componente que viaja para a esquerda',
+    },
+    {
+      id: 'velocity',
+      label: 'v soma',
+      color: themeTokens.warning,
+      description: 'velocidade transversal da soma no probe',
+    },
+  ],
+  'standing-waves': [
+    {
+      id: 'displacement',
+      label: 'y',
+      color: themeTokens.vector,
+      description: 'deslocamento do modo estacionario no probe',
+    },
+    {
+      id: 'velocity',
+      label: 'v_y',
+      color: themeTokens.cyan,
+      description: 'velocidade transversal local do modo',
+    },
+    {
+      id: 'acceleration',
+      label: 'a_y',
+      color: themeTokens.warning,
+      description: 'aceleracao transversal local do modo',
+    },
+    {
+      id: 'tension',
+      label: 'Envelope',
+      color: themeTokens.vector,
+      description: 'amplitude maxima local que marca nos e ventres',
     },
   ],
   'work-energy-track': [
@@ -4400,6 +4484,60 @@ function buildKinematicsReadoutMetrics({
         value: formatNumber(sample.tensionNewtons, 'N'),
       },
       ...energyMetric,
+      frameMetric,
+    ]
+  }
+
+  if (
+    simulationId === 'wave-on-string' ||
+    simulationId === 'superposition-interference' ||
+    simulationId === 'standing-waves'
+  ) {
+    return [
+      {
+        label: 'y no probe',
+        value: formatNumber(sample.positionMeters, 'm'),
+      },
+      {
+        label: 'v_y',
+        value: formatNumber(sample.velocityMetersPerSecond, 'm/s'),
+      },
+      {
+        label: 'a_y',
+        value: formatNumber(
+          sample.accelerationMetersPerSecondSquared,
+          'm/s^2',
+        ),
+      },
+      {
+        label:
+          simulationId === 'standing-waves' ? 'f_n' : 'Frequencia',
+        value: formatNumber(sample.frequencyHertz, 'Hz'),
+      },
+      {
+        label: 'v onda',
+        value: formatNumber(sample.speedMetersPerSecond, 'm/s'),
+      },
+      ...(simulationId === 'superposition-interference'
+        ? [
+            {
+              label: 'Onda A',
+              value: formatNumber(sample.secondaryZMeters, 'm'),
+            },
+            {
+              label: 'Onda B',
+              value: formatNumber(sample.displacementMeters, 'm'),
+            },
+          ]
+        : []),
+      ...(simulationId === 'standing-waves'
+        ? [
+            {
+              label: 'Envelope',
+              value: formatNumber(sample.secondaryZMeters, 'm'),
+            },
+          ]
+        : []),
       frameMetric,
     ]
   }

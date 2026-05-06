@@ -3214,3 +3214,41 @@ Validacao:
 - Executado `npm run lint`; passou.
 - Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
 - Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; falhou por estrutura SDD ausente ja conhecida neste repositorio (`README.md`, `.agent`, `tasks`, `adr`), nao por inconsistencia dos guias alterados.
+
+## 2026-05-06 - Ondas mecanicas da Fase 4
+
+Status: feito.
+
+Pedido reportado:
+
+- Executar `task-skill 3`, seguindo as tres proximas tasks pendentes do roadmap.
+
+Ajuste:
+
+- As tasks selecionadas foram `Onda em corda`, `Superposicao e interferencia` e `Ondas estacionarias`, em `Oscilacoes e Ondas > Ondas mecanicas`.
+- O catalogo promoveu as tres simulacoes de `planned` para `analysis`, com fixtures locais, teoria Markdown, formulas, regimes, limites, presets, graficos, vetores e parametros com ajuda.
+- O motor compartilhado passou a calcular onda senoidal viajante, superposicao de duas ondas contrapropagantes e modos estacionarios de uma corda com extremidades fixas.
+- A cena Three.js passou a desenhar perfis 1D dinamicos, probe sincronizado, componentes individuais para superposicao e envelope para ondas estacionarias, sem mover o shell React para o loop quente.
+- Graficos, readouts, tabela e formulas foram conectados aos mesmos samples, incluindo deslocamento transversal, velocidade, aceleracao, componentes, envelope, velocidade de propagacao e frequencia modal.
+- PixiJS permaneceu opcional para futuras ondas 2D densas; a fatia atual reaproveita Three.js e live-canvas.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: parametros zero-validos, regimes, warnings, samples, cena, graficos, tabela, formulas e teoria foram mantidos sincronizados antes da promocao para `analysis`.
+- `Onda em corda` aceita amplitude ou frequencia zero como casos fisicos declarados, com avisos para corda reta ou perfil estatico.
+- `Superposicao e interferencia` registra fases construtivas/destrutivas e preserva componentes individuais no sample.
+- `Ondas estacionarias` calcula `v = sqrt(T/mu)` e `f_n = n v/(2L)`, expondo nos, ventres, envelope e warning de harmonico alto.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/05-roadmap.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md`, `guides/09-simulation-catalog-plan.md`, `guides/issues.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizados roadmap, catalog plan, produto, arquitetura, regras, dados/API, contratos, qualidade, issues e este registro de progresso para refletir ondas mecanicas em `analysis`.
+- HLD/diagrama nao foi atualizado porque arquitetura, servicos, pipeline e fluxo estrutural de dados nao mudaram; a entrega adicionou simulacoes dentro do pipeline existente.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/simulation-registry/catalog.test.ts --run --reporter=dot --maxWorkers=1`; 2 arquivos e 50 testes passaram.
+- Executado `npm run test -- src/App.test.tsx --run --reporter=dot --maxWorkers=1 -t "mechanical waves"`; 1 teste passou e 9 foram ignorados pelo filtro.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou com timeout maior.
+- Executado `npm run test -- --reporter=dot --maxWorkers=1`; 13 arquivos e 118 testes passaram.

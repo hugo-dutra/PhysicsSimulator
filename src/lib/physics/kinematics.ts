@@ -13,10 +13,13 @@ export type KinematicsSimulationId =
   | 'projectile-motion'
   | 'rigid-body-rotation'
   | 'rolling-without-slipping'
+  | 'standing-waves'
+  | 'superposition-interference'
   | 'torque-levers-center-mass'
   | 'uniform-circular-motion'
   | 'uniform-linear-motion'
   | 'uniformly-accelerated-motion'
+  | 'wave-on-string'
   | 'work-energy-track'
 
 export type AtwoodMachineParameters = {
@@ -86,6 +89,35 @@ export type CoupledOscillatorsParameters = {
   initialVelocityTwoMetersPerSecond: number
   massKilograms: number
   springConstantNewtonsPerMeter: number
+}
+
+export type WaveOnStringParameters = {
+  amplitudeMeters: number
+  frequencyHertz: number
+  phaseDegrees: number
+  probePositionMeters: number
+  stringLengthMeters: number
+  wavelengthMeters: number
+}
+
+export type SuperpositionInterferenceParameters = {
+  amplitudeOneMeters: number
+  amplitudeTwoMeters: number
+  frequencyHertz: number
+  phaseDifferenceDegrees: number
+  probePositionMeters: number
+  stringLengthMeters: number
+  wavelengthMeters: number
+}
+
+export type StandingWavesParameters = {
+  amplitudeMeters: number
+  harmonicMode: number
+  linearDensityKilogramsPerMeter: number
+  phaseDegrees: number
+  probePositionMeters: number
+  stringLengthMeters: number
+  tensionNewtons: number
 }
 
 export type GravitationalFieldOrbitsParameters = {
@@ -211,11 +243,22 @@ export type KinematicsParameters =
   | ProjectileMotionParameters
   | RigidBodyRotationParameters
   | RollingWithoutSlippingParameters
+  | StandingWavesParameters
+  | SuperpositionInterferenceParameters
   | TorqueLeversCenterMassParameters
   | UniformCircularMotionParameters
   | UniformLinearMotionParameters
   | UniformlyAcceleratedMotionParameters
+  | WaveOnStringParameters
   | WorkEnergyTrackParameters
+
+export type MechanicalWaveProfilePoint = {
+  componentOneMeters: number
+  componentTwoMeters: number
+  envelopeMeters: number
+  xMeters: number
+  zMeters: number
+}
 
 export type KinematicsSample = {
   accelerationMetersPerSecondSquared: number
@@ -376,11 +419,14 @@ const kinematicsSimulationIds = [
   'particle-equilibrium',
   'rigid-body-rotation',
   'rolling-without-slipping',
+  'standing-waves',
+  'superposition-interference',
   'torque-levers-center-mass',
   'uniform-linear-motion',
   'uniformly-accelerated-motion',
   'projectile-motion',
   'uniform-circular-motion',
+  'wave-on-string',
   'work-energy-track',
 ] as const
 
@@ -630,6 +676,50 @@ export function toKinematicsParameters(
       }
 
       validateCoupledOscillatorsParameters(parameters)
+      return parameters
+    }
+    case 'wave-on-string': {
+      const parameters: WaveOnStringParameters = {
+        amplitudeMeters: readNumber(values, 'amplitudeMeters'),
+        frequencyHertz: readNumber(values, 'frequencyHertz'),
+        phaseDegrees: readNumber(values, 'phaseDegrees'),
+        probePositionMeters: readNumber(values, 'probePositionMeters'),
+        stringLengthMeters: readNumber(values, 'stringLengthMeters'),
+        wavelengthMeters: readNumber(values, 'wavelengthMeters'),
+      }
+
+      validateWaveOnStringParameters(parameters)
+      return parameters
+    }
+    case 'superposition-interference': {
+      const parameters: SuperpositionInterferenceParameters = {
+        amplitudeOneMeters: readNumber(values, 'amplitudeOneMeters'),
+        amplitudeTwoMeters: readNumber(values, 'amplitudeTwoMeters'),
+        frequencyHertz: readNumber(values, 'frequencyHertz'),
+        phaseDifferenceDegrees: readNumber(values, 'phaseDifferenceDegrees'),
+        probePositionMeters: readNumber(values, 'probePositionMeters'),
+        stringLengthMeters: readNumber(values, 'stringLengthMeters'),
+        wavelengthMeters: readNumber(values, 'wavelengthMeters'),
+      }
+
+      validateSuperpositionInterferenceParameters(parameters)
+      return parameters
+    }
+    case 'standing-waves': {
+      const parameters: StandingWavesParameters = {
+        amplitudeMeters: readNumber(values, 'amplitudeMeters'),
+        harmonicMode: readNumber(values, 'harmonicMode'),
+        linearDensityKilogramsPerMeter: readNumber(
+          values,
+          'linearDensityKilogramsPerMeter',
+        ),
+        phaseDegrees: readNumber(values, 'phaseDegrees'),
+        probePositionMeters: readNumber(values, 'probePositionMeters'),
+        stringLengthMeters: readNumber(values, 'stringLengthMeters'),
+        tensionNewtons: readNumber(values, 'tensionNewtons'),
+      }
+
+      validateStandingWavesParameters(parameters)
       return parameters
     }
     case 'damped-oscillator': {
@@ -1041,6 +1131,21 @@ export function computeKinematicsSample(
     case 'coupled-oscillators':
       return computeCoupledOscillatorSample(
         parameters as CoupledOscillatorsParameters,
+        timeSeconds,
+      )
+    case 'wave-on-string':
+      return computeWaveOnStringSample(
+        parameters as WaveOnStringParameters,
+        timeSeconds,
+      )
+    case 'superposition-interference':
+      return computeSuperpositionInterferenceSample(
+        parameters as SuperpositionInterferenceParameters,
+        timeSeconds,
+      )
+    case 'standing-waves':
+      return computeStandingWavesSample(
+        parameters as StandingWavesParameters,
         timeSeconds,
       )
     case 'damped-oscillator':
@@ -1476,6 +1581,120 @@ export function getKinematicsVectorOverlays(
         label: 'Acoplamento',
         magnitude: Math.abs(sample.tensionNewtons),
         unit: 'N',
+      },
+    ]
+  }
+
+  if (simulationId === 'wave-on-string') {
+    return [
+      {
+        direction: { x: 0, z: Math.sign(sample.positionMeters) || 0 },
+        id: 'displacement',
+        label: 'Deslocamento transversal',
+        magnitude: Math.abs(sample.positionMeters),
+        unit: 'm',
+      },
+      {
+        direction: {
+          x: 0,
+          z: Math.sign(sample.velocityMetersPerSecond) || 0,
+        },
+        id: 'velocity',
+        label: 'Velocidade transversal',
+        magnitude: Math.abs(sample.velocityMetersPerSecond),
+        unit: 'm/s',
+      },
+      {
+        direction: {
+          x: 0,
+          z: Math.sign(sample.accelerationMetersPerSecondSquared) || 0,
+        },
+        id: 'acceleration',
+        label: 'Aceleracao transversal',
+        magnitude: Math.abs(sample.accelerationMetersPerSecondSquared),
+        unit: 'm/s^2',
+      },
+      {
+        direction: { x: Math.sign(sample.velocityXMetersPerSecond) || 1, z: 0 },
+        id: 'secondaryVelocity',
+        label: 'Velocidade de propagacao',
+        magnitude: sample.speedMetersPerSecond,
+        unit: 'm/s',
+      },
+    ]
+  }
+
+  if (simulationId === 'superposition-interference') {
+    return [
+      {
+        direction: { x: 0, z: Math.sign(sample.positionMeters) || 0 },
+        id: 'displacement',
+        label: 'Soma das ondas',
+        magnitude: Math.abs(sample.positionMeters),
+        unit: 'm',
+      },
+      {
+        direction: { x: 0, z: Math.sign(sample.secondaryZMeters) || 0 },
+        id: 'forceOne',
+        label: 'Onda A',
+        magnitude: Math.abs(sample.secondaryZMeters),
+        unit: 'm',
+      },
+      {
+        direction: { x: 0, z: Math.sign(sample.displacementMeters) || 0 },
+        id: 'forceTwo',
+        label: 'Onda B',
+        magnitude: Math.abs(sample.displacementMeters),
+        unit: 'm',
+      },
+      {
+        direction: {
+          x: 0,
+          z: Math.sign(sample.velocityMetersPerSecond) || 0,
+        },
+        id: 'velocity',
+        label: 'Velocidade da soma',
+        magnitude: Math.abs(sample.velocityMetersPerSecond),
+        unit: 'm/s',
+      },
+    ]
+  }
+
+  if (simulationId === 'standing-waves') {
+    return [
+      {
+        direction: { x: 0, z: Math.sign(sample.positionMeters) || 0 },
+        id: 'displacement',
+        label: 'Deslocamento no ventre/probe',
+        magnitude: Math.abs(sample.positionMeters),
+        unit: 'm',
+      },
+      {
+        direction: {
+          x: 0,
+          z: Math.sign(sample.velocityMetersPerSecond) || 0,
+        },
+        id: 'velocity',
+        label: 'Velocidade transversal',
+        magnitude: Math.abs(sample.velocityMetersPerSecond),
+        unit: 'm/s',
+      },
+      {
+        direction: {
+          x: 0,
+          z: Math.sign(sample.accelerationMetersPerSecondSquared) || 0,
+        },
+        id: 'acceleration',
+        label: 'Aceleracao transversal',
+        magnitude: Math.abs(sample.accelerationMetersPerSecondSquared),
+        unit: 'm/s^2',
+      },
+      {
+        direction: { x: 0, z: Math.sign(sample.secondaryZMeters) || 1 },
+        id: 'tension',
+        label: 'Envelope modal',
+        magnitude: Math.abs(sample.secondaryZMeters),
+        unit: 'm',
       },
     ]
   }
@@ -3292,6 +3511,381 @@ function buildCoupledOscillatorSample(
   })
 }
 
+export function computeMechanicalWaveProfile(
+  simulationId: Extract<
+    KinematicsSimulationId,
+    'standing-waves' | 'superposition-interference' | 'wave-on-string'
+  >,
+  parameters:
+    | StandingWavesParameters
+    | SuperpositionInterferenceParameters
+    | WaveOnStringParameters,
+  timeSeconds: number,
+  pointCount = 128,
+): MechanicalWaveProfilePoint[] {
+  if (!Number.isFinite(timeSeconds) || timeSeconds < 0) {
+    throw new Error('timeSeconds must be a finite non-negative number.')
+  }
+
+  const stringLengthMeters = readMechanicalWaveStringLength(parameters)
+  const safePointCount = Math.max(2, Math.floor(pointCount))
+
+  return Array.from({ length: safePointCount }, (_, index) => {
+    const ratio = index / (safePointCount - 1)
+    const xOnStringMeters = stringLengthMeters * ratio
+
+    return computeMechanicalWavePoint(
+      simulationId,
+      parameters,
+      xOnStringMeters,
+      timeSeconds,
+    )
+  })
+}
+
+function computeWaveOnStringSample(
+  parameters: WaveOnStringParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const point = computeMechanicalWavePoint(
+    'wave-on-string',
+    parameters,
+    parameters.probePositionMeters,
+    timeSeconds,
+  )
+  const waveSpeedMetersPerSecond =
+    parameters.frequencyHertz * parameters.wavelengthMeters
+  const angularFrequencyRadiansPerSecond =
+    2 * Math.PI * parameters.frequencyHertz
+
+  return buildSample({
+    accelerationMetersPerSecondSquared: pointEnvelopeAcceleration(
+      point.zMeters,
+      angularFrequencyRadiansPerSecond,
+    ),
+    accelerationZMetersPerSecondSquared: pointEnvelopeAcceleration(
+      point.zMeters,
+      angularFrequencyRadiansPerSecond,
+    ),
+    angleRadians: computeTravelingWavePhase(
+      parameters,
+      parameters.probePositionMeters,
+      timeSeconds,
+    ),
+    angularVelocityRadiansPerSecond: angularFrequencyRadiansPerSecond,
+    displacementMeters: waveSpeedMetersPerSecond * timeSeconds,
+    frequencyHertz: parameters.frequencyHertz,
+    periodSeconds:
+      parameters.frequencyHertz > 0 ? 1 / parameters.frequencyHertz : 0,
+    positionMeters: point.zMeters,
+    primaryRadiusMeters: parameters.amplitudeMeters,
+    secondaryRadiusMeters: parameters.wavelengthMeters,
+    secondaryVelocityMetersPerSecond: waveSpeedMetersPerSecond,
+    secondaryVelocityXMetersPerSecond: waveSpeedMetersPerSecond,
+    speedMetersPerSecond: waveSpeedMetersPerSecond,
+    timeSeconds,
+    velocityMetersPerSecond: computeTravelingWaveTransverseVelocity(
+      parameters,
+      parameters.probePositionMeters,
+      timeSeconds,
+    ),
+    velocityXMetersPerSecond: waveSpeedMetersPerSecond,
+    velocityZMetersPerSecond: computeTravelingWaveTransverseVelocity(
+      parameters,
+      parameters.probePositionMeters,
+      timeSeconds,
+    ),
+    xMeters: point.xMeters,
+    zMeters: point.zMeters,
+  })
+}
+
+function computeSuperpositionInterferenceSample(
+  parameters: SuperpositionInterferenceParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const point = computeMechanicalWavePoint(
+    'superposition-interference',
+    parameters,
+    parameters.probePositionMeters,
+    timeSeconds,
+  )
+  const angularFrequencyRadiansPerSecond =
+    2 * Math.PI * parameters.frequencyHertz
+  const componentVelocities = computeSuperpositionComponentVelocities(
+    parameters,
+    parameters.probePositionMeters,
+    timeSeconds,
+  )
+  const totalVelocityMetersPerSecond =
+    componentVelocities.componentOneVelocityMetersPerSecond +
+    componentVelocities.componentTwoVelocityMetersPerSecond
+  const waveSpeedMetersPerSecond =
+    parameters.frequencyHertz * parameters.wavelengthMeters
+
+  return buildSample({
+    accelerationMetersPerSecondSquared:
+      -(angularFrequencyRadiansPerSecond ** 2) * point.zMeters,
+    accelerationZMetersPerSecondSquared:
+      -(angularFrequencyRadiansPerSecond ** 2) * point.zMeters,
+    angleRadians: computeTravelingWavePhase(
+      {
+        amplitudeMeters: parameters.amplitudeOneMeters,
+        frequencyHertz: parameters.frequencyHertz,
+        phaseDegrees: 0,
+        probePositionMeters: parameters.probePositionMeters,
+        stringLengthMeters: parameters.stringLengthMeters,
+        wavelengthMeters: parameters.wavelengthMeters,
+      },
+      parameters.probePositionMeters,
+      timeSeconds,
+    ),
+    angularVelocityRadiansPerSecond: angularFrequencyRadiansPerSecond,
+    centerOfMassMeters: point.envelopeMeters,
+    displacementMeters: point.componentTwoMeters,
+    frequencyHertz: parameters.frequencyHertz,
+    periodSeconds:
+      parameters.frequencyHertz > 0 ? 1 / parameters.frequencyHertz : 0,
+    positionMeters: point.zMeters,
+    primaryRadiusMeters: Math.max(
+      parameters.amplitudeOneMeters,
+      parameters.amplitudeTwoMeters,
+    ),
+    secondaryRadiusMeters: parameters.wavelengthMeters,
+    secondarySpeedMetersPerSecond: Math.abs(
+      componentVelocities.componentTwoVelocityMetersPerSecond,
+    ),
+    secondaryVelocityMetersPerSecond:
+      componentVelocities.componentTwoVelocityMetersPerSecond,
+    secondaryVelocityZMetersPerSecond:
+      componentVelocities.componentTwoVelocityMetersPerSecond,
+    secondaryXMeters: point.xMeters,
+    secondaryZMeters: point.componentOneMeters,
+    speedMetersPerSecond: waveSpeedMetersPerSecond,
+    timeSeconds,
+    velocityMetersPerSecond: totalVelocityMetersPerSecond,
+    velocityXMetersPerSecond: waveSpeedMetersPerSecond,
+    velocityZMetersPerSecond: totalVelocityMetersPerSecond,
+    xMeters: point.xMeters,
+    zMeters: point.zMeters,
+  })
+}
+
+function computeStandingWavesSample(
+  parameters: StandingWavesParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const point = computeMechanicalWavePoint(
+    'standing-waves',
+    parameters,
+    parameters.probePositionMeters,
+    timeSeconds,
+  )
+  const waveSpeedMetersPerSecond = computeStandingWaveSpeed(parameters)
+  const harmonicMode = readStandingWaveHarmonicMode(parameters)
+  const frequencyHertz =
+    (harmonicMode * waveSpeedMetersPerSecond) /
+    (2 * parameters.stringLengthMeters)
+  const angularFrequencyRadiansPerSecond = 2 * Math.PI * frequencyHertz
+  const modalShape = Math.sin(
+    (harmonicMode * Math.PI * parameters.probePositionMeters) /
+      parameters.stringLengthMeters,
+  )
+  const phaseRadians =
+    angularFrequencyRadiansPerSecond * timeSeconds +
+    degreesToRadians(parameters.phaseDegrees)
+  const velocityMetersPerSecond =
+    -parameters.amplitudeMeters *
+    modalShape *
+    angularFrequencyRadiansPerSecond *
+    Math.sin(phaseRadians)
+  const accelerationMetersPerSecondSquared =
+    -(angularFrequencyRadiansPerSecond ** 2) * point.zMeters
+
+  return buildSample({
+    accelerationMetersPerSecondSquared,
+    accelerationZMetersPerSecondSquared: accelerationMetersPerSecondSquared,
+    angleRadians: phaseRadians,
+    angularVelocityRadiansPerSecond: angularFrequencyRadiansPerSecond,
+    centerOfMassMeters: point.envelopeMeters,
+    displacementMeters: point.envelopeMeters,
+    frequencyHertz,
+    periodSeconds: frequencyHertz > 0 ? 1 / frequencyHertz : 0,
+    positionMeters: point.zMeters,
+    primaryRadiusMeters: parameters.amplitudeMeters,
+    secondaryRadiusMeters: parameters.stringLengthMeters,
+    secondarySpeedMetersPerSecond: waveSpeedMetersPerSecond,
+    secondaryVelocityMetersPerSecond: waveSpeedMetersPerSecond,
+    speedMetersPerSecond: waveSpeedMetersPerSecond,
+    timeSeconds,
+    velocityMetersPerSecond,
+    velocityXMetersPerSecond: waveSpeedMetersPerSecond,
+    velocityZMetersPerSecond: velocityMetersPerSecond,
+    xMeters: point.xMeters,
+    zMeters: point.zMeters,
+    secondaryZMeters: point.envelopeMeters,
+  })
+}
+
+function computeMechanicalWavePoint(
+  simulationId: Extract<
+    KinematicsSimulationId,
+    'standing-waves' | 'superposition-interference' | 'wave-on-string'
+  >,
+  parameters:
+    | StandingWavesParameters
+    | SuperpositionInterferenceParameters
+    | WaveOnStringParameters,
+  xOnStringMeters: number,
+  timeSeconds: number,
+): MechanicalWaveProfilePoint {
+  const stringLengthMeters = readMechanicalWaveStringLength(parameters)
+  const centeredXMeters = xOnStringMeters - stringLengthMeters / 2
+
+  if (simulationId === 'standing-waves') {
+    const standingParameters = parameters as StandingWavesParameters
+    const harmonicMode = readStandingWaveHarmonicMode(standingParameters)
+    const waveSpeedMetersPerSecond =
+      computeStandingWaveSpeed(standingParameters)
+    const frequencyHertz =
+      (harmonicMode * waveSpeedMetersPerSecond) /
+      (2 * standingParameters.stringLengthMeters)
+    const omega = 2 * Math.PI * frequencyHertz
+    const modalShape = Math.sin(
+      (harmonicMode * Math.PI * xOnStringMeters) /
+        standingParameters.stringLengthMeters,
+    )
+    const displacementMeters =
+      standingParameters.amplitudeMeters *
+      modalShape *
+      Math.cos(omega * timeSeconds + degreesToRadians(standingParameters.phaseDegrees))
+    const envelopeMeters = Math.abs(
+      standingParameters.amplitudeMeters * modalShape,
+    )
+
+    return {
+      componentOneMeters: displacementMeters,
+      componentTwoMeters: 0,
+      envelopeMeters,
+      xMeters: centeredXMeters,
+      zMeters: displacementMeters,
+    }
+  }
+
+  if (simulationId === 'superposition-interference') {
+    const superpositionParameters =
+      parameters as SuperpositionInterferenceParameters
+    const k = (2 * Math.PI) / superpositionParameters.wavelengthMeters
+    const omega = 2 * Math.PI * superpositionParameters.frequencyHertz
+    const phaseDifferenceRadians = degreesToRadians(
+      superpositionParameters.phaseDifferenceDegrees,
+    )
+    const componentOneMeters =
+      superpositionParameters.amplitudeOneMeters *
+      Math.sin(k * xOnStringMeters - omega * timeSeconds)
+    const componentTwoMeters =
+      superpositionParameters.amplitudeTwoMeters *
+      Math.sin(k * xOnStringMeters + omega * timeSeconds + phaseDifferenceRadians)
+    const zMeters = componentOneMeters + componentTwoMeters
+
+    return {
+      componentOneMeters,
+      componentTwoMeters,
+      envelopeMeters: Math.abs(zMeters),
+      xMeters: centeredXMeters,
+      zMeters,
+    }
+  }
+
+  const waveParameters = parameters as WaveOnStringParameters
+  const zMeters =
+    waveParameters.amplitudeMeters *
+    Math.sin(
+      computeTravelingWavePhase(waveParameters, xOnStringMeters, timeSeconds),
+    )
+
+  return {
+    componentOneMeters: zMeters,
+    componentTwoMeters: 0,
+    envelopeMeters: Math.abs(waveParameters.amplitudeMeters),
+    xMeters: centeredXMeters,
+    zMeters,
+  }
+}
+
+function computeTravelingWavePhase(
+  parameters: WaveOnStringParameters,
+  xOnStringMeters: number,
+  timeSeconds: number,
+) {
+  return (
+    ((2 * Math.PI) / parameters.wavelengthMeters) * xOnStringMeters -
+    2 * Math.PI * parameters.frequencyHertz * timeSeconds +
+    degreesToRadians(parameters.phaseDegrees)
+  )
+}
+
+function computeTravelingWaveTransverseVelocity(
+  parameters: WaveOnStringParameters,
+  xOnStringMeters: number,
+  timeSeconds: number,
+) {
+  return (
+    -parameters.amplitudeMeters *
+    2 *
+    Math.PI *
+    parameters.frequencyHertz *
+    Math.cos(computeTravelingWavePhase(parameters, xOnStringMeters, timeSeconds))
+  )
+}
+
+function computeSuperpositionComponentVelocities(
+  parameters: SuperpositionInterferenceParameters,
+  xOnStringMeters: number,
+  timeSeconds: number,
+) {
+  const k = (2 * Math.PI) / parameters.wavelengthMeters
+  const omega = 2 * Math.PI * parameters.frequencyHertz
+  const phaseDifferenceRadians = degreesToRadians(
+    parameters.phaseDifferenceDegrees,
+  )
+
+  return {
+    componentOneVelocityMetersPerSecond:
+      -parameters.amplitudeOneMeters *
+      omega *
+      Math.cos(k * xOnStringMeters - omega * timeSeconds),
+    componentTwoVelocityMetersPerSecond:
+      parameters.amplitudeTwoMeters *
+      omega *
+      Math.cos(k * xOnStringMeters + omega * timeSeconds + phaseDifferenceRadians),
+  }
+}
+
+function pointEnvelopeAcceleration(
+  displacementMeters: number,
+  angularFrequencyRadiansPerSecond: number,
+) {
+  return -(angularFrequencyRadiansPerSecond ** 2) * displacementMeters
+}
+
+function computeStandingWaveSpeed(parameters: StandingWavesParameters) {
+  return Math.sqrt(parameters.tensionNewtons / parameters.linearDensityKilogramsPerMeter)
+}
+
+function readStandingWaveHarmonicMode(parameters: StandingWavesParameters) {
+  return Math.max(1, Math.round(parameters.harmonicMode))
+}
+
+function readMechanicalWaveStringLength(
+  parameters:
+    | StandingWavesParameters
+    | SuperpositionInterferenceParameters
+    | WaveOnStringParameters,
+) {
+  return parameters.stringLengthMeters
+}
+
 function computeParticleEquilibriumSample(
   parameters: ParticleEquilibriumParameters,
   timeSeconds: number,
@@ -4983,6 +5577,83 @@ function getKinematicsWarnings(
     return []
   }
 
+  if (simulationId === 'wave-on-string') {
+    const waveParameters = parameters as WaveOnStringParameters
+
+    if (waveParameters.amplitudeMeters === 0) {
+      return [
+        {
+          code: 'WAVE_ZERO_AMPLITUDE',
+          message:
+            'A amplitude esta zerada; a corda permanece na linha de equilibrio enquanto velocidade, periodo e comprimento de onda continuam declarados.',
+        },
+      ]
+    }
+
+    if (waveParameters.frequencyHertz === 0) {
+      return [
+        {
+          code: 'WAVE_STATIC_PROFILE',
+          message:
+            'A frequencia esta zerada; o perfil fica congelado e a velocidade de propagacao v = lambda f tambem zera.',
+        },
+      ]
+    }
+
+    return []
+  }
+
+  if (simulationId === 'superposition-interference') {
+    const superpositionParameters =
+      parameters as SuperpositionInterferenceParameters
+    const normalizedPhase = normalizeDegrees(
+      superpositionParameters.phaseDifferenceDegrees,
+    )
+    const equalAmplitudes =
+      Math.abs(
+        superpositionParameters.amplitudeOneMeters -
+          superpositionParameters.amplitudeTwoMeters,
+      ) < 1e-9
+
+    if (equalAmplitudes && Math.abs(normalizedPhase - 180) < 3) {
+      return [
+        {
+          code: 'INTERFERENCE_DESTRUCTIVE_PHASE',
+          message:
+            'As amplitudes sao iguais e a fase relativa esta proxima de 180 graus; o probe evidencia cancelamento local quando as ondas se encontram em oposicao.',
+        },
+      ]
+    }
+
+    if (Math.abs(normalizedPhase) < 3 || Math.abs(normalizedPhase - 360) < 3) {
+      return [
+        {
+          code: 'INTERFERENCE_CONSTRUCTIVE_PHASE',
+          message:
+            'A fase relativa esta proxima de zero; os deslocamentos somam em fase nos encontros construtivos.',
+        },
+      ]
+    }
+
+    return []
+  }
+
+  if (simulationId === 'standing-waves') {
+    const standingParameters = parameters as StandingWavesParameters
+
+    if (readStandingWaveHarmonicMode(standingParameters) >= 5) {
+      return [
+        {
+          code: 'STANDING_WAVE_HIGH_HARMONIC',
+          message:
+            'Harmonicos altos aumentam a densidade de nos e ventres; o modelo continua ideal e nao inclui perdas ou rigidez real da corda.',
+        },
+      ]
+    }
+
+    return []
+  }
+
   if (simulationId === 'particle-equilibrium') {
     const sample = computeParticleEquilibriumSample(
       parameters as ParticleEquilibriumParameters,
@@ -5216,6 +5887,14 @@ function validateKinematicsParameters(
         parameters as RollingWithoutSlippingParameters,
       )
       return
+    case 'standing-waves':
+      validateStandingWavesParameters(parameters as StandingWavesParameters)
+      return
+    case 'superposition-interference':
+      validateSuperpositionInterferenceParameters(
+        parameters as SuperpositionInterferenceParameters,
+      )
+      return
     case 'torque-levers-center-mass':
       validateTorqueLeversCenterMassParameters(
         parameters as TorqueLeversCenterMassParameters,
@@ -5225,6 +5904,9 @@ function validateKinematicsParameters(
       validateUniformCircularMotionParameters(
         parameters as UniformCircularMotionParameters,
       )
+      return
+    case 'wave-on-string':
+      validateWaveOnStringParameters(parameters as WaveOnStringParameters)
       return
     case 'work-energy-track':
       validateWorkEnergyTrackParameters(parameters as WorkEnergyTrackParameters)
@@ -5394,6 +6076,53 @@ function validateCoupledOscillatorsParameters(
     'springConstantNewtonsPerMeter',
     parameters.springConstantNewtonsPerMeter,
   )
+}
+
+function validateWaveOnStringParameters(parameters: WaveOnStringParameters) {
+  assertFiniteNonNegative('amplitudeMeters', parameters.amplitudeMeters)
+  assertFiniteNonNegative('frequencyHertz', parameters.frequencyHertz)
+  assertFinite('phaseDegrees', parameters.phaseDegrees)
+  assertFinitePositive('stringLengthMeters', parameters.stringLengthMeters)
+  assertFinitePositive('wavelengthMeters', parameters.wavelengthMeters)
+  assertProbeInsideString(
+    parameters.probePositionMeters,
+    parameters.stringLengthMeters,
+  )
+}
+
+function validateSuperpositionInterferenceParameters(
+  parameters: SuperpositionInterferenceParameters,
+) {
+  assertFiniteNonNegative('amplitudeOneMeters', parameters.amplitudeOneMeters)
+  assertFiniteNonNegative('amplitudeTwoMeters', parameters.amplitudeTwoMeters)
+  assertFiniteNonNegative('frequencyHertz', parameters.frequencyHertz)
+  assertFinite('phaseDifferenceDegrees', parameters.phaseDifferenceDegrees)
+  assertFinitePositive('stringLengthMeters', parameters.stringLengthMeters)
+  assertFinitePositive('wavelengthMeters', parameters.wavelengthMeters)
+  assertProbeInsideString(
+    parameters.probePositionMeters,
+    parameters.stringLengthMeters,
+  )
+}
+
+function validateStandingWavesParameters(parameters: StandingWavesParameters) {
+  assertFiniteNonNegative('amplitudeMeters', parameters.amplitudeMeters)
+  assertFinitePositive('harmonicMode', parameters.harmonicMode)
+  assertFinitePositive(
+    'linearDensityKilogramsPerMeter',
+    parameters.linearDensityKilogramsPerMeter,
+  )
+  assertFinite('phaseDegrees', parameters.phaseDegrees)
+  assertFinitePositive('stringLengthMeters', parameters.stringLengthMeters)
+  assertFinitePositive('tensionNewtons', parameters.tensionNewtons)
+  assertProbeInsideString(
+    parameters.probePositionMeters,
+    parameters.stringLengthMeters,
+  )
+
+  if (parameters.harmonicMode > 8) {
+    throw new Error('harmonicMode must stay between 1 and 8 for this view.')
+  }
 }
 
 function validateGravitationalFieldOrbitsParameters(
@@ -6138,8 +6867,22 @@ function assertFiniteNonNegative(key: string, value: number) {
   }
 }
 
+function assertProbeInsideString(probePositionMeters: number, stringLengthMeters: number) {
+  assertFinite('probePositionMeters', probePositionMeters)
+
+  if (probePositionMeters < 0 || probePositionMeters > stringLengthMeters) {
+    throw new Error('probePositionMeters must stay inside the string length.')
+  }
+}
+
 function degreesToRadians(value: number) {
   return (value * Math.PI) / 180
+}
+
+function normalizeDegrees(value: number) {
+  const normalized = value % 360
+
+  return normalized < 0 ? normalized + 360 : normalized
 }
 
 function clamp(value: number, min: number, max: number) {

@@ -200,7 +200,7 @@ type InclinedPlaneSample = {
 
 ## Exemplo de sample de Cinematica
 
-O nome historico `KinematicsSample` cobre hoje o motor analitico/numerico compartilhado de Cinematica, Dinamica, Energia/momento, Estatica, Rotacao, Gravitacao, Fluidos basicos, massa-mola vertical e os tres primeiros osciladores de `Oscilacoes e Ondas`. Campos sem uso em uma simulacao ficam zerados, mas toda grandeza exibida em cena, grafico, tabela ou formula deve vir do sample.
+O nome historico `KinematicsSample` cobre hoje o motor analitico/numerico compartilhado de Cinematica, Dinamica, Energia/momento, Estatica, Rotacao, Gravitacao, Fluidos basicos, massa-mola vertical, os tres primeiros osciladores de `Oscilacoes e Ondas` e as tres primeiras ondas mecanicas. Nas ondas, `positionMeters/zMeters` representam o deslocamento transversal no probe, `speedMetersPerSecond` representa a velocidade de propagacao, `frequencyHertz` representa a frequencia aplicada ou modal, `secondaryZMeters` e `displacementMeters` carregam componentes/envelope quando a simulacao precisar, e as derivadas de velocidade/aceleracao continuam no mesmo sample. Campos sem uso em uma simulacao ficam zerados, mas toda grandeza exibida em cena, grafico, tabela ou formula deve vir do sample.
 
 ```ts
 type KinematicsSample = {

@@ -1,0 +1,235 @@
+{
+  "simulationId": "superposition-interference",
+  "durationSeconds": 18,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 8,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Horizonte calculado",
+      "description": "Tempo pre-calculado para as duas ondas componentes e a soma resultante. Aumentar mostra mais encontros construtivos e destrutivos.",
+      "unit": "s",
+      "kind": "number",
+      "min": 6,
+      "max": 60,
+      "step": 1,
+      "defaultValue": 18
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente usado por graficos e tabela. Aumentar compara batimentos espaciais; diminuir destaca a soma instantanea no probe.",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 30,
+      "step": 1,
+      "defaultValue": 8
+    }
+  ],
+  "defaultParameters": {
+    "amplitudeOneMeters": 0.24,
+    "amplitudeTwoMeters": 0.24,
+    "wavelengthMeters": 2,
+    "frequencyHertz": 0.65,
+    "phaseDifferenceDegrees": 0,
+    "stringLengthMeters": 6,
+    "probePositionMeters": 3
+  },
+  "parameters": [
+    {
+      "id": "amplitudeOneMeters",
+      "label": "Amplitude A",
+      "description": "Amplitude da onda que viaja para a direita. Zerar remove esta componente; aumentar faz a soma tender mais para a forma da onda A.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 0.7,
+      "step": 0.01,
+      "defaultValue": 0.24
+    },
+    {
+      "id": "amplitudeTwoMeters",
+      "label": "Amplitude B",
+      "description": "Amplitude da onda que viaja para a esquerda. Zerar remove esta componente; aumentar intensifica reforcos e cancelamentos da soma.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 0.7,
+      "step": 0.01,
+      "defaultValue": 0.24
+    },
+    {
+      "id": "wavelengthMeters",
+      "label": "Comprimento de onda",
+      "description": "Distancia entre cristas de cada componente. Aumentar alarga as zonas de interferencia; diminuir deixa reforcos e cancelamentos mais densos.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0.6,
+      "max": 6,
+      "step": 0.05,
+      "defaultValue": 2
+    },
+    {
+      "id": "frequencyHertz",
+      "label": "Frequencia",
+      "description": "Frequencia comum das duas ondas. Zerar congela as componentes; aumentar acelera a alternancia entre interferencia construtiva e destrutiva no probe.",
+      "unit": "Hz",
+      "kind": "number",
+      "min": 0,
+      "max": 4,
+      "step": 0.05,
+      "defaultValue": 0.65
+    },
+    {
+      "id": "phaseDifferenceDegrees",
+      "label": "Fase relativa",
+      "description": "Fase inicial da onda B em relacao a onda A. Perto de 0 graus favorece reforco; perto de 180 graus favorece cancelamento quando amplitudes sao iguais.",
+      "unit": "deg",
+      "kind": "number",
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "defaultValue": 0
+    },
+    {
+      "id": "stringLengthMeters",
+      "label": "Comprimento da corda",
+      "description": "Trecho de corda usado para desenhar as duas componentes e a soma. Aumentar revela mais regioes de interferencia no mesmo modelo.",
+      "unit": "m",
+      "kind": "number",
+      "min": 3,
+      "max": 8,
+      "step": 0.1,
+      "defaultValue": 6
+    },
+    {
+      "id": "probePositionMeters",
+      "label": "Probe na corda",
+      "description": "Ponto em que a tabela e os graficos leem onda A, onda B e a soma. Mudar o probe altera a fase local sem recalcular outro modelo.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 3,
+      "step": 0.05,
+      "defaultValue": 3
+    }
+  ],
+  "presets": [
+    {
+      "id": "constructive",
+      "label": "Construtiva",
+      "parameters": {
+        "amplitudeOneMeters": 0.24,
+        "amplitudeTwoMeters": 0.24,
+        "wavelengthMeters": 2,
+        "frequencyHertz": 0.65,
+        "phaseDifferenceDegrees": 0,
+        "stringLengthMeters": 6,
+        "probePositionMeters": 3
+      }
+    },
+    {
+      "id": "destructive",
+      "label": "Destrutiva",
+      "parameters": {
+        "amplitudeOneMeters": 0.24,
+        "amplitudeTwoMeters": 0.24,
+        "wavelengthMeters": 2,
+        "frequencyHertz": 0.65,
+        "phaseDifferenceDegrees": 180,
+        "stringLengthMeters": 6,
+        "probePositionMeters": 3
+      }
+    },
+    {
+      "id": "unequal-amplitudes",
+      "label": "Amplitudes diferentes",
+      "parameters": {
+        "amplitudeOneMeters": 0.32,
+        "amplitudeTwoMeters": 0.14,
+        "wavelengthMeters": 1.6,
+        "frequencyHertz": 0.9,
+        "phaseDifferenceDegrees": 75,
+        "stringLengthMeters": 6,
+        "probePositionMeters": 2.2
+      }
+    }
+  ],
+  "regimes": [
+    {
+      "id": "linear-superposition",
+      "label": "Superposicao linear",
+      "condition": "amplitudeOneMeters >= 0, amplitudeTwoMeters >= 0 e ambas as ondas compartilham lambda e f.",
+      "transitionLimit": "phaseDifferenceDegrees proximo de 0 reforca a soma; proximo de 180 graus cancela localmente quando amplitudes sao iguais.",
+      "sampleFields": [
+        "positionMeters",
+        "secondaryZMeters",
+        "displacementMeters",
+        "velocityMetersPerSecond"
+      ]
+    }
+  ],
+  "limits": [
+    "Modelo linear de duas ondas senoidais no mesmo meio: a corda resultante e a soma y = y1 + y2.",
+    "As ondas tem mesma frequencia e mesmo comprimento de onda nesta fatia; batimentos por frequencias diferentes ficam para a simulacao de som.",
+    "A cena mostra as componentes como linhas secundarias e a soma como corda principal, todas vindas do helper fisico.",
+    "Amplitude zero em qualquer componente e valida e reduz o modelo para uma onda simples ou corda reta se ambas forem zero."
+  ],
+  "formulas": [
+    {
+      "id": "superposition-sum",
+      "title": "Principio de superposicao",
+      "expressionLatex": "y(x,t)=y_1(x,t)+y_2(x,t)",
+      "description": "A soma resultante usada na cena, graficos e tabela e calculada ponto a ponto a partir das duas componentes.",
+      "variables": [
+        { "symbol": "y", "label": "deslocamento total", "unit": "m" },
+        { "symbol": "y_1", "label": "onda A", "unit": "m" },
+        { "symbol": "y_2", "label": "onda B", "unit": "m" }
+      ],
+      "usedWhen": "Usar quando as ondas se propagam em regime linear e o meio nao altera uma componente por causa da outra.",
+      "notUsedWhen": "Nao vale para meios nao lineares, quebra de onda ou acoplamentos que mudam a forma das componentes.",
+      "parameterIds": [
+        "amplitudeOneMeters",
+        "amplitudeTwoMeters",
+        "phaseDifferenceDegrees",
+        "probePositionMeters"
+      ],
+      "sampleFields": [
+        "positionMeters",
+        "secondaryZMeters",
+        "displacementMeters"
+      ],
+      "relatedChartIds": ["position"],
+      "relatedVectorIds": ["displacement", "forceOne", "forceTwo"],
+      "example": "Duas ondas de 0,24 m em fase podem chegar a 0,48 m no probe; em oposicao podem cancelar localmente."
+    },
+    {
+      "id": "component-waves",
+      "title": "Componentes contra-propagantes",
+      "expressionLatex": "y_1=A_1\\sin(kx-\\omega t),\\quad y_2=A_2\\sin(kx+\\omega t+\\Delta\\phi)",
+      "description": "Define as duas ondas que viajam em sentidos opostos e alimentam a soma.",
+      "variables": [
+        { "symbol": "A_1,A_2", "label": "amplitudes", "unit": "m" },
+        { "symbol": "\\Delta\\phi", "label": "fase relativa", "unit": "rad" },
+        { "symbol": "k", "label": "numero de onda", "unit": "rad/m" }
+      ],
+      "usedWhen": "Usar para comparar interferencia construtiva, destrutiva e casos de amplitudes diferentes.",
+      "notUsedWhen": "Nao representa ondas com velocidades, frequencias ou meios diferentes.",
+      "parameterIds": [
+        "amplitudeOneMeters",
+        "amplitudeTwoMeters",
+        "wavelengthMeters",
+        "frequencyHertz",
+        "phaseDifferenceDegrees"
+      ],
+      "sampleFields": [
+        "secondaryZMeters",
+        "displacementMeters",
+        "velocityMetersPerSecond"
+      ],
+      "relatedChartIds": ["position", "velocity"],
+      "example": "Ao ajustar Delta phi para 180 graus com amplitudes iguais, a soma no probe pode se aproximar de zero."
+    }
+  ]
+}

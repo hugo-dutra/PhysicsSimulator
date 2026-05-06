@@ -40,7 +40,7 @@ describe('simulation registry', () => {
     expect(allSimulations).toHaveLength(51)
     expect(
       allSimulations.filter((item) => item.status === 'analysis'),
-    ).toHaveLength(3)
+    ).toHaveLength(6)
     expect(
       allSimulations.filter((item) => item.status === 'ready'),
     ).toHaveLength(18)
@@ -178,14 +178,17 @@ describe('simulation registry', () => {
     })
   })
 
-  it('declares the Fase 4 oscillators as analysis simulations', () => {
-    const analysisOscillatorIds = [
+  it('declares the Fase 4 waves simulations as analysis simulations', () => {
+    const analysisWaveIds = [
       'damped-oscillator',
       'forced-oscillator-resonance',
       'coupled-oscillators',
+      'wave-on-string',
+      'superposition-interference',
+      'standing-waves',
     ] as const
 
-    analysisOscillatorIds.forEach((simulationId) => {
+    analysisWaveIds.forEach((simulationId) => {
       const simulation = findSimulation(simulationId)
       const fixture = kinematicsFixtures[simulationId]
 

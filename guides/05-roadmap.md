@@ -121,7 +121,7 @@ Criterio de saida:
 
 Objetivo: validar sistemas periodicos, propagacao de ondas, som e optica basica com modelos visuais leves.
 
-Primeira fatia visual antecipada: `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical`, aproveitando o aprendizado do pendulo para outro oscilador harmonico simples. A subarea de oscilacoes tambem concentra o pendulo simples e os tres osciladores da Fase 4, evitando duplicacao entre Mecanica e Oscilacoes e Ondas. A cena segue a referencia visual proposta: suporte fixo no topo, mola helicoidal pendurada, massa esferica presa na extremidade inferior e oscilacao vertical em torno da posicao de equilibrio. A area `Oscilacoes e Ondas` iniciou com oscilador amortecido, oscilador forcado/ressonancia e osciladores acoplados em `analysis`, todos com fixtures locais, formulas, teoria, regimes e gate de fidelidade; ondas mecanicas, som e optica seguem planejados.
+Primeira fatia visual antecipada: `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical`, aproveitando o aprendizado do pendulo para outro oscilador harmonico simples. A subarea de oscilacoes tambem concentra o pendulo simples e os tres osciladores da Fase 4, evitando duplicacao entre Mecanica e Oscilacoes e Ondas. A cena segue a referencia visual proposta: suporte fixo no topo, mola helicoidal pendurada, massa esferica presa na extremidade inferior e oscilacao vertical em torno da posicao de equilibrio. A area `Oscilacoes e Ondas` iniciou com oscilador amortecido, oscilador forcado/ressonancia e osciladores acoplados em `analysis`, todos com fixtures locais, formulas, teoria, regimes e gate de fidelidade. A fatia seguinte implementou `Onda em corda`, `Superposicao e interferencia` e `Ondas estacionarias` em `analysis`, usando o motor compartilhado para perfis 1D, probe sincronizado, cena Three.js, graficos, tabela, formulas e teoria; som e optica seguem planejados.
 
 Tasks:
 
@@ -129,9 +129,9 @@ Tasks:
 - `[x]` Implementar `Oscilacoes e Ondas > Oscilacoes > Oscilador amortecido`.
 - `[x]` Implementar `Oscilacoes e Ondas > Oscilacoes > Oscilador forcado e ressonancia`.
 - `[x]` Implementar `Oscilacoes e Ondas > Oscilacoes > Osciladores acoplados`.
-- `[ ]` Implementar `Oscilacoes e Ondas > Ondas mecanicas > Onda em corda`.
-- `[ ]` Implementar `Oscilacoes e Ondas > Ondas mecanicas > Superposicao e interferencia`.
-- `[ ]` Implementar `Oscilacoes e Ondas > Ondas mecanicas > Ondas estacionarias`.
+- `[x]` Implementar `Oscilacoes e Ondas > Ondas mecanicas > Onda em corda`.
+- `[x]` Implementar `Oscilacoes e Ondas > Ondas mecanicas > Superposicao e interferencia`.
+- `[x]` Implementar `Oscilacoes e Ondas > Ondas mecanicas > Ondas estacionarias`.
 - `[ ]` Implementar `Oscilacoes e Ondas > Som > Batimentos`.
 - `[ ]` Implementar `Oscilacoes e Ondas > Som > Efeito Doppler`.
 - `[ ]` Implementar `Oscilacoes e Ondas > Optica > Reflexao e refracao`.
@@ -144,7 +144,7 @@ Criterio de saida:
 
 - O produto cobre os fenomenos basicos de oscilacao, onda mecanica, som e optica.
 - A massa-mola vertical mostra a deformacao real da mola a partir do sample, com posicao, velocidade, aceleracao, forca elastica, peso e energias sincronizados entre cena, graficos, tabela, formulas e teoria.
-- Os tres primeiros itens de `Oscilacoes e Ondas > Oscilacoes` ficam em `analysis` ate aprovacao manual, com regimes de amortecimento, ressonancia e acoplamento declarados nos fixtures.
+- Os tres primeiros itens de `Oscilacoes e Ondas > Oscilacoes` e os tres primeiros itens de `Oscilacoes e Ondas > Ondas mecanicas` ficam em `analysis` ate aprovacao manual, com regimes de amortecimento, ressonancia, acoplamento, propagacao, interferencia e modos estacionarios declarados nos fixtures.
 - PixiJS e Web Audio API so entram se houver ganho didatico claro.
 - Toda simulacao promovida nesta fase passa pelo gate de fidelidade, incluindo regimes como amortecimento, ressonancia, acoplamento, reflexao, refracao ou limites de modelo.
 
