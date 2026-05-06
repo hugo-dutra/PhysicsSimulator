@@ -146,6 +146,17 @@ import {
   selectRecentSamplesByTime,
   selectStableRows,
 } from './sampleWindow'
+import {
+  getModelKindLabel,
+  getStatusChipColor,
+  getStatusLabel,
+  getSubareaKey,
+  groupSimulationsBySubarea,
+  isRunnableSimulation,
+  shouldStartExpanded,
+  slugify,
+  type RunnableSimulationId,
+} from './simulationSidebarModel'
 import { TheoryAppendix } from './TheoryAppendix'
 
 const compactNumber = new Intl.NumberFormat('pt-BR', {
@@ -186,11 +197,6 @@ type HydrostaticsContinuitySeed = Required<
 >
 
 type MaximizedPanelId = 'charts' | 'formulas' | 'simulation' | 'table' | 'theory'
-
-type RunnableSimulationId =
-  | 'inclined-plane-friction'
-  | 'simple-pendulum'
-  | KinematicsSimulationId
 
 type AnimationVectorLegendItem = {
   color: string
@@ -1912,11 +1918,6 @@ function SimulationControlsPanel({
       </Stack>
     </Box>
   )
-}
-
-type SidebarSubarea = {
-  label: string
-  simulations: SimulationDefinition[]
 }
 
 function SimulationSidebar({
@@ -6407,92 +6408,6 @@ function KinematicsCameraViewSwitch({
       </Box>
     </Tooltip>
   )
-}
-
-function groupSimulationsBySubarea(simulations: SimulationDefinition[]) {
-  const subareas = new Map<string, SimulationDefinition[]>()
-
-  simulations.forEach((simulation) => {
-    const subarea = getSimulationSubarea(simulation)
-    const currentSimulations = subareas.get(subarea) ?? []
-
-    currentSimulations.push(simulation)
-    subareas.set(subarea, currentSimulations)
-  })
-
-  return Array.from(subareas, ([label, groupedSimulations]) => ({
-    label,
-    simulations: groupedSimulations,
-  })) satisfies SidebarSubarea[]
-}
-
-function getSimulationSubarea(simulation: SimulationDefinition) {
-  return simulation.topicPath[1] ?? 'Geral'
-}
-
-function getSubareaKey(areaId: string, subarea: string) {
-  return `${areaId}:${subarea}`
-}
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-}
-
-function getStatusLabel(status: string) {
-  if (status === 'ready') {
-    return 'pronto'
-  }
-
-  if (status === 'analysis') {
-    return 'analise'
-  }
-
-  return 'planejado'
-}
-
-function getStatusChipColor(status: SimulationStatus) {
-  if (status === 'ready') {
-    return 'primary'
-  }
-
-  if (status === 'analysis') {
-    return 'info'
-  }
-
-  return 'default'
-}
-
-function isRunnableSimulation(simulation: SimulationDefinition) {
-  return simulation.status === 'analysis' || simulation.status === 'ready'
-}
-
-function shouldStartExpanded(simulation: SimulationDefinition) {
-  return simulation.status === 'analysis'
-}
-
-function getModelKindLabel(modelKind: SimulationDefinition['modelKind']) {
-  if (modelKind === 'field-sampling') {
-    return 'campo'
-  }
-
-  if (modelKind === 'particle-demo') {
-    return 'particulas'
-  }
-
-  if (modelKind === 'analytic') {
-    return 'analitico'
-  }
-
-  if (modelKind === 'numerical') {
-    return 'numerico'
-  }
-
-  return 'hibrido'
 }
 
 function radiansToDegrees(value: number) {
