@@ -596,8 +596,161 @@ describe('kinematics physics engine', () => {
     expect(sample.frequencyHertz).toBeCloseTo(2 * (6 / 5))
     expect(sample.secondaryRadiusMeters).toBeCloseTo(2.5)
     expect(sample.forceOneNewtons).toBeCloseTo(3)
-    expect(sample.secondaryXMeters).toBeCloseTo(-2)
+    expect(sample.secondaryXMeters).toBeCloseTo(-4)
     expect(profile[6].envelopeMeters).toBeGreaterThan(0)
+  })
+
+  it('keeps the default Doppler demonstration visually contrasted', () => {
+    const parameters: DopplerEffectParameters = {
+      amplitudePascals: 0.72,
+      emittedFrequencyHertz: 1.55,
+      mediumLengthMeters: 8,
+      mediumSpeedMetersPerSecond: 4.2,
+      observerPositionMeters: 6.6,
+      observerSpeedMetersPerSecond: 0,
+      sourceInitialPositionMeters: 0,
+      sourceSpeedMetersPerSecond: 1.15,
+    }
+    const sample = computeKinematicsSample('doppler-effect', parameters, 0)
+    const emittedWavelengthMeters =
+      parameters.mediumSpeedMetersPerSecond / parameters.emittedFrequencyHertz
+    const stretchedWavelengthMeters =
+      (parameters.mediumSpeedMetersPerSecond +
+        parameters.sourceSpeedMetersPerSecond) /
+      parameters.emittedFrequencyHertz
+
+    expect(sample.frequencyHertz).toBeGreaterThan(
+      parameters.emittedFrequencyHertz * 1.3,
+    )
+    expect(sample.secondaryRadiusMeters).toBeLessThan(
+      emittedWavelengthMeters * 0.75,
+    )
+    expect(stretchedWavelengthMeters).toBeGreaterThan(
+      emittedWavelengthMeters * 1.25,
+    )
+    expect(sample.forceOneNewtons).toBeCloseTo(emittedWavelengthMeters)
+  })
+
+  it('starts the moving Doppler source at the edge selected by velocity sign', () => {
+    const parameters: DopplerEffectParameters = {
+      amplitudePascals: 0.72,
+      emittedFrequencyHertz: 1.55,
+      mediumLengthMeters: 8,
+      mediumSpeedMetersPerSecond: 4.2,
+      observerPositionMeters: 6.6,
+      observerSpeedMetersPerSecond: 0,
+      sourceInitialPositionMeters: 3,
+      sourceSpeedMetersPerSecond: 1.15,
+    }
+    const positiveSample = computeKinematicsSample(
+      'doppler-effect',
+      parameters,
+      0,
+    )
+    const negativeSample = computeKinematicsSample(
+      'doppler-effect',
+      {
+        ...parameters,
+        sourceSpeedMetersPerSecond: -1.15,
+      },
+      0,
+    )
+    const stoppedSample = computeKinematicsSample(
+      'doppler-effect',
+      {
+        ...parameters,
+        sourceSpeedMetersPerSecond: 0,
+      },
+      0,
+    )
+
+    expect(positiveSample.secondaryXMeters).toBeCloseTo(-4)
+    expect(negativeSample.secondaryXMeters).toBeCloseTo(4)
+    expect(stoppedSample.secondaryXMeters).toBeCloseTo(-1)
+  })
+
+  it('wraps the moving Doppler source at the end of the medium without restarting emission phase', () => {
+    const parameters: DopplerEffectParameters = {
+      amplitudePascals: 0.72,
+      emittedFrequencyHertz: 1.55,
+      mediumLengthMeters: 8,
+      mediumSpeedMetersPerSecond: 4.2,
+      observerPositionMeters: 6.6,
+      observerSpeedMetersPerSecond: 0,
+      sourceInitialPositionMeters: 0,
+      sourceSpeedMetersPerSecond: 2,
+    }
+    const initialSample = computeKinematicsSample(
+      'doppler-effect',
+      parameters,
+      0,
+    )
+    const beforeWrapSample = computeKinematicsSample(
+      'doppler-effect',
+      parameters,
+      3.75,
+    )
+    const wrappedSample = computeKinematicsSample(
+      'doppler-effect',
+      parameters,
+      4,
+    )
+    const afterWrapSample = computeKinematicsSample(
+      'doppler-effect',
+      parameters,
+      4.25,
+    )
+
+    expect(initialSample.secondaryXMeters).toBeCloseTo(-4)
+    expect(beforeWrapSample.secondaryXMeters).toBeCloseTo(3.5)
+    expect(wrappedSample.secondaryXMeters).toBeCloseTo(-4)
+    expect(afterWrapSample.secondaryXMeters).toBeCloseTo(-3.5)
+    expect(
+      Math.abs(wrappedSample.pressurePascals - initialSample.pressurePascals),
+    ).toBeGreaterThan(0.01)
+  })
+
+  it('keeps Doppler pressure profile endpoints fixed across source wrapping', () => {
+    const parameters: DopplerEffectParameters = {
+      amplitudePascals: 0.72,
+      emittedFrequencyHertz: 1.55,
+      mediumLengthMeters: 8,
+      mediumSpeedMetersPerSecond: 4.2,
+      observerPositionMeters: 6.6,
+      observerSpeedMetersPerSecond: 0,
+      sourceInitialPositionMeters: 0,
+      sourceSpeedMetersPerSecond: 1.15,
+    }
+    const timeSeconds = 18
+    const profileDomain = {
+      endMeters: parameters.mediumLengthMeters,
+      startMeters: 0,
+    }
+    const initialProfile = computeMechanicalWaveProfile(
+      'doppler-effect',
+      parameters,
+      0,
+      9,
+      profileDomain,
+    )
+    const profile = computeMechanicalWaveProfile(
+      'doppler-effect',
+      parameters,
+      timeSeconds,
+      9,
+      profileDomain,
+    )
+
+    expect(initialProfile[0].xMeters).toBeCloseTo(
+      -parameters.mediumLengthMeters / 2,
+    )
+    expect(initialProfile.at(-1)?.xMeters).toBeCloseTo(
+      parameters.mediumLengthMeters / 2,
+    )
+    expect(profile[0].xMeters).toBeCloseTo(-parameters.mediumLengthMeters / 2)
+    expect(profile.at(-1)?.xMeters).toBeCloseTo(
+      parameters.mediumLengthMeters / 2,
+    )
   })
 
   it('flags centripetal grip demand against available friction', () => {

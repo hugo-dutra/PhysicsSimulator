@@ -308,6 +308,11 @@ export type MechanicalWaveProfilePoint = {
   zMeters: number
 }
 
+export type MechanicalWaveProfileDomain = {
+  endMeters: number
+  startMeters: number
+}
+
 export type KinematicsSample = {
   accelerationMetersPerSecondSquared: number
   accelerationXMetersPerSecondSquared: number
@@ -3830,17 +3835,24 @@ export function computeMechanicalWaveProfile(
   parameters: WaveProfileParameters,
   timeSeconds: number,
   pointCount = 128,
+  profileDomain?: MechanicalWaveProfileDomain,
 ): MechanicalWaveProfilePoint[] {
   if (!Number.isFinite(timeSeconds) || timeSeconds < 0) {
     throw new Error('timeSeconds must be a finite non-negative number.')
   }
 
-  const stringLengthMeters = readMechanicalWaveStringLength(parameters)
+  const resolvedProfileDomain = resolveMechanicalWaveProfileDomain(
+    parameters,
+    profileDomain,
+  )
   const safePointCount = Math.max(2, Math.floor(pointCount))
 
   return Array.from({ length: safePointCount }, (_, index) => {
     const ratio = index / (safePointCount - 1)
-    const xOnStringMeters = stringLengthMeters * ratio
+    const xOnStringMeters =
+      resolvedProfileDomain.startMeters +
+      (resolvedProfileDomain.endMeters - resolvedProfileDomain.startMeters) *
+        ratio
 
     return computeMechanicalWavePoint(
       simulationId,
@@ -3922,9 +3934,10 @@ function computeDopplerEffectSample(
   parameters: DopplerEffectParameters,
   timeSeconds: number,
 ): KinematicsSample {
-  const sourcePositionMeters =
-    parameters.sourceInitialPositionMeters +
-    parameters.sourceSpeedMetersPerSecond * timeSeconds
+  const sourcePositionMeters = readDopplerSourcePositionMeters(
+    parameters,
+    timeSeconds,
+  )
   const sourceCenteredMeters =
     sourcePositionMeters - parameters.mediumLengthMeters / 2
   const observerPositionMeters =
@@ -4234,9 +4247,10 @@ function computeMechanicalWavePoint(
 
   if (simulationId === 'doppler-effect') {
     const dopplerParameters = parameters as DopplerEffectParameters
-    const sourcePositionMeters =
-      dopplerParameters.sourceInitialPositionMeters +
-      dopplerParameters.sourceSpeedMetersPerSecond * timeSeconds
+    const sourcePositionMeters = readDopplerSourcePositionMeters(
+      dopplerParameters,
+      timeSeconds,
+    )
     const distanceFromSourceMeters = xOnStringMeters - sourcePositionMeters
     const wavelengthMeters = computeDopplerWavelengthForPoint(
       dopplerParameters,
@@ -4464,6 +4478,40 @@ function computeDopplerObservedFrequency(
   return parameters.emittedFrequencyHertz * (numerator / denominator)
 }
 
+function readDopplerSourceInitialPositionMeters(
+  parameters: DopplerEffectParameters,
+) {
+  if (parameters.sourceSpeedMetersPerSecond > 0) {
+    return 0
+  }
+
+  if (parameters.sourceSpeedMetersPerSecond < 0) {
+    return parameters.mediumLengthMeters
+  }
+
+  return parameters.sourceInitialPositionMeters
+}
+
+function readDopplerSourcePositionMeters(
+  parameters: DopplerEffectParameters,
+  timeSeconds: number,
+) {
+  if (parameters.sourceSpeedMetersPerSecond === 0) {
+    return readDopplerSourceInitialPositionMeters(parameters)
+  }
+
+  const travelMeters =
+    Math.abs(parameters.sourceSpeedMetersPerSecond) * timeSeconds
+  const wrappedTravelMeters = positiveModulo(
+    travelMeters,
+    parameters.mediumLengthMeters,
+  )
+
+  return parameters.sourceSpeedMetersPerSecond > 0
+    ? wrappedTravelMeters
+    : parameters.mediumLengthMeters - wrappedTravelMeters
+}
+
 function computeDopplerWavelengthForPoint(
   parameters: DopplerEffectParameters,
   pointPositionMeters: number,
@@ -4502,6 +4550,37 @@ function readMechanicalWaveStringLength(
   }
 
   return parameters.stringLengthMeters
+}
+
+function resolveMechanicalWaveProfileDomain(
+  parameters: WaveProfileParameters,
+  profileDomain?: MechanicalWaveProfileDomain,
+) {
+  const stringLengthMeters = readMechanicalWaveStringLength(parameters)
+
+  if (!profileDomain) {
+    return {
+      endMeters: stringLengthMeters,
+      startMeters: 0,
+    }
+  }
+
+  const { endMeters, startMeters } = profileDomain
+
+  if (
+    !Number.isFinite(startMeters) ||
+    !Number.isFinite(endMeters) ||
+    endMeters <= startMeters
+  ) {
+    throw new Error(
+      'profileDomain must have finite startMeters and endMeters with endMeters greater than startMeters.',
+    )
+  }
+
+  return {
+    endMeters,
+    startMeters,
+  }
 }
 
 function computeParticleEquilibriumSample(
@@ -7735,6 +7814,12 @@ function normalizeDegrees(value: number) {
   const normalized = value % 360
 
   return normalized < 0 ? normalized + 360 : normalized
+}
+
+function positiveModulo(value: number, modulus: number) {
+  const result = value % modulus
+
+  return result < 0 ? result + modulus : result
 }
 
 function clamp(value: number, min: number, max: number) {

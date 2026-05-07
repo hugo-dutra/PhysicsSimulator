@@ -16,11 +16,13 @@ import {
   getKinematicsVectorOverlays,
   hydrostaticTankDepthMeters,
   interpolateKinematicsSample,
+  type DopplerEffectParameters,
   type GravitationalFieldOrbitsParameters,
   type KinematicsParameters,
   type KinematicsSample,
   type KinematicsSimulationId,
   type KinematicsVectorOverlay,
+  type MechanicalWaveProfileDomain,
   type MechanicalWaveProfilePoint,
   type WaveProfileParameters,
   type WaveProfileSimulationId,
@@ -263,6 +265,7 @@ type SceneObjects = {
   waveEnvelopeUpperPositionAttribute: THREE.BufferAttribute
   waveEnvelopeUpperPositions: Float32Array
   waveLab: WaveLabObjects
+  waveProfileDomain: MechanicalWaveProfileDomain | null
   waveString: THREE.Line
   waveStringPositionAttribute: THREE.BufferAttribute
   waveStringPositions: Float32Array
@@ -376,14 +379,27 @@ const massSpringCoilTurns = 9
 const maxPathPoints = 360
 const maxTracePoints = 120
 const waveEnergyPacketCount = 18
+const dopplerWavefrontMarkerCount = 48
+const waveEnergyPacketCapacity = Math.max(
+  waveEnergyPacketCount,
+  dopplerWavefrontMarkerCount,
+)
 const waveHistoryLineCount = 7
 const waveStringPointCapacity = 128
 const waveStringBeadCount = waveStringPointCapacity
-const soundWaveFieldColumnCount = 52
+const soundWaveFieldColumnCount = 72
 const soundWaveFieldRingCount = 12
+const dopplerSoundWaveFieldColumnCount = 128
+const dopplerSoundWaveFieldRingCount = 32
 const soundWaveFieldBeadCount =
   soundWaveFieldColumnCount * soundWaveFieldRingCount
-const waveBeadCapacity = Math.max(waveStringBeadCount, soundWaveFieldBeadCount)
+const dopplerSoundWaveFieldBeadCount =
+  dopplerSoundWaveFieldColumnCount * dopplerSoundWaveFieldRingCount
+const waveBeadCapacity = Math.max(
+  waveStringBeadCount,
+  soundWaveFieldBeadCount,
+  dopplerSoundWaveFieldBeadCount,
+)
 const traceFadeSeconds = 2.4
 const uniformLinearTracePointCount = 48
 const constantAccelerationTracePointCount = 72
@@ -729,10 +745,16 @@ export function KinematicsScene({
       return
     }
 
+    const waveProfileDomain = createMechanicalWaveProfileDomain(
+      samples,
+      simulationId,
+      parameters,
+    )
     const referencePathSamples = createSceneReferencePathSamples(
       samples,
       simulationId,
       parameters,
+      waveProfileDomain,
     )
     const framingSamples = mergeSceneFramingSamples(samples, referencePathSamples)
     const sceneProjection = createKinematicsSceneProjection(
@@ -812,9 +834,12 @@ export function KinematicsScene({
       }),
     )
 
+    const pathSamples =
+      simulationId === 'doppler-effect' ? framingSamples : referencePathSamples
+
     scene.add(
       createReferencePath(
-        referencePathSamples,
+        pathSamples,
         simulationId,
         sceneProjection,
         workEnergyProfile,
@@ -1978,6 +2003,7 @@ export function KinematicsScene({
       waveEnvelopeUpperPositionAttribute,
       waveEnvelopeUpperPositions,
       waveLab,
+      waveProfileDomain,
       waveString,
       waveStringPositionAttribute,
       waveStringPositions,
@@ -2214,10 +2240,10 @@ function updateKinematicsObjects({
   if (simulationId !== 'rigid-body-rotation') {
     getKinematicsVectorOverlays(sample, simulationId).forEach((vector) => {
       const arrow = objects.arrows[vector.id]
-      const direction = toKinematicsSceneDirection(
-        vector,
-        objects.sceneProjection,
-      )
+      const direction =
+        simulationId === 'doppler-effect'
+          ? toDopplerDiagonalSceneDirection(vector)
+          : toKinematicsSceneDirection(vector, objects.sceneProjection)
 
       if (!showVectors || direction.lengthSq() === 0 || vector.magnitude === 0) {
         arrow.visible = false
@@ -2268,6 +2294,21 @@ function getKinematicsVectorOrigin(
       .clone()
       .lerp(objects.secondaryBody.position, 0.5)
       .add(new THREE.Vector3(0, -objects.bodyRadius * 0.9, 0))
+  }
+
+  if (simulationId === 'doppler-effect') {
+    if (vectorId === 'forceOne') {
+      return objects.secondaryBody.position
+        .clone()
+        .add(new THREE.Vector3(0, 0, objects.bodyRadius * 0.75))
+    }
+
+    if (vectorId === 'secondaryVelocity') {
+      return objects.secondaryBody.position
+        .clone()
+        .lerp(objects.body.position, 0.5)
+        .add(new THREE.Vector3(0, 0, objects.bodyRadius * 1.25))
+    }
   }
 
   if (simulationId === 'uniform-linear-motion' && vectorId === 'displacement') {
@@ -4521,6 +4562,7 @@ function updateMechanicalWaveObjects(
     parameters as WaveProfileParameters,
     sample.timeSeconds,
     waveStringPointCapacity,
+    objects.waveProfileDomain ?? undefined,
   )
 
   profile.forEach((point, index) => {
@@ -4581,15 +4623,31 @@ function updateMechanicalWaveObjects(
   const soundWave = isSoundWaveSimulation(simulationId)
 
   objects.body.position.copy(
-    soundWave
-      ? toWaveScenePoint(objects, sample.xMeters, 0, 0)
-      : toKinematicsScenePosition(sample, objects.sceneProjection),
+    simulationId === 'doppler-effect'
+      ? toSoundWaveFieldScenePointForSimulation(
+          simulationId,
+          objects,
+          sample.xMeters,
+          0,
+          0,
+        )
+      : soundWave
+        ? toWaveScenePoint(objects, sample.xMeters, 0, 0)
+        : toKinematicsScenePosition(sample, objects.sceneProjection),
   )
-  objects.body.scale.setScalar(soundWave ? 0.3 : simulationId === 'wave-on-string' ? 0.34 : 0.72)
+  objects.body.scale.setScalar(
+    soundWave ? 0.3 : simulationId === 'wave-on-string' ? 0.34 : 0.72,
+  )
   configureWaveProbeMarker(objects.body, simulationId)
   if (simulationId === 'doppler-effect') {
     objects.secondaryBody.position.copy(
-      toWaveScenePoint(objects, sample.secondaryXMeters, 0, 0),
+      toSoundWaveFieldScenePointForSimulation(
+        simulationId,
+        objects,
+        sample.secondaryXMeters,
+        0,
+        0,
+      ),
     )
     objects.secondaryBody.scale.setScalar(0.42)
   }
@@ -4820,6 +4878,11 @@ function updateTrace(
     return
   }
 
+  if (simulationId === 'doppler-effect') {
+    updateDopplerSourceTrace(objects, samples, sampleIndex, showTrace)
+    return
+  }
+
   if (!showTrace || sampleIndex < 1) {
     objects.trace.visible = false
     objects.trace.geometry.setDrawRange(0, 0)
@@ -4887,6 +4950,70 @@ function updateTrace(
 
   objects.trace.visible = true
   objects.trace.geometry.setDrawRange(0, drawCount)
+  objects.tracePositionAttribute.needsUpdate = true
+  objects.traceColorAttribute.needsUpdate = true
+}
+
+function updateDopplerSourceTrace(
+  objects: SceneObjects,
+  samples: KinematicsSample[],
+  sampleIndex: number,
+  showTrace: boolean,
+) {
+  if (!showTrace || sampleIndex < 1) {
+    objects.trace.visible = false
+    objects.trace.geometry.setDrawRange(0, 0)
+    return
+  }
+
+  const currentSample = samples[sampleIndex]
+  const newestTimeSeconds = currentSample.timeSeconds
+  const traceHistorySeconds = getTraceFadeSeconds('doppler-effect')
+  const oldestVisibleTimeSeconds = Math.max(
+    0,
+    newestTimeSeconds - traceHistorySeconds,
+  )
+  const firstTraceSampleIndex = findTraceStartIndex(
+    samples,
+    sampleIndex,
+    oldestVisibleTimeSeconds,
+  )
+  const traceSamples = samples
+    .slice(firstTraceSampleIndex, sampleIndex + 1)
+    .slice(-maxTracePoints)
+
+  if (traceSamples.length < 2) {
+    objects.trace.visible = false
+    objects.trace.geometry.setDrawRange(0, 0)
+    return
+  }
+
+  traceSamples.forEach((sample, traceIndex) => {
+    const position = toDopplerDiagonalScenePoint(
+      objects.sceneProjection,
+      sample.secondaryXMeters,
+      0,
+      0.09,
+    )
+    const positionOffset = traceIndex * 3
+    const colorOffset = traceIndex * 4
+    const ageRatio = Math.min(
+      1,
+      Math.max(0, (newestTimeSeconds - sample.timeSeconds) / traceHistorySeconds),
+    )
+    const opacity = traceMaxOpacity - ageRatio * (traceMaxOpacity - traceMinOpacity)
+
+    objects.tracePositions[positionOffset] = position.x
+    objects.tracePositions[positionOffset + 1] = position.y
+    objects.tracePositions[positionOffset + 2] = position.z
+    objects.traceColors[colorOffset] = traceColor.red
+    objects.traceColors[colorOffset + 1] = traceColor.green
+    objects.traceColors[colorOffset + 2] = traceColor.blue
+    objects.traceColors[colorOffset + 3] = opacity
+  })
+
+  objects.trace.visible = true
+  objects.trace.geometry.setDrawRange(0, traceSamples.length)
   objects.tracePositionAttribute.needsUpdate = true
   objects.traceColorAttribute.needsUpdate = true
 }
@@ -5247,6 +5374,7 @@ function createSceneReferencePathSamples(
   samples: KinematicsSample[],
   simulationId: KinematicsSimulationId,
   parameters: KinematicsParameters,
+  waveProfileDomain: MechanicalWaveProfileDomain | null,
 ) {
   if (simulationId === 'gravitational-field-orbits') {
     return computeGravitationalOrbitPathSamples(
@@ -5262,6 +5390,7 @@ function createSceneReferencePathSamples(
       parameters as WaveProfileParameters,
       firstSample?.timeSeconds ?? 0,
       waveStringPointCapacity,
+      waveProfileDomain ?? undefined,
     )
 
     return profile.map((point) => ({
@@ -5274,6 +5403,35 @@ function createSceneReferencePathSamples(
   }
 
   return samples
+}
+
+function createMechanicalWaveProfileDomain(
+  samples: KinematicsSample[],
+  simulationId: KinematicsSimulationId,
+  parameters: KinematicsParameters,
+): MechanicalWaveProfileDomain | null {
+  if (simulationId !== 'doppler-effect') {
+    return null
+  }
+
+  const { mediumLengthMeters } = parameters as DopplerEffectParameters
+  const absolutePositions = [0, mediumLengthMeters]
+
+  samples.forEach((sample) => {
+    absolutePositions.push(
+      sample.xMeters + mediumLengthMeters / 2,
+      sample.secondaryXMeters + mediumLengthMeters / 2,
+    )
+  })
+
+  const finitePositions = absolutePositions.filter(Number.isFinite)
+  const startMeters = Math.min(...finitePositions)
+  const endMeters = Math.max(...finitePositions)
+
+  return {
+    endMeters: Math.max(endMeters, startMeters + 1e-6),
+    startMeters,
+  }
 }
 
 function mergeSceneFramingSamples(
@@ -5668,10 +5826,11 @@ function createWaveLabObjects(): WaveLabObjects {
     transparent: true,
   })
   const energyMaterial = new THREE.MeshBasicMaterial({
-    color: 0xf59e0b,
+    color: 0xffffff,
     depthWrite: false,
     transparent: true,
     opacity: 0.6,
+    vertexColors: true,
   })
   const bench = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), sourceMaterial)
   const sourceBase = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), sourceMaterial)
@@ -5689,7 +5848,7 @@ function createWaveLabObjects(): WaveLabObjects {
   const energyPackets = new THREE.InstancedMesh(
     new THREE.SphereGeometry(1, 10, 6),
     energyMaterial,
-    waveEnergyPacketCount,
+    waveEnergyPacketCapacity,
   )
   const equilibrium = createDynamicTwoPointLine(0xe6e8ec, 0.34)
   const amplitude = createDynamicTwoPointLine(0xa3e635, 0.9)
@@ -5854,8 +6013,27 @@ function updateWaveLabObjects({
     : Math.max(0.74, amplitudeScene * 2.25 + 0.38)
   const leftX = firstPoint.xMeters * scale
   const rightX = lastPoint.xMeters * scale
-  const sourceX =
-    simulationId === 'doppler-effect' ? sample.secondaryXMeters * scale : leftX
+  const soundAxisStart = toSoundWaveFieldScenePointForSimulation(
+    simulationId,
+    objects,
+    firstPoint.xMeters,
+    0,
+    0,
+  )
+  const soundAxisEnd = toSoundWaveFieldScenePointForSimulation(
+    simulationId,
+    objects,
+    lastPoint.xMeters,
+    0,
+    0,
+  )
+  const sourceBasePosition = toSoundWaveFieldScenePointForSimulation(
+    simulationId,
+    objects,
+    sample.secondaryXMeters,
+    -0.3,
+    -0.2,
+  )
 
   lab.bench.visible = false
   lab.bench.position.set(0, 0.18, -0.18)
@@ -5867,7 +6045,7 @@ function updateWaveLabObjects({
   lab.rightSupport.position.set(rightX, 0, supportHeight / 2 - 0.2)
   lab.rightSupport.scale.set(0.075, 0.075, supportHeight)
   lab.sourceBase.visible = simulationId === 'doppler-effect'
-  lab.sourceBase.position.set(sourceX, -0.3, -0.2)
+  lab.sourceBase.position.copy(sourceBasePosition)
   lab.sourceBase.scale.set(0.5, 0.28, 0.22)
 
   lab.sourceRod.visible = false
@@ -5878,18 +6056,26 @@ function updateWaveLabObjects({
     lab.equilibriumPositions,
     lab.equilibriumPositionAttribute,
     lab.equilibriumLine,
-    new THREE.Vector3(leftX, 0.015, 0),
-    new THREE.Vector3(rightX, 0.015, 0),
+    isSoundWave
+      ? soundAxisStart.clone().add(new THREE.Vector3(0, 0, 0.015))
+      : new THREE.Vector3(leftX, 0.015, 0),
+    isSoundWave
+      ? soundAxisEnd.clone().add(new THREE.Vector3(0, 0, 0.015))
+      : new THREE.Vector3(rightX, 0.015, 0),
     true,
   )
-  updateWaveBeads(lab, profile, objects, simulationId, waveParameters)
-  updateWaveEnergyPackets({
-    lab,
-    objects,
-    profile,
-    sample,
-    showEnergy: showEnergy && simulationId === 'wave-on-string',
-  })
+  updateWaveBeads(lab, profile, objects, simulationId, waveParameters, sample)
+  if (simulationId === 'doppler-effect') {
+    updateDopplerWavefrontMarkers({ lab, objects, profile, sample })
+  } else {
+    updateWaveEnergyPackets({
+      lab,
+      objects,
+      profile,
+      sample,
+      showEnergy: showEnergy && simulationId === 'wave-on-string',
+    })
+  }
   updateWaveHistory({
     lab,
     objects,
@@ -5918,15 +6104,27 @@ function updateWaveLabObjects({
     simulationId === 'beats' ||
     simulationId === 'doppler-effect' ||
     simulationId === 'wave-on-string'
-  lab.sourceLabel.position.set(
-    simulationId === 'doppler-effect' ? sourceX : leftX - 0.22,
-    -0.34,
-    supportHeight + 0.18,
+  lab.sourceLabel.position.copy(
+    simulationId === 'doppler-effect'
+      ? toSoundWaveFieldScenePointForSimulation(
+          simulationId,
+          objects,
+          sample.secondaryXMeters,
+          -0.34,
+          supportHeight + 0.18,
+        )
+      : new THREE.Vector3(leftX - 0.22, -0.34, supportHeight + 0.18),
   )
   updateSceneTextSprite(lab.sourceLabel, buildWaveSourceLabel(simulationId, sample))
-  lab.probeLabel.visible = showVectors
+  lab.probeLabel.visible = showVectors || simulationId === 'doppler-effect'
   const probeLabelBase = isSoundWave
-    ? toWaveScenePoint(objects, sample.xMeters, 0, 0)
+    ? toSoundWaveFieldScenePointForSimulation(
+        simulationId,
+        objects,
+        sample.xMeters,
+        0,
+        0,
+      )
     : toWaveScenePoint(objects, sample.xMeters, sample.zMeters, 0.16)
   lab.probeLabel.position.copy(
     probeLabelBase.add(new THREE.Vector3(0.15, 0, 0.24)),
@@ -5988,6 +6186,7 @@ function updateWaveBeads(
   objects: SceneObjects,
   simulationId: KinematicsSimulationId,
   waveParameters: WaveOnStringParameters | null,
+  sample: KinematicsSample,
 ) {
   const material = lab.beads.material as THREE.MeshStandardMaterial
   const isSoundWave = isSoundWaveSimulation(simulationId)
@@ -5996,13 +6195,15 @@ function updateWaveBeads(
   material.depthTest = isSoundWave
   material.depthWrite = false
   material.emissive.setHex(isSoundWave ? 0x0b3a43 : 0x14b8a6)
-  material.emissiveIntensity = isSoundWave ? 0.46 : 0.58
-  material.opacity = isSoundWave ? 0.82 : 1
+  material.emissiveIntensity =
+    simulationId === 'doppler-effect' ? 0.62 : isSoundWave ? 0.46 : 0.58
+  material.opacity =
+    simulationId === 'doppler-effect' ? 0.94 : isSoundWave ? 0.82 : 1
   material.transparent = true
   material.needsUpdate = true
 
   if (isSoundWave) {
-    updateSoundWaveFieldBeads(lab, profile, objects, simulationId)
+    updateSoundWaveFieldBeads(lab, profile, objects, simulationId, sample)
     return
   }
 
@@ -6039,22 +6240,30 @@ function updateSoundWaveFieldBeads(
   profile: MechanicalWaveProfilePoint[],
   objects: SceneObjects,
   simulationId: KinematicsSimulationId,
+  sample: KinematicsSample,
 ) {
   const helper = lab.instanceHelper
   const maxPressure = findSoundProfileMaxPressure(profile)
   const baseRadius = getSoundWaveFieldBaseRadiusScene(simulationId)
-  const radialPressureScale = simulationId === 'doppler-effect' ? 0.14 : 0.18
+  const isDoppler = simulationId === 'doppler-effect'
+  const radialPressureScale = isDoppler ? 0.34 : 0.18
   const neutralColor = new THREE.Color(0xa7fff3)
   const compressionColor = new THREE.Color(0x22d3ee)
   const rarefactionColor = new THREE.Color(0xfacc15)
   const beadColor = new THREE.Color()
   const sceneScale = Math.max(objects.sceneProjection.positionScale, 1e-6)
+  const columnCount = isDoppler
+    ? dopplerSoundWaveFieldColumnCount
+    : soundWaveFieldColumnCount
+  const ringCount = isDoppler
+    ? dopplerSoundWaveFieldRingCount
+    : soundWaveFieldRingCount
 
   lab.beads.visible = true
-  lab.beads.count = soundWaveFieldBeadCount
+  lab.beads.count = columnCount * ringCount
 
-  for (let columnIndex = 0; columnIndex < soundWaveFieldColumnCount; columnIndex += 1) {
-    const profileRatio = columnIndex / (soundWaveFieldColumnCount - 1)
+  for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
+    const profileRatio = columnIndex / (columnCount - 1)
     const point = readProfilePointAtRatio(profile, profileRatio)
     const pressureRatio =
       maxPressure > 1e-9 ? clamp(point.zMeters / maxPressure, -1, 1) : 0
@@ -6063,18 +6272,28 @@ function updateSoundWaveFieldBeads(
         ? clamp(Math.abs(point.envelopeMeters) / maxPressure, 0, 1)
         : 0
     const absolutePressureRatio = Math.abs(pressureRatio)
+    const localDoppler = isDoppler
+      ? readDopplerLocalWavefront({
+          pointXMeters: point.xMeters,
+          sample,
+        })
+      : null
+    const compressionGain = localDoppler
+      ? lerp(0.78, 1.38, localDoppler.compressionVisualRatio)
+      : 1
     const fieldRadius = clamp(
       baseRadius +
-        pressureRatio * radialPressureScale +
-        envelopeRatio * 0.045,
+        pressureRatio * radialPressureScale * compressionGain +
+        envelopeRatio * (isDoppler ? 0.096 : 0.045) +
+        (localDoppler ? (compressionGain - 1) * 0.07 : 0),
       baseRadius * 0.58,
-      baseRadius * 1.62,
+      baseRadius * (isDoppler ? 2.05 : 1.62),
     )
 
-    for (let ringIndex = 0; ringIndex < soundWaveFieldRingCount; ringIndex += 1) {
+    for (let ringIndex = 0; ringIndex < ringCount; ringIndex += 1) {
       const instanceIndex =
-        columnIndex * soundWaveFieldRingCount + ringIndex
-      const ringRatio = ringIndex / soundWaveFieldRingCount
+        columnIndex * ringCount + ringIndex
+      const ringRatio = ringIndex / ringCount
       const angle =
         ringRatio * Math.PI * 2 +
         columnIndex * 0.24 +
@@ -6082,18 +6301,26 @@ function updateSoundWaveFieldBeads(
       const ringWobble =
         1 + Math.sin(columnIndex * 0.41 + ringIndex * 1.7) * 0.045
       const radialYScene = Math.cos(angle) * fieldRadius * ringWobble
-      const radialZScene = Math.sin(angle) * fieldRadius * 0.68 * ringWobble
+      const radialZScene =
+        Math.sin(angle) * fieldRadius * (isDoppler ? 0.92 : 0.68) * ringWobble
       const xJitterMeters =
-        (Math.sin(angle * 2.4 + columnIndex * 0.31) * 0.018) / sceneScale
-      const compressionBias = clamp((pressureRatio + 1) / 2, 0, 1)
+        (Math.sin(angle * 2.4 + columnIndex * 0.31) *
+          (isDoppler ? 0.012 : 0.018)) /
+        sceneScale
+      const compressionBias = localDoppler
+        ? localDoppler.compressionVisualRatio
+        : clamp((pressureRatio + 1) / 2, 0, 1)
       const beadRadius = clamp(
-        0.012 + absolutePressureRatio * 0.01 + compressionBias * 0.004,
-        0.011,
-        0.028,
+        (isDoppler ? 0.013 : 0.012) +
+          absolutePressureRatio * (isDoppler ? 0.014 : 0.01) +
+          compressionBias * (isDoppler ? 0.011 : 0.004),
+        isDoppler ? 0.012 : 0.011,
+        isDoppler ? 0.038 : 0.028,
       )
 
       helper.position.copy(
-        toSoundWaveFieldScenePoint(
+        toSoundWaveFieldScenePointForSimulation(
+          simulationId,
           objects,
           point.xMeters + xJitterMeters,
           radialYScene,
@@ -6107,7 +6334,14 @@ function updateSoundWaveFieldBeads(
       if (pressureRatio >= 0) {
         beadColor
           .copy(neutralColor)
-          .lerp(compressionColor, clamp(pressureRatio, 0, 1))
+          .lerp(
+            compressionColor,
+            clamp(
+              pressureRatio + (localDoppler?.compressionVisualRatio ?? 0) * 0.18,
+              0,
+              1,
+            ),
+          )
       } else {
         beadColor
           .copy(neutralColor)
@@ -6142,7 +6376,163 @@ function findSoundProfileMaxPressure(profile: MechanicalWaveProfilePoint[]) {
 function getSoundWaveFieldBaseRadiusScene(
   simulationId: KinematicsSimulationId,
 ) {
-  return simulationId === 'doppler-effect' ? 0.28 : 0.32
+  return simulationId === 'doppler-effect' ? 0.56 : 0.32
+}
+
+function readDopplerLocalWavefront({
+  pointXMeters,
+  sample,
+}: {
+  pointXMeters: number
+  sample: KinematicsSample
+}) {
+  const emittedFrequencyHertz = sample.secondarySpeedMetersPerSecond
+  const mediumSpeedMetersPerSecond = sample.speedMetersPerSecond
+  const sourceSpeedMetersPerSecond =
+    sample.secondaryVelocityXMetersPerSecond
+
+  if (
+    emittedFrequencyHertz <= 0 ||
+    mediumSpeedMetersPerSecond <= 0 ||
+    !Number.isFinite(sourceSpeedMetersPerSecond)
+  ) {
+    return {
+      compressionVisualRatio: 0,
+      wavelengthMeters: 0,
+    }
+  }
+
+  const sideSign =
+    Math.sign(pointXMeters - sample.secondaryXMeters) ||
+    Math.sign(sample.xMeters - sample.secondaryXMeters) ||
+    1
+  const emittedWavelengthMeters =
+    sample.forceOneNewtons > 0
+      ? sample.forceOneNewtons
+      : mediumSpeedMetersPerSecond / emittedFrequencyHertz
+  const apparentWaveSpeedMetersPerSecond =
+    mediumSpeedMetersPerSecond - sourceSpeedMetersPerSecond * sideSign
+  const wavelengthMeters = Math.max(
+    0.01,
+    apparentWaveSpeedMetersPerSecond / emittedFrequencyHertz,
+  )
+  const compressionRatio = clamp(
+    emittedWavelengthMeters / wavelengthMeters,
+    0.58,
+    1.95,
+  )
+
+  return {
+    compressionVisualRatio: clamp((compressionRatio - 0.58) / 1.37, 0, 1),
+    wavelengthMeters,
+  }
+}
+
+function updateDopplerWavefrontMarkers({
+  lab,
+  objects,
+  profile,
+  sample,
+}: {
+  lab: WaveLabObjects
+  objects: SceneObjects
+  profile: MechanicalWaveProfilePoint[]
+  sample: KinematicsSample
+}) {
+  const firstPoint = profile[0]
+  const lastPoint = profile.at(-1)
+  const emittedFrequencyHertz = sample.secondarySpeedMetersPerSecond
+
+  if (
+    !firstPoint ||
+    !lastPoint ||
+    emittedFrequencyHertz <= 0 ||
+    sample.primaryRadiusMeters <= 0
+  ) {
+    lab.energyPackets.visible = false
+    lab.energyPackets.count = 0
+    return
+  }
+
+  const helper = lab.instanceHelper
+  const material = lab.energyPackets.material as THREE.MeshBasicMaterial
+  const baseRadius = getSoundWaveFieldBaseRadiusScene('doppler-effect')
+  const crestColor = new THREE.Color()
+  const compressionColor = new THREE.Color(0x22d3ee)
+  const stretchColor = new THREE.Color(0xfacc15)
+  const neutralColor = new THREE.Color(0xa7fff3)
+  const ringsPerFront = 3
+
+  material.color.setHex(0xffffff)
+  material.opacity = 0.68
+  material.needsUpdate = true
+  lab.energyPackets.visible = true
+  lab.energyPackets.count = dopplerWavefrontMarkerCount
+
+  for (let index = 0; index < dopplerWavefrontMarkerCount; index += 1) {
+    const sideSlot = Math.floor(index / ringsPerFront)
+    const sideSign = sideSlot % 2 === 0 ? 1 : -1
+    const crestIndex = Math.floor(sideSlot / 2) + 1
+    const wavefront = readDopplerLocalWavefront({
+      pointXMeters: sample.secondaryXMeters + sideSign,
+      sample,
+    })
+    const xMeters =
+      sample.secondaryXMeters + sideSign * wavefront.wavelengthMeters * crestIndex
+    const isInsideMedium =
+      xMeters >= firstPoint.xMeters - 1e-6 && xMeters <= lastPoint.xMeters + 1e-6
+
+    if (!isInsideMedium || wavefront.wavelengthMeters <= 0) {
+      helper.position.set(0, 0, 0)
+      helper.scale.setScalar(0.0001)
+      helper.updateMatrix()
+      lab.energyPackets.setMatrixAt(index, helper.matrix)
+      lab.energyPackets.setColorAt(index, neutralColor)
+      continue
+    }
+
+    const ringIndex = index % ringsPerFront
+    const angle =
+      (ringIndex / ringsPerFront) * Math.PI * 2 +
+      crestIndex * 0.52 +
+      sample.timeSeconds * 0.42
+    const radial = baseRadius * (0.48 + ringIndex * 0.23)
+    const compressionVisualRatio = wavefront.compressionVisualRatio
+    const markerRadius = clamp(
+      0.03 + compressionVisualRatio * 0.035,
+      0.028,
+      0.07,
+    )
+
+    helper.position.copy(
+      toSoundWaveFieldScenePointForSimulation(
+        'doppler-effect',
+        objects,
+        xMeters,
+        Math.cos(angle) * radial,
+        Math.sin(angle) * radial * 0.7,
+      ),
+    )
+    helper.scale.setScalar(markerRadius)
+    helper.updateMatrix()
+    lab.energyPackets.setMatrixAt(index, helper.matrix)
+
+    crestColor
+      .copy(neutralColor)
+      .lerp(
+        compressionVisualRatio > 0.5 ? compressionColor : stretchColor,
+        compressionVisualRatio > 0.5
+          ? clamp((compressionVisualRatio - 0.5) * 1.8, 0, 1)
+          : clamp((0.5 - compressionVisualRatio) * 1.4, 0, 1),
+      )
+    lab.energyPackets.setColorAt(index, crestColor)
+  }
+
+  lab.energyPackets.instanceMatrix.needsUpdate = true
+
+  if (lab.energyPackets.instanceColor) {
+    lab.energyPackets.instanceColor.needsUpdate = true
+  }
 }
 
 function updateWaveEnergyPackets({
@@ -6183,6 +6573,8 @@ function updateWaveEnergyPackets({
   material.opacity = clamp(0.12 + Math.abs(sample.primaryRadiusMeters) * 0.42, 0.12, 0.36)
   lab.energyPackets.count = waveEnergyPacketCount
 
+  const packetColor = new THREE.Color(0xf59e0b)
+
   for (let index = 0; index < waveEnergyPacketCount; index += 1) {
     const ratio = positiveModulo(speedRatio + index / waveEnergyPacketCount, 1)
     const point = readProfilePointAtRatio(profile, ratio)
@@ -6193,9 +6585,14 @@ function updateWaveEnergyPackets({
     helper.scale.setScalar(pulseRadius)
     helper.updateMatrix()
     lab.energyPackets.setMatrixAt(index, helper.matrix)
+    lab.energyPackets.setColorAt(index, packetColor)
   }
 
   lab.energyPackets.instanceMatrix.needsUpdate = true
+
+  if (lab.energyPackets.instanceColor) {
+    lab.energyPackets.instanceColor.needsUpdate = true
+  }
 }
 
 function updateWaveHistory({
@@ -6347,8 +6744,20 @@ function updateWaveProbeGuide({
       lab.probeGuidePositions,
       lab.probeGuidePositionAttribute,
       lab.probeGuide,
-      toSoundWaveFieldScenePoint(objects, sample.xMeters, 0, -guideRadius),
-      toSoundWaveFieldScenePoint(objects, sample.xMeters, 0, guideRadius),
+      toSoundWaveFieldScenePointForSimulation(
+        simulationId,
+        objects,
+        sample.xMeters,
+        0,
+        -guideRadius,
+      ),
+      toSoundWaveFieldScenePointForSimulation(
+        simulationId,
+        objects,
+        sample.xMeters,
+        0,
+        guideRadius,
+      ),
       showVectors,
     )
     return
@@ -6424,6 +6833,54 @@ function toSoundWaveFieldScenePoint(
   }
 
   return new THREE.Vector3(xScene, radialYScene, radialZScene)
+}
+
+function toSoundWaveFieldScenePointForSimulation(
+  simulationId: KinematicsSimulationId,
+  objects: SceneObjects,
+  xMeters: number,
+  radialYScene: number,
+  radialZScene: number,
+) {
+  if (simulationId === 'doppler-effect') {
+    return toDopplerDiagonalScenePoint(
+      objects.sceneProjection,
+      xMeters,
+      radialYScene,
+      radialZScene,
+    )
+  }
+
+  return toSoundWaveFieldScenePoint(
+    objects,
+    xMeters,
+    radialYScene,
+    radialZScene,
+  )
+}
+
+function toDopplerDiagonalScenePoint(
+  sceneProjection: KinematicsSceneProjection,
+  xMeters: number,
+  lateralScene = 0,
+  verticalScene = 0,
+) {
+  const axisScene = xMeters * sceneProjection.positionScale
+  const lateralOffset = lateralScene / Math.SQRT2
+
+  return new THREE.Vector3(
+    axisScene + lateralOffset,
+    -axisScene + lateralOffset,
+    verticalScene,
+  )
+}
+
+function toDopplerDiagonalSceneDirection(vector: KinematicsVectorOverlay) {
+  return new THREE.Vector3(
+    vector.direction.x,
+    -vector.direction.x,
+    vector.direction.z,
+  )
 }
 
 function readProfilePointAtRatio(
@@ -6539,6 +6996,10 @@ function createReferencePath(
     return new THREE.Group()
   }
 
+  if (simulationId === 'doppler-effect') {
+    return createDopplerDiagonalReferencePath(samples, sceneProjection)
+  }
+
   if (simulationId === 'collisions-1d-2d') {
     return createCollisionReferencePath(samples, sceneProjection)
   }
@@ -6578,6 +7039,77 @@ function createReferencePath(
   })
 
   return new THREE.Line(geometry, material)
+}
+
+function createDopplerDiagonalReferencePath(
+  samples: KinematicsSample[],
+  sceneProjection: KinematicsSceneProjection,
+) {
+  const group = new THREE.Group()
+  const pathMeters = samples.flatMap((sample) => [
+    sample.xMeters,
+    sample.secondaryXMeters,
+  ]).filter(Number.isFinite)
+
+  if (pathMeters.length === 0) {
+    return group
+  }
+
+  const startMeters = Math.min(...pathMeters)
+  const endMeters = Math.max(...pathMeters)
+  const start = toDopplerDiagonalScenePoint(
+    sceneProjection,
+    startMeters,
+    0,
+    0.05,
+  )
+  const end = toDopplerDiagonalScenePoint(
+    sceneProjection,
+    endMeters,
+    0,
+    0.05,
+  )
+  const railOffset = 0.08
+
+  group.add(createSceneLine(start, end, 0x2dd4bf, 0.48))
+  group.add(
+    createSceneLine(
+      toDopplerDiagonalScenePoint(
+        sceneProjection,
+        startMeters,
+        railOffset,
+        0.065,
+      ),
+      toDopplerDiagonalScenePoint(
+        sceneProjection,
+        endMeters,
+        railOffset,
+        0.065,
+      ),
+      0x38bdf8,
+      0.34,
+    ),
+  )
+  group.add(
+    createSceneLine(
+      toDopplerDiagonalScenePoint(
+        sceneProjection,
+        startMeters,
+        -railOffset,
+        0.065,
+      ),
+      toDopplerDiagonalScenePoint(
+        sceneProjection,
+        endMeters,
+        -railOffset,
+        0.065,
+      ),
+      0x38bdf8,
+      0.34,
+    ),
+  )
+
+  return group
 }
 
 function createUniformLinearMotionReferencePath(
@@ -7554,6 +8086,30 @@ function estimateSceneBounds(
   const positions = samples.map((sample) =>
     toKinematicsScenePosition(sample, sceneProjection),
   )
+
+  if (simulationId === 'doppler-effect') {
+    const fieldRadius = getSoundWaveFieldBaseRadiusScene('doppler-effect') * 2.1
+
+    positions.length = 0
+    samples.forEach((sample) => {
+      positions.push(
+        toDopplerDiagonalScenePoint(sceneProjection, sample.xMeters),
+        toDopplerDiagonalScenePoint(sceneProjection, sample.secondaryXMeters),
+        toDopplerDiagonalScenePoint(
+          sceneProjection,
+          sample.xMeters,
+          fieldRadius,
+          fieldRadius,
+        ),
+        toDopplerDiagonalScenePoint(
+          sceneProjection,
+          sample.xMeters,
+          -fieldRadius,
+          -fieldRadius,
+        ),
+      )
+    })
+  }
 
   if (simulationId === 'collisions-1d-2d') {
     samples.forEach((sample) => {

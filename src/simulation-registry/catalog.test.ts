@@ -40,10 +40,10 @@ describe('simulation registry', () => {
     expect(allSimulations).toHaveLength(51)
     expect(
       allSimulations.filter((item) => item.status === 'analysis'),
-    ).toHaveLength(2)
+    ).toHaveLength(0)
     expect(
       allSimulations.filter((item) => item.status === 'ready'),
-    ).toHaveLength(24)
+    ).toHaveLength(26)
     expect(allSimulations.some((item) => item.status === 'planned')).toBe(true)
     expect(findSimulation('inclined-plane-friction').status).toBe('ready')
     expect(findSimulation('projectile-motion').status).toBe('ready')
@@ -202,14 +202,14 @@ describe('simulation registry', () => {
     })
   })
 
-  it('declares the sound simulations as runnable analysis items', () => {
-    const analysisSoundIds = ['beats', 'doppler-effect'] as const
+  it('declares the approved sound simulations as ready items', () => {
+    const readySoundIds = ['beats', 'doppler-effect'] as const
 
-    analysisSoundIds.forEach((simulationId) => {
+    readySoundIds.forEach((simulationId) => {
       const simulation = findSimulation(simulationId)
       const fixture = kinematicsFixtures[simulationId]
 
-      expect(simulation.status).toBe('analysis')
+      expect(simulation.status).toBe('ready')
       expect(simulation.topicPath).toEqual([
         'Oscilacoes e Ondas',
         'Som',

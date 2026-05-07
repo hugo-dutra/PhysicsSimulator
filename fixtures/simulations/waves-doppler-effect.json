@@ -28,12 +28,12 @@
     }
   ],
   "defaultParameters": {
-    "amplitudePascals": 0.42,
-    "emittedFrequencyHertz": 1.35,
-    "mediumSpeedMetersPerSecond": 4.8,
-    "sourceInitialPositionMeters": 1.3,
-    "sourceSpeedMetersPerSecond": 0.42,
-    "observerPositionMeters": 5.8,
+    "amplitudePascals": 0.72,
+    "emittedFrequencyHertz": 1.55,
+    "mediumSpeedMetersPerSecond": 4.2,
+    "sourceInitialPositionMeters": 0,
+    "sourceSpeedMetersPerSecond": 1.15,
+    "observerPositionMeters": 6.6,
     "observerSpeedMetersPerSecond": 0,
     "mediumLengthMeters": 8
   },
@@ -73,19 +73,19 @@
     },
     {
       "id": "sourceInitialPositionMeters",
-      "label": "Posicao inicial da fonte",
-      "description": "Local inicial da fonte sonora dentro do trecho visual. Mudar a posicao altera quando as frentes comprimidas chegam ao observador.",
+      "label": "Partida da fonte",
+      "description": "Posicao usada quando a fonte esta parada. Com velocidade positiva, o motor parte automaticamente da extremidade esquerda; com velocidade negativa, parte da direita; ao chegar ao fim, a fonte volta ao inicio do meio sem reiniciar a fase de emissao.",
       "unit": "m",
       "kind": "number",
       "min": 0,
       "max": 8,
       "step": 0.05,
-      "defaultValue": 1.3
+      "defaultValue": 0
     },
     {
       "id": "sourceSpeedMetersPerSecond",
       "label": "Velocidade da fonte",
-      "description": "Velocidade da fonte no eixo horizontal. Valor positivo move a fonte para a direita; zerar remove o deslocamento da fonte; aproximar da velocidade do meio aumenta a compressao a frente.",
+      "description": "Velocidade da fonte ao longo da diagonal visual. Valor positivo move da esquerda para a direita em loop; valor negativo inverte a partida e o sentido; zerar remove o deslocamento da fonte.",
       "unit": "m/s",
       "kind": "number",
       "min": -3.8,
@@ -118,7 +118,7 @@
     {
       "id": "mediumLengthMeters",
       "label": "Comprimento do meio",
-      "description": "Trecho visual onde o volume 3D de pontinhos mostra as frentes de pressao. Aumentar oferece mais espaco para fonte e observador; diminuir aproxima os elementos.",
+      "description": "Trecho-base do meio 1D. A cena distribui os pontinhos por toda essa extensao desde o primeiro frame; a fonte percorre esse mesmo trecho em loop.",
       "unit": "m",
       "kind": "number",
       "min": 4,
@@ -132,12 +132,12 @@
       "id": "approaching-source",
       "label": "Fonte se aproximando",
       "parameters": {
-        "amplitudePascals": 0.42,
-        "emittedFrequencyHertz": 1.35,
-        "mediumSpeedMetersPerSecond": 4.8,
-        "sourceInitialPositionMeters": 1.3,
-        "sourceSpeedMetersPerSecond": 0.42,
-        "observerPositionMeters": 5.8,
+        "amplitudePascals": 0.72,
+        "emittedFrequencyHertz": 1.55,
+        "mediumSpeedMetersPerSecond": 4.2,
+        "sourceInitialPositionMeters": 0,
+        "sourceSpeedMetersPerSecond": 1.15,
+        "observerPositionMeters": 6.6,
         "observerSpeedMetersPerSecond": 0,
         "mediumLengthMeters": 8
       }
@@ -146,12 +146,12 @@
       "id": "receding-source",
       "label": "Fonte afastando",
       "parameters": {
-        "amplitudePascals": 0.42,
-        "emittedFrequencyHertz": 1.35,
-        "mediumSpeedMetersPerSecond": 4.8,
-        "sourceInitialPositionMeters": 6.7,
-        "sourceSpeedMetersPerSecond": -0.42,
-        "observerPositionMeters": 2.2,
+        "amplitudePascals": 0.72,
+        "emittedFrequencyHertz": 1.55,
+        "mediumSpeedMetersPerSecond": 4.2,
+        "sourceInitialPositionMeters": 8,
+        "sourceSpeedMetersPerSecond": -1.15,
+        "observerPositionMeters": 1.4,
         "observerSpeedMetersPerSecond": 0,
         "mediumLengthMeters": 8
       }
@@ -160,13 +160,13 @@
       "id": "observer-moving",
       "label": "Observador em movimento",
       "parameters": {
-        "amplitudePascals": 0.36,
-        "emittedFrequencyHertz": 1.2,
-        "mediumSpeedMetersPerSecond": 4.8,
+        "amplitudePascals": 0.62,
+        "emittedFrequencyHertz": 1.45,
+        "mediumSpeedMetersPerSecond": 4.2,
         "sourceInitialPositionMeters": 2,
         "sourceSpeedMetersPerSecond": 0,
         "observerPositionMeters": 6,
-        "observerSpeedMetersPerSecond": -0.55,
+        "observerSpeedMetersPerSecond": -1.05,
         "mediumLengthMeters": 8
       }
     }
@@ -192,7 +192,8 @@
   "limits": [
     "Modelo classico 1D subsonico: fonte, observador e meio compartilham o mesmo eixo, sem vento, reflexao, absorcao ou cone de Mach.",
     "A velocidade do meio e mantida em escala didatica para tornar a compressao das frentes visivel no canvas.",
-    "A cena desenha um volume 3D de pontinhos de pressao a partir do mesmo sample 1D usado pelos graficos e pela tabela; fonte e observador leem as mesmas posicoes calculadas pelo motor.",
+    "A cena desenha um volume 3D de pontinhos de pressao a partir do mesmo sample 1D usado pelos graficos e pela tabela; fonte e observador leem as mesmas posicoes calculadas pelo motor, sao projetados na diagonal do plano e a malha de pressao ja cobre desde o primeiro frame toda a extensao do meio.",
+    "Quando a velocidade da fonte e positiva, a fonte parte da extremidade esquerda do meio; quando e negativa, parte da extremidade direita; ao chegar ao fim do trecho, ela retorna ao inicio mantendo a fase temporal da emissao; com velocidade zero, o controle de partida fixa a fonte.",
     "Velocidade zero da fonte ou do observador e valida e reduz o deslocamento Doppler conforme a equacao classica."
   ],
   "formulas": [

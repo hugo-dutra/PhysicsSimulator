@@ -3486,3 +3486,174 @@ Validacao:
 - Servidor local reiniciado em `http://127.0.0.1:5173/`.
 - Executado smoke visual via Chrome headless/CDP em `http://127.0.0.1:5173/`; screenshots salvos em `artifacts/sound-beats-3d-smoke.png` e `artifacts/sound-doppler-effect-3d-smoke.png`.
 - Checagem de pixels nos screenshots confirmou renderizacao nao vazia: 236 cores amostradas em Batimentos e 248 em Efeito Doppler.
+
+## 2026-05-07 - Contraste visual do Efeito Doppler
+
+Status: feito.
+
+Pedido reportado:
+
+- `Batimentos` estava visualmente satisfatorio, mas `Efeito Doppler` ainda nao comunicava bem a diferenca entre frentes comprimidas e alongadas.
+
+Ajuste:
+
+- O preset/default de `Efeito Doppler` ficou mais demonstrativo, com amplitude maior, velocidade didatica do meio menor e fonte se aproximando mais rapido, ainda em regime classico subsonico.
+- A cena Three.js aumentou a densidade do campo volumetrico de pontinhos para som e reforcou raio, cor, brilho e escala dos marcadores no caso Doppler.
+- O renderer agora desenha marcadores extras de frentes de onda a partir dos comprimentos de onda calculados no sample: mais proximos no lado comprimido e mais afastados no lado alongado.
+- O rotulo do observador fica visivel no Doppler mesmo com o bloco de vetores fechado, para deixar `f'` e pressao recebida conectadas ao ponto de leitura.
+- Adicionado teste para garantir que o caso demonstrativo mantenha contraste fisico: frequencia observada maior que a emitida, comprimento de onda frontal menor que o emitido e comprimento traseiro maior.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a mudanca visual continua derivando de `frequencyHertz`, `secondarySpeedMetersPerSecond`, `secondaryRadiusMeters`, `secondaryXMeters`, `forceOneNewtons`, `speedMetersPerSecond` e velocidades do mesmo sample.
+- Nao houve promocao de status; `Efeito Doppler` permanece em `analysis` aguardando validacao manual.
+- Nao houve mudanca estrutural de produto, contrato ou arquitetura; guides e HLD/diagramas nao precisaram ser alterados.
+
+Validacao:
+
+- Executado `npm run test -- --run src/lib/physics/kinematics.test.ts src/features/simulation-shell/KinematicsScene.test.ts`; 2 arquivos e 57 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test`; 14 arquivos e 133 testes passaram.
+- Executado smoke visual via Chrome headless/CDP em `http://127.0.0.1:5173/`; `Efeito Doppler` abriu pelo catalogo, o canvas foi capturado em `artifacts/sound-doppler-contrast-smoke.png` e a checagem do recorte encontrou 171 cores amostradas, 261 pixels nao-background e 52 pixels cyan/teal no campo.
+
+## 2026-05-07 - Trajetoria diagonal do Efeito Doppler
+
+Status: feito.
+
+Pedido reportado:
+
+- Colocar a trajetoria do Efeito Doppler na diagonal do plano para usar mais espaco visual; com velocidade positiva a fonte deve partir de uma extremidade e, com velocidade negativa, da oposta.
+
+Ajuste:
+
+- O motor Doppler agora escolhe a partida efetiva da fonte pelo sinal de `sourceSpeedMetersPerSecond`: esquerda para velocidade positiva, direita para velocidade negativa e o controle `sourceInitialPositionMeters` apenas quando a fonte esta parada.
+- A cena Three.js projeta fonte, observador, campo de pontinhos, marcadores de frentes, guia do observador, vetores e trilha do Doppler na diagonal do plano, sem criar uma fonte de fisica paralela.
+- A referencia da trajetoria passou a cobrir todo o percurso enquadrado da fonte, nao apenas o trecho do meio acustico.
+- O fixture e o apendice teorico do Doppler foram atualizados para declarar a nova leitura do controle de partida e a diagonal visual.
+- Adicionado teste para a extremidade inicial por sinal de velocidade.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: amostras, cena, vetores, tabela, graficos e formulas continuam derivando de `secondaryXMeters`, `xMeters`, velocidades e comprimentos de onda do mesmo sample.
+- `Efeito Doppler` permanece em `analysis`; nao houve promocao de status.
+- Nao houve mudanca estrutural de arquitetura ou HLD; a decisao ficou registrada no fixture, teoria local e progresso.
+
+Validacao:
+
+- Executado `npm run test -- --run src/lib/physics/kinematics.test.ts src/features/simulation-shell/KinematicsScene.test.ts`; 2 arquivos e 58 testes passaram.
+- Executado `npm run test`; 14 arquivos e 134 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado smoke visual via Chrome headless/CDP em `http://127.0.0.1:5173/`; `Efeito Doppler` abriu pelo catalogo, o canvas foi capturado em `artifacts/sound-doppler-diagonal-smoke.png` e a checagem do recorte encontrou 246 amostras nao-background e 9 amostras cyan/teal.
+
+## 2026-05-07 - Malha fixa do campo Doppler
+
+Status: feito.
+
+Pedido reportado:
+
+- A trajetoria diagonal ia ate o fim, mas o efeito de onda nao nascia na extensao inteira e parecia esticar junto com a fonte.
+
+Ajuste:
+
+- O perfil de pressao do Doppler agora aceita um dominio visual fixo, calculado no inicio da cena a partir da timeline da fonte e do observador.
+- O renderer passa esse dominio fixo para o perfil e para a referencia visual, entao os pontinhos ja ocupam toda a extensao do percurso desde o primeiro frame.
+- A compressao e o alongamento das frentes continuam sendo calculados a partir da posicao e velocidade atuais da fonte, sem remapear ou esticar a malha.
+- Fixture e teoria local foram ajustados para explicar que a malha nasce completa e que o padrao Doppler muda durante a animacao.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a cena continua consumindo o perfil e os samples do motor; o dominio fixo so define onde o mesmo perfil e amostrado no viewport.
+- `Efeito Doppler` permanece em `analysis`; nao houve promocao de status.
+- Nao houve mudanca estrutural de arquitetura ou HLD.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts`; 1 arquivo e 48 testes passaram.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm run test -- --reporter=dot`; 14 arquivos e 135 testes passaram.
+
+## 2026-05-07 - Densidade vertical do campo Doppler
+
+Status: feito.
+
+Pedido reportado:
+
+- O campo de pressao do `Efeito Doppler` ainda parecia pobre, com poucos pontos na vertical e leitura ruim das ondas.
+
+Ajuste:
+
+- A densidade visual especifica do Doppler passou para 128 colunas por 32 pontos por secao vertical, aumentando o campo de 864 para 4096 marcadores.
+- O volume Doppler ficou ligeiramente mais alto e largo para os pontos verticais aparecerem melhor nas cameras 3D/lateral.
+- `Batimentos` manteve a densidade anterior para evitar custo extra desnecessario fora do caso reclamado.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a alteracao e apenas de amostragem visual do renderer; pressao, frequencia, fonte, observador, graficos, tabela e formulas continuam vindo dos mesmos samples.
+- `Efeito Doppler` permanece em `analysis`.
+- Nao houve mudanca estrutural de arquitetura, HLD ou contratos de dados.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/features/simulation-shell/KinematicsScene.test.ts`; 2 arquivos e 59 testes passaram.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+
+## 2026-05-07 - Largura visual do cilindro Doppler
+
+Status: feito.
+
+Pedido reportado:
+
+- A densidade ficou boa, mas o cilindro oscilante do `Efeito Doppler` ainda podia ficar um pouco mais largo para evidenciar melhor a onda.
+
+Ajuste:
+
+- Aumentado o raio base visual do cilindro Doppler.
+- Aumentada a escala radial de pressao, envoltoria e compressao visual do campo de pontinhos.
+- A amplitude fisica em Pa e os samples do motor nao foram alterados; a mudanca e apenas a extrusao visual do renderer.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: graficos, tabela, formulas e leituras continuam usando os mesmos samples; apenas o desenho do volume ficou mais amplo.
+- `Efeito Doppler` permanece em `analysis`.
+- Nao houve mudanca estrutural de arquitetura, HLD ou contratos de dados.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/features/simulation-shell/KinematicsScene.test.ts`; 2 arquivos e 59 testes passaram.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+
+## 2026-05-07 - Som pronto e loop da fonte Doppler
+
+Status: feito.
+
+Pedido reportado:
+
+- Promover `Batimentos` e `Efeito Doppler` para feitos/prontos.
+- Fazer a fonte emissora do `Efeito Doppler` voltar ao inicio quando chegar ao fim do local das ondas, sincronizada com a animacao das emissoes.
+
+Ajuste:
+
+- O motor Doppler passou a calcular a posicao efetiva da fonte em loop dentro do comprimento do meio.
+- A fase da emissao permanece baseada no tempo absoluto, entao a fonte volta ao inicio sem reiniciar o padrao temporal de compressao e alongamento.
+- O perfil de pressao continua amostrado por toda a extensao do meio desde o primeiro frame.
+- `Batimentos` e `Efeito Doppler` foram promovidos para `ready` no catalogo.
+- Tests e guides de produto, arquitetura, regras, roadmap, dados/API, catalogo planejado e issues foram alinhados ao novo status.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: samples, cena, graficos, tabela, formulas, teoria e warnings continuam usando a mesma fonte numerica.
+- A mudanca de loop altera a posicao da fonte no motor; nao cria uma animacao visual paralela.
+- A promocao para `ready` foi feita apos aprovacao manual do dono do projeto.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts src/simulation-registry/catalog.test.ts src/App.test.tsx --reporter=dot`; 3 arquivos e 71 testes passaram apos ajustar a expectativa da sidebar para nao abrir subareas `ready`.
+- Executado `npm run test -- --reporter=dot`; 14 arquivos e 136 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build:pages`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.

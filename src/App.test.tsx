@@ -616,7 +616,7 @@ describe('App', () => {
     ).toBeInTheDocument()
   }, 45_000)
 
-  it('renders the simulation catalog with analysis subareas open and ready subareas collapsed', () => {
+  it('renders the simulation catalog with ready subareas collapsed', () => {
     render(
       <ThemeProvider theme={appTheme}>
         <App />
@@ -641,16 +641,20 @@ describe('App', () => {
     ).toBeNull()
     expect(
       screen.getByRole('button', { name: /Alternar area Oscilacoes e Ondas/i }),
-    ).toHaveAttribute('aria-expanded', 'true')
+    ).toHaveAttribute('aria-expanded', 'false')
     openWavesArea()
     expect(getWavesOscillationsToggle()).toHaveAttribute(
       'aria-expanded',
       'false',
     )
-    expect(getToggleByControls('subarea-waves-som')).toHaveAttribute(
+    const soundToggle = getToggleByControls('subarea-waves-som')
+
+    expect(soundToggle).toHaveAttribute(
       'aria-expanded',
-      'true',
+      'false',
     )
+    fireEvent.click(soundToggle)
+    expect(soundToggle).toHaveAttribute('aria-expanded', 'true')
     expect(
       screen.getByRole('button', { name: /Batimentos/i }),
     ).toBeInTheDocument()
@@ -688,7 +692,7 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
     ).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(2)
+    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(0)
     expect(screen.getAllByText(/^pronto$/i).length).toBeGreaterThan(0)
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
