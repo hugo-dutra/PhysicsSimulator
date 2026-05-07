@@ -10,9 +10,12 @@ export type KinematicsSimulationId =
   | 'forced-oscillator-resonance'
   | 'gravitational-field-orbits'
   | 'hydrostatics-buoyancy'
+  | 'lenses-mirrors'
+  | 'light-diffraction-interference'
   | 'mass-spring'
   | 'particle-equilibrium'
   | 'projectile-motion'
+  | 'reflection-refraction'
   | 'rigid-body-rotation'
   | 'rolling-without-slipping'
   | 'standing-waves'
@@ -116,6 +119,37 @@ export type DopplerEffectParameters = {
   observerSpeedMetersPerSecond: number
   sourceInitialPositionMeters: number
   sourceSpeedMetersPerSecond: number
+}
+
+export type ReflectionRefractionParameters = {
+  incidentAngleDegrees: number
+  incidentMediumIndex: number
+  refractedMediumIndex: number
+  rayBundleSpreadDegrees: number
+}
+
+export type OpticalElementKind =
+  | 'concave-mirror'
+  | 'converging-lens'
+  | 'convex-mirror'
+  | 'diverging-lens'
+
+export type LensesMirrorsParameters = {
+  elementKind: OpticalElementKind
+  focalLengthMeters: number
+  objectDistanceMeters: number
+  objectHeightMeters: number
+  rayApertureMeters: number
+}
+
+export type LightDiffractionInterferenceParameters = {
+  detectorPositionMillimeters: number
+  intensityScale: number
+  screenDistanceMeters: number
+  slitCount: number
+  slitSeparationMicrometers: number
+  slitWidthMicrometers: number
+  wavelengthNanometers: number
 }
 
 export type WaveOnStringParameters = {
@@ -270,9 +304,12 @@ export type KinematicsParameters =
   | ForcedOscillatorResonanceParameters
   | GravitationalFieldOrbitsParameters
   | HydrostaticsBuoyancyParameters
+  | LensesMirrorsParameters
+  | LightDiffractionInterferenceParameters
   | MassSpringParameters
   | ParticleEquilibriumParameters
   | ProjectileMotionParameters
+  | ReflectionRefractionParameters
   | RigidBodyRotationParameters
   | RollingWithoutSlippingParameters
   | StandingWavesParameters
@@ -428,6 +465,8 @@ export type KinematicsVectorOverlay = {
   magnitude: number
   unit:
     | 'Hz'
+    | '%'
+    | 'deg'
     | 'kg m/s'
     | 'kg m^2/s'
     | 'm'
@@ -475,9 +514,12 @@ const kinematicsSimulationIds = [
   'forced-oscillator-resonance',
   'gravitational-field-orbits',
   'hydrostatics-buoyancy',
+  'lenses-mirrors',
+  'light-diffraction-interference',
   'mass-spring',
   'particle-equilibrium',
   'rigid-body-rotation',
+  'reflection-refraction',
   'rolling-without-slipping',
   'standing-waves',
   'superposition-interference',
@@ -810,6 +852,49 @@ export function toKinematicsParameters(
       }
 
       validateDopplerEffectParameters(parameters)
+      return parameters
+    }
+    case 'reflection-refraction': {
+      const parameters: ReflectionRefractionParameters = {
+        incidentAngleDegrees: readNumber(values, 'incidentAngleDegrees'),
+        incidentMediumIndex: readNumber(values, 'incidentMediumIndex'),
+        rayBundleSpreadDegrees: readNumber(values, 'rayBundleSpreadDegrees'),
+        refractedMediumIndex: readNumber(values, 'refractedMediumIndex'),
+      }
+
+      validateReflectionRefractionParameters(parameters)
+      return parameters
+    }
+    case 'lenses-mirrors': {
+      const parameters: LensesMirrorsParameters = {
+        elementKind: readOpticalElementKind(values),
+        focalLengthMeters: readNumber(values, 'focalLengthMeters'),
+        objectDistanceMeters: readNumber(values, 'objectDistanceMeters'),
+        objectHeightMeters: readNumber(values, 'objectHeightMeters'),
+        rayApertureMeters: readNumber(values, 'rayApertureMeters'),
+      }
+
+      validateLensesMirrorsParameters(parameters)
+      return parameters
+    }
+    case 'light-diffraction-interference': {
+      const parameters: LightDiffractionInterferenceParameters = {
+        detectorPositionMillimeters: readNumber(
+          values,
+          'detectorPositionMillimeters',
+        ),
+        intensityScale: readNumber(values, 'intensityScale'),
+        screenDistanceMeters: readNumber(values, 'screenDistanceMeters'),
+        slitCount: readNumber(values, 'slitCount'),
+        slitSeparationMicrometers: readNumber(
+          values,
+          'slitSeparationMicrometers',
+        ),
+        slitWidthMicrometers: readNumber(values, 'slitWidthMicrometers'),
+        wavelengthNanometers: readNumber(values, 'wavelengthNanometers'),
+      }
+
+      validateLightDiffractionInterferenceParameters(parameters)
       return parameters
     }
     case 'wave-on-string': {
@@ -1278,6 +1363,21 @@ export function computeKinematicsSample(
     case 'doppler-effect':
       return computeDopplerEffectSample(
         parameters as DopplerEffectParameters,
+        timeSeconds,
+      )
+    case 'reflection-refraction':
+      return computeReflectionRefractionSample(
+        parameters as ReflectionRefractionParameters,
+        timeSeconds,
+      )
+    case 'lenses-mirrors':
+      return computeLensesMirrorsSample(
+        parameters as LensesMirrorsParameters,
+        timeSeconds,
+      )
+    case 'light-diffraction-interference':
+      return computeLightDiffractionInterferenceSample(
+        parameters as LightDiffractionInterferenceParameters,
         timeSeconds,
       )
     case 'wave-on-string':
@@ -1833,6 +1933,96 @@ export function getKinematicsVectorOverlays(
         label: 'Velocidade do som',
         magnitude: sample.speedMetersPerSecond,
         unit: 'm/s',
+      },
+    ]
+  }
+
+  if (simulationId === 'reflection-refraction') {
+    return [
+      {
+        direction: normalizeVector({
+          x: sample.velocityXMetersPerSecond,
+          z: sample.velocityZMetersPerSecond,
+        }),
+        id: 'velocity',
+        label: 'Raio incidente',
+        magnitude: Math.abs(sample.positionMeters),
+        unit: 'deg',
+      },
+      {
+        direction: normalizeVector({
+          x: -sample.velocityXMetersPerSecond,
+          z: sample.velocityZMetersPerSecond,
+        }),
+        id: 'forceOne',
+        label: 'Raio refletido',
+        magnitude: sample.forceTwoNewtons,
+        unit: '%',
+      },
+      {
+        direction: normalizeVector({
+          x: sample.secondaryVelocityXMetersPerSecond,
+          z: sample.secondaryVelocityZMetersPerSecond,
+        }),
+        id: 'forceTwo',
+        label: 'Raio refratado',
+        magnitude: sample.pressurePascals,
+        unit: '%',
+      },
+    ]
+  }
+
+  if (simulationId === 'lenses-mirrors') {
+    return [
+      {
+        direction: { x: 1, z: 0 },
+        id: 'forceOne',
+        label: 'Foco',
+        magnitude: Math.abs(sample.primaryRadiusMeters),
+        unit: 'm',
+      },
+      {
+        direction: normalizeVector({
+          x: sample.secondaryXMeters + sample.positionMeters,
+          z: sample.secondaryZMeters - sample.zMeters,
+        }),
+        id: 'velocity',
+        label: 'Raio principal',
+        magnitude: Math.abs(sample.displacementMeters),
+        unit: 'm',
+      },
+      {
+        direction: { x: Math.sign(sample.secondaryXMeters) || 0, z: 0 },
+        id: 'displacement',
+        label: sample.isGrounded ? 'Imagem virtual' : 'Imagem real',
+        magnitude: Math.abs(sample.secondaryXMeters),
+        unit: 'm',
+      },
+    ]
+  }
+
+  if (simulationId === 'light-diffraction-interference') {
+    return [
+      {
+        direction: { x: 1, z: 0 },
+        id: 'secondaryVelocity',
+        label: 'Distancia ate a tela',
+        magnitude: sample.speedMetersPerSecond,
+        unit: 'm',
+      },
+      {
+        direction: { x: 0, z: Math.sign(sample.zMeters) || 0 },
+        id: 'displacement',
+        label: 'Detector',
+        magnitude: Math.abs(sample.positionMeters),
+        unit: 'm',
+      },
+      {
+        direction: { x: 0, z: 1 },
+        id: 'forceOne',
+        label: 'Intensidade',
+        magnitude: sample.pressurePascals * 100,
+        unit: '%',
       },
     ]
   }
@@ -3996,6 +4186,342 @@ function computeDopplerEffectSample(
     zMeters: point.zMeters,
     forceOneNewtons: emittedWavelengthMeters,
   })
+}
+
+function computeReflectionRefractionSample(
+  parameters: ReflectionRefractionParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const incidentAngleRadians = degreesToRadians(parameters.incidentAngleDegrees)
+  const snellRatio =
+    parameters.incidentMediumIndex / parameters.refractedMediumIndex
+  const refractedSine = snellRatio * Math.sin(incidentAngleRadians)
+  const totalInternalReflection =
+    parameters.incidentMediumIndex > parameters.refractedMediumIndex &&
+    Math.abs(refractedSine) > 1
+  const refractedAngleRadians = totalInternalReflection
+    ? Math.PI / 2
+    : Math.asin(clamp(refractedSine, -1, 1))
+  const criticalAngleRadians =
+    parameters.incidentMediumIndex > parameters.refractedMediumIndex
+      ? Math.asin(
+          clamp(
+            parameters.refractedMediumIndex / parameters.incidentMediumIndex,
+            -1,
+            1,
+          ),
+        )
+      : 0
+  const reflectance = computeSchlickReflectance(
+    parameters.incidentMediumIndex,
+    parameters.refractedMediumIndex,
+    incidentAngleRadians,
+    refractedAngleRadians,
+    totalInternalReflection,
+  )
+  const rayPhase = positiveModulo(timeSeconds * 0.46, 1)
+  const incidentPulse = readReflectionRayPulse(
+    incidentAngleRadians,
+    rayPhase,
+    'incident',
+  )
+  const refractedPulse = readReflectionRayPulse(
+    totalInternalReflection ? -incidentAngleRadians : refractedAngleRadians,
+    rayPhase,
+    totalInternalReflection ? 'reflected' : 'refracted',
+  )
+
+  return buildSample({
+    angleRadians: incidentAngleRadians,
+    angularAccelerationRadiansPerSecondSquared: criticalAngleRadians,
+    angularVelocityRadiansPerSecond: incidentAngleRadians,
+    displacementMeters: radiansToDegrees(refractedAngleRadians),
+    forceOneNewtons: radiansToDegrees(criticalAngleRadians),
+    forceTwoNewtons: reflectance * 100,
+    gripRatio: reflectance,
+    isGrounded: totalInternalReflection,
+    positionMeters: parameters.incidentAngleDegrees,
+    pressurePascals: (1 - reflectance) * 100,
+    primaryRadiusMeters: parameters.incidentMediumIndex,
+    secondaryRadiusMeters: parameters.refractedMediumIndex,
+    secondarySpeedMetersPerSecond:
+      parameters.refractedMediumIndex > 0
+        ? 1 / parameters.refractedMediumIndex
+        : 0,
+    secondaryVelocityMetersPerSecond: refractedAngleRadians,
+    secondaryVelocityXMetersPerSecond: Math.cos(refractedAngleRadians),
+    secondaryVelocityZMetersPerSecond: -Math.sin(refractedAngleRadians),
+    secondaryXMeters: refractedPulse.x,
+    secondaryZMeters: refractedPulse.z,
+    speedMetersPerSecond:
+      parameters.incidentMediumIndex > 0 ? 1 / parameters.incidentMediumIndex : 0,
+    timeSeconds,
+    velocityMetersPerSecond: incidentAngleRadians,
+    velocityXMetersPerSecond: Math.cos(incidentAngleRadians),
+    velocityZMetersPerSecond: -Math.sin(incidentAngleRadians),
+    xMeters: incidentPulse.x,
+    zMeters: incidentPulse.z,
+  })
+}
+
+function computeLensesMirrorsSample(
+  parameters: LensesMirrorsParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const signedFocalLengthMeters = getSignedOpticalFocalLength(parameters)
+  const imageDistanceMeters = computeThinElementImageDistance(
+    signedFocalLengthMeters,
+    parameters.objectDistanceMeters,
+  )
+  const boundedImageDistanceMeters = clamp(imageDistanceMeters, -18, 18)
+  const magnification =
+    parameters.objectDistanceMeters > 0
+      ? -boundedImageDistanceMeters / parameters.objectDistanceMeters
+      : 0
+  const imageHeightMeters = magnification * parameters.objectHeightMeters
+  const realImage = boundedImageDistanceMeters > 0
+  const rayPhase = positiveModulo(timeSeconds * 0.34, 1)
+  const rayX = lerp(
+    -parameters.objectDistanceMeters,
+    boundedImageDistanceMeters,
+    rayPhase,
+  )
+  const rayZ = lerp(parameters.objectHeightMeters, imageHeightMeters, rayPhase)
+
+  return buildSample({
+    angleRadians: Math.atan2(
+      parameters.objectHeightMeters,
+      parameters.objectDistanceMeters,
+    ),
+    displacementMeters: boundedImageDistanceMeters,
+    forceOneNewtons: signedFocalLengthMeters,
+    forceTwoNewtons: magnification,
+    gripRatio: realImage ? 1 : 0,
+    isGrounded: !realImage,
+    positionMeters: parameters.objectDistanceMeters,
+    pressurePascals: imageHeightMeters,
+    primaryRadiusMeters: signedFocalLengthMeters,
+    secondaryRadiusMeters: magnification,
+    secondarySpeedMetersPerSecond: realImage ? 1 : -1,
+    secondaryVelocityMetersPerSecond: imageHeightMeters,
+    secondaryXMeters: boundedImageDistanceMeters,
+    secondaryZMeters: imageHeightMeters,
+    speedMetersPerSecond: parameters.rayApertureMeters,
+    timeSeconds,
+    velocityMetersPerSecond: boundedImageDistanceMeters,
+    xMeters: rayX,
+    zMeters: rayZ,
+  })
+}
+
+function computeLightDiffractionInterferenceSample(
+  parameters: LightDiffractionInterferenceParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const scanAmplitudeMeters = Math.min(
+    0.034,
+    Math.max(0.012, parameters.screenDistanceMeters * 0.018),
+  )
+  const detectorCenterMeters = parameters.detectorPositionMillimeters / 1000
+  const detectorPositionMeters =
+    detectorCenterMeters +
+    scanAmplitudeMeters * Math.sin((2 * Math.PI * timeSeconds) / 6)
+  const intensity = computeLightDiffractionIntensity(
+    parameters,
+    detectorPositionMeters,
+  )
+  const thetaRadians = Math.atan2(
+    detectorPositionMeters,
+    parameters.screenDistanceMeters,
+  )
+  const wavelengthMeters = parameters.wavelengthNanometers * 1e-9
+  const slitSeparationMeters = parameters.slitSeparationMicrometers * 1e-6
+  const slitWidthMeters = parameters.slitWidthMicrometers * 1e-6
+  const fringeSpacingMeters =
+    slitSeparationMeters > 0
+      ? (parameters.screenDistanceMeters * wavelengthMeters) /
+        slitSeparationMeters
+      : 0
+  const envelope = computeSingleSlitEnvelope(
+    wavelengthMeters,
+    slitWidthMeters,
+    thetaRadians,
+  )
+  const interference = computeMultiSlitInterference(
+    wavelengthMeters,
+    slitSeparationMeters,
+    parameters.slitCount,
+    thetaRadians,
+  )
+
+  return buildSample({
+    angleRadians: thetaRadians,
+    displacementMeters: envelope,
+    forceOneNewtons: parameters.slitWidthMicrometers,
+    forceTwoNewtons: parameters.slitSeparationMicrometers,
+    frequencyHertz: parameters.slitCount,
+    gripRatio: intensity,
+    positionMeters: detectorPositionMeters,
+    pressurePascals: intensity,
+    primaryRadiusMeters: wavelengthMeters,
+    secondaryPressurePascals: interference,
+    secondaryRadiusMeters: fringeSpacingMeters,
+    secondarySpeedMetersPerSecond: parameters.wavelengthNanometers,
+    secondaryXMeters: parameters.screenDistanceMeters,
+    secondaryZMeters: detectorCenterMeters,
+    speedMetersPerSecond: parameters.screenDistanceMeters,
+    timeSeconds,
+    totalEnergyJoules: intensity,
+    velocityMetersPerSecond: intensity,
+    xMeters: parameters.screenDistanceMeters,
+    zMeters: detectorPositionMeters,
+  })
+}
+
+function readReflectionRayPulse(
+  angleRadians: number,
+  ratio: number,
+  segment: 'incident' | 'reflected' | 'refracted',
+) {
+  const lengthMeters = 3.6
+
+  if (segment === 'incident') {
+    return {
+      x: lerp(-Math.cos(angleRadians) * lengthMeters, 0, ratio),
+      z: lerp(Math.sin(angleRadians) * lengthMeters, 0, ratio),
+    }
+  }
+
+  if (segment === 'reflected') {
+    return {
+      x: -Math.cos(angleRadians) * lengthMeters * ratio,
+      z: -Math.sin(angleRadians) * lengthMeters * ratio,
+    }
+  }
+
+  return {
+    x: Math.cos(angleRadians) * lengthMeters * ratio,
+    z: -Math.sin(angleRadians) * lengthMeters * ratio,
+  }
+}
+
+function computeSchlickReflectance(
+  incidentMediumIndex: number,
+  refractedMediumIndex: number,
+  incidentAngleRadians: number,
+  refractedAngleRadians: number,
+  totalInternalReflection: boolean,
+) {
+  if (totalInternalReflection) {
+    return 1
+  }
+
+  const r0 =
+    ((incidentMediumIndex - refractedMediumIndex) /
+      (incidentMediumIndex + refractedMediumIndex)) **
+    2
+  const cosine = Math.cos(
+    incidentMediumIndex <= refractedMediumIndex
+      ? incidentAngleRadians
+      : refractedAngleRadians,
+  )
+
+  return clamp(r0 + (1 - r0) * (1 - cosine) ** 5, 0, 1)
+}
+
+function getSignedOpticalFocalLength(parameters: LensesMirrorsParameters) {
+  return parameters.elementKind === 'converging-lens' ||
+    parameters.elementKind === 'concave-mirror'
+    ? parameters.focalLengthMeters
+    : -parameters.focalLengthMeters
+}
+
+function computeThinElementImageDistance(
+  focalLengthMeters: number,
+  objectDistanceMeters: number,
+) {
+  const inverseImageDistance = 1 / focalLengthMeters - 1 / objectDistanceMeters
+
+  if (Math.abs(inverseImageDistance) < 1e-6) {
+    return Math.sign(focalLengthMeters) * 18
+  }
+
+  return 1 / inverseImageDistance
+}
+
+export function computeLightDiffractionIntensity(
+  parameters: LightDiffractionInterferenceParameters,
+  detectorPositionMeters: number,
+) {
+  const thetaRadians = Math.atan2(
+    detectorPositionMeters,
+    parameters.screenDistanceMeters,
+  )
+  const wavelengthMeters = parameters.wavelengthNanometers * 1e-9
+  const slitWidthMeters = parameters.slitWidthMicrometers * 1e-6
+  const slitSeparationMeters = parameters.slitSeparationMicrometers * 1e-6
+  const envelope = computeSingleSlitEnvelope(
+    wavelengthMeters,
+    slitWidthMeters,
+    thetaRadians,
+  )
+  const interference = computeMultiSlitInterference(
+    wavelengthMeters,
+    slitSeparationMeters,
+    parameters.slitCount,
+    thetaRadians,
+  )
+
+  return clamp(parameters.intensityScale * envelope * interference, 0, 1)
+}
+
+function computeSingleSlitEnvelope(
+  wavelengthMeters: number,
+  slitWidthMeters: number,
+  thetaRadians: number,
+) {
+  const beta =
+    (Math.PI * slitWidthMeters * Math.sin(thetaRadians)) / wavelengthMeters
+
+  return sincSquared(beta)
+}
+
+function computeMultiSlitInterference(
+  wavelengthMeters: number,
+  slitSeparationMeters: number,
+  slitCount: number,
+  thetaRadians: number,
+) {
+  const safeSlitCount = Math.max(1, Math.round(slitCount))
+
+  if (safeSlitCount === 1) {
+    return 1
+  }
+
+  const alpha =
+    (Math.PI * slitSeparationMeters * Math.sin(thetaRadians)) /
+    wavelengthMeters
+  const denominator = Math.sin(alpha)
+
+  if (Math.abs(denominator) < 1e-7) {
+    return 1
+  }
+
+  return clamp(
+    (Math.sin(safeSlitCount * alpha) /
+      (safeSlitCount * denominator)) **
+      2,
+    0,
+    1,
+  )
+}
+
+function sincSquared(value: number) {
+  if (Math.abs(value) < 1e-7) {
+    return 1
+  }
+
+  return (Math.sin(value) / value) ** 2
 }
 
 function computeWaveOnStringSample(
@@ -6375,6 +6901,114 @@ function getKinematicsWarnings(
     ]
   }
 
+  if (simulationId === 'reflection-refraction') {
+    const opticsParameters = parameters as ReflectionRefractionParameters
+    const sample = computeReflectionRefractionSample(opticsParameters, 0)
+
+    if (sample.isGrounded) {
+      return [
+        {
+          code: 'OPTICS_TOTAL_INTERNAL_REFLECTION',
+          message:
+            'O angulo incidente supera o angulo critico; o motor remove o raio refratado e mantem apenas a reflexao interna total.',
+        },
+      ]
+    }
+
+    if (
+      Math.abs(
+        opticsParameters.incidentMediumIndex -
+          opticsParameters.refractedMediumIndex,
+      ) < 1e-6
+    ) {
+      return [
+        {
+          code: 'OPTICS_MATCHED_MEDIA',
+          message:
+            'Os indices sao praticamente iguais; o raio segue quase reto e a reflexao de Fresnel fica minima.',
+        },
+      ]
+    }
+
+    return [
+      {
+        code: 'OPTICS_SNELL_REFRACTION_ACTIVE',
+        message:
+          'A Lei de Snell calcula o raio refratado; alterar angulo ou indices move os raios, o angulo critico e a fracao refletida.',
+      },
+    ]
+  }
+
+  if (simulationId === 'lenses-mirrors') {
+    const opticsParameters = parameters as LensesMirrorsParameters
+    const sample = computeLensesMirrorsSample(opticsParameters, 0)
+    const focalGap = Math.abs(
+      opticsParameters.objectDistanceMeters -
+        Math.abs(sample.primaryRadiusMeters),
+    )
+
+    if (focalGap < 0.08) {
+      return [
+        {
+          code: 'OPTICS_OBJECT_NEAR_FOCUS',
+          message:
+            'O objeto esta muito perto do foco; a distancia de imagem cresce e foi limitada visualmente no sample.',
+        },
+      ]
+    }
+
+    if (sample.isGrounded) {
+      return [
+        {
+          code: 'OPTICS_VIRTUAL_IMAGE',
+          message:
+            'A imagem calculada e virtual; a cena usa prolongamentos tracejados e a tabela mostra distancia de imagem negativa.',
+        },
+      ]
+    }
+
+    return [
+      {
+        code: 'OPTICS_REAL_IMAGE',
+        message:
+          'A imagem e real no modelo geometrico; raios principais se cruzam no lado de saida do elemento optico.',
+      },
+    ]
+  }
+
+  if (simulationId === 'light-diffraction-interference') {
+    const opticsParameters =
+      parameters as LightDiffractionInterferenceParameters
+
+    if (opticsParameters.intensityScale === 0) {
+      return [
+        {
+          code: 'OPTICS_ZERO_INTENSITY_SCALE',
+          message:
+            'A escala de intensidade esta zerada; o padrao permanece geometricamente definido, mas a tela fica escura.',
+        },
+      ]
+    }
+
+    if (opticsParameters.slitCount === 1) {
+      return [
+        {
+          code: 'OPTICS_SINGLE_SLIT_DIFFRACTION',
+          message:
+            'Com uma unica fenda, o motor mostra apenas a envoltoria de difracao; maximos de interferencia entre fendas nao aparecem.',
+        },
+      ]
+    }
+
+    return [
+      {
+        code: 'OPTICS_MULTI_SLIT_INTERFERENCE',
+        message:
+          'As fendas produzem maximos de interferencia modulados pela envoltoria de difracao; comprimento de onda, separacao e largura redesenham a tela.',
+      },
+    ]
+  }
+
   if (simulationId === 'wave-on-string') {
     const waveParameters = parameters as WaveOnStringParameters
 
@@ -6656,6 +7290,19 @@ function validateKinematicsParameters(
       return
     case 'doppler-effect':
       validateDopplerEffectParameters(parameters as DopplerEffectParameters)
+      return
+    case 'reflection-refraction':
+      validateReflectionRefractionParameters(
+        parameters as ReflectionRefractionParameters,
+      )
+      return
+    case 'lenses-mirrors':
+      validateLensesMirrorsParameters(parameters as LensesMirrorsParameters)
+      return
+    case 'light-diffraction-interference':
+      validateLightDiffractionInterferenceParameters(
+        parameters as LightDiffractionInterferenceParameters,
+      )
       return
     case 'forced-oscillator-resonance':
       validateForcedOscillatorResonanceParameters(
@@ -6944,6 +7591,59 @@ function validateDopplerEffectParameters(parameters: DopplerEffectParameters) {
     parameters.observerPositionMeters,
     parameters.mediumLengthMeters,
   )
+}
+
+function validateReflectionRefractionParameters(
+  parameters: ReflectionRefractionParameters,
+) {
+  assertFinite('incidentAngleDegrees', parameters.incidentAngleDegrees)
+  assertFinitePositive('incidentMediumIndex', parameters.incidentMediumIndex)
+  assertFinitePositive('refractedMediumIndex', parameters.refractedMediumIndex)
+  assertFiniteNonNegative(
+    'rayBundleSpreadDegrees',
+    parameters.rayBundleSpreadDegrees,
+  )
+
+  if (
+    parameters.incidentAngleDegrees < -85 ||
+    parameters.incidentAngleDegrees > 85
+  ) {
+    throw new Error('incidentAngleDegrees must stay between -85 and 85.')
+  }
+
+  if (parameters.rayBundleSpreadDegrees > 18) {
+    throw new Error('rayBundleSpreadDegrees must be at most 18 degrees.')
+  }
+}
+
+function validateLensesMirrorsParameters(parameters: LensesMirrorsParameters) {
+  assertFinitePositive('focalLengthMeters', parameters.focalLengthMeters)
+  assertFinitePositive('objectDistanceMeters', parameters.objectDistanceMeters)
+  assertFinite('objectHeightMeters', parameters.objectHeightMeters)
+  assertFiniteNonNegative('rayApertureMeters', parameters.rayApertureMeters)
+
+  if (parameters.rayApertureMeters > 4) {
+    throw new Error('rayApertureMeters must be at most 4 meters.')
+  }
+}
+
+function validateLightDiffractionInterferenceParameters(
+  parameters: LightDiffractionInterferenceParameters,
+) {
+  assertFinite('detectorPositionMillimeters', parameters.detectorPositionMillimeters)
+  assertFiniteNonNegative('intensityScale', parameters.intensityScale)
+  assertFinitePositive('screenDistanceMeters', parameters.screenDistanceMeters)
+  assertFinitePositive('slitSeparationMicrometers', parameters.slitSeparationMicrometers)
+  assertFinitePositive('slitWidthMicrometers', parameters.slitWidthMicrometers)
+  assertFinitePositive('wavelengthNanometers', parameters.wavelengthNanometers)
+
+  if (parameters.slitCount < 1 || parameters.slitCount > 6) {
+    throw new Error('slitCount must stay between 1 and 6.')
+  }
+
+  if (Math.abs(parameters.detectorPositionMillimeters) > 40) {
+    throw new Error('detectorPositionMillimeters must stay inside +/- 40 mm.')
+  }
 }
 
 function validateWaveOnStringParameters(parameters: WaveOnStringParameters) {
@@ -7762,6 +8462,23 @@ function readWaveOnStringSpeedModel(
   return 'wavelength-frequency'
 }
 
+function readOpticalElementKind(
+  values: Record<string, unknown>,
+): OpticalElementKind {
+  const value = values.elementKind
+
+  if (
+    value === 'concave-mirror' ||
+    value === 'converging-lens' ||
+    value === 'convex-mirror' ||
+    value === 'diverging-lens'
+  ) {
+    return value
+  }
+
+  return 'converging-lens'
+}
+
 function readBoolean(
   values: Record<string, unknown>,
   key: string,
@@ -7808,6 +8525,10 @@ function assertProbeInsideString(probePositionMeters: number, stringLengthMeters
 
 function degreesToRadians(value: number) {
   return (value * Math.PI) / 180
+}
+
+function radiansToDegrees(value: number) {
+  return (value * 180) / Math.PI
 }
 
 function normalizeDegrees(value: number) {

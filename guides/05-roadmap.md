@@ -121,7 +121,7 @@ Criterio de saida:
 
 Objetivo: validar sistemas periodicos, propagacao de ondas, som e optica basica com modelos visuais leves.
 
-Primeira fatia visual antecipada: `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical`, aproveitando o aprendizado do pendulo para outro oscilador harmonico simples. A subarea de oscilacoes tambem concentra o pendulo simples e os tres osciladores da Fase 4, evitando duplicacao entre Mecanica e Oscilacoes e Ondas. A cena segue a referencia visual proposta: suporte fixo no topo, mola helicoidal pendurada, massa esferica presa na extremidade inferior e oscilacao vertical em torno da posicao de equilibrio. A area `Oscilacoes e Ondas` mantem oscilador amortecido, oscilador forcado/ressonancia e osciladores acoplados como `ready` apos aprovacao manual, todos com fixtures locais, formulas, teoria, regimes e gate de fidelidade. A fatia seguinte implementou `Onda em corda`, `Superposicao e interferencia` e `Ondas estacionarias`; apos aprovacao manual, as tres ficam como `ready`, usando o motor compartilhado para perfis 1D, probe sincronizado, cena Three.js, graficos, tabela, formulas, teoria e relacoes de frequencia/periodo/comprimento de onda. A fatia de som implementa `Batimentos` e `Efeito Doppler` como `ready` apos aprovacao manual, com modelos analiticos 1D, campo volumetrico 3D de marcadores de pressao em pontinhos no renderer Three.js, graficos de pressao/frequencia/velocidade, tabela, formulas e teoria; audio audivel continua opcional depois da prova visual.
+Primeira fatia visual antecipada: `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical`, aproveitando o aprendizado do pendulo para outro oscilador harmonico simples. A subarea de oscilacoes tambem concentra o pendulo simples e os tres osciladores da Fase 4, evitando duplicacao entre Mecanica e Oscilacoes e Ondas. A cena segue a referencia visual proposta: suporte fixo no topo, mola helicoidal pendurada, massa esferica presa na extremidade inferior e oscilacao vertical em torno da posicao de equilibrio. A area `Oscilacoes e Ondas` mantem oscilador amortecido, oscilador forcado/ressonancia e osciladores acoplados como `ready` apos aprovacao manual, todos com fixtures locais, formulas, teoria, regimes e gate de fidelidade. A fatia seguinte implementou `Onda em corda`, `Superposicao e interferencia` e `Ondas estacionarias`; apos aprovacao manual, as tres ficam como `ready`, usando o motor compartilhado para perfis 1D, probe sincronizado, cena Three.js, graficos, tabela, formulas, teoria e relacoes de frequencia/periodo/comprimento de onda. A fatia de som implementa `Batimentos` e `Efeito Doppler` como `ready` apos aprovacao manual, com modelos analiticos 1D, campo volumetrico 3D de marcadores de pressao em pontinhos no renderer Three.js, graficos de pressao/frequencia/velocidade, tabela, formulas e teoria. A fatia de Optica implementa `Reflexao e refracao`, `Lentes e espelhos` e `Difracao e interferencia da luz` como `analysis`, com banco optico/tela Three.js, raios, fendas, detector, graficos e formulas sincronizados; audio audivel continua opcional depois da prova visual.
 
 Tasks:
 
@@ -134,9 +134,9 @@ Tasks:
 - `[x]` Implementar `Oscilacoes e Ondas > Ondas mecanicas > Ondas estacionarias`.
 - `[x]` Implementar `Oscilacoes e Ondas > Som > Batimentos`.
 - `[x]` Implementar `Oscilacoes e Ondas > Som > Efeito Doppler`.
-- `[ ]` Implementar `Oscilacoes e Ondas > Optica > Reflexao e refracao`.
-- `[ ]` Implementar `Oscilacoes e Ondas > Optica > Lentes e espelhos`.
-- `[ ]` Implementar `Oscilacoes e Ondas > Optica > Difracao e interferencia da luz`.
+- `[x]` Implementar `Oscilacoes e Ondas > Optica > Reflexao e refracao`.
+- `[x]` Implementar `Oscilacoes e Ondas > Optica > Lentes e espelhos`.
+- `[x]` Implementar `Oscilacoes e Ondas > Optica > Difracao e interferencia da luz`.
 - `[ ]` Avaliar PixiJS para ondas 2D densas e padroes de interferencia.
 - `[ ]` Avaliar Web Audio API para simulacoes sonoras opcionais.
 
@@ -146,6 +146,7 @@ Criterio de saida:
 - A massa-mola vertical mostra a deformacao real da mola a partir do sample, com posicao, velocidade, aceleracao, forca elastica, peso e energias sincronizados entre cena, graficos, tabela, formulas e teoria.
 - Os tres osciladores avancados de `Oscilacoes e Ondas > Oscilacoes` e os tres primeiros itens de `Oscilacoes e Ondas > Ondas mecanicas` ficam como `ready` apos aprovacao manual, com regimes de amortecimento/ressonancia/acoplamento, propagacao, interferencia e modos estacionarios declarados nos fixtures.
 - `Batimentos` e `Efeito Doppler` ficam como `ready` apos aprovacao manual, representando o campo sonoro por um volume 3D de pontinhos/marcadores de pressao e mantendo pressao, frequencia percebida, velocidade do meio, formulas e teoria derivados do mesmo sample.
+- `Reflexao e refracao`, `Lentes e espelhos` e `Difracao e interferencia da luz` ficam como `analysis` ate teste manual, declarando regimes de Snell/reflexao total, imagem real/virtual e difracao/interferencia nos fixtures.
 - PixiJS e Web Audio API so entram se houver ganho didatico claro.
 - Toda simulacao promovida nesta fase passa pelo gate de fidelidade, incluindo regimes como amortecimento, ressonancia, acoplamento, reflexao, refracao ou limites de modelo.
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   computeKinematicsSample,
   computeKinematicsTimeline,
+  computeLightDiffractionIntensity,
   computeMechanicalWaveProfile,
   getKinematicsVectorOverlays,
   hydrostaticTankDepthMeters,
@@ -18,9 +19,12 @@ import {
   type GravitationalFieldOrbitsParameters,
   type HydrostaticsBuoyancyParameters,
   type KinematicsSimulationId,
+  type LensesMirrorsParameters,
+  type LightDiffractionInterferenceParameters,
   type MassSpringParameters,
   type ParticleEquilibriumParameters,
   type ProjectileMotionParameters,
+  type ReflectionRefractionParameters,
   type RigidBodyRotationParameters,
   type RollingWithoutSlippingParameters,
   type StandingWavesParameters,
@@ -751,6 +755,130 @@ describe('kinematics physics engine', () => {
     expect(profile.at(-1)?.xMeters).toBeCloseTo(
       parameters.mediumLengthMeters / 2,
     )
+  })
+
+  it('applies Snell refraction and reports total internal reflection', () => {
+    const refractionParameters: ReflectionRefractionParameters = {
+      incidentAngleDegrees: 30,
+      incidentMediumIndex: 1,
+      rayBundleSpreadDegrees: 3,
+      refractedMediumIndex: 1.5,
+    }
+    const refractionResult = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters: refractionParameters,
+      sampleRateHz: 4,
+      simulationId: 'reflection-refraction',
+    })
+    const refractedAngleDegrees =
+      Math.asin((1 / 1.5) * Math.sin(Math.PI / 6)) * (180 / Math.PI)
+    const tirParameters: ReflectionRefractionParameters = {
+      ...refractionParameters,
+      incidentAngleDegrees: 50,
+      incidentMediumIndex: 1.5,
+      refractedMediumIndex: 1,
+    }
+    const tirResult = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters: tirParameters,
+      sampleRateHz: 4,
+      simulationId: 'reflection-refraction',
+    })
+
+    expect(refractionResult.samples[0].displacementMeters)
+      .toBeCloseTo(refractedAngleDegrees)
+    expect(refractionResult.samples[0].isGrounded).toBe(false)
+    expect(refractionResult.samples[0].pressurePascals).toBeGreaterThan(90)
+    expect(refractionResult.warnings[0]?.code)
+      .toBe('OPTICS_SNELL_REFRACTION_ACTIVE')
+    expect(tirResult.samples[0].isGrounded).toBe(true)
+    expect(tirResult.samples[0].forceTwoNewtons).toBeCloseTo(100)
+    expect(tirResult.samples[0].pressurePascals).toBeCloseTo(0)
+    expect(tirResult.warnings[0]?.code)
+      .toBe('OPTICS_TOTAL_INTERNAL_REFLECTION')
+  })
+
+  it('computes real and virtual images for lenses and mirrors', () => {
+    const parameters: LensesMirrorsParameters = {
+      elementKind: 'converging-lens',
+      focalLengthMeters: 1.2,
+      objectDistanceMeters: 2.4,
+      objectHeightMeters: 0.75,
+      rayApertureMeters: 0.85,
+    }
+    const realResult = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 4,
+      simulationId: 'lenses-mirrors',
+    })
+    const virtualResult = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters: {
+        ...parameters,
+        objectDistanceMeters: 0.75,
+      },
+      sampleRateHz: 4,
+      simulationId: 'lenses-mirrors',
+    })
+
+    expect(realResult.samples[0].displacementMeters).toBeCloseTo(2.4)
+    expect(realResult.samples[0].secondaryRadiusMeters).toBeCloseTo(-1)
+    expect(realResult.samples[0].secondaryZMeters).toBeCloseTo(-0.75)
+    expect(realResult.samples[0].isGrounded).toBe(false)
+    expect(realResult.warnings[0]?.code).toBe('OPTICS_REAL_IMAGE')
+    expect(virtualResult.samples[0].displacementMeters).toBeLessThan(0)
+    expect(virtualResult.samples[0].secondaryRadiusMeters).toBeGreaterThan(1)
+    expect(virtualResult.samples[0].isGrounded).toBe(true)
+    expect(virtualResult.warnings[0]?.code).toBe('OPTICS_VIRTUAL_IMAGE')
+  })
+
+  it('reshapes diffraction intensity with wavelength, slit geometry and scale', () => {
+    const parameters: LightDiffractionInterferenceParameters = {
+      detectorPositionMillimeters: 0,
+      intensityScale: 1,
+      screenDistanceMeters: 1.8,
+      slitCount: 3,
+      slitSeparationMicrometers: 120,
+      slitWidthMicrometers: 36,
+      wavelengthNanometers: 540,
+    }
+    const centralIntensity = computeLightDiffractionIntensity(parameters, 0)
+    const sideIntensity = computeLightDiffractionIntensity(parameters, 0.004)
+    const blueSample = computeKinematicsSample(
+      'light-diffraction-interference',
+      {
+        ...parameters,
+        wavelengthNanometers: 460,
+      },
+      0,
+    )
+    const redSample = computeKinematicsSample(
+      'light-diffraction-interference',
+      {
+        ...parameters,
+        wavelengthNanometers: 650,
+      },
+      0,
+    )
+    const zeroScaleResult = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters: {
+        ...parameters,
+        intensityScale: 0,
+      },
+      sampleRateHz: 4,
+      simulationId: 'light-diffraction-interference',
+    })
+
+    expect(centralIntensity).toBeCloseTo(1)
+    expect(sideIntensity).toBeLessThan(centralIntensity * 0.4)
+    expect(redSample.secondaryRadiusMeters).toBeGreaterThan(
+      blueSample.secondaryRadiusMeters,
+    )
+    expect(zeroScaleResult.samples[0].pressurePascals).toBeCloseTo(0)
+    expect(zeroScaleResult.warnings[0]?.code)
+      .toBe('OPTICS_ZERO_INTENSITY_SCALE')
   })
 
   it('flags centripetal grip demand against available friction', () => {
@@ -1866,6 +1994,31 @@ function readFixtureLikeParameters(
         observerSpeedMetersPerSecond: 0,
         sourceInitialPositionMeters: 2,
         sourceSpeedMetersPerSecond: 0.8,
+      }
+    case 'reflection-refraction':
+      return {
+        incidentAngleDegrees: 42,
+        incidentMediumIndex: 1,
+        rayBundleSpreadDegrees: 3,
+        refractedMediumIndex: 1.5,
+      }
+    case 'lenses-mirrors':
+      return {
+        elementKind: 'converging-lens',
+        focalLengthMeters: 1.2,
+        objectDistanceMeters: 2.4,
+        objectHeightMeters: 0.75,
+        rayApertureMeters: 0.85,
+      }
+    case 'light-diffraction-interference':
+      return {
+        detectorPositionMillimeters: 4,
+        intensityScale: 0.96,
+        screenDistanceMeters: 1.8,
+        slitCount: 3,
+        slitSeparationMicrometers: 120,
+        slitWidthMicrometers: 36,
+        wavelengthNanometers: 540,
       }
     case 'forced-oscillator-resonance':
       return {

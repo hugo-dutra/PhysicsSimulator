@@ -10,6 +10,7 @@ import { Box } from '@mui/material'
 import * as THREE from 'three'
 import {
   computeGravitationalOrbitPathSamples,
+  computeLightDiffractionIntensity,
   computeMechanicalWaveProfile,
   computeKinematicsSample,
   computeKinematicsTimeline,
@@ -22,8 +23,11 @@ import {
   type KinematicsSample,
   type KinematicsSimulationId,
   type KinematicsVectorOverlay,
+  type LensesMirrorsParameters,
+  type LightDiffractionInterferenceParameters,
   type MechanicalWaveProfileDomain,
   type MechanicalWaveProfilePoint,
+  type ReflectionRefractionParameters,
   type WaveProfileParameters,
   type WaveProfileSimulationId,
   type WaveOnStringParameters,
@@ -144,6 +148,32 @@ type WaveLabObjects = {
   wavelengthMarkerPositions: Float32Array
 }
 
+type DynamicTwoPointLine = {
+  line: THREE.Line
+  positionAttribute: THREE.BufferAttribute
+  positions: Float32Array
+}
+
+type OpticsLabObjects = {
+  aperture: THREE.Mesh
+  detector: THREE.Mesh
+  diffractionBars: THREE.InstancedMesh
+  element: THREE.Mesh
+  focalLeft: THREE.Mesh
+  focalRight: THREE.Mesh
+  group: THREE.Group
+  helper: THREE.Object3D
+  imageArrow: DynamicTwoPointLine
+  imageLabel: THREE.Sprite
+  interfacePane: THREE.Mesh
+  normalLine: DynamicTwoPointLine
+  objectArrow: DynamicTwoPointLine
+  objectLabel: THREE.Sprite
+  rayLines: DynamicTwoPointLine[]
+  screen: THREE.Mesh
+  screenLabel: THREE.Sprite
+}
+
 type BernoulliFlowLookup = {
   phases: number[]
   volumeCubicMeters: number
@@ -243,6 +273,7 @@ type SceneObjects = {
   orbitSatellitePath: THREE.Line
   orbitSatellitePathPositionAttribute: THREE.BufferAttribute
   orbitSatellitePathPositions: Float32Array
+  opticsLab: OpticsLabObjects
   pulley: THREE.Mesh
   supportBar: THREE.Mesh
   supportStem: THREE.Mesh
@@ -1690,6 +1721,11 @@ export function KinematicsScene({
     waveLab.group.visible = false
     scene.add(waveLab.group)
 
+    const opticsLab = createOpticsLabObjects()
+
+    opticsLab.group.visible = false
+    scene.add(opticsLab.group)
+
     const acceleratedMotionBodyShadow = new THREE.Mesh(
       new THREE.CircleGeometry(sceneBodySize * 1.22, 36),
       new THREE.MeshBasicMaterial({
@@ -1981,6 +2017,7 @@ export function KinematicsScene({
       orbitSatellitePath,
       orbitSatellitePathPositionAttribute,
       orbitSatellitePathPositions,
+      opticsLab,
       pulley,
       supportBar,
       supportStem,
@@ -2350,6 +2387,26 @@ function getKinematicsVectorOrigin(
     }
   }
 
+  if (isOpticsSimulation(simulationId)) {
+    if (simulationId === 'lenses-mirrors' && vectorId === 'displacement') {
+      return new THREE.Vector3(
+        sample.secondaryXMeters * objects.sceneProjection.positionScale,
+        0,
+        0.16,
+      )
+    }
+
+    if (simulationId === 'light-diffraction-interference') {
+      return new THREE.Vector3(
+        sample.secondaryXMeters * objects.sceneProjection.positionScale,
+        0,
+        sample.zMeters * objects.sceneProjection.positionScale,
+      )
+    }
+
+    return new THREE.Vector3(0, 0, 0.14)
+  }
+
   if (simulationId === 'torque-levers-center-mass') {
     if (vectorId === 'forceOne') {
       return objects.leverLeftMass.position.clone()
@@ -2459,6 +2516,7 @@ function updateConstrainedBodyObjects(
   const isSingleSpringOscillator =
     isSingleSpringOscillatorSimulation(simulationId)
   const isMechanicalWave = isMechanicalWaveSimulation(simulationId)
+  const isOptics = isOpticsSimulation(simulationId)
   const isSoundWave = isSoundWaveSimulation(simulationId)
   const isOrbit = simulationId === 'gravitational-field-orbits'
   const isRigidRotation = simulationId === 'rigid-body-rotation'
@@ -2470,11 +2528,12 @@ function updateConstrainedBodyObjects(
     simulationId === 'uniformly-accelerated-motion'
 
   setRigidBodyRotationObjectsVisible(objects, isRigidRotation)
+  objects.body.visible = !isOptics
   objects.secondaryBody.visible =
     isAtwood ||
     isCollision ||
     isCoupledOscillator ||
-    isOrbit ||
+      isOrbit ||
     simulationId === 'doppler-effect'
   objects.rollingPlane.visible = isRolling
   objects.rollingPlaneEdges.visible = isRolling
@@ -2551,6 +2610,7 @@ function updateConstrainedBodyObjects(
   objects.waveEnvelopeLower.visible =
     simulationId === 'standing-waves' && showTrace
   objects.waveLab.group.visible = isMechanicalWave
+  objects.opticsLab.group.visible = isOptics
 
   if (isRigidRotation) {
     updateRigidBodyRotationObjects(objects, sample, showVectors)
@@ -2652,6 +2712,17 @@ function updateConstrainedBodyObjects(
       simulationId,
       showEnergy,
       showTrace,
+      showVectors,
+    )
+    return
+  }
+
+  if (isOptics) {
+    updateOpticsLabObjects(
+      objects,
+      parameters,
+      sample,
+      simulationId,
       showVectors,
     )
     return
@@ -4224,10 +4295,379 @@ function isMechanicalWaveSimulation(
   )
 }
 
+function isOpticsSimulation(simulationId: KinematicsSimulationId) {
+  return (
+    simulationId === 'reflection-refraction' ||
+    simulationId === 'lenses-mirrors' ||
+    simulationId === 'light-diffraction-interference'
+  )
+}
+
 function isSoundWaveSimulation(
   simulationId: KinematicsSimulationId,
 ): simulationId is 'beats' | 'doppler-effect' {
   return simulationId === 'beats' || simulationId === 'doppler-effect'
+}
+
+function updateOpticsLabObjects(
+  objects: SceneObjects,
+  parameters: KinematicsParameters,
+  sample: KinematicsSample,
+  simulationId: KinematicsSimulationId,
+  showVectors: boolean,
+) {
+  const lab = objects.opticsLab
+
+  lab.rayLines.forEach((line) => {
+    updateOpticsLine(line, new THREE.Vector3(), new THREE.Vector3(), false)
+  })
+  ;[
+    lab.aperture,
+    lab.detector,
+    lab.diffractionBars,
+    lab.element,
+    lab.focalLeft,
+    lab.focalRight,
+    lab.imageLabel,
+    lab.interfacePane,
+    lab.objectLabel,
+    lab.screen,
+    lab.screenLabel,
+  ].forEach((object) => {
+    object.visible = false
+  })
+  lab.normalLine.line.visible = false
+  lab.objectArrow.line.visible = false
+  lab.imageArrow.line.visible = false
+
+  if (simulationId === 'reflection-refraction') {
+    updateReflectionRefractionObjects(
+      objects,
+      parameters as ReflectionRefractionParameters,
+      sample,
+      showVectors,
+    )
+    return
+  }
+
+  if (simulationId === 'lenses-mirrors') {
+    updateLensesMirrorsObjects(
+      objects,
+      parameters as LensesMirrorsParameters,
+      sample,
+      showVectors,
+    )
+    return
+  }
+
+  if (simulationId === 'light-diffraction-interference') {
+    updateLightDiffractionObjects(
+      objects,
+      parameters as LightDiffractionInterferenceParameters,
+      sample,
+      showVectors,
+    )
+  }
+}
+
+function updateReflectionRefractionObjects(
+  objects: SceneObjects,
+  parameters: ReflectionRefractionParameters,
+  sample: KinematicsSample,
+  showVectors: boolean,
+) {
+  const lab = objects.opticsLab
+  const scale = objects.sceneProjection.positionScale
+  const rayLengthMeters = 3.4
+  const spreadRadians = degreesToRadians(parameters.rayBundleSpreadDegrees)
+  const incidentBaseRadians = sample.angleRadians
+  const refractedBaseRadians = sample.secondaryVelocityMetersPerSecond
+  const bundleOffsets = [-spreadRadians, 0, spreadRadians]
+
+  lab.interfacePane.visible = true
+  lab.interfacePane.position.set(0, 0, 0)
+  lab.interfacePane.scale.set(1, 1, rayLengthMeters * 2.05 * scale)
+  lab.screen.visible = true
+  lab.screen.position.set(rayLengthMeters * 0.52 * scale, -0.02, 0)
+  lab.screen.scale.set(rayLengthMeters * 1.04 * scale, 1, rayLengthMeters * 2.05 * scale)
+  ;(lab.screen.material as THREE.MeshBasicMaterial).color.set(0x0f766e)
+  ;(lab.screen.material as THREE.MeshBasicMaterial).opacity = 0.16
+  updateOpticsLine(
+    lab.normalLine,
+    new THREE.Vector3(-rayLengthMeters * scale, 0, 0),
+    new THREE.Vector3(rayLengthMeters * scale, 0, 0),
+    showVectors,
+  )
+
+  bundleOffsets.forEach((offsetRadians, index) => {
+    const incidentAngleRadians = incidentBaseRadians + offsetRadians
+    const incidentStart = new THREE.Vector3(
+      -Math.cos(incidentAngleRadians) * rayLengthMeters * scale,
+      0,
+      Math.sin(incidentAngleRadians) * rayLengthMeters * scale,
+    )
+    const origin = new THREE.Vector3(0, 0, 0)
+    const reflectedEnd = new THREE.Vector3(
+      -Math.cos(incidentAngleRadians) * rayLengthMeters * scale,
+      0,
+      -Math.sin(incidentAngleRadians) * rayLengthMeters * scale,
+    )
+    const refractedAngleRadians = sample.isGrounded
+      ? -incidentAngleRadians
+      : refractedBaseRadians + offsetRadians * 0.35
+    const refractedEnd = sample.isGrounded
+      ? reflectedEnd.clone().multiplyScalar(0.82)
+      : new THREE.Vector3(
+          Math.cos(refractedAngleRadians) * rayLengthMeters * scale,
+          0,
+          -Math.sin(refractedAngleRadians) * rayLengthMeters * scale,
+        )
+
+    updateOpticsLine(lab.rayLines[index * 3], incidentStart, origin, true)
+    updateOpticsLine(lab.rayLines[index * 3 + 1], origin, reflectedEnd, true)
+    updateOpticsLine(
+      lab.rayLines[index * 3 + 2],
+      origin,
+      refractedEnd,
+      !sample.isGrounded || index === 1,
+    )
+  })
+
+  lab.objectLabel.visible = true
+  lab.objectLabel.position.set(-rayLengthMeters * 0.58 * scale, 0, rayLengthMeters * 0.58 * scale)
+  updateSceneTextSprite(
+    lab.objectLabel,
+    `n1=${formatSceneNumber(sample.primaryRadiusMeters)} theta=${formatSceneNumber(sample.positionMeters)} deg`,
+  )
+  lab.imageLabel.visible = true
+  lab.imageLabel.position.set(rayLengthMeters * 0.52 * scale, 0, rayLengthMeters * 0.58 * scale)
+  updateSceneTextSprite(
+    lab.imageLabel,
+    sample.isGrounded
+      ? `TIR theta_c=${formatSceneNumber(sample.forceOneNewtons)} deg`
+      : `n2=${formatSceneNumber(sample.secondaryRadiusMeters)} theta_t=${formatSceneNumber(sample.displacementMeters)} deg`,
+  )
+}
+
+function updateLensesMirrorsObjects(
+  objects: SceneObjects,
+  parameters: LensesMirrorsParameters,
+  sample: KinematicsSample,
+  showVectors: boolean,
+) {
+  const lab = objects.opticsLab
+  const scale = objects.sceneProjection.positionScale
+  const objectX = -sample.positionMeters * scale
+  const imageX = sample.secondaryXMeters * scale
+  const objectHeight = sample.zMeters * scale
+  const imageHeight = sample.secondaryZMeters * scale
+  const aperture = Math.max(0.42, parameters.rayApertureMeters * scale)
+  const elementHeight = Math.max(1.6, aperture * 2.4)
+  const focal = sample.forceOneNewtons * scale
+  const objectTop = new THREE.Vector3(objectX, 0, objectHeight)
+  const lensCenter = new THREE.Vector3(0, 0, 0)
+  const upperElement = new THREE.Vector3(0, 0, aperture)
+  const lowerElement = new THREE.Vector3(0, 0, -aperture)
+  const imageTop = new THREE.Vector3(imageX, 0, imageHeight)
+  const isMirror =
+    parameters.elementKind === 'concave-mirror' ||
+    parameters.elementKind === 'convex-mirror'
+
+  lab.element.visible = true
+  lab.element.position.set(0, 0, 0)
+  lab.element.scale.set(isMirror ? 0.64 : 0.42, 1, elementHeight)
+  ;(lab.element.material as THREE.MeshStandardMaterial).color.set(
+    isMirror ? 0xe6e8ec : 0x67e8f9,
+  )
+  ;(lab.element.material as THREE.MeshStandardMaterial).opacity = isMirror ? 0.52 : 0.68
+  lab.focalLeft.visible = showVectors
+  lab.focalRight.visible = showVectors
+  lab.focalLeft.position.set(-focal, 0, 0.06)
+  lab.focalRight.position.set(focal, 0, 0.06)
+  lab.focalLeft.scale.setScalar(1)
+  lab.focalRight.scale.setScalar(1)
+  updateOpticsLine(
+    lab.objectArrow,
+    new THREE.Vector3(objectX, 0, 0),
+    objectTop,
+    true,
+  )
+  updateOpticsLine(
+    lab.imageArrow,
+    new THREE.Vector3(imageX, 0, 0),
+    imageTop,
+    true,
+  )
+  updateOpticsLine(lab.rayLines[0], objectTop, upperElement, true)
+  updateOpticsLine(lab.rayLines[1], upperElement, imageTop, true)
+  updateOpticsLine(lab.rayLines[2], objectTop, lensCenter, true)
+  updateOpticsLine(lab.rayLines[3], lensCenter, imageTop, true)
+  updateOpticsLine(lab.rayLines[4], objectTop, lowerElement, true)
+  updateOpticsLine(lab.rayLines[5], lowerElement, imageTop, true)
+  updateOpticsLine(
+    lab.normalLine,
+    new THREE.Vector3(Math.min(objectX, imageX, -Math.abs(focal)) - 0.28, 0, 0),
+    new THREE.Vector3(Math.max(objectX, imageX, Math.abs(focal)) + 0.28, 0, 0),
+    showVectors,
+  )
+  lab.objectLabel.visible = true
+  lab.objectLabel.position.set(objectX, 0, objectHeight + 0.28)
+  updateSceneTextSprite(lab.objectLabel, `Objeto do=${formatSceneNumber(sample.positionMeters)} m`)
+  lab.imageLabel.visible = true
+  lab.imageLabel.position.set(imageX, 0, imageHeight + 0.28 * Math.sign(imageHeight || 1))
+  updateSceneTextSprite(
+    lab.imageLabel,
+    `${sample.isGrounded ? 'Imagem virtual' : 'Imagem real'} m=${formatSceneNumber(sample.secondaryRadiusMeters)}`,
+  )
+  lab.screenLabel.visible = showVectors
+  lab.screenLabel.position.set(focal, 0, 0.28)
+  updateSceneTextSprite(lab.screenLabel, `f=${formatSceneNumber(sample.forceOneNewtons)} m`)
+}
+
+function updateLightDiffractionObjects(
+  objects: SceneObjects,
+  parameters: LightDiffractionInterferenceParameters,
+  sample: KinematicsSample,
+  showVectors: boolean,
+) {
+  const lab = objects.opticsLab
+  const scale = objects.sceneProjection.positionScale
+  const screenX = parameters.screenDistanceMeters * scale
+  const screenHalfHeight = 2.15
+  const detectorZ = sample.zMeters * diffractionSceneVerticalScale
+  const source = new THREE.Vector3(-1.55 * scale, 0, 0)
+  const wavelengthColor = getLightWavelengthColor(parameters.wavelengthNanometers)
+
+  lab.aperture.visible = true
+  lab.aperture.position.set(0, 0, 0)
+  lab.aperture.scale.set(1, 1, screenHalfHeight * 1.1)
+  lab.screen.visible = true
+  lab.screen.position.set(screenX, 0, 0)
+  lab.screen.scale.set(1, 1, screenHalfHeight * 2.12)
+  ;(lab.screen.material as THREE.MeshBasicMaterial).color.copy(wavelengthColor)
+  ;(lab.screen.material as THREE.MeshBasicMaterial).opacity = 0.14
+  lab.detector.visible = true
+  lab.detector.position.set(screenX + 0.1, 0, detectorZ)
+  lab.detector.scale.setScalar(0.7 + sample.pressurePascals * 1.35)
+
+  const slitCount = Math.max(1, Math.round(parameters.slitCount))
+  const slitSpacingScene = clamp(
+    parameters.slitSeparationMicrometers * 0.035,
+    0.08,
+    0.42,
+  )
+  Array.from({ length: slitCount }, (_, index) => {
+    const centeredIndex = index - (slitCount - 1) / 2
+    const slitZ = centeredIndex * slitSpacingScene
+    const targetZ = detectorZ * 0.6 + slitZ * 0.4
+
+    updateOpticsLine(
+      lab.rayLines[index],
+      source,
+      new THREE.Vector3(0, 0, slitZ),
+      true,
+    )
+    updateOpticsLine(
+      lab.rayLines[index + 6],
+      new THREE.Vector3(0, 0, slitZ),
+      new THREE.Vector3(screenX, 0, targetZ),
+      true,
+    )
+  })
+  updateOpticsLine(
+    lab.normalLine,
+    new THREE.Vector3(-1.75 * scale, 0, 0),
+    new THREE.Vector3(screenX + 0.28, 0, 0),
+    showVectors,
+  )
+  updateDiffractionBars(lab, parameters, screenX, screenHalfHeight)
+  lab.screenLabel.visible = true
+  lab.screenLabel.position.set(screenX + 0.24, 0, screenHalfHeight + 0.24)
+  updateSceneTextSprite(
+    lab.screenLabel,
+    `lambda=${formatSceneNumber(parameters.wavelengthNanometers)} nm I=${formatSceneNumber(sample.pressurePascals)}`,
+  )
+}
+
+function updateDiffractionBars(
+  lab: OpticsLabObjects,
+  parameters: LightDiffractionInterferenceParameters,
+  screenX: number,
+  screenHalfHeight: number,
+) {
+  const barCount = lab.diffractionBars.count
+  const color = getLightWavelengthColor(parameters.wavelengthNanometers)
+  const physicalHalfHeightMeters = 0.04
+
+  lab.diffractionBars.visible = true
+  for (let index = 0; index < barCount; index += 1) {
+    const ratio = barCount <= 1 ? 0.5 : index / (barCount - 1)
+    const centeredRatio = ratio * 2 - 1
+    const detectorPositionMeters = centeredRatio * physicalHalfHeightMeters
+    const intensity = computeLightDiffractionIntensity(
+      parameters,
+      detectorPositionMeters,
+    )
+    const z = centeredRatio * screenHalfHeight
+
+    lab.helper.position.set(screenX + 0.035 + intensity * 0.12, 0, z)
+    lab.helper.scale.set(
+      0.035 + intensity * 0.18,
+      1,
+      (screenHalfHeight * 2) / barCount * 0.82,
+    )
+    lab.helper.updateMatrix()
+    lab.diffractionBars.setMatrixAt(index, lab.helper.matrix)
+    lab.diffractionBars.setColorAt(
+      index,
+      color.clone().lerp(new THREE.Color(0xffffff), intensity * 0.34),
+    )
+  }
+
+  lab.diffractionBars.instanceMatrix.needsUpdate = true
+  if (lab.diffractionBars.instanceColor) {
+    lab.diffractionBars.instanceColor.needsUpdate = true
+  }
+}
+
+function updateOpticsLine(
+  line: DynamicTwoPointLine,
+  start: THREE.Vector3,
+  end: THREE.Vector3,
+  visible: boolean,
+) {
+  updateTwoPointLine(
+    line.positions,
+    line.positionAttribute,
+    line.line,
+    start,
+    end,
+    visible,
+  )
+}
+
+const diffractionSceneVerticalScale = 52
+
+function getLightWavelengthColor(wavelengthNanometers: number) {
+  const wavelength = clamp(wavelengthNanometers, 380, 700)
+
+  if (wavelength < 450) {
+    return new THREE.Color(0x818cf8)
+  }
+
+  if (wavelength < 500) {
+    return new THREE.Color(0x38bdf8)
+  }
+
+  if (wavelength < 570) {
+    return new THREE.Color(0x2dd4bf)
+  }
+
+  if (wavelength < 610) {
+    return new THREE.Color(0xfacc15)
+  }
+
+  return new THREE.Color(0xf43f5e)
 }
 
 function updateMassSpringObjects(
@@ -5953,6 +6393,149 @@ function createWaveLabObjects(): WaveLabObjects {
   }
 }
 
+function createOpticsLabObjects(): OpticsLabObjects {
+  const group = new THREE.Group()
+  const rayLines = Array.from({ length: 18 }, (_, index) => {
+    const colors = [0x38bdf8, 0x2dd4bf, 0xf59e0b, 0xa3e635, 0x818cf8]
+    const opacities = [0.92, 0.78, 0.74, 0.54, 0.46]
+
+    return createDynamicTwoPointLine(
+      colors[index % colors.length],
+      opacities[index % opacities.length],
+    )
+  })
+  const interfacePane = new THREE.Mesh(
+    new THREE.BoxGeometry(0.045, 0.045, 1),
+    new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      depthWrite: false,
+      opacity: 0.28,
+      transparent: true,
+    }),
+  )
+  const element = new THREE.Mesh(
+    new THREE.BoxGeometry(0.075, 0.08, 1),
+    new THREE.MeshStandardMaterial({
+      color: 0x67e8f9,
+      emissive: 0x083344,
+      emissiveIntensity: 0.32,
+      metalness: 0.08,
+      opacity: 0.72,
+      roughness: 0.28,
+      transparent: true,
+    }),
+  )
+  const aperture = new THREE.Mesh(
+    new THREE.BoxGeometry(0.08, 0.06, 1),
+    new THREE.MeshStandardMaterial({
+      color: 0xe6e8ec,
+      metalness: 0.2,
+      roughness: 0.4,
+    }),
+  )
+  const screen = new THREE.Mesh(
+    new THREE.BoxGeometry(0.08, 0.05, 1),
+    new THREE.MeshBasicMaterial({
+      color: 0xe6e8ec,
+      depthWrite: false,
+      opacity: 0.24,
+      transparent: true,
+    }),
+  )
+  const detector = new THREE.Mesh(
+    new THREE.SphereGeometry(0.085, 18, 12),
+    new THREE.MeshStandardMaterial({
+      color: 0xa3e635,
+      emissive: 0x365314,
+      emissiveIntensity: 0.42,
+      metalness: 0.08,
+      roughness: 0.32,
+    }),
+  )
+  const focalLeft = new THREE.Mesh(
+    new THREE.SphereGeometry(0.06, 16, 10),
+    new THREE.MeshBasicMaterial({ color: 0xf59e0b }),
+  )
+  const focalRight = focalLeft.clone()
+  const diffractionBars = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(1, 0.03, 1),
+    new THREE.MeshBasicMaterial({
+      depthWrite: false,
+      opacity: 0.88,
+      transparent: true,
+      vertexColors: true,
+    }),
+    112,
+  )
+  const normalLine = createDynamicTwoPointLine(0xe6e8ec, 0.38)
+  const objectArrow = createDynamicTwoPointLine(0x38bdf8, 0.92)
+  const imageArrow = createDynamicTwoPointLine(0x2dd4bf, 0.88)
+  const objectLabel = createSceneTextSprite('Objeto', {
+    background: 'rgba(15, 17, 21, 0.72)',
+    color: '#38BDF8',
+    fontSize: 32,
+    minWidthPx: 240,
+    scale: 0.13,
+  })
+  const imageLabel = createSceneTextSprite('Imagem', {
+    background: 'rgba(15, 17, 21, 0.72)',
+    color: '#2DD4BF',
+    fontSize: 32,
+    minWidthPx: 260,
+    scale: 0.13,
+  })
+  const screenLabel = createSceneTextSprite('Tela', {
+    background: 'rgba(15, 17, 21, 0.72)',
+    color: '#E6E8EC',
+    fontSize: 32,
+    minWidthPx: 320,
+    scale: 0.13,
+  })
+
+  diffractionBars.frustumCulled = false
+  diffractionBars.renderOrder = 24
+  ;[
+    interfacePane,
+    element,
+    aperture,
+    screen,
+    detector,
+    focalLeft,
+    focalRight,
+    diffractionBars,
+    normalLine.line,
+    objectArrow.line,
+    imageArrow.line,
+    objectLabel,
+    imageLabel,
+    screenLabel,
+    ...rayLines.map((ray) => ray.line),
+  ].forEach((object) => {
+    object.visible = false
+    group.add(object)
+  })
+
+  return {
+    aperture,
+    detector,
+    diffractionBars,
+    element,
+    focalLeft,
+    focalRight,
+    group,
+    helper: new THREE.Object3D(),
+    imageArrow,
+    imageLabel,
+    interfacePane,
+    normalLine,
+    objectArrow,
+    objectLabel,
+    rayLines,
+    screen,
+    screenLabel,
+  }
+}
+
 function createDynamicTwoPointLine(color: number, opacity: number) {
   const positions = new Float32Array(6)
   const positionAttribute = new THREE.BufferAttribute(positions, 3)
@@ -6983,6 +7566,10 @@ function createReferencePath(
 
   if (simulationId === 'doppler-effect') {
     return createDopplerDiagonalReferencePath(samples, sceneProjection)
+  }
+
+  if (isOpticsSimulation(simulationId)) {
+    return new THREE.Group()
   }
 
   if (simulationId === 'collisions-1d-2d') {
@@ -8262,6 +8849,48 @@ function estimateSceneBounds(
     }
   }
 
+  if (simulationId === 'reflection-refraction') {
+    positions.length = 0
+    positions.push(
+      new THREE.Vector3(-3.85, -0.35, -2.65),
+      new THREE.Vector3(3.85, 0.35, 2.65),
+    )
+  }
+
+  if (simulationId === 'lenses-mirrors') {
+    const firstSample = samples[0]
+
+    if (firstSample) {
+      const scale = sceneProjection.positionScale
+      const focal = Math.abs(firstSample.primaryRadiusMeters) * scale
+      const objectX = -firstSample.positionMeters * scale
+      const imageX = firstSample.secondaryXMeters * scale
+      const topZ = Math.max(
+        1.15,
+        Math.abs(firstSample.zMeters * scale),
+        Math.abs(firstSample.secondaryZMeters * scale),
+      )
+
+      positions.length = 0
+      positions.push(
+        new THREE.Vector3(Math.min(objectX, imageX, -focal) - 0.8, -0.45, -topZ - 0.35),
+        new THREE.Vector3(Math.max(objectX, imageX, focal) + 0.8, 0.45, topZ + 0.65),
+      )
+    }
+  }
+
+  if (simulationId === 'light-diffraction-interference') {
+    const firstSample = samples[0]
+    const scale = sceneProjection.positionScale
+    const screenX = (firstSample?.secondaryXMeters ?? 2.4) * scale
+
+    positions.length = 0
+    positions.push(
+      new THREE.Vector3(-1.9 * scale, -0.35, -2.55),
+      new THREE.Vector3(screenX + 0.65, 0.35, 2.55),
+    )
+  }
+
   const xs = positions.map((position) => position.x)
   const ys = positions.map((position) => position.y)
   const zs = positions.map((position) => position.z)
@@ -8522,6 +9151,10 @@ function getInitialCameraYawRadians(
     return cameraViewMode === 'cinematic' ? -0.72 : -Math.PI / 2
   }
 
+  if (isOpticsSimulation(simulationId)) {
+    return cameraViewMode === 'cinematic' ? -0.64 : -Math.PI / 2
+  }
+
   if (simulationId === 'coupled-oscillators') {
     if (cameraViewMode === 'side') {
       return -Math.PI / 2
@@ -8533,6 +9166,7 @@ function getInitialCameraYawRadians(
   return simulationId === 'atwood-machine' ||
     simulationId === 'hydrostatics-buoyancy' ||
     isMechanicalWaveSimulation(simulationId) ||
+    isOpticsSimulation(simulationId) ||
     isSingleSpringOscillatorSimulation(simulationId)
     ? -Math.PI / 2
     : initialCameraYawRadians
@@ -8576,6 +9210,16 @@ function getInitialCameraPitchRadians(
     return cameraViewMode === 'side'
       ? Math.atan2(0.1, 0.99)
       : Math.atan2(0.42, 0.9)
+  }
+
+  if (isOpticsSimulation(simulationId)) {
+    if (cameraViewMode === 'top') {
+      return Math.PI / 2 - 0.12
+    }
+
+    return cameraViewMode === 'side'
+      ? Math.atan2(0.08, 0.99)
+      : Math.atan2(0.38, 0.92)
   }
 
   if (simulationId === 'coupled-oscillators') {
@@ -8632,6 +9276,18 @@ function getKinematicsCanvasAriaLabel(simulationId: KinematicsSimulationId) {
 
   if (simulationId === 'doppler-effect') {
     return 'Cena 3D do efeito Doppler com fonte movel, observador, campo volumetrico de pontinhos de pressao e arraste para orbitar, e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'reflection-refraction') {
+    return 'Cena 3D de reflexao e refracao com interface plana, normal, raios incidente, refletido e refratado, pulsos de luz e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'lenses-mirrors') {
+    return 'Cena 3D de lentes e espelhos com banco optico, focos, objeto, imagem real ou virtual, raios principais e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'light-diffraction-interference') {
+    return 'Cena 3D de difracao e interferencia da luz com fendas, tela de intensidade, detector lateral, franjas coloridas e Shift + scroll para zoom'
   }
 
   if (simulationId === 'superposition-interference') {
@@ -8969,6 +9625,10 @@ function lerp(start: number, end: number, ratio: number) {
 
 function radiansToDegrees(value: number) {
   return (value * 180) / Math.PI
+}
+
+function degreesToRadians(value: number) {
+  return (value * Math.PI) / 180
 }
 
 function normalizeDegrees(value: number) {

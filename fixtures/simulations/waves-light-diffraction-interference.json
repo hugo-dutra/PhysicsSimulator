@@ -1,0 +1,269 @@
+{
+  "simulationId": "light-diffraction-interference",
+  "durationSeconds": 12,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 6,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Horizonte calculado",
+      "description": "Tempo pre-calculado para animar a varredura do detector sobre a tela. Aumentar acompanha mais ciclos; diminuir foca a leitura atual do padrao.",
+      "unit": "s",
+      "kind": "number",
+      "min": 4,
+      "max": 40,
+      "step": 1,
+      "defaultValue": 12
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente exibido nos graficos e tabela. Aumentar compara mais varredura lateral; diminuir destaca mudancas instantaneas de wavelength, fendas e tela.",
+      "unit": "s",
+      "kind": "number",
+      "min": 2,
+      "max": 20,
+      "step": 1,
+      "defaultValue": 6
+    }
+  ],
+  "defaultParameters": {
+    "detectorPositionMillimeters": 4,
+    "intensityScale": 0.96,
+    "screenDistanceMeters": 1.8,
+    "slitCount": 3,
+    "slitSeparationMicrometers": 120,
+    "slitWidthMicrometers": 36,
+    "wavelengthNanometers": 540
+  },
+  "parameters": [
+    {
+      "id": "wavelengthNanometers",
+      "label": "Comprimento de onda",
+      "description": "Comprimento de onda da luz monocromatica. Aumentar desloca franjas para mais longe do centro e muda a cor visual; diminuir comprime o padrao de interferencia.",
+      "unit": "nm",
+      "kind": "number",
+      "min": 380,
+      "max": 700,
+      "step": 1,
+      "defaultValue": 540
+    },
+    {
+      "id": "slitCount",
+      "label": "Numero de fendas",
+      "description": "Quantidade de fendas coerentes usadas no termo de interferencia. Uma fenda deixa apenas a envoltoria de difracao; mais fendas estreitam os maximos principais.",
+      "kind": "number",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "defaultValue": 3
+    },
+    {
+      "id": "slitWidthMicrometers",
+      "label": "Largura da fenda",
+      "description": "Largura fisica de cada fenda. Aumentar estreita a envoltoria central; diminuir alarga a difracao e preserva maximos laterais por mais distancia.",
+      "unit": "um",
+      "kind": "number",
+      "min": 8,
+      "max": 120,
+      "step": 1,
+      "defaultValue": 36
+    },
+    {
+      "id": "slitSeparationMicrometers",
+      "label": "Separacao entre fendas",
+      "description": "Distancia centro a centro entre fendas. Aumentar aproxima as franjas; diminuir amplia o espacamento angular dos maximos de interferencia.",
+      "unit": "um",
+      "kind": "number",
+      "min": 30,
+      "max": 260,
+      "step": 1,
+      "defaultValue": 120
+    },
+    {
+      "id": "screenDistanceMeters",
+      "label": "Distancia da tela",
+      "description": "Distancia entre o plano das fendas e a tela de observacao. Aumentar abre o padrao no espaco; diminuir comprime as franjas na tela.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0.4,
+      "max": 4,
+      "step": 0.05,
+      "defaultValue": 1.8
+    },
+    {
+      "id": "detectorPositionMillimeters",
+      "label": "Detector lateral",
+      "description": "Posicao central do detector na tela. Mover para longe do centro mede regioes de maximo, minimo e envoltoria; zerar fixa a leitura no maximo central.",
+      "unit": "mm",
+      "kind": "number",
+      "min": -40,
+      "max": 40,
+      "step": 0.5,
+      "defaultValue": 4
+    },
+    {
+      "id": "intensityScale",
+      "label": "Escala de intensidade",
+      "description": "Ganho visual aplicado ao padrao. Zerar apaga a tela sem mudar a geometria; aumentar realca maximos e deixa minima e envoltoria mais contrastaveis.",
+      "kind": "number",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "defaultValue": 0.96
+    }
+  ],
+  "presets": [
+    {
+      "id": "green-three-slit",
+      "label": "Tres fendas verdes",
+      "parameters": {
+        "detectorPositionMillimeters": 4,
+        "intensityScale": 0.96,
+        "screenDistanceMeters": 1.8,
+        "slitCount": 3,
+        "slitSeparationMicrometers": 120,
+        "slitWidthMicrometers": 36,
+        "wavelengthNanometers": 540
+      }
+    },
+    {
+      "id": "red-wide-fringes",
+      "label": "Vermelho aberto",
+      "parameters": {
+        "detectorPositionMillimeters": 8,
+        "intensityScale": 0.95,
+        "screenDistanceMeters": 2.2,
+        "slitCount": 2,
+        "slitSeparationMicrometers": 90,
+        "slitWidthMicrometers": 30,
+        "wavelengthNanometers": 650
+      }
+    },
+    {
+      "id": "blue-sharp-grating",
+      "label": "Rede azul",
+      "parameters": {
+        "detectorPositionMillimeters": -6,
+        "intensityScale": 1,
+        "screenDistanceMeters": 1.5,
+        "slitCount": 5,
+        "slitSeparationMicrometers": 150,
+        "slitWidthMicrometers": 24,
+        "wavelengthNanometers": 460
+      }
+    },
+    {
+      "id": "single-slit-envelope",
+      "label": "Uma fenda",
+      "parameters": {
+        "detectorPositionMillimeters": 12,
+        "intensityScale": 0.96,
+        "screenDistanceMeters": 1.8,
+        "slitCount": 1,
+        "slitSeparationMicrometers": 120,
+        "slitWidthMicrometers": 44,
+        "wavelengthNanometers": 532
+      }
+    }
+  ],
+  "regimes": [
+    {
+      "id": "single-slit-diffraction",
+      "label": "Difracao de uma fenda",
+      "condition": "slitCount = 1; a intensidade segue apenas a envoltoria sinc^2 da largura de fenda.",
+      "transitionLimit": "quando slitCount passa de 1, o termo de interferencia entre fendas multiplica a envoltoria.",
+      "sampleFields": [
+        "pressurePascals",
+        "displacementMeters",
+        "forceOneNewtons",
+        "primaryRadiusMeters"
+      ],
+      "warningCode": "OPTICS_SINGLE_SLIT_DIFFRACTION"
+    },
+    {
+      "id": "multi-slit-interference",
+      "label": "Interferencia com multiplas fendas",
+      "condition": "slitCount > 1; maximos de interferencia sao modulados pela envoltoria de difracao de fenda unica.",
+      "transitionLimit": "a separacao d controla Delta y = L lambda / d; a largura a controla a envoltoria.",
+      "sampleFields": [
+        "pressurePascals",
+        "secondaryPressurePascals",
+        "displacementMeters",
+        "forceTwoNewtons",
+        "secondaryRadiusMeters"
+      ],
+      "warningCode": "OPTICS_MULTI_SLIT_INTERFERENCE"
+    },
+    {
+      "id": "dark-screen",
+      "label": "Tela apagada por escala",
+      "condition": "intensityScale = 0; a geometria continua definida, mas a intensidade renderizada e zero.",
+      "transitionLimit": "qualquer intensidadeScale > 0 volta a exibir maximos e minimos.",
+      "sampleFields": ["pressurePascals", "totalEnergyJoules"],
+      "warningCode": "OPTICS_ZERO_INTENSITY_SCALE"
+    }
+  ],
+  "limits": [
+    "Modelo escalar de Fraunhofer para luz monocromatica, fendas estreitas e tela distante; nao resolve propagacao de campo proximo.",
+    "Nao inclui polarizacao, coerencia parcial, espessura real das fendas, dispersao material ou resposta espectral da tela.",
+    "A tela 3D amostra o padrao em escala didatica; o detector e os graficos leem a mesma funcao de intensidade normalizada."
+  ],
+  "formulas": [
+    {
+      "id": "fringe-spacing",
+      "title": "Espacamento de franjas",
+      "expressionLatex": "\\Delta y\\approx\\frac{L\\lambda}{d}",
+      "description": "Aproxima a distancia entre maximos vizinhos para angulos pequenos em duas ou mais fendas.",
+      "variables": [
+        { "symbol": "\\Delta y", "label": "espacamento na tela", "unit": "m" },
+        { "symbol": "L", "label": "distancia da tela", "unit": "m" },
+        { "symbol": "\\lambda", "label": "comprimento de onda", "unit": "m" },
+        { "symbol": "d", "label": "separacao entre fendas", "unit": "m" }
+      ],
+      "usedWhen": "Usar para comparar como wavelength, distancia da tela e separacao redesenham as franjas.",
+      "notUsedWhen": "Nao e a expressao completa longe do eixo nem para uma unica fenda sem interferencia entre fendas.",
+      "parameterIds": ["screenDistanceMeters", "wavelengthNanometers", "slitSeparationMicrometers"],
+      "sampleFields": ["secondaryRadiusMeters", "primaryRadiusMeters", "forceTwoNewtons"],
+      "relatedChartIds": ["position"],
+      "relatedVectorIds": ["displacement"],
+      "example": "Dobrar L ou lambda dobra aproximadamente o espacamento; dobrar d reduz o espacamento pela metade."
+    },
+    {
+      "id": "single-slit-envelope",
+      "title": "Envoltoria de fenda unica",
+      "expressionLatex": "I_{env}=\\left(\\frac{\\sin\\beta}{\\beta}\\right)^2,\\quad \\beta=\\frac{\\pi a\\sin\\theta}{\\lambda}",
+      "description": "Define a envoltoria que limita os maximos de qualquer padrao com fendas de largura finita.",
+      "variables": [
+        { "symbol": "a", "label": "largura da fenda", "unit": "m" },
+        { "symbol": "\\theta", "label": "angulo ate o ponto da tela", "unit": "rad" },
+        { "symbol": "\\lambda", "label": "comprimento de onda", "unit": "m" }
+      ],
+      "usedWhen": "Usar para uma fenda ou como modulacao de multiplas fendas.",
+      "notUsedWhen": "Nao descreve aberturas largas fora do regime de Fraunhofer.",
+      "parameterIds": ["slitWidthMicrometers", "wavelengthNanometers", "screenDistanceMeters"],
+      "sampleFields": ["displacementMeters", "angleRadians", "pressurePascals"],
+      "relatedChartIds": ["pressure"],
+      "relatedVectorIds": ["velocity"],
+      "example": "Aumentar a largura a aproxima o primeiro minimo do centro e estreita a faixa brilhante central."
+    },
+    {
+      "id": "multi-slit-intensity",
+      "title": "Interferencia de N fendas",
+      "expressionLatex": "I=I_0I_{env}\\left(\\frac{\\sin(N\\alpha)}{N\\sin\\alpha}\\right)^2,\\quad \\alpha=\\frac{\\pi d\\sin\\theta}{\\lambda}",
+      "description": "Combina a envoltoria de fenda unica com o termo de interferencia de N fendas igualmente espacadas.",
+      "variables": [
+        { "symbol": "N", "label": "numero de fendas" },
+        { "symbol": "d", "label": "separacao entre fendas", "unit": "m" },
+        { "symbol": "I_0", "label": "escala de intensidade" }
+      ],
+      "usedWhen": "Usar para duas ou mais fendas coerentes no regime escalar.",
+      "notUsedWhen": "Nao cobre fontes incoerentes, diferencas de fase entre fendas ou campo proximo.",
+      "parameterIds": ["slitCount", "slitSeparationMicrometers", "intensityScale"],
+      "sampleFields": ["pressurePascals", "secondaryPressurePascals", "totalEnergyJoules"],
+      "relatedChartIds": ["pressure"],
+      "relatedVectorIds": ["forceOne", "forceTwo"],
+      "example": "Aumentar N deixa os maximos principais mais estreitos sem remover a envoltoria de difracao."
+    }
+  ]
+}

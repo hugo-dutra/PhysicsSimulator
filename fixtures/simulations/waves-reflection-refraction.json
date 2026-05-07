@@ -1,0 +1,187 @@
+{
+  "simulationId": "reflection-refraction",
+  "durationSeconds": 12,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 6,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Horizonte calculado",
+      "description": "Tempo pre-calculado para animar pulsos de luz sobre os raios. Aumentar acompanha mais ciclos; diminuir deixa a demonstracao mais curta sem trocar a Lei de Snell.",
+      "unit": "s",
+      "kind": "number",
+      "min": 4,
+      "max": 40,
+      "step": 1,
+      "defaultValue": 12
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente exibido nos graficos e tabela. Aumentar compara mais ciclos de leitura; diminuir destaca o angulo e os indices atuais.",
+      "unit": "s",
+      "kind": "number",
+      "min": 2,
+      "max": 20,
+      "step": 1,
+      "defaultValue": 6
+    }
+  ],
+  "defaultParameters": {
+    "incidentAngleDegrees": 42,
+    "incidentMediumIndex": 1,
+    "refractedMediumIndex": 1.5,
+    "rayBundleSpreadDegrees": 3
+  },
+  "parameters": [
+    {
+      "id": "incidentAngleDegrees",
+      "label": "Angulo incidente",
+      "description": "Angulo entre o raio incidente e a normal da interface. Aumentar curva mais o raio refratado e pode atingir reflexao interna total quando n1 > n2; zerar alinha o raio com a normal.",
+      "unit": "deg",
+      "kind": "number",
+      "min": -85,
+      "max": 85,
+      "step": 0.5,
+      "defaultValue": 42
+    },
+    {
+      "id": "incidentMediumIndex",
+      "label": "Indice n1",
+      "description": "Indice de refracao do meio de onde a luz chega. Aumentar reduz a velocidade relativa no primeiro meio e aproxima o sistema da reflexao interna total quando n1 supera n2.",
+      "kind": "number",
+      "min": 1,
+      "max": 2.4,
+      "step": 0.01,
+      "defaultValue": 1
+    },
+    {
+      "id": "refractedMediumIndex",
+      "label": "Indice n2",
+      "description": "Indice de refracao do segundo meio. Aumentar puxa o raio refratado para perto da normal; diminuir afasta o raio e pode liberar reflexao interna total se n1 for maior.",
+      "kind": "number",
+      "min": 1,
+      "max": 2.4,
+      "step": 0.01,
+      "defaultValue": 1.5
+    },
+    {
+      "id": "rayBundleSpreadDegrees",
+      "label": "Abertura do feixe",
+      "description": "Pequena abertura angular para desenhar raios vizinhos. Zerar mostra um unico raio central; aumentar cria um feixe analisavel sem mudar a equacao aplicada ao raio principal.",
+      "unit": "deg",
+      "kind": "number",
+      "min": 0,
+      "max": 18,
+      "step": 0.5,
+      "defaultValue": 3
+    }
+  ],
+  "presets": [
+    {
+      "id": "air-glass",
+      "label": "Ar para vidro",
+      "parameters": {
+        "incidentAngleDegrees": 42,
+        "incidentMediumIndex": 1,
+        "refractedMediumIndex": 1.5,
+        "rayBundleSpreadDegrees": 3
+      }
+    },
+    {
+      "id": "water-air-critical",
+      "label": "Agua para ar",
+      "parameters": {
+        "incidentAngleDegrees": 52,
+        "incidentMediumIndex": 1.33,
+        "refractedMediumIndex": 1,
+        "rayBundleSpreadDegrees": 2
+      }
+    },
+    {
+      "id": "matched-media",
+      "label": "Meios quase iguais",
+      "parameters": {
+        "incidentAngleDegrees": 55,
+        "incidentMediumIndex": 1.32,
+        "refractedMediumIndex": 1.32,
+        "rayBundleSpreadDegrees": 4
+      }
+    }
+  ],
+  "regimes": [
+    {
+      "id": "snell-refraction",
+      "label": "Refracao por Snell",
+      "condition": "abs((n1/n2) sin(theta_i)) <= 1; o raio transmitido usa n1 sin(theta_i) = n2 sin(theta_t).",
+      "transitionLimit": "quando n1 > n2 e theta_i supera theta_c = asin(n2/n1), o raio refratado deixa de existir.",
+      "sampleFields": [
+        "angleRadians",
+        "positionMeters",
+        "displacementMeters",
+        "primaryRadiusMeters",
+        "secondaryRadiusMeters",
+        "pressurePascals",
+        "forceTwoNewtons"
+      ],
+      "warningCode": "OPTICS_SNELL_REFRACTION_ACTIVE"
+    },
+    {
+      "id": "total-internal-reflection",
+      "label": "Reflexao interna total",
+      "condition": "n1 > n2 e abs((n1/n2) sin(theta_i)) > 1; o sample marca isGrounded como indicador de TIR.",
+      "transitionLimit": "theta_i > theta_c = asin(n2/n1).",
+      "sampleFields": [
+        "isGrounded",
+        "forceOneNewtons",
+        "forceTwoNewtons",
+        "pressurePascals"
+      ],
+      "warningCode": "OPTICS_TOTAL_INTERNAL_REFLECTION"
+    }
+  ],
+  "limits": [
+    "Modelo geometrico 2D de raios em interface plana; nao inclui dispersao por cor, absorcao, polarizacao nem rugosidade da superficie.",
+    "A reflexao percentual usa aproximacao de Schlick apenas para leitura didatica; os raios continuam governados pela Lei de Snell.",
+    "A abertura do feixe e visual: os raios vizinhos ajudam a perceber a mudanca de parametros, mas o sample principal guarda o raio central."
+  ],
+  "formulas": [
+    {
+      "id": "snell-law",
+      "title": "Lei de Snell",
+      "expressionLatex": "n_1\\sin\\theta_i=n_2\\sin\\theta_t",
+      "description": "Relaciona angulo incidente, angulo transmitido e indices de refracao dos dois meios.",
+      "variables": [
+        { "symbol": "n_1", "label": "indice do meio incidente" },
+        { "symbol": "n_2", "label": "indice do meio refratado" },
+        { "symbol": "\\theta_i", "label": "angulo incidente", "unit": "deg" },
+        { "symbol": "\\theta_t", "label": "angulo refratado", "unit": "deg" }
+      ],
+      "usedWhen": "Usar para raios em interface plana entre meios homogeneos.",
+      "notUsedWhen": "Nao cobre dispersao cromatica, meios anisotropicos, superficies curvas ou rugosas.",
+      "parameterIds": ["incidentAngleDegrees", "incidentMediumIndex", "refractedMediumIndex"],
+      "sampleFields": ["positionMeters", "displacementMeters", "angleRadians"],
+      "relatedChartIds": ["angle"],
+      "relatedVectorIds": ["velocity", "forceTwo"],
+      "example": "Ao passar de ar para vidro, n2 maior reduz theta_t e aproxima o raio da normal."
+    },
+    {
+      "id": "critical-angle",
+      "title": "Angulo critico",
+      "expressionLatex": "\\theta_c=\\sin^{-1}\\left(\\frac{n_2}{n_1}\\right)",
+      "description": "Define o limite para reflexao interna total quando a luz tenta sair de meio mais refringente para menos refringente.",
+      "variables": [
+        { "symbol": "\\theta_c", "label": "angulo critico", "unit": "deg" },
+        { "symbol": "n_1", "label": "indice do meio incidente" },
+        { "symbol": "n_2", "label": "indice do meio refratado" }
+      ],
+      "usedWhen": "Usar apenas quando n1 > n2.",
+      "notUsedWhen": "Se n1 <= n2, nao ha angulo critico real para reflexao interna total.",
+      "parameterIds": ["incidentMediumIndex", "refractedMediumIndex"],
+      "sampleFields": ["forceOneNewtons", "isGrounded"],
+      "relatedChartIds": ["angle"],
+      "relatedVectorIds": ["forceOne"],
+      "example": "Agua para ar gera theta_c em torno de 48,8 graus."
+    }
+  ]
+}

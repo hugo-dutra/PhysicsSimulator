@@ -54,6 +54,14 @@ function isSoundWaveSimulation(simulationId: KinematicsSimulationId) {
   return simulationId === 'beats' || simulationId === 'doppler-effect'
 }
 
+function isOpticsSimulation(simulationId: KinematicsSimulationId) {
+  return (
+    simulationId === 'reflection-refraction' ||
+    simulationId === 'lenses-mirrors' ||
+    simulationId === 'light-diffraction-interference'
+  )
+}
+
 export function prepareKinematicsChartSamples(samples: KinematicsSample[]) {
   return downsampleSamples(samples, maxChartSamples)
 }
@@ -876,6 +884,170 @@ export function buildKinematicsChartConfigs(
         yAxisTitle: 'Velocidade (metros por segundo)',
       },
     )
+  } else if (isOpticsSimulation(simulationId)) {
+    if (simulationId === 'reflection-refraction') {
+      charts.push(
+        {
+          id: 'angle',
+          title: 'Angulos dos raios e limite critico',
+          traces: [
+            {
+              lineColor: themeTokens.cyan,
+              name: 'Angulo incidente (deg)',
+              x: time,
+              y: samples.map((sample) => sample.positionMeters),
+            },
+            {
+              lineColor: themeTokens.teal,
+              name: 'Angulo refratado (deg)',
+              x: time,
+              y: samples.map((sample) => sample.displacementMeters),
+            },
+            {
+              lineColor: themeTokens.warning,
+              name: 'Angulo critico (deg)',
+              x: time,
+              y: samples.map((sample) => sample.forceOneNewtons),
+            },
+          ],
+          yAxisTitle: 'Angulo (graus)',
+        },
+        {
+          id: 'field',
+          title: 'Indices, reflexao e transmissao',
+          traces: [
+            {
+              lineColor: themeTokens.cyan,
+              name: 'Indice do meio incidente',
+              x: time,
+              y: samples.map((sample) => sample.primaryRadiusMeters),
+            },
+            {
+              lineColor: themeTokens.teal,
+              name: 'Indice do meio refratado',
+              x: time,
+              y: samples.map((sample) => sample.secondaryRadiusMeters),
+            },
+            {
+              lineColor: themeTokens.warning,
+              name: 'Reflexao estimada (%)',
+              x: time,
+              y: samples.map((sample) => sample.forceTwoNewtons),
+            },
+            {
+              lineColor: themeTokens.vector,
+              name: 'Transmissao estimada (%)',
+              x: time,
+              y: samples.map((sample) => sample.pressurePascals),
+            },
+          ],
+          yAxisTitle: 'Indice e percentual',
+        },
+      )
+    } else if (simulationId === 'lenses-mirrors') {
+      charts.push(
+        {
+          id: 'position',
+          title: 'Objeto, foco e imagem',
+          traces: [
+            {
+              lineColor: themeTokens.cyan,
+              name: 'Distancia do objeto (m)',
+              x: time,
+              y: samples.map((sample) => sample.positionMeters),
+            },
+            {
+              lineColor: themeTokens.teal,
+              name: 'Distancia da imagem (m)',
+              x: time,
+              y: samples.map((sample) => sample.displacementMeters),
+            },
+            {
+              lineColor: themeTokens.warning,
+              name: 'Foco assinado (m)',
+              x: time,
+              y: samples.map((sample) => sample.forceOneNewtons),
+            },
+          ],
+          yAxisMode: 'zero-centered',
+          yAxisTitle: 'Distancia (metros)',
+        },
+        {
+          id: 'field',
+          title: 'Altura e aumento da imagem',
+          traces: [
+            {
+              lineColor: themeTokens.cyan,
+              name: 'Altura do objeto (m)',
+              x: time,
+              y: samples.map((sample) => sample.zMeters),
+            },
+            {
+              lineColor: themeTokens.teal,
+              name: 'Altura da imagem (m)',
+              x: time,
+              y: samples.map((sample) => sample.secondaryZMeters),
+            },
+            {
+              lineColor: themeTokens.warning,
+              name: 'Aumento linear',
+              x: time,
+              y: samples.map((sample) => sample.secondaryRadiusMeters),
+            },
+          ],
+          yAxisMode: 'zero-centered',
+          yAxisTitle: 'Altura e aumento',
+        },
+      )
+    } else {
+      charts.push(
+        {
+          id: 'pressure',
+          title: 'Intensidade no detector',
+          traces: [
+            {
+              lineColor: themeTokens.teal,
+              name: 'Intensidade normalizada',
+              x: time,
+              y: samples.map((sample) => sample.pressurePascals),
+            },
+            {
+              lineColor: themeTokens.warning,
+              name: 'Envoltoria de difracao',
+              x: time,
+              y: samples.map((sample) => sample.displacementMeters),
+            },
+            {
+              lineColor: themeTokens.cyan,
+              name: 'Interferencia entre fendas',
+              x: time,
+              y: samples.map((sample) => sample.secondaryPressurePascals),
+            },
+          ],
+          yAxisTitle: 'Intensidade relativa',
+        },
+        {
+          id: 'position',
+          title: 'Varredura na tela e espacamento de franjas',
+          traces: [
+            {
+              lineColor: themeTokens.cyan,
+              name: 'Posicao do detector (m)',
+              x: time,
+              y: samples.map((sample) => sample.positionMeters),
+            },
+            {
+              lineColor: themeTokens.warning,
+              name: 'Espacamento aproximado entre franjas (m)',
+              x: time,
+              y: samples.map((sample) => sample.secondaryRadiusMeters),
+            },
+          ],
+          yAxisMode: 'zero-centered',
+          yAxisTitle: 'Comprimento (metros)',
+        },
+      )
+    }
   } else if (isMechanicalWaveSimulation(simulationId)) {
     charts.push(
       {
@@ -1470,7 +1642,8 @@ export function buildKinematicsChartConfigs(
     simulationId !== 'beats' &&
     simulationId !== 'continuity-bernoulli' &&
     simulationId !== 'doppler-effect' &&
-    simulationId !== 'hydrostatics-buoyancy'
+    simulationId !== 'hydrostatics-buoyancy' &&
+    !isOpticsSimulation(simulationId)
 
   if (showEnergy && supportsEnergyChart) {
     charts.push({

@@ -40,7 +40,7 @@ describe('simulation registry', () => {
     expect(allSimulations).toHaveLength(51)
     expect(
       allSimulations.filter((item) => item.status === 'analysis'),
-    ).toHaveLength(0)
+    ).toHaveLength(3)
     expect(
       allSimulations.filter((item) => item.status === 'ready'),
     ).toHaveLength(26)
@@ -222,6 +222,37 @@ describe('simulation registry', () => {
       expect(fixture.regimes?.length).toBeGreaterThan(0)
       expect(fixture.formulas.length).toBeGreaterThan(0)
     })
+  })
+
+  it('declares the optics simulations as analysis items', () => {
+    const opticsSimulationTitles = {
+      'lenses-mirrors': 'Lentes e espelhos',
+      'light-diffraction-interference': 'Difracao e interferencia da luz',
+      'reflection-refraction': 'Reflexao e refracao',
+    } as const
+
+    Object.entries(opticsSimulationTitles).forEach(
+      ([simulationId, title]) => {
+        const simulation = findSimulation(simulationId)
+        const fixture =
+          kinematicsFixtures[simulationId as keyof typeof opticsSimulationTitles]
+
+        expect(simulation.status).toBe('analysis')
+        expect(simulation.topicPath).toEqual([
+          'Oscilacoes e Ondas',
+          'Optica',
+          title,
+        ])
+        expect(simulation.renderer).toBe('three')
+        expect(simulation.fixturePath).toBeDefined()
+        expect(simulation.theoryPath).toBeDefined()
+        expect(simulation.technologyPlan?.engine).toBe('custom-analytic')
+        expect(simulation.technologyPlan?.charting).toBe('live-canvas')
+        expect(fixture.simulationId).toBe(simulationId)
+        expect(fixture.regimes?.length).toBeGreaterThan(0)
+        expect(fixture.formulas.length).toBeGreaterThan(0)
+      },
+    )
   })
 
   it('declares fidelity gate limits and regimes for every runnable fixture', () => {

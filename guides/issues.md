@@ -57,6 +57,7 @@
 - `Oscilacoes e Ondas > Oscilacoes` concentra `Pendulo simples`, `Massa-mola vertical`, `Oscilador amortecido`, `Oscilador forcado e ressonancia` e `Osciladores acoplados` como simulacoes `ready` apos aprovacao manual, usando fixtures locais, live-canvas, cenas Three.js de osciladores, regimes de amortecimento/ressonancia/acoplamento e teoria Markdown com KaTeX.
 - `Oscilacoes e Ondas > Ondas mecanicas` mantem `Onda em corda`, `Superposicao e interferencia` e `Ondas estacionarias` como `ready` apos aprovacao manual, usando solucao senoidal 1D no motor compartilhado, cena Three.js, probe sincronizado, componentes/envelope, live-canvas, tabela, formulas e teoria Markdown com KaTeX. PixiJS continua opcional para ondas 2D densas futuras.
 - `Oscilacoes e Ondas > Som` mantem `Batimentos` e `Efeito Doppler` como `ready` apos aprovacao manual, com modelos analiticos 1D, campo volumetrico 3D de pontinhos/marcadores de pressao em Three.js, graficos live-canvas, tabela, formulas e teoria Markdown com KaTeX. Web Audio API continua opcional depois da prova visual.
+- `Oscilacoes e Ondas > Optica` mantem `Reflexao e refracao`, `Lentes e espelhos` e `Difracao e interferencia da luz` como `analysis`, com modelos de Snell, pontos conjugados e Fraunhofer, cena Three.js, graficos live-canvas, tabela, formulas e teoria Markdown com KaTeX aguardando teste manual.
 - Simulacoes `analysis` ou `ready` devem ser auditadas pelo guia `10-simulation-fidelity-adjustment-guide.md`: parametros fisicamente validos em zero nao devem ser bloqueados por conveniencia visual, falhas de restricao devem trocar o regime no motor, e toda task futura de simulacao deve registrar essa auditoria antes de ser considerada pronta.
 - Em `Forca centripeta em curva`, atrito zero e valido. Quando `v^2/r > mu g`, o corpo deixa a curva ideal; com `mu = 0`, sai pela tangente em linha reta.
 - Em `Maquina de Atwood`, a representacao visual deve seguir o formato didatico de suporte fixo, polia fixa, fio passando pelo arco superior e massas em blocos alinhadas aos trechos verticais.
@@ -67,7 +68,7 @@
 - Definir se a aplicacao deve ser apenas web ou tambem empacotavel como desktop no futuro.
 - Definir estrategia final de testes e2e apos inicializar o frontend.
 - Definir criterios objetivos para quando PixiJS, Rapier, Matter.js, D3.js ou Manim deixam de ser opcionais e entram no bundle.
-- Definir se a proxima fatia deve seguir para `Oscilacoes e Ondas > Optica` ou se vale escolher uma prioridade fora de ondas.
+- Definir se a proxima fatia deve promover Optica para `ready` apos teste manual ou seguir para `Termodinamica`/`Eletromagnetismo`.
 
 ## Gaps deixados para depois
 

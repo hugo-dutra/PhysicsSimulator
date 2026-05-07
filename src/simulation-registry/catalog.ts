@@ -11,10 +11,13 @@ import forcedOscillatorResonanceFixtureJson from '../../fixtures/simulations/wav
 import gravitationalFieldOrbitsFixtureJson from '../../fixtures/simulations/mechanics-gravitational-field-orbits.json'
 import hydrostaticsBuoyancyFixtureJson from '../../fixtures/simulations/mechanics-hydrostatics-buoyancy.json'
 import inclinedPlaneFixtureJson from '../../fixtures/simulations/mechanics-inclined-plane-friction.json'
+import lensesMirrorsFixtureJson from '../../fixtures/simulations/waves-lenses-mirrors.json'
+import lightDiffractionInterferenceFixtureJson from '../../fixtures/simulations/waves-light-diffraction-interference.json'
 import massSpringFixtureJson from '../../fixtures/simulations/mechanics-mass-spring.json'
 import particleEquilibriumFixtureJson from '../../fixtures/simulations/mechanics-particle-equilibrium.json'
 import pendulumFixtureJson from '../../fixtures/simulations/mechanics-pendulum.json'
 import projectileMotionFixtureJson from '../../fixtures/simulations/mechanics-projectile-motion.json'
+import reflectionRefractionFixtureJson from '../../fixtures/simulations/waves-reflection-refraction.json'
 import rigidBodyRotationFixtureJson from '../../fixtures/simulations/mechanics-rigid-body-rotation.json'
 import rollingWithoutSlippingFixtureJson from '../../fixtures/simulations/mechanics-rolling-without-slipping.json'
 import standingWavesFixtureJson from '../../fixtures/simulations/waves-standing-waves.json'
@@ -56,10 +59,15 @@ export const kinematicsFixtures = {
     gravitationalFieldOrbitsFixtureJson as SimulationFixture,
   'hydrostatics-buoyancy':
     hydrostaticsBuoyancyFixtureJson as SimulationFixture,
+  'lenses-mirrors': lensesMirrorsFixtureJson as SimulationFixture,
+  'light-diffraction-interference':
+    lightDiffractionInterferenceFixtureJson as SimulationFixture,
   'mass-spring': massSpringFixtureJson as SimulationFixture,
   'particle-equilibrium': particleEquilibriumFixtureJson as SimulationFixture,
   'projectile-motion': projectileMotionFixtureJson as SimulationFixture,
   'rigid-body-rotation': rigidBodyRotationFixtureJson as SimulationFixture,
+  'reflection-refraction':
+    reflectionRefractionFixtureJson as SimulationFixture,
   'rolling-without-slipping':
     rollingWithoutSlippingFixtureJson as SimulationFixture,
   'standing-waves': standingWavesFixtureJson as SimulationFixture,

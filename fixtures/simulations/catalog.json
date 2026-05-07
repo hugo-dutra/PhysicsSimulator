@@ -1428,33 +1428,124 @@
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Optica", "Reflexao e refracao"],
           "title": "Reflexao e refracao",
-          "status": "planned",
+          "status": "analysis",
           "level": "introductory",
           "modelKind": "analytic",
-          "renderer": "pixi",
-          "description": "Lei de Snell, angulo critico, reflexao interna total e raios."
+          "renderer": "three",
+          "fixturePath": "fixtures/simulations/waves-reflection-refraction.json",
+          "theoryPath": "src/content/simulations/waves/optics/reflection-refraction/theory.md",
+          "description": "Banco optico 3D para Lei de Snell, angulo critico, reflexao interna total e fracao refletida.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo geometrico 2D de interface plana, com raios e pulsos renderizados no Three.js a partir do mesmo sample usado por graficos, tabela e formulas."
+          },
+          "charts": [
+            {
+              "id": "angle",
+              "title": "Angulos e limite critico",
+              "sampleFields": [
+                "timeSeconds",
+                "positionMeters",
+                "displacementMeters",
+                "forceOneNewtons"
+              ]
+            },
+            {
+              "id": "field",
+              "title": "Indices e percentuais opticos",
+              "sampleFields": [
+                "timeSeconds",
+                "primaryRadiusMeters",
+                "secondaryRadiusMeters",
+                "forceTwoNewtons",
+                "pressurePascals"
+              ]
+            }
+          ]
         },
         {
           "id": "lenses-mirrors",
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Optica", "Lentes e espelhos"],
           "title": "Lentes e espelhos",
-          "status": "planned",
+          "status": "analysis",
           "level": "introductory",
           "modelKind": "analytic",
-          "renderer": "pixi",
-          "description": "Foco, imagem real/virtual, aumento e equacao dos espelhos e lentes."
+          "renderer": "three",
+          "fixturePath": "fixtures/simulations/waves-lenses-mirrors.json",
+          "theoryPath": "src/content/simulations/waves/optics/lenses-mirrors/theory.md",
+          "description": "Raios principais em lente ou espelho, foco, imagem real/virtual, aumento e pontos conjugados.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo paraxial de elemento fino/esferico ideal, com banco optico Three.js e prolongamentos para imagens virtuais."
+          },
+          "charts": [
+            {
+              "id": "position",
+              "title": "Objeto, imagem e foco",
+              "sampleFields": [
+                "timeSeconds",
+                "positionMeters",
+                "displacementMeters",
+                "forceOneNewtons"
+              ]
+            },
+            {
+              "id": "field",
+              "title": "Altura e aumento linear",
+              "sampleFields": [
+                "timeSeconds",
+                "zMeters",
+                "secondaryZMeters",
+                "secondaryRadiusMeters"
+              ]
+            }
+          ]
         },
         {
           "id": "light-diffraction-interference",
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Optica", "Difracao e interferencia da luz"],
           "title": "Difracao e interferencia da luz",
-          "status": "planned",
+          "status": "analysis",
           "level": "introductory",
           "modelKind": "analytic",
-          "renderer": "pixi",
-          "description": "Fendas, padrao de intensidade, comprimento de onda e distancia."
+          "renderer": "three",
+          "fixturePath": "fixtures/simulations/waves-light-diffraction-interference.json",
+          "theoryPath": "src/content/simulations/waves/optics/light-diffraction-interference/theory.md",
+          "description": "Padrao de intensidade em fendas, cor por comprimento de onda, envoltoria de difracao e franjas analisaveis.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo escalar de Fraunhofer com tela Three.js amostrada por intensidade normalizada e detector sincronizado com graficos."
+          },
+          "charts": [
+            {
+              "id": "pressure",
+              "title": "Intensidade, envoltoria e interferencia",
+              "sampleFields": [
+                "timeSeconds",
+                "pressurePascals",
+                "displacementMeters",
+                "secondaryPressurePascals"
+              ]
+            },
+            {
+              "id": "position",
+              "title": "Detector, tela e espacamento",
+              "sampleFields": [
+                "timeSeconds",
+                "positionMeters",
+                "secondaryRadiusMeters",
+                "speedMetersPerSecond"
+              ]
+            }
+          ]
         }
       ]
     },

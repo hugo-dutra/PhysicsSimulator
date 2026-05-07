@@ -3683,3 +3683,36 @@ Validacao:
 - Executado `npm run lint`; passou.
 - Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
 - Executado `npm run build:pages`; passou com aviso conhecido de chunk acima de 500 kB.
+
+## 2026-05-07 - Optica geometrica e difracao em analysis
+
+Status: feito.
+
+Pedido:
+
+- Executar as proximas 3 tasks do roadmap com foco em uma experiencia visual interessante, em que alteracoes de parametros tenham efeito perceptivel e analisavel.
+
+Ajuste:
+
+- `Reflexao e refracao` entrou como simulacao `analysis`, com Lei de Snell, angulo critico, reflexao interna total, estimativa didatica de refletancia, feixe de raios e pulsos sincronizados.
+- `Lentes e espelhos` entrou como simulacao `analysis`, com elemento optico selecionavel, foco assinado, objeto, imagem real/virtual, aumento linear, raios principais e prolongamentos para imagem virtual.
+- `Difracao e interferencia da luz` entrou como simulacao `analysis`, com fendas, cor por comprimento de onda, tela de intensidade, detector lateral, envoltoria de fenda unica e interferencia de multiplas fendas.
+- O shell ganhou teoria Markdown, fixtures locais, presets, warnings, metricas, legenda de vetores, graficos live-canvas e cenas Three.js especificas para a fatia de Optica.
+- O catalogo abre `Oscilacoes e Ondas > Optica` por conter simulacoes em `analysis`; a promocao para `ready` ainda depende de teste manual do dono do projeto.
+- Guides de produto, arquitetura, regras, roadmap, dados/API, contratos, qualidade, catalog plan e issues foram alinhados com o novo estado.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: parametros fisicos, regimes, samples, cena, graficos, tabela, formulas, teoria, warnings e testes foram mantidos derivados da mesma fonte numerica.
+- Valores zero fisicamente validos foram mantidos onde fazem sentido visual/modelar, como abertura de feixe, altura do objeto, abertura de raios e escala de intensidade.
+- Nao houve mudanca estrutural de backend, auth, billing ou HLD; a expansao continua core-first e local.
+
+Validacao:
+
+- Executado `npm run test -- --run src/lib/physics/kinematics.test.ts src/simulation-registry/catalog.test.ts src/features/simulation-shell/kinematicsChartConfigs.test.ts --reporter=dot`; 3 arquivos e 74 testes passaram.
+- Executado `npm run test -- src/App.test.tsx -t 'renders the simulation catalog' --reporter=dot --maxWorkers=1`; 1 teste passou e 9 foram ignorados pelo filtro.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- A suite completa foi validada em dois lotes porque a execucao monolitica estourou o timeout da ferramenta: 13 arquivos e 131 testes passaram fora de `App.test.tsx`; em seguida `src/App.test.tsx` passou isolado com 10 testes.
+- Servidor local iniciado em `http://127.0.0.1:5173`.
+- Executado smoke visual Chrome/CDP em desktop e mobile para as tres simulacoes de Optica; screenshots em `artifacts/optics-*-smoke.png`, com canvas nao vazio e variacao entre frames detectada nas cenas animadas.

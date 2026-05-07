@@ -1,0 +1,219 @@
+{
+  "simulationId": "lenses-mirrors",
+  "durationSeconds": 12,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 6,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Horizonte calculado",
+      "description": "Tempo pre-calculado para animar a leitura dos raios principais. Aumentar acompanha mais ciclos; diminuir foca a geometria atual sem mudar a equacao optica.",
+      "unit": "s",
+      "kind": "number",
+      "min": 4,
+      "max": 40,
+      "step": 1,
+      "defaultValue": 12
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente exibido nos graficos e tabela. Aumentar deixa a leitura de imagem/foco mais longa; diminuir destaca a mudanca instantanea de parametros.",
+      "unit": "s",
+      "kind": "number",
+      "min": 2,
+      "max": 20,
+      "step": 1,
+      "defaultValue": 6
+    }
+  ],
+  "defaultParameters": {
+    "elementKind": "converging-lens",
+    "focalLengthMeters": 1.2,
+    "objectDistanceMeters": 2.4,
+    "objectHeightMeters": 0.75,
+    "rayApertureMeters": 0.85
+  },
+  "parameters": [
+    {
+      "id": "elementKind",
+      "label": "Elemento optico",
+      "description": "Escolhe lente ou espelho e o sinal efetivo do foco. Lentes/espelhos convergentes usam foco positivo; divergentes/convexos usam foco negativo e tendem a gerar imagem virtual.",
+      "kind": "choice",
+      "defaultValue": "converging-lens",
+      "options": [
+        {
+          "value": "converging-lens",
+          "label": "Lente convergente",
+          "description": "Foco positivo e raios paralelos convergem no lado de saida."
+        },
+        {
+          "value": "diverging-lens",
+          "label": "Lente divergente",
+          "description": "Foco negativo e raios emergem como se viessem de foco virtual."
+        },
+        {
+          "value": "concave-mirror",
+          "label": "Espelho concavo",
+          "description": "Foco positivo no modelo de espelhos; pode formar imagem real invertida."
+        },
+        {
+          "value": "convex-mirror",
+          "label": "Espelho convexo",
+          "description": "Foco negativo; produz imagem virtual reduzida no modelo ideal."
+        }
+      ]
+    },
+    {
+      "id": "focalLengthMeters",
+      "label": "Distancia focal",
+      "description": "Modulo da distancia focal do elemento. Aumentar afasta os focos e desloca a imagem; diminuir aproxima o objeto do foco e aumenta a sensibilidade da imagem.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0.2,
+      "max": 5,
+      "step": 0.05,
+      "defaultValue": 1.2
+    },
+    {
+      "id": "objectDistanceMeters",
+      "label": "Distancia do objeto",
+      "description": "Distancia entre objeto e elemento optico. Aproximar do foco pode mandar a imagem para muito longe; afastar reduz o aumento e estabiliza os raios.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0.25,
+      "max": 8,
+      "step": 0.05,
+      "defaultValue": 2.4
+    },
+    {
+      "id": "objectHeightMeters",
+      "label": "Altura do objeto",
+      "description": "Altura didatica do objeto desenhado. Zerar transforma o objeto em ponto no eixo; aumentar torna o aumento linear e a inversao mais perceptiveis.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 2,
+      "step": 0.02,
+      "defaultValue": 0.75
+    },
+    {
+      "id": "rayApertureMeters",
+      "label": "Abertura dos raios",
+      "description": "Altura usada pelos raios paralelos ao eixo. Zerar aproxima todos os raios do eixo principal; aumentar abre o diagrama sem alterar a distancia de imagem calculada.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 4,
+      "step": 0.05,
+      "defaultValue": 0.85
+    }
+  ],
+  "presets": [
+    {
+      "id": "real-inverted",
+      "label": "Imagem real invertida",
+      "parameters": {
+        "elementKind": "converging-lens",
+        "focalLengthMeters": 1.2,
+        "objectDistanceMeters": 2.4,
+        "objectHeightMeters": 0.75,
+        "rayApertureMeters": 0.85
+      }
+    },
+    {
+      "id": "virtual-magnified",
+      "label": "Lupa virtual",
+      "parameters": {
+        "elementKind": "converging-lens",
+        "focalLengthMeters": 1.2,
+        "objectDistanceMeters": 0.75,
+        "objectHeightMeters": 0.65,
+        "rayApertureMeters": 0.75
+      }
+    },
+    {
+      "id": "diverging-small",
+      "label": "Divergente reduzida",
+      "parameters": {
+        "elementKind": "diverging-lens",
+        "focalLengthMeters": 1.1,
+        "objectDistanceMeters": 2.2,
+        "objectHeightMeters": 0.8,
+        "rayApertureMeters": 0.75
+      }
+    }
+  ],
+  "regimes": [
+    {
+      "id": "real-image",
+      "label": "Imagem real",
+      "condition": "a distancia de imagem calculada por 1/f = 1/do + 1/di e positiva.",
+      "transitionLimit": "quando do se aproxima de f, di cresce; quando di fica negativa, a imagem passa a virtual.",
+      "sampleFields": [
+        "positionMeters",
+        "displacementMeters",
+        "secondaryXMeters",
+        "secondaryZMeters",
+        "secondaryRadiusMeters"
+      ],
+      "warningCode": "OPTICS_REAL_IMAGE"
+    },
+    {
+      "id": "virtual-image",
+      "label": "Imagem virtual",
+      "condition": "a distancia de imagem e negativa no contrato de sinais; prolongamentos indicam onde a imagem parece estar.",
+      "transitionLimit": "lentes divergentes, espelhos convexos ou objeto dentro do foco de elemento convergente produzem di < 0.",
+      "sampleFields": [
+        "isGrounded",
+        "displacementMeters",
+        "secondaryXMeters",
+        "secondaryZMeters"
+      ],
+      "warningCode": "OPTICS_VIRTUAL_IMAGE"
+    }
+  ],
+  "limits": [
+    "Modelo paraxial de raios principais: nao inclui aberracoes, espessura real da lente, dispersao cromatica ou tamanho finito do espelho.",
+    "Lentes e espelhos compartilham a mesma equacao de pontos conjugados com sinal didatico de foco; a cena destaca raios principais e prolongamentos.",
+    "Quando o objeto fica perto do foco, a distancia de imagem e limitada visualmente para manter o banco optico legivel; o warning registra essa saturacao."
+  ],
+  "formulas": [
+    {
+      "id": "thin-lens-mirror",
+      "title": "Pontos conjugados",
+      "expressionLatex": "\\frac{1}{f}=\\frac{1}{d_o}+\\frac{1}{d_i}",
+      "description": "Relaciona foco, distancia do objeto e distancia da imagem no modelo paraxial de lentes finas e espelhos esfericos ideais.",
+      "variables": [
+        { "symbol": "f", "label": "distancia focal assinada", "unit": "m" },
+        { "symbol": "d_o", "label": "distancia do objeto", "unit": "m" },
+        { "symbol": "d_i", "label": "distancia da imagem", "unit": "m" }
+      ],
+      "usedWhen": "Usar para raios proximos ao eixo optico em elementos ideais.",
+      "notUsedWhen": "Nao cobre aberracoes, lentes espessas, espelhos planos extensos ou objetos fora do regime paraxial.",
+      "parameterIds": ["elementKind", "focalLengthMeters", "objectDistanceMeters"],
+      "sampleFields": ["forceOneNewtons", "positionMeters", "displacementMeters"],
+      "relatedChartIds": ["position"],
+      "relatedVectorIds": ["forceOne", "displacement"],
+      "example": "Com do = 2f em lente convergente, a imagem aparece em di = 2f e invertida."
+    },
+    {
+      "id": "linear-magnification",
+      "title": "Aumento linear",
+      "expressionLatex": "m=-\\frac{d_i}{d_o}=\\frac{h_i}{h_o}",
+      "description": "Calcula inversao e escala da imagem em relacao ao objeto.",
+      "variables": [
+        { "symbol": "m", "label": "aumento linear" },
+        { "symbol": "h_i", "label": "altura da imagem", "unit": "m" },
+        { "symbol": "h_o", "label": "altura do objeto", "unit": "m" }
+      ],
+      "usedWhen": "Usar junto da distancia de imagem calculada pela equacao dos pontos conjugados.",
+      "notUsedWhen": "Nao descreve distorcao fora do eixo nem objetos extensos fora do regime paraxial.",
+      "parameterIds": ["objectHeightMeters", "objectDistanceMeters"],
+      "sampleFields": ["secondaryRadiusMeters", "secondaryZMeters", "zMeters"],
+      "relatedChartIds": ["field"],
+      "relatedVectorIds": ["velocity"],
+      "example": "m negativo indica imagem invertida; m positivo indica imagem direita virtual."
+    }
+  ]
+}

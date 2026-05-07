@@ -641,18 +641,29 @@ describe('App', () => {
     ).toBeNull()
     expect(
       screen.getByRole('button', { name: /Alternar area Oscilacoes e Ondas/i }),
-    ).toHaveAttribute('aria-expanded', 'false')
+    ).toHaveAttribute('aria-expanded', 'true')
     openWavesArea()
     expect(getWavesOscillationsToggle()).toHaveAttribute(
       'aria-expanded',
       'false',
     )
     const soundToggle = getToggleByControls('subarea-waves-som')
+    const opticsToggle = getToggleByControls('subarea-waves-optica')
 
     expect(soundToggle).toHaveAttribute(
       'aria-expanded',
       'false',
     )
+    expect(opticsToggle).toHaveAttribute('aria-expanded', 'true')
+    expect(
+      screen.getByRole('button', { name: /Reflexao e refracao/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Lentes e espelhos/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Difracao e interferencia da luz/i }),
+    ).toBeInTheDocument()
     fireEvent.click(soundToggle)
     expect(soundToggle).toHaveAttribute('aria-expanded', 'true')
     expect(
@@ -692,7 +703,7 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
     ).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(0)
+    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(3)
     expect(screen.getAllByText(/^pronto$/i).length).toBeGreaterThan(0)
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),

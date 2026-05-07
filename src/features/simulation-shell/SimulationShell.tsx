@@ -76,6 +76,9 @@ import {
   type KinematicsSample,
   type KinematicsSimulationId,
   type KinematicsVectorOverlay,
+  type LensesMirrorsParameters,
+  type LightDiffractionInterferenceParameters,
+  type ReflectionRefractionParameters,
   type UniformCircularMotionParameters,
   type UniformLinearMotionParameters,
   type UniformlyAcceleratedMotionParameters,
@@ -90,6 +93,9 @@ import coupledOscillatorsTheory from '../../content/simulations/waves/oscillatio
 import dampedOscillatorTheory from '../../content/simulations/waves/oscillations/damped-oscillator/theory.md?raw'
 import dopplerEffectTheory from '../../content/simulations/waves/sound/doppler-effect/theory.md?raw'
 import forcedOscillatorResonanceTheory from '../../content/simulations/waves/oscillations/forced-oscillator-resonance/theory.md?raw'
+import lensesMirrorsTheory from '../../content/simulations/waves/optics/lenses-mirrors/theory.md?raw'
+import lightDiffractionInterferenceTheory from '../../content/simulations/waves/optics/light-diffraction-interference/theory.md?raw'
+import reflectionRefractionTheory from '../../content/simulations/waves/optics/reflection-refraction/theory.md?raw'
 import standingWavesTheory from '../../content/simulations/waves/mechanical-waves/standing-waves/theory.md?raw'
 import superpositionInterferenceTheory from '../../content/simulations/waves/mechanical-waves/superposition-interference/theory.md?raw'
 import waveOnStringTheory from '../../content/simulations/waves/mechanical-waves/wave-on-string/theory.md?raw'
@@ -234,9 +240,12 @@ const kinematicsTheoryById = {
   'forced-oscillator-resonance': forcedOscillatorResonanceTheory,
   'gravitational-field-orbits': gravitationalFieldOrbitsTheory,
   'hydrostatics-buoyancy': hydrostaticsBuoyancyTheory,
+  'lenses-mirrors': lensesMirrorsTheory,
+  'light-diffraction-interference': lightDiffractionInterferenceTheory,
   'mass-spring': massSpringTheory,
   'particle-equilibrium': particleEquilibriumTheory,
   'projectile-motion': projectileMotionTheory,
+  'reflection-refraction': reflectionRefractionTheory,
   'rigid-body-rotation': rigidBodyRotationTheory,
   'rolling-without-slipping': rollingWithoutSlippingTheory,
   'standing-waves': standingWavesTheory,
@@ -890,6 +899,66 @@ const kinematicsVectorLegendItemsById = {
       label: 'v som',
       color: themeTokens.teal,
       description: 'velocidade do som do meio usada na equacao de Doppler',
+    },
+  ],
+  'reflection-refraction': [
+    {
+      id: 'velocity',
+      label: 'Incidente',
+      color: themeTokens.cyan,
+      description: 'raio que chega na interface medido em relacao a normal',
+    },
+    {
+      id: 'forceOne',
+      label: 'Refletido',
+      color: themeTokens.teal,
+      description: 'parcela refletida estimada pelo contraste de indices',
+    },
+    {
+      id: 'forceTwo',
+      label: 'Refratado',
+      color: themeTokens.warning,
+      description: 'raio transmitido pelo segundo meio ou removido na reflexao total',
+    },
+  ],
+  'lenses-mirrors': [
+    {
+      id: 'forceOne',
+      label: 'Foco',
+      color: themeTokens.warning,
+      description: 'foco assinado usado na equacao dos pontos conjugados',
+    },
+    {
+      id: 'velocity',
+      label: 'Raio',
+      color: themeTokens.cyan,
+      description: 'raio principal que liga objeto, elemento optico e imagem',
+    },
+    {
+      id: 'displacement',
+      label: 'Imagem',
+      color: themeTokens.teal,
+      description: 'distancia da imagem real ou virtual calculada pelo motor',
+    },
+  ],
+  'light-diffraction-interference': [
+    {
+      id: 'secondaryVelocity',
+      label: 'Tela',
+      color: themeTokens.cyan,
+      description: 'distancia ate a tela onde o padrao de luz e projetado',
+    },
+    {
+      id: 'displacement',
+      label: 'Detector',
+      color: themeTokens.warning,
+      description: 'posicao instantanea da varredura no padrao de franjas',
+    },
+    {
+      id: 'forceOne',
+      label: 'Intensidade',
+      color: themeTokens.vector,
+      description: 'intensidade relativa no detector, incluindo difracao e interferencia',
     },
   ],
   'wave-on-string': [
@@ -4785,6 +4854,108 @@ function buildKinematicsReadoutMetrics({
     ]
   }
 
+  if (simulationId === 'reflection-refraction') {
+    const opticsParameters = parameters as ReflectionRefractionParameters
+
+    return [
+      {
+        label: 'Angulo incidente',
+        value: formatNumber(sample.positionMeters, 'deg'),
+      },
+      {
+        label: 'Angulo refratado',
+        value: sample.isGrounded
+          ? 'reflexao total'
+          : formatNumber(sample.displacementMeters, 'deg'),
+      },
+      {
+        label: 'n incidente',
+        value: formatNumber(opticsParameters.incidentMediumIndex),
+      },
+      {
+        label: 'n refratado',
+        value: formatNumber(opticsParameters.refractedMediumIndex),
+      },
+      {
+        label: 'Reflexao',
+        value: formatNumber(sample.forceTwoNewtons, '%'),
+      },
+      {
+        label: 'Angulo critico',
+        value:
+          sample.forceOneNewtons > 0
+            ? formatNumber(sample.forceOneNewtons, 'deg')
+            : '-- deg',
+      },
+      frameMetric,
+    ]
+  }
+
+  if (simulationId === 'lenses-mirrors') {
+    const opticsParameters = parameters as LensesMirrorsParameters
+
+    return [
+      {
+        label: 'Elemento',
+        value: formatOpticalElementKind(opticsParameters.elementKind),
+      },
+      {
+        label: 'Objeto',
+        value: formatNumber(sample.positionMeters, 'm'),
+      },
+      {
+        label: 'Imagem',
+        value: formatNumber(sample.displacementMeters, 'm'),
+      },
+      {
+        label: 'Foco',
+        value: formatNumber(sample.forceOneNewtons, 'm'),
+      },
+      {
+        label: 'Aumento',
+        value: formatNumber(sample.secondaryRadiusMeters),
+      },
+      {
+        label: 'Altura imagem',
+        value: formatNumber(sample.secondaryZMeters, 'm'),
+      },
+      frameMetric,
+    ]
+  }
+
+  if (simulationId === 'light-diffraction-interference') {
+    const opticsParameters =
+      parameters as LightDiffractionInterferenceParameters
+
+    return [
+      {
+        label: 'Intensidade',
+        value: formatNumber(sample.pressurePascals),
+      },
+      {
+        label: 'Detector',
+        value: formatNumber(sample.positionMeters * 1000, 'mm'),
+      },
+      {
+        label: 'Compr. onda',
+        value: formatNumber(opticsParameters.wavelengthNanometers, 'nm'),
+      },
+      {
+        label: 'Fendas',
+        value: formatNumber(opticsParameters.slitCount),
+      },
+      {
+        label: 'Delta y',
+        value: formatNumber(sample.secondaryRadiusMeters * 1000, 'mm'),
+      },
+      {
+        label: 'Envelope',
+        value: formatNumber(sample.displacementMeters),
+      },
+      frameMetric,
+    ]
+  }
+
   if (
     simulationId === 'wave-on-string' ||
     simulationId === 'superposition-interference' ||
@@ -7150,10 +7321,19 @@ function resolveKinematicsCameraViewMode(
 function supportsKinematicsCameraViewMode(simulationId: KinematicsSimulationId) {
   return (
     isMechanicalWaveSimulationId(simulationId) ||
+    isOpticsSimulationId(simulationId) ||
     simulationId === 'coupled-oscillators' ||
     simulationId === 'uniform-linear-motion' ||
     simulationId === 'uniformly-accelerated-motion' ||
     simulationId === 'uniform-circular-motion'
+  )
+}
+
+function isOpticsSimulationId(simulationId: KinematicsSimulationId) {
+  return (
+    simulationId === 'reflection-refraction' ||
+    simulationId === 'lenses-mirrors' ||
+    simulationId === 'light-diffraction-interference'
   )
 }
 
@@ -7180,11 +7360,30 @@ function KinematicsCameraViewSwitch({
   const isCoupledOscillator = simulationId === 'coupled-oscillators'
   const isVerticalMotion = simulationId === 'uniformly-accelerated-motion'
   const isMechanicalWave = isMechanicalWaveSimulationId(simulationId)
+  const isOptics = isOpticsSimulationId(simulationId)
   const modes: Array<{
     ariaLabel: string
     label: string
     value: KinematicsCameraViewMode
-  }> = isMechanicalWave
+  }> = isOptics
+    ? [
+        {
+          ariaLabel: 'Vista 3D do banco optico',
+          label: '3D',
+          value: 'cinematic',
+        },
+        {
+          ariaLabel: 'Vista lateral do banco optico',
+          label: 'Lateral',
+          value: 'side',
+        },
+        {
+          ariaLabel: 'Vista superior do banco optico',
+          label: 'Topo',
+          value: 'top',
+        },
+      ]
+    : isMechanicalWave
     ? [
         {
           ariaLabel: 'Vista 3D pedagogica da onda em corda',
@@ -7269,7 +7468,9 @@ function KinematicsCameraViewSwitch({
   return (
     <Tooltip
       title={
-        isMechanicalWave
+        isOptics
+          ? 'Visual da camera: 3D do banco optico, lateral ou superior'
+          : isMechanicalWave
           ? 'Visual da camera: 3D pedagogica, lateral ou superior'
           : isCircularMotion
           ? 'Visual da camera: perspectiva, superior ou acompanhamento'
@@ -7415,6 +7616,22 @@ function getAnimationVectorLegendUnit(item: AnimationVectorLegendItem) {
 
 function formatVectorLegendLabel(label: string, unit?: string) {
   return unit ? `${label} (${unit})` : label
+}
+
+function formatOpticalElementKind(kind: LensesMirrorsParameters['elementKind']) {
+  if (kind === 'converging-lens') {
+    return 'lente convergente'
+  }
+
+  if (kind === 'diverging-lens') {
+    return 'lente divergente'
+  }
+
+  if (kind === 'concave-mirror') {
+    return 'espelho concavo'
+  }
+
+  return 'espelho convexo'
 }
 
 function readEnergyRatio(samples: Array<{ totalEnergyJoules: number }>) {

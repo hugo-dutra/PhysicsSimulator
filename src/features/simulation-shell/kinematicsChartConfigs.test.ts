@@ -7,6 +7,9 @@ import {
   type ForcedOscillatorResonanceParameters,
   type GravitationalFieldOrbitsParameters,
   type HydrostaticsBuoyancyParameters,
+  type LensesMirrorsParameters,
+  type LightDiffractionInterferenceParameters,
+  type ReflectionRefractionParameters,
   type TorqueLeversCenterMassParameters,
   type UniformCircularMotionParameters,
 } from '../../lib/physics/kinematics'
@@ -314,6 +317,85 @@ describe('kinematics chart configs', () => {
       'Velocidade da fonte (m/s)',
     )
     expect(charts.some((chart) => chart.id === 'energy')).toBe(false)
+  })
+
+  it('shows angle, image and intensity chart sets for optics simulations', () => {
+    const reflectionParameters: ReflectionRefractionParameters = {
+      incidentAngleDegrees: 42,
+      incidentMediumIndex: 1,
+      rayBundleSpreadDegrees: 3,
+      refractedMediumIndex: 1.5,
+    }
+    const lensesParameters: LensesMirrorsParameters = {
+      elementKind: 'converging-lens',
+      focalLengthMeters: 1.2,
+      objectDistanceMeters: 2.4,
+      objectHeightMeters: 0.75,
+      rayApertureMeters: 0.85,
+    }
+    const diffractionParameters: LightDiffractionInterferenceParameters = {
+      detectorPositionMillimeters: 4,
+      intensityScale: 0.96,
+      screenDistanceMeters: 1.8,
+      slitCount: 3,
+      slitSeparationMicrometers: 120,
+      slitWidthMicrometers: 36,
+      wavelengthNanometers: 540,
+    }
+    const reflectionCharts = buildKinematicsChartConfigs(
+      computeKinematicsTimeline({
+        durationSeconds: 1,
+        parameters: reflectionParameters,
+        sampleRateHz: 4,
+        simulationId: 'reflection-refraction',
+      }).samples,
+      'reflection-refraction',
+      true,
+    )
+    const lensesCharts = buildKinematicsChartConfigs(
+      computeKinematicsTimeline({
+        durationSeconds: 1,
+        parameters: lensesParameters,
+        sampleRateHz: 4,
+        simulationId: 'lenses-mirrors',
+      }).samples,
+      'lenses-mirrors',
+      true,
+    )
+    const diffractionCharts = buildKinematicsChartConfigs(
+      computeKinematicsTimeline({
+        durationSeconds: 1,
+        parameters: diffractionParameters,
+        sampleRateHz: 4,
+        simulationId: 'light-diffraction-interference',
+      }).samples,
+      'light-diffraction-interference',
+      true,
+    )
+
+    expect(reflectionCharts.map((chart) => chart.id)).toEqual([
+      'angle',
+      'field',
+    ])
+    expect(reflectionCharts[0].traces.map((trace) => trace.name)).toContain(
+      'Angulo refratado (deg)',
+    )
+    expect(lensesCharts.map((chart) => chart.id)).toEqual([
+      'position',
+      'field',
+    ])
+    expect(lensesCharts[1].traces.map((trace) => trace.name)).toContain(
+      'Aumento linear',
+    )
+    expect(diffractionCharts.map((chart) => chart.id)).toEqual([
+      'pressure',
+      'position',
+    ])
+    expect(diffractionCharts[0].traces.map((trace) => trace.name)).toEqual([
+      'Intensidade normalizada',
+      'Envoltoria de difracao',
+      'Interferencia entre fendas',
+    ])
   })
 })
 
