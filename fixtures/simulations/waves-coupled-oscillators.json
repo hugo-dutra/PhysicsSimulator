@@ -28,9 +28,13 @@
     }
   ],
   "defaultParameters": {
-    "massKilograms": 0.8,
-    "springConstantNewtonsPerMeter": 18,
+    "massOneKilograms": 0.8,
+    "massTwoKilograms": 0.8,
+    "springConstantOneNewtonsPerMeter": 18,
+    "springConstantTwoNewtonsPerMeter": 18,
     "couplingSpringConstantNewtonsPerMeter": 5,
+    "dampingNewtonSecondsPerMeter": 0,
+    "gravityMetersPerSecondSquared": 9.81,
     "initialDisplacementOneMeters": 0.28,
     "initialDisplacementTwoMeters": 0,
     "initialVelocityOneMetersPerSecond": 0,
@@ -38,9 +42,9 @@
   },
   "parameters": [
     {
-      "id": "massKilograms",
-      "label": "Massa de cada corpo",
-      "description": "Massa igual de cada oscilador. Aumentar reduz as duas frequencias normais; diminuir acelera modos e batimentos.",
+      "id": "massOneKilograms",
+      "label": "Massa A",
+      "description": "Massa do oscilador A. Aumentar reduz a aceleracao de A para a mesma forca e pode quebrar a simetria dos modos; diminuir torna A mais responsiva ao acoplamento.",
       "unit": "kg",
       "kind": "number",
       "min": 0.05,
@@ -49,9 +53,31 @@
       "defaultValue": 0.8
     },
     {
-      "id": "springConstantNewtonsPerMeter",
-      "label": "Molas externas",
-      "description": "Rigidez das molas que prendem cada massa ao suporte. Aumentar eleva o modo em fase e deixa cada oscilador menos sensivel ao acoplamento.",
+      "id": "massTwoKilograms",
+      "label": "Massa B",
+      "description": "Massa do oscilador B. Igualar a massa A deixa os modos normais mais limpos; valores diferentes mostram acoplamento assimetrico.",
+      "unit": "kg",
+      "kind": "number",
+      "min": 0.05,
+      "max": 5,
+      "step": 0.05,
+      "defaultValue": 0.8
+    },
+    {
+      "id": "springConstantOneNewtonsPerMeter",
+      "label": "Mola A",
+      "description": "Rigidez da mola vertical presa a Massa A. Aumentar eleva a frequencia propria de A e muda a troca de energia com B.",
+      "unit": "N/m",
+      "kind": "number",
+      "min": 1,
+      "max": 120,
+      "step": 1,
+      "defaultValue": 18
+    },
+    {
+      "id": "springConstantTwoNewtonsPerMeter",
+      "label": "Mola B",
+      "description": "Rigidez da mola vertical presa a Massa B. Igualar a mola A destaca os modos normal em fase e fora de fase; diferenciar cria batimentos assimetricos.",
       "unit": "N/m",
       "kind": "number",
       "min": 1,
@@ -69,6 +95,28 @@
       "max": 80,
       "step": 0.5,
       "defaultValue": 5
+    },
+    {
+      "id": "dampingNewtonSecondsPerMeter",
+      "label": "Amortecimento",
+      "description": "Coeficiente viscoso comum aplicado a cada massa como -c v. Zerar conserva energia mecanica; aumentar dissipa energia e reduz as amplitudes.",
+      "unit": "Ns/m",
+      "kind": "number",
+      "min": 0,
+      "max": 4,
+      "step": 0.01,
+      "defaultValue": 0
+    },
+    {
+      "id": "gravityMetersPerSecondSquared",
+      "label": "Gravidade",
+      "description": "Usada para dimensionar o vetor de peso didatico. O modelo numerico resolve deslocamentos em torno do equilibrio, onde peso e pre-carga estatica da mola ja se cancelaram.",
+      "unit": "m/s^2",
+      "kind": "number",
+      "min": 0,
+      "max": 20,
+      "step": 0.01,
+      "defaultValue": 9.81
     },
     {
       "id": "initialDisplacementOneMeters",
@@ -120,9 +168,13 @@
       "id": "energy-exchange",
       "label": "Troca de energia",
       "parameters": {
-        "massKilograms": 0.8,
-        "springConstantNewtonsPerMeter": 18,
+        "massOneKilograms": 0.8,
+        "massTwoKilograms": 0.8,
+        "springConstantOneNewtonsPerMeter": 18,
+        "springConstantTwoNewtonsPerMeter": 18,
         "couplingSpringConstantNewtonsPerMeter": 5,
+        "dampingNewtonSecondsPerMeter": 0,
+        "gravityMetersPerSecondSquared": 9.81,
         "initialDisplacementOneMeters": 0.28,
         "initialDisplacementTwoMeters": 0,
         "initialVelocityOneMetersPerSecond": 0,
@@ -133,9 +185,13 @@
       "id": "in-phase-mode",
       "label": "Modo em fase",
       "parameters": {
-        "massKilograms": 0.8,
-        "springConstantNewtonsPerMeter": 18,
+        "massOneKilograms": 0.8,
+        "massTwoKilograms": 0.8,
+        "springConstantOneNewtonsPerMeter": 18,
+        "springConstantTwoNewtonsPerMeter": 18,
         "couplingSpringConstantNewtonsPerMeter": 5,
+        "dampingNewtonSecondsPerMeter": 0,
+        "gravityMetersPerSecondSquared": 9.81,
         "initialDisplacementOneMeters": 0.24,
         "initialDisplacementTwoMeters": 0.24,
         "initialVelocityOneMetersPerSecond": 0,
@@ -144,13 +200,34 @@
     },
     {
       "id": "out-of-phase-mode",
-      "label": "Modo fora de fase",
+      "label": "Oposicao de fase",
       "parameters": {
-        "massKilograms": 0.8,
-        "springConstantNewtonsPerMeter": 18,
+        "massOneKilograms": 0.8,
+        "massTwoKilograms": 0.8,
+        "springConstantOneNewtonsPerMeter": 18,
+        "springConstantTwoNewtonsPerMeter": 18,
         "couplingSpringConstantNewtonsPerMeter": 5,
+        "dampingNewtonSecondsPerMeter": 0,
+        "gravityMetersPerSecondSquared": 9.81,
         "initialDisplacementOneMeters": 0.22,
         "initialDisplacementTwoMeters": -0.22,
+        "initialVelocityOneMetersPerSecond": 0,
+        "initialVelocityTwoMetersPerSecond": 0
+      }
+    },
+    {
+      "id": "damped-exchange",
+      "label": "Amortecido",
+      "parameters": {
+        "massOneKilograms": 0.8,
+        "massTwoKilograms": 0.8,
+        "springConstantOneNewtonsPerMeter": 18,
+        "springConstantTwoNewtonsPerMeter": 18,
+        "couplingSpringConstantNewtonsPerMeter": 5,
+        "dampingNewtonSecondsPerMeter": 0.22,
+        "gravityMetersPerSecondSquared": 9.81,
+        "initialDisplacementOneMeters": 0.28,
+        "initialDisplacementTwoMeters": 0,
         "initialVelocityOneMetersPerSecond": 0,
         "initialVelocityTwoMetersPerSecond": 0
       }
@@ -167,18 +244,23 @@
         "secondaryZMeters",
         "velocityMetersPerSecond",
         "secondaryVelocityMetersPerSecond",
+        "leftKineticEnergyJoules",
+        "rightKineticEnergyJoules",
+        "couplingPotentialEnergyJoules",
         "totalEnergyJoules"
-      ]
+      ],
+      "warningCode": "COUPLED_UNCOUPLED_REFERENCE"
     },
     {
       "id": "in-phase-normal-mode",
       "label": "Modo normal em fase",
       "condition": "initialDisplacementOneMeters = initialDisplacementTwoMeters e initialVelocityOneMetersPerSecond = initialVelocityTwoMetersPerSecond.",
-      "transitionLimit": "A mola de acoplamento nao deforma e a frequencia e sqrt(k/m).",
+      "transitionLimit": "A mola de acoplamento nao deforma e a frequencia e sqrt(k/m) quando massas e molas externas sao iguais.",
       "sampleFields": [
         "centerOfMassMeters",
         "positionMeters",
         "secondaryZMeters",
+        "couplingPotentialEnergyJoules",
         "totalEnergyJoules"
       ]
     },
@@ -186,12 +268,13 @@
       "id": "out-of-phase-normal-mode",
       "label": "Modo normal fora de fase",
       "condition": "initialDisplacementOneMeters = -initialDisplacementTwoMeters com velocidades opostas.",
-      "transitionLimit": "A mola de acoplamento deforma ao maximo e a frequencia e sqrt((k + 2kc) / m).",
+      "transitionLimit": "A mola de acoplamento deforma ao maximo e a frequencia e sqrt((k + 2kc) / m) quando massas e molas externas sao iguais.",
       "sampleFields": [
         "displacementMeters",
         "positionMeters",
         "secondaryZMeters",
         "tensionNewtons",
+        "couplingPotentialEnergyJoules",
         "totalEnergyJoules"
       ],
       "warningCode": "COUPLED_OUT_OF_PHASE_MODE"
@@ -206,27 +289,50 @@
         "secondaryZMeters",
         "leftKineticEnergyJoules",
         "rightKineticEnergyJoules",
+        "leftElasticPotentialEnergyJoules",
+        "rightElasticPotentialEnergyJoules",
+        "couplingPotentialEnergyJoules",
         "totalEnergyJoules"
       ]
+    },
+    {
+      "id": "damped-system",
+      "label": "Sistema amortecido",
+      "condition": "dampingNewtonSecondsPerMeter > 0.",
+      "transitionLimit": "dampingNewtonSecondsPerMeter = 0 conserva energia mecanica no modelo ideal.",
+      "sampleFields": [
+        "positionMeters",
+        "secondaryZMeters",
+        "velocityMetersPerSecond",
+        "secondaryVelocityMetersPerSecond",
+        "thermalEnergyJoules",
+        "totalEnergyJoules"
+      ],
+      "warningCode": "COUPLED_DAMPED_SYSTEM"
     }
   ],
   "limits": [
-    "Modelo unidimensional de duas massas iguais, duas molas externas lineares e uma mola de acoplamento linear.",
+    "Modelo unidimensional de duas massas, duas molas externas lineares, uma mola de acoplamento linear e amortecimento viscoso opcional.",
     "A mola de acoplamento pode ser zerada para comparar com dois osciladores independentes, sem bloquear parametro fisicamente valido.",
-    "Nao ha amortecimento, colisao entre massas, massa das molas, fim de curso, atrito seco ou nao linearidade elastica.",
-    "Os modos normais sao calculados para massas iguais e molas externas iguais; generalizacoes ficam fora desta primeira fatia."
+    "Nao ha colisao entre massas, massa das molas, fim de curso, atrito seco ou nao linearidade elastica.",
+    "Os atalhos de modo em fase e oposicao de fase sao modos normais limpos quando massas e molas externas sao iguais; com parametros diferentes, o integrador continua valido, mas a decomposicao modal simples vira uma aproximacao didatica."
   ],
   "formulas": [
     {
       "id": "coupled-equations",
       "title": "Equacoes acopladas",
-      "expressionLatex": "m\\ddot{x}_1 = -kx_1 - k_c(x_1-x_2),\\quad m\\ddot{x}_2 = -kx_2 - k_c(x_2-x_1)",
-      "description": "O integrador RK4 usa as duas equacoes para gerar posicoes, velocidades, forcas e energia das massas.",
+      "expressionLatex": "m_A\\ddot{x}_A = -k_Ax_A - k_c(x_A-x_B) - c\\dot{x}_A,\\quad m_B\\ddot{x}_B = -k_Bx_B - k_c(x_B-x_A) - c\\dot{x}_B",
+      "description": "O integrador RK4 usa as duas equacoes para gerar posicoes, velocidades, forcas, dissipacao e energia das massas.",
       "variables": [
         {
-          "symbol": "x_1,x_2",
+          "symbol": "x_A,x_B",
           "label": "deslocamentos das massas",
           "unit": "m"
+        },
+        {
+          "symbol": "k_A,k_B",
+          "label": "constantes das molas verticais",
+          "unit": "N/m"
         },
         {
           "symbol": "k_c",
@@ -234,17 +340,25 @@
           "unit": "N/m"
         },
         {
-          "symbol": "m",
-          "label": "massa de cada corpo",
+          "symbol": "c",
+          "label": "amortecimento viscoso comum",
+          "unit": "Ns/m"
+        },
+        {
+          "symbol": "m_A,m_B",
+          "label": "massas dos corpos",
           "unit": "kg"
         }
       ],
       "usedWhen": "Usar para acompanhar como a mola central transfere energia entre os corpos.",
-      "notUsedWhen": "Nao cobre massas diferentes, molas nao lineares, amortecimento ou acoplamentos com mais de duas massas.",
+      "notUsedWhen": "Nao cobre molas nao lineares, atrito seco, colisao, fim de curso ou acoplamentos com mais de duas massas.",
       "parameterIds": [
-        "massKilograms",
-        "springConstantNewtonsPerMeter",
+        "massOneKilograms",
+        "massTwoKilograms",
+        "springConstantOneNewtonsPerMeter",
+        "springConstantTwoNewtonsPerMeter",
         "couplingSpringConstantNewtonsPerMeter",
+        "dampingNewtonSecondsPerMeter",
         "initialDisplacementOneMeters",
         "initialDisplacementTwoMeters"
       ],
@@ -253,7 +367,8 @@
         "secondaryZMeters",
         "velocityMetersPerSecond",
         "secondaryVelocityMetersPerSecond",
-        "tensionNewtons"
+        "tensionNewtons",
+        "thermalEnergyJoules"
       ],
       "relatedChartIds": ["position-time", "velocity-time", "forces-time"],
       "relatedVectorIds": ["velocity", "secondaryVelocity", "tension"],
@@ -263,7 +378,7 @@
       "id": "normal-modes",
       "title": "Modos normais",
       "expressionLatex": "\\omega_+ = \\sqrt{\\frac{k}{m}},\\quad \\omega_- = \\sqrt{\\frac{k + 2k_c}{m}}",
-      "description": "O modo em fase nao deforma a mola central; o modo fora de fase deforma a mola central e fica mais rapido.",
+      "description": "Quando massas e molas externas sao iguais, o modo em fase nao deforma a mola central; o modo fora de fase deforma a mola central e fica mais rapido.",
       "variables": [
         {
           "symbol": "\\omega_+",
@@ -284,8 +399,10 @@
       "usedWhen": "Usar para comparar os presets em fase, fora de fase e batimento.",
       "notUsedWhen": "Nao vale para massas ou molas externas diferentes.",
       "parameterIds": [
-        "massKilograms",
-        "springConstantNewtonsPerMeter",
+        "massOneKilograms",
+        "massTwoKilograms",
+        "springConstantOneNewtonsPerMeter",
+        "springConstantTwoNewtonsPerMeter",
         "couplingSpringConstantNewtonsPerMeter"
       ],
       "sampleFields": [
@@ -300,37 +417,44 @@
     {
       "id": "coupled-energy",
       "title": "Energia mecanica acoplada",
-      "expressionLatex": "E = \\frac{1}{2}m(v_1^2+v_2^2)+\\frac{1}{2}k(x_1^2+x_2^2)+\\frac{1}{2}k_c(x_1-x_2)^2",
-      "description": "A energia total permanece constante no modelo ideal, enquanto as parcelas cineticas mostram a troca entre massas.",
+      "expressionLatex": "E_m = \\frac{1}{2}m_Av_A^2+\\frac{1}{2}m_Bv_B^2+\\frac{1}{2}k_Ax_A^2+\\frac{1}{2}k_Bx_B^2+\\frac{1}{2}k_c(x_A-x_B)^2",
+      "description": "A energia mecanica permanece constante sem amortecimento e diminui quando c > 0, enquanto as parcelas por massa e da mola central mostram a troca de energia.",
       "variables": [
         {
-          "symbol": "E",
+          "symbol": "E_m",
           "label": "energia mecanica total",
           "unit": "J"
         },
         {
-          "symbol": "v_1,v_2",
+          "symbol": "v_A,v_B",
           "label": "velocidades das massas",
           "unit": "m/s"
         },
         {
-          "symbol": "x_1-x_2",
+          "symbol": "x_A-x_B",
           "label": "alongamento relativo da mola central",
           "unit": "m"
         }
       ],
       "usedWhen": "Usar para verificar conservacao e troca de energia no grafico de energia.",
-      "notUsedWhen": "Nao inclui dissipacao ou energia interna das molas.",
+      "notUsedWhen": "Nao inclui atrito seco, perdas nao lineares ou energia interna das molas.",
       "parameterIds": [
-        "massKilograms",
-        "springConstantNewtonsPerMeter",
-        "couplingSpringConstantNewtonsPerMeter"
+        "massOneKilograms",
+        "massTwoKilograms",
+        "springConstantOneNewtonsPerMeter",
+        "springConstantTwoNewtonsPerMeter",
+        "couplingSpringConstantNewtonsPerMeter",
+        "dampingNewtonSecondsPerMeter"
       ],
       "sampleFields": [
         "kineticEnergyJoules",
         "leftKineticEnergyJoules",
         "rightKineticEnergyJoules",
+        "leftElasticPotentialEnergyJoules",
+        "rightElasticPotentialEnergyJoules",
+        "couplingPotentialEnergyJoules",
         "potentialEnergyJoules",
+        "thermalEnergyJoules",
         "totalEnergyJoules"
       ],
       "relatedChartIds": ["energy-time"],

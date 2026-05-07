@@ -62,6 +62,11 @@ export type SimulationParameter = {
   kind: 'number' | 'boolean' | 'choice'
   min?: number
   max?: number
+  options?: Array<{
+    description?: string
+    label: string
+    value: string
+  }>
   step?: number
   defaultValue: ParameterValue
 }

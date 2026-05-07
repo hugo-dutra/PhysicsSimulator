@@ -7,11 +7,13 @@ import {
   hydrostaticTankDepthMeters,
   toKinematicsParameters,
   type AtwoodMachineParameters,
+  type BeatsParameters,
   type CentripetalForceCurveParameters,
   type CollisionsParameters,
   type ContinuityBernoulliParameters,
   type CoupledOscillatorsParameters,
   type DampedOscillatorParameters,
+  type DopplerEffectParameters,
   type ForcedOscillatorResonanceParameters,
   type GravitationalFieldOrbitsParameters,
   type HydrostaticsBuoyancyParameters,
@@ -302,12 +304,16 @@ describe('kinematics physics engine', () => {
   it('conserves total energy while coupled oscillators exchange kinetic energy', () => {
     const parameters: CoupledOscillatorsParameters = {
       couplingSpringConstantNewtonsPerMeter: 5,
+      dampingNewtonSecondsPerMeter: 0,
+      gravityMetersPerSecondSquared: 9.81,
       initialDisplacementOneMeters: 0.28,
       initialDisplacementTwoMeters: 0,
       initialVelocityOneMetersPerSecond: 0,
       initialVelocityTwoMetersPerSecond: 0,
-      massKilograms: 0.8,
-      springConstantNewtonsPerMeter: 18,
+      massOneKilograms: 0.8,
+      massTwoKilograms: 0.8,
+      springConstantOneNewtonsPerMeter: 18,
+      springConstantTwoNewtonsPerMeter: 18,
     }
     const result = computeKinematicsTimeline({
       durationSeconds: 12,
@@ -328,15 +334,48 @@ describe('kinematics physics engine', () => {
     expect(maxEnergyDrift / initialEnergy).toBeLessThan(1e-6)
     expect(maxSecondaryKineticEnergy).toBeGreaterThan(0.01)
     expect(result.samples[0].displacementMeters).toBeCloseTo(0.28)
+    expect(result.samples[0].couplingPotentialEnergyJoules).toBeGreaterThan(0)
+    expect(result.samples[0].leftElasticPotentialEnergyJoules).toBeGreaterThan(0)
+  })
+
+  it('dissipates mechanical energy in damped coupled oscillators', () => {
+    const parameters: CoupledOscillatorsParameters = {
+      couplingSpringConstantNewtonsPerMeter: 5,
+      dampingNewtonSecondsPerMeter: 0.22,
+      gravityMetersPerSecondSquared: 9.81,
+      initialDisplacementOneMeters: 0.28,
+      initialDisplacementTwoMeters: 0,
+      initialVelocityOneMetersPerSecond: 0,
+      initialVelocityTwoMetersPerSecond: 0,
+      massOneKilograms: 0.8,
+      massTwoKilograms: 0.8,
+      springConstantOneNewtonsPerMeter: 18,
+      springConstantTwoNewtonsPerMeter: 18,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 8,
+      parameters,
+      sampleRateHz: 120,
+      simulationId: 'coupled-oscillators',
+    })
+    const initialEnergy = result.samples[0].totalEnergyJoules
+    const finalSample = result.samples.at(-1)
+
+    expect(finalSample?.totalEnergyJoules).toBeLessThan(initialEnergy)
+    expect(finalSample?.thermalEnergyJoules).toBeGreaterThan(0)
+    expect(result.warnings[0]?.code).toBe('COUPLED_DAMPED_SYSTEM')
   })
 
   it('computes a traveling wave on a string from one analytic profile', () => {
     const parameters: WaveOnStringParameters = {
       amplitudeMeters: 0.2,
       frequencyHertz: 0.5,
+      linearDensityKilogramsPerMeter: 0.04,
       phaseDegrees: 0,
       probePositionMeters: 1,
+      speedModel: 'wavelength-frequency',
       stringLengthMeters: 4,
+      tensionNewtons: 0.04,
       wavelengthMeters: 2,
     }
     const result = computeKinematicsTimeline({
@@ -359,6 +398,91 @@ describe('kinematics physics engine', () => {
       -(Math.PI ** 2) * 0.2,
     )
     expect(profile[2].zMeters).toBeCloseTo(midSample.positionMeters)
+  })
+
+  it('lets wavelength reshape the string and speed in wavelength-frequency mode', () => {
+    const baseParameters: WaveOnStringParameters = {
+      amplitudeMeters: 0.2,
+      frequencyHertz: 0.5,
+      linearDensityKilogramsPerMeter: 0.04,
+      phaseDegrees: 0,
+      probePositionMeters: 1,
+      speedModel: 'wavelength-frequency',
+      stringLengthMeters: 4,
+      tensionNewtons: 0.04,
+      wavelengthMeters: 2,
+    }
+    const shortWavelengthSample = computeKinematicsSample(
+      'wave-on-string',
+      baseParameters,
+      0,
+    )
+    const longWavelengthSample = computeKinematicsSample(
+      'wave-on-string',
+      {
+        ...baseParameters,
+        wavelengthMeters: 4,
+      },
+      0,
+    )
+
+    expect(shortWavelengthSample.speedMetersPerSecond).toBeCloseTo(1)
+    expect(longWavelengthSample.speedMetersPerSecond).toBeCloseTo(2)
+    expect(shortWavelengthSample.secondaryRadiusMeters).toBeCloseTo(2)
+    expect(longWavelengthSample.secondaryRadiusMeters).toBeCloseTo(4)
+    expect(shortWavelengthSample.positionMeters).toBeCloseTo(0)
+    expect(longWavelengthSample.positionMeters).toBeCloseTo(0.2)
+  })
+
+  it('can derive wave speed on a string from tension and linear density', () => {
+    const parameters: WaveOnStringParameters = {
+      amplitudeMeters: 0.2,
+      frequencyHertz: 2,
+      linearDensityKilogramsPerMeter: 0.08,
+      phaseDegrees: 0,
+      probePositionMeters: 0.5,
+      speedModel: 'string-properties',
+      stringLengthMeters: 4,
+      tensionNewtons: 18,
+      wavelengthMeters: 2,
+    }
+    const sample = computeKinematicsSample('wave-on-string', parameters, 0)
+    const expectedSpeed = Math.sqrt(18 / 0.08)
+
+    expect(sample.speedMetersPerSecond).toBeCloseTo(expectedSpeed)
+    expect(sample.secondaryRadiusMeters).toBeCloseTo(expectedSpeed / 2)
+    expect(sample.tensionNewtons).toBeCloseTo(18)
+  })
+
+  it('keeps wavelength inversely tied to frequency for fixed string speed', () => {
+    const parameters: WaveOnStringParameters = {
+      amplitudeMeters: 0.2,
+      frequencyHertz: 0.4,
+      linearDensityKilogramsPerMeter: 0.025,
+      phaseDegrees: 0,
+      probePositionMeters: 0.5,
+      speedModel: 'string-properties',
+      stringLengthMeters: 4,
+      tensionNewtons: 0.07056,
+      wavelengthMeters: 2,
+    }
+    const lowFrequencySample = computeKinematicsSample(
+      'wave-on-string',
+      parameters,
+      0,
+    )
+    const highFrequencySample = computeKinematicsSample(
+      'wave-on-string',
+      { ...parameters, frequencyHertz: 0.8 },
+      0,
+    )
+
+    expect(lowFrequencySample.speedMetersPerSecond).toBeCloseTo(1.68)
+    expect(highFrequencySample.speedMetersPerSecond).toBeCloseTo(1.68)
+    expect(lowFrequencySample.secondaryRadiusMeters).toBeCloseTo(4.2)
+    expect(highFrequencySample.secondaryRadiusMeters).toBeCloseTo(2.1)
+    expect(lowFrequencySample.periodSeconds).toBeCloseTo(2.5)
+    expect(highFrequencySample.periodSeconds).toBeCloseTo(1.25)
   })
 
   it('sums counter-propagating waves and reports destructive phase', () => {
@@ -417,7 +541,63 @@ describe('kinematics physics engine', () => {
     expect(antinodeSample.frequencyHertz).toBeCloseTo(
       (2 * expectedWaveSpeed) / (2 * 4),
     )
+    expect(antinodeSample.periodSeconds).toBeCloseTo(
+      1 / antinodeSample.frequencyHertz,
+    )
+    expect(antinodeSample.secondaryRadiusMeters).toBeCloseTo(4)
     expect(antinodeSample.speedMetersPerSecond).toBeCloseTo(expectedWaveSpeed)
+  })
+
+  it('computes acoustic beats from the same pressure profile used by the scene', () => {
+    const parameters: BeatsParameters = {
+      amplitudePascals: 0.3,
+      frequencyOneHertz: 3,
+      frequencyTwoHertz: 3.5,
+      mediumLengthMeters: 6,
+      mediumSpeedMetersPerSecond: 6,
+      phaseDifferenceDegrees: 0,
+      probePositionMeters: 3,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 2,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'beats',
+    })
+    const sample = result.samples[0]
+    const profile = computeMechanicalWaveProfile('beats', parameters, 0, 7)
+
+    expect(sample.frequencyHertz).toBeCloseTo(0.5)
+    expect(sample.periodSeconds).toBeCloseTo(2)
+    expect(sample.pressurePascals).toBeCloseTo(sample.positionMeters)
+    expect(profile[3].zMeters).toBeCloseTo(sample.pressurePascals)
+    expect(result.warnings[0]?.code).toBe('BEATS_ENVELOPE_ACTIVE')
+  })
+
+  it('computes subsonic Doppler frequency shifts and compressed fronts', () => {
+    const parameters: DopplerEffectParameters = {
+      amplitudePascals: 0.4,
+      emittedFrequencyHertz: 2,
+      mediumLengthMeters: 8,
+      mediumSpeedMetersPerSecond: 6,
+      observerPositionMeters: 6,
+      observerSpeedMetersPerSecond: 0,
+      sourceInitialPositionMeters: 2,
+      sourceSpeedMetersPerSecond: 1,
+    }
+    const sample = computeKinematicsSample('doppler-effect', parameters, 0)
+    const profile = computeMechanicalWaveProfile(
+      'doppler-effect',
+      parameters,
+      0,
+      9,
+    )
+
+    expect(sample.frequencyHertz).toBeCloseTo(2 * (6 / 5))
+    expect(sample.secondaryRadiusMeters).toBeCloseTo(2.5)
+    expect(sample.forceOneNewtons).toBeCloseTo(3)
+    expect(sample.secondaryXMeters).toBeCloseTo(-2)
+    expect(profile[6].envelopeMeters).toBeGreaterThan(0)
   })
 
   it('flags centripetal grip demand against available friction', () => {
@@ -1442,7 +1622,7 @@ describe('kinematics physics engine', () => {
 
 function readFixtureLikeParameters(
   simulationId: KinematicsSimulationId,
-): Record<string, boolean | number> {
+): Record<string, boolean | number | string> {
   switch (simulationId) {
     case 'uniform-linear-motion':
       return {
@@ -1458,6 +1638,16 @@ function readFixtureLikeParameters(
         massOneKilograms: 1,
         massTwoKilograms: 1.5,
         travelLimitMeters: 3,
+      }
+    case 'beats':
+      return {
+        amplitudePascals: 0.3,
+        frequencyOneHertz: 3,
+        frequencyTwoHertz: 3.4,
+        mediumLengthMeters: 6,
+        mediumSpeedMetersPerSecond: 6,
+        phaseDifferenceDegrees: 0,
+        probePositionMeters: 3,
       }
     case 'centripetal-force-curve':
       return {
@@ -1494,12 +1684,16 @@ function readFixtureLikeParameters(
     case 'coupled-oscillators':
       return {
         couplingSpringConstantNewtonsPerMeter: 5,
+        dampingNewtonSecondsPerMeter: 0,
+        gravityMetersPerSecondSquared: 9.81,
         initialDisplacementOneMeters: 0.28,
         initialDisplacementTwoMeters: 0,
         initialVelocityOneMetersPerSecond: 0,
         initialVelocityTwoMetersPerSecond: 0,
-        massKilograms: 0.8,
-        springConstantNewtonsPerMeter: 18,
+        massOneKilograms: 0.8,
+        massTwoKilograms: 0.8,
+        springConstantOneNewtonsPerMeter: 18,
+        springConstantTwoNewtonsPerMeter: 18,
       }
     case 'damped-oscillator':
       return {
@@ -1508,6 +1702,17 @@ function readFixtureLikeParameters(
         initialVelocityMetersPerSecond: 0,
         massKilograms: 1,
         springConstantNewtonsPerMeter: 16,
+      }
+    case 'doppler-effect':
+      return {
+        amplitudePascals: 0.4,
+        emittedFrequencyHertz: 2,
+        mediumLengthMeters: 8,
+        mediumSpeedMetersPerSecond: 6,
+        observerPositionMeters: 6,
+        observerSpeedMetersPerSecond: 0,
+        sourceInitialPositionMeters: 2,
+        sourceSpeedMetersPerSecond: 0.8,
       }
     case 'forced-oscillator-resonance':
       return {
@@ -1523,9 +1728,12 @@ function readFixtureLikeParameters(
       return {
         amplitudeMeters: 0.22,
         frequencyHertz: 1.2,
+        linearDensityKilogramsPerMeter: 0.04,
         phaseDegrees: 0,
         probePositionMeters: 1.5,
+        speedModel: 'wavelength-frequency',
         stringLengthMeters: 4,
+        tensionNewtons: 0.2304,
         wavelengthMeters: 2,
       }
     case 'superposition-interference':

@@ -1,10 +1,12 @@
 import catalogJson from '../../fixtures/simulations/catalog.json'
 import atwoodMachineFixtureJson from '../../fixtures/simulations/mechanics-atwood-machine.json'
+import beatsFixtureJson from '../../fixtures/simulations/waves-beats.json'
 import centripetalForceCurveFixtureJson from '../../fixtures/simulations/mechanics-centripetal-force-curve.json'
 import collisionsFixtureJson from '../../fixtures/simulations/mechanics-collisions-1d-2d.json'
 import continuityBernoulliFixtureJson from '../../fixtures/simulations/mechanics-continuity-bernoulli.json'
 import coupledOscillatorsFixtureJson from '../../fixtures/simulations/waves-coupled-oscillators.json'
 import dampedOscillatorFixtureJson from '../../fixtures/simulations/waves-damped-oscillator.json'
+import dopplerEffectFixtureJson from '../../fixtures/simulations/waves-doppler-effect.json'
 import forcedOscillatorResonanceFixtureJson from '../../fixtures/simulations/waves-forced-oscillator-resonance.json'
 import gravitationalFieldOrbitsFixtureJson from '../../fixtures/simulations/mechanics-gravitational-field-orbits.json'
 import hydrostaticsBuoyancyFixtureJson from '../../fixtures/simulations/mechanics-hydrostatics-buoyancy.json'
@@ -40,12 +42,14 @@ export const inclinedPlaneFixture =
 
 export const kinematicsFixtures = {
   'atwood-machine': atwoodMachineFixtureJson as SimulationFixture,
+  beats: beatsFixtureJson as SimulationFixture,
   'centripetal-force-curve':
     centripetalForceCurveFixtureJson as SimulationFixture,
   'collisions-1d-2d': collisionsFixtureJson as SimulationFixture,
   'continuity-bernoulli': continuityBernoulliFixtureJson as SimulationFixture,
   'coupled-oscillators': coupledOscillatorsFixtureJson as SimulationFixture,
   'damped-oscillator': dampedOscillatorFixtureJson as SimulationFixture,
+  'doppler-effect': dopplerEffectFixtureJson as SimulationFixture,
   'forced-oscillator-resonance':
     forcedOscillatorResonanceFixtureJson as SimulationFixture,
   'gravitational-field-orbits':

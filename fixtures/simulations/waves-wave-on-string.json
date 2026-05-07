@@ -31,6 +31,9 @@
     "amplitudeMeters": 0.32,
     "wavelengthMeters": 2.4,
     "frequencyHertz": 0.7,
+    "speedModel": "string-properties",
+    "tensionNewtons": 0.07056,
+    "linearDensityKilogramsPerMeter": 0.025,
     "phaseDegrees": 0,
     "stringLengthMeters": 6,
     "probePositionMeters": 3
@@ -50,7 +53,7 @@
     {
       "id": "wavelengthMeters",
       "label": "Comprimento de onda",
-      "description": "Distancia entre cristas consecutivas. Aumentar alonga a forma espacial; diminuir coloca mais oscilacoes dentro da mesma corda e altera a velocidade v = lambda f.",
+      "description": "Distancia de crista a crista. No modo corda tensionada, alterar lambda recalcula a frequencia de forma inversa para manter v = sqrt(T/mu) quando a fonte esta oscilando; no modo lambda f, altera a velocidade para a mesma frequencia.",
       "unit": "m",
       "kind": "number",
       "min": 0.6,
@@ -61,13 +64,54 @@
     {
       "id": "frequencyHertz",
       "label": "Frequencia",
-      "description": "Numero de ciclos por segundo. Zerar congela o perfil; aumentar faz as cristas cruzarem o probe mais rapidamente e aumenta v = lambda f.",
+      "description": "Numero de ciclos por segundo. Zerar congela o perfil; no modo corda tensionada, aumentar a frequencia encurta lambda pela relacao lambda = v/f.",
       "unit": "Hz",
       "kind": "number",
       "min": 0,
       "max": 4,
       "step": 0.05,
       "defaultValue": 0.7
+    },
+    {
+      "id": "speedModel",
+      "label": "Modelo de velocidade",
+      "description": "Define de onde vem a velocidade horizontal da perturbacao. No modo corda tensionada, o motor usa v = sqrt(T/mu) e acopla lambda e frequencia; no modo lambda f, calcula v diretamente por lambda f.",
+      "kind": "choice",
+      "defaultValue": "string-properties",
+      "options": [
+        {
+          "label": "Corda tensionada",
+          "value": "string-properties",
+          "description": "A velocidade da onda vem da tensao e da densidade linear; frequencia e lambda variam de forma inversa."
+        },
+        {
+          "label": "lambda vezes f",
+          "value": "wavelength-frequency",
+          "description": "A velocidade e calculada diretamente por lambda f para comparar a relacao cinematica."
+        }
+      ]
+    },
+    {
+      "id": "tensionNewtons",
+      "label": "Tensao",
+      "description": "Forca que estica a corda. No modo corda tensionada, aumentar T eleva v = sqrt(T/mu), fazendo a perturbacao se propagar mais rapido e alongando a lambda efetiva para a mesma frequencia.",
+      "unit": "N",
+      "kind": "number",
+      "min": 0.01,
+      "max": 2,
+      "step": 0.005,
+      "defaultValue": 0.07056
+    },
+    {
+      "id": "linearDensityKilogramsPerMeter",
+      "label": "Densidade linear",
+      "description": "Massa por comprimento da corda. No modo corda tensionada, aumentar mu reduz v = sqrt(T/mu), deixando a propagacao mais lenta e a corda visualmente mais pesada.",
+      "unit": "kg/m",
+      "kind": "number",
+      "min": 0.005,
+      "max": 0.12,
+      "step": 0.001,
+      "defaultValue": 0.025
     },
     {
       "id": "phaseDegrees",
@@ -111,6 +155,9 @@
         "amplitudeMeters": 0.32,
         "wavelengthMeters": 2.4,
         "frequencyHertz": 0.7,
+        "speedModel": "string-properties",
+        "tensionNewtons": 0.07056,
+        "linearDensityKilogramsPerMeter": 0.025,
         "phaseDegrees": 0,
         "stringLengthMeters": 6,
         "probePositionMeters": 3
@@ -123,6 +170,9 @@
         "amplitudeMeters": 0.24,
         "wavelengthMeters": 1.2,
         "frequencyHertz": 1.1,
+        "speedModel": "wavelength-frequency",
+        "tensionNewtons": 0.07056,
+        "linearDensityKilogramsPerMeter": 0.025,
         "phaseDegrees": 30,
         "stringLengthMeters": 6,
         "probePositionMeters": 2.5
@@ -135,6 +185,9 @@
         "amplitudeMeters": 0.35,
         "wavelengthMeters": 2,
         "frequencyHertz": 0,
+        "speedModel": "wavelength-frequency",
+        "tensionNewtons": 0.12,
+        "linearDensityKilogramsPerMeter": 0.03,
         "phaseDegrees": 0,
         "stringLengthMeters": 6,
         "probePositionMeters": 3
@@ -145,20 +198,22 @@
     {
       "id": "ideal-traveling-wave",
       "label": "Onda viajante senoidal ideal",
-      "condition": "amplitudeMeters >= 0, wavelengthMeters > 0 e frequencyHertz >= 0.",
-      "transitionLimit": "frequencyHertz = 0 congela o perfil e amplitudeMeters = 0 deixa a corda no equilibrio.",
+      "condition": "amplitudeMeters >= 0, wavelengthMeters > 0, frequencyHertz >= 0, tensionNewtons > 0 e linearDensityKilogramsPerMeter > 0.",
+      "transitionLimit": "frequencyHertz = 0 congela o perfil, amplitudeMeters = 0 deixa a corda no equilibrio, e speedModel troca entre v = sqrt(T/mu) com lambda/f acoplados e v = lambda f.",
       "sampleFields": [
         "positionMeters",
         "velocityMetersPerSecond",
         "accelerationMetersPerSecondSquared",
         "speedMetersPerSecond",
-        "frequencyHertz"
+        "frequencyHertz",
+        "secondaryRadiusMeters",
+        "tensionNewtons"
       ]
     }
   ],
   "limits": [
-    "Modelo senoidal 1D ideal: y(x,t) = A sin(kx - omega t + phi), sem reflexao, amortecimento, dispersao ou tensao variavel.",
-    "A velocidade de propagacao e declarada como v = lambda f; o modelo nao deriva v de tensao e densidade linear nesta primeira fatia.",
+    "Modelo senoidal 1D ideal: y(x,t) = A sin(kx - omega t + phi), sem reflexao, amortecimento ou dispersao.",
+    "No modo corda tensionada, a velocidade de propagacao e calculada por v = sqrt(T/mu); frequencia e lambda permanecem inversamente acopladas pela UI e o sample exibe lambda = v/f. No modo lambda f, mudar lambda ou f altera a velocidade.",
     "A cena desenha o perfil espacial pelo helper fisico do motor; graficos e tabela leem o mesmo probe da corda.",
     "Amplitude zero e frequencia zero sao parametros fisicamente validos e mudam o sample para corda reta ou perfil congelado."
   ],
@@ -180,6 +235,9 @@
         "amplitudeMeters",
         "wavelengthMeters",
         "frequencyHertz",
+        "speedModel",
+        "tensionNewtons",
+        "linearDensityKilogramsPerMeter",
         "phaseDegrees",
         "probePositionMeters"
       ],
@@ -196,20 +254,35 @@
     {
       "id": "wave-speed",
       "title": "Velocidade de propagacao",
-      "expressionLatex": "v=\\lambda f",
-      "description": "Relaciona comprimento de onda, frequencia e velocidade horizontal das cristas.",
+      "expressionLatex": "v=\\sqrt{T/\\mu},\\quad T_p=1/f,\\quad \\lambda=v/f=vT_p",
+      "description": "Relaciona velocidade horizontal das cristas, frequencia, periodo e comprimento de onda quando a velocidade do meio fica fixa.",
       "variables": [
         { "symbol": "v", "label": "velocidade da onda", "unit": "m/s" },
+        { "symbol": "T", "label": "tensao da corda", "unit": "N" },
+        { "symbol": "\\mu", "label": "densidade linear", "unit": "kg/m" },
         { "symbol": "\\lambda", "label": "comprimento de onda", "unit": "m" },
-        { "symbol": "f", "label": "frequencia", "unit": "Hz" }
+        { "symbol": "f", "label": "frequencia", "unit": "Hz" },
+        { "symbol": "T_p", "label": "periodo da fonte", "unit": "s" }
       ],
-      "usedWhen": "Usar para ler como mudar lambda ou f altera a passagem das cristas pelo probe.",
-      "notUsedWhen": "Nao substitui a relacao v = sqrt(T/mu) quando a tensao e densidade linear forem controles do modelo.",
-      "parameterIds": ["wavelengthMeters", "frequencyHertz"],
-      "sampleFields": ["speedMetersPerSecond", "velocityXMetersPerSecond"],
+      "usedWhen": "Usar no modo corda tensionada para ler por que aumentar frequencia diminui lambda e por que periodo maior alonga a onda.",
+      "notUsedWhen": "Nao inclui dispersao, rigidez real, amortecimento ou reflexao nas extremidades.",
+      "parameterIds": [
+        "speedModel",
+        "tensionNewtons",
+        "linearDensityKilogramsPerMeter",
+        "wavelengthMeters",
+        "frequencyHertz"
+      ],
+      "sampleFields": [
+        "speedMetersPerSecond",
+        "secondaryRadiusMeters",
+        "periodSeconds",
+        "velocityXMetersPerSecond",
+        "tensionNewtons"
+      ],
       "relatedChartIds": ["velocity"],
       "relatedVectorIds": ["secondaryVelocity"],
-      "example": "Se lambda dobra com f fixa, a velocidade de propagacao tambem dobra."
+      "example": "Com T = 0,07056 N e mu = 0,025 kg/m, v = 1,68 m/s; se f = 0,7 Hz, lambda efetiva = 2,4 m."
     }
   ]
 }

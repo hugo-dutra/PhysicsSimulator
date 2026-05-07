@@ -70,6 +70,7 @@ import {
   getKinematicsVectorOverlays,
   isKinematicsSimulationId,
   toKinematicsParameters,
+  type CoupledOscillatorsParameters,
   type HydrostaticsBuoyancyParameters,
   type KinematicsParameters,
   type KinematicsSample,
@@ -78,13 +79,16 @@ import {
   type UniformCircularMotionParameters,
   type UniformLinearMotionParameters,
   type UniformlyAcceleratedMotionParameters,
+  type WaveOnStringParameters,
 } from '../../lib/physics/kinematics'
 import atwoodMachineTheory from '../../content/simulations/mechanics/atwood-machine/theory.md?raw'
+import beatsTheory from '../../content/simulations/waves/sound/beats/theory.md?raw'
 import centripetalForceCurveTheory from '../../content/simulations/mechanics/centripetal-force-curve/theory.md?raw'
 import collisionsTheory from '../../content/simulations/mechanics/collisions-1d-2d/theory.md?raw'
 import continuityBernoulliTheory from '../../content/simulations/mechanics/continuity-bernoulli/theory.md?raw'
 import coupledOscillatorsTheory from '../../content/simulations/waves/oscillations/coupled-oscillators/theory.md?raw'
 import dampedOscillatorTheory from '../../content/simulations/waves/oscillations/damped-oscillator/theory.md?raw'
+import dopplerEffectTheory from '../../content/simulations/waves/sound/doppler-effect/theory.md?raw'
 import forcedOscillatorResonanceTheory from '../../content/simulations/waves/oscillations/forced-oscillator-resonance/theory.md?raw'
 import standingWavesTheory from '../../content/simulations/waves/mechanical-waves/standing-waves/theory.md?raw'
 import superpositionInterferenceTheory from '../../content/simulations/waves/mechanical-waves/superposition-interference/theory.md?raw'
@@ -125,6 +129,10 @@ import {
   type KinematicsFrameStats,
 } from './KinematicsScene'
 import { LiveLineChart } from './LiveLineChart'
+import {
+  linkSuperpositionInterferenceParameterValues,
+  linkWaveOnStringParameterValues,
+} from './mechanicalWaveParameterLinking'
 import { ChartFocusButton, PendulumCharts } from './PendulumCharts'
 import {
   buildInclinedPlaneChartConfigs,
@@ -216,11 +224,13 @@ type KinematicsVectorLegendItem = {
 
 const kinematicsTheoryById = {
   'atwood-machine': atwoodMachineTheory,
+  beats: beatsTheory,
   'centripetal-force-curve': centripetalForceCurveTheory,
   'collisions-1d-2d': collisionsTheory,
   'continuity-bernoulli': continuityBernoulliTheory,
   'coupled-oscillators': coupledOscillatorsTheory,
   'damped-oscillator': dampedOscillatorTheory,
+  'doppler-effect': dopplerEffectTheory,
   'forced-oscillator-resonance': forcedOscillatorResonanceTheory,
   'gravitational-field-orbits': gravitationalFieldOrbitsTheory,
   'hydrostatics-buoyancy': hydrostaticsBuoyancyTheory,
@@ -241,6 +251,7 @@ const kinematicsTheoryById = {
 
 const customPresetId = 'custom'
 const defaultPlaybackRate = 1
+const playbackRateOptions = [0.25, 0.5, 1, 2] as const
 const playbackRateParameter = {
   id: 'playbackRate',
   label: 'Velocidade do tempo',
@@ -614,16 +625,34 @@ const kinematicsVectorLegendItemsById = {
       description: 'velocidade da segunda massa acoplada',
     },
     {
-      id: 'resultant',
-      label: 'Resultante A',
-      color: themeTokens.warning,
-      description: 'resultante da mola externa e da mola de acoplamento em A',
+      id: 'forceOne',
+      label: 'F mola A',
+      color: themeTokens.teal,
+      description: 'forca restauradora da mola vertical em A',
     },
     {
       id: 'tension',
-      label: 'Acoplamento',
+      label: 'F acoplamento',
       color: themeTokens.vector,
       description: 'forca trocada pela mola entre as duas massas',
+    },
+    {
+      id: 'forceThree',
+      label: 'F mola B',
+      color: '#A3E635',
+      description: 'forca restauradora da mola vertical em B',
+    },
+    {
+      id: 'resultant',
+      label: 'Resultante A',
+      color: themeTokens.warning,
+      description: 'soma das forcas que aceleram a massa A',
+    },
+    {
+      id: 'forceTwo',
+      label: 'Resultante B',
+      color: themeTokens.danger,
+      description: 'soma das forcas que aceleram a massa B',
     },
   ],
   'particle-equilibrium': [
@@ -811,6 +840,58 @@ const kinematicsVectorLegendItemsById = {
       description: 'vetor constante que curva x(t) no MUV',
     },
   ],
+  beats: [
+    {
+      id: 'displacement',
+      label: 'Pressao',
+      color: themeTokens.vector,
+      description: 'pressao resultante lida no probe pela soma dos dois tons',
+    },
+    {
+      id: 'forceOne',
+      label: 'Tom A',
+      color: themeTokens.cyan,
+      description: 'primeira componente senoidal da pressao sonora',
+    },
+    {
+      id: 'forceTwo',
+      label: 'Tom B',
+      color: '#818CF8',
+      description: 'segunda componente, levemente desafinada em relacao ao tom A',
+    },
+    {
+      id: 'secondaryVelocity',
+      label: 'v som',
+      color: themeTokens.teal,
+      description: 'velocidade de propagacao usada para desenhar as frentes de pressao',
+    },
+  ],
+  'doppler-effect': [
+    {
+      id: 'displacement',
+      label: 'Pressao',
+      color: themeTokens.vector,
+      description: 'pressao instantanea recebida pelo observador',
+    },
+    {
+      id: 'forceOne',
+      label: 'Fonte',
+      color: themeTokens.cyan,
+      description: 'velocidade da fonte no meio didatico',
+    },
+    {
+      id: 'forceTwo',
+      label: 'Observador',
+      color: '#818CF8',
+      description: 'velocidade do observador no mesmo eixo da fonte',
+    },
+    {
+      id: 'secondaryVelocity',
+      label: 'v som',
+      color: themeTokens.teal,
+      description: 'velocidade do som do meio usada na equacao de Doppler',
+    },
+  ],
   'wave-on-string': [
     {
       id: 'displacement',
@@ -834,7 +915,8 @@ const kinematicsVectorLegendItemsById = {
       id: 'secondaryVelocity',
       label: 'v_onda',
       color: '#818CF8',
-      description: 'velocidade de propagacao v = lambda f',
+      description:
+        'velocidade horizontal da perturbacao, por lambda f ou por sqrt(T/mu) conforme o modo',
     },
   ],
   'superposition-interference': [
@@ -1220,12 +1302,21 @@ export function SimulationShell() {
         ...preset.parameters,
       })
     } else if (isKinematicsSelected) {
+      const nextParameterValues = {
+        ...selectedKinematicsFixture.defaultParameters,
+        ...preset.parameters,
+      }
+
       setKinematicsParameterValuesById((currentValues) => ({
         ...currentValues,
-        [selectedKinematicsSimulationId]: {
-          ...selectedKinematicsFixture.defaultParameters,
-          ...preset.parameters,
-        },
+        [selectedKinematicsSimulationId]:
+          selectedKinematicsSimulationId === 'wave-on-string'
+            ? linkWaveOnStringParameterValues({
+                changedParameterId: 'speedModel',
+                parameterDefinitions: selectedKinematicsFixture.parameters,
+                values: nextParameterValues,
+              })
+            : nextParameterValues,
       }))
     } else {
       setPendulumParameterValues({
@@ -1278,13 +1369,33 @@ export function SimulationShell() {
           })
         }
       }
-      setKinematicsParameterValuesById((currentValues) => ({
-        ...currentValues,
-        [selectedKinematicsSimulationId]: {
-          ...currentValues[selectedKinematicsSimulationId],
+      setKinematicsParameterValuesById((currentValues) => {
+        const previousValues = currentValues[selectedKinematicsSimulationId]
+        const nextValues = {
+          ...previousValues,
           [parameter.id]: clampedValue,
-        },
-      }))
+        }
+        const linkedValues =
+          selectedKinematicsSimulationId === 'wave-on-string'
+            ? linkWaveOnStringParameterValues({
+                changedParameterId: parameter.id,
+                parameterDefinitions: selectedKinematicsFixture.parameters,
+                values: nextValues,
+              })
+            : selectedKinematicsSimulationId === 'superposition-interference'
+              ? linkSuperpositionInterferenceParameterValues({
+                  changedParameterId: parameter.id,
+                  parameterDefinitions: selectedKinematicsFixture.parameters,
+                  previousValues,
+                  values: nextValues,
+                })
+              : nextValues
+
+        return {
+          ...currentValues,
+          [selectedKinematicsSimulationId]: linkedValues,
+        }
+      })
     } else {
       setPendulumSelectedPresetId(customPresetId)
       setPendulumParameterValues((currentValues) => ({
@@ -1722,6 +1833,56 @@ function SimulationControlsPanel({
     : playbackRate === 0 && isPlaying
       ? 'pausado (0x)'
       : 'pausado'
+  const isCoupledOscillator = fixture.simulationId === 'coupled-oscillators'
+  const parameterGroups = getSimulationParameterGroups(fixture)
+  const presetLabel = isCoupledOscillator ? 'Experimentos prontos' : 'Preset'
+  const customPresetLabel = isCoupledOscillator
+    ? 'Livre personalizado'
+    : 'Personalizado'
+  const renderParameterEditor = (parameter: SimulationParameter) => {
+    if (parameter.kind === 'boolean') {
+      const value = readBooleanParameter(parameterValues, parameter)
+
+      return (
+        <BooleanParameterControl
+          key={`${parameter.id}:${value}`}
+          onChange={(nextValue) => {
+            onParameterChange(parameter, nextValue)
+          }}
+          parameter={parameter}
+          value={value}
+        />
+      )
+    }
+
+    if (parameter.kind === 'choice') {
+      const value = readChoiceParameter(parameterValues, parameter)
+
+      return (
+        <ChoiceParameterControl
+          key={`${parameter.id}:${value}`}
+          onChange={(nextValue) => {
+            onParameterChange(parameter, nextValue)
+          }}
+          parameter={parameter}
+          value={value}
+        />
+      )
+    }
+
+    const value = readNumericParameter(parameterValues, parameter)
+
+    return (
+      <ParameterControl
+        key={`${parameter.id}:${value}`}
+        onChange={(nextValue) => {
+          onParameterChange(parameter, nextValue)
+        }}
+        parameter={parameter}
+        value={value}
+      />
+    )
+  }
 
   return (
     <Box
@@ -1844,7 +2005,7 @@ function SimulationControlsPanel({
 
         <TextField
           fullWidth
-          label="Preset"
+          label={presetLabel}
           onChange={(event) => {
             onPresetChange(event.target.value)
           }}
@@ -1852,7 +2013,7 @@ function SimulationControlsPanel({
           size="small"
           value={selectedPresetId}
         >
-          <MenuItem value={customPresetId}>Personalizado</MenuItem>
+          <MenuItem value={customPresetId}>{customPresetLabel}</MenuItem>
           {fixture.presets.map((preset) => (
             <MenuItem key={preset.id} value={preset.id}>
               {preset.label}
@@ -1888,41 +2049,24 @@ function SimulationControlsPanel({
           </Stack>
         </Box>
 
-        <Stack spacing={1.5}>
-          {fixture.parameters.map((parameter) => {
-            if (parameter.kind === 'boolean') {
-              const value = readBooleanParameter(parameterValues, parameter)
-
-              return (
-                <BooleanParameterControl
-                  key={`${parameter.id}:${value}`}
-                  onChange={(nextValue) => {
-                    onParameterChange(parameter, nextValue)
-                  }}
-                  parameter={parameter}
-                  value={value}
-                />
-              )
-            }
-
-            const value = readNumericParameter(parameterValues, parameter)
-
-            return (
-              <ParameterControl
-                key={`${parameter.id}:${value}`}
-                onChange={(nextValue) => {
-                  onParameterChange(parameter, nextValue)
-                }}
-                parameter={parameter}
-                value={value}
-              />
-            )
-          })}
-        </Stack>
+        {parameterGroups.map((group) => (
+          <Box key={group.label ?? 'parameters'}>
+            {group.label ? (
+              <Typography sx={{ mb: 0.75 }} variant="h2">
+                {group.label}
+              </Typography>
+            ) : null}
+            <Stack spacing={1.5}>
+              {group.parameters.map((parameter) =>
+                renderParameterEditor(parameter),
+              )}
+            </Stack>
+          </Box>
+        ))}
 
         <Box>
           <Typography sx={{ mb: 0.75 }} variant="h2">
-            Overlays
+            {isCoupledOscillator ? 'Visualizacao' : 'Overlays'}
           </Typography>
           <Stack spacing={0.5}>
             <FormControlLabel
@@ -2002,6 +2146,72 @@ function SimulationControlsPanel({
       </Stack>
     </Box>
   )
+}
+
+type SimulationParameterGroup = {
+  label: string | null
+  parameters: SimulationParameter[]
+}
+
+function getSimulationParameterGroups(
+  fixture: SimulationFixture,
+): SimulationParameterGroup[] {
+  if (fixture.simulationId !== 'coupled-oscillators') {
+    return [{ label: null, parameters: fixture.parameters }]
+  }
+
+  const parametersById = new Map(
+    fixture.parameters.map((parameter) => [parameter.id, parameter]),
+  )
+  const usedParameterIds = new Set<string>()
+  const readGroup = (ids: string[]) =>
+    ids.flatMap((id) => {
+      const parameter = parametersById.get(id)
+
+      if (!parameter) {
+        return []
+      }
+
+      usedParameterIds.add(id)
+      return [parameter]
+    })
+
+  const groups: SimulationParameterGroup[] = [
+    {
+      label: 'Condicoes iniciais',
+      parameters: readGroup([
+        'initialDisplacementOneMeters',
+        'initialDisplacementTwoMeters',
+        'initialVelocityOneMetersPerSecond',
+        'initialVelocityTwoMetersPerSecond',
+      ]),
+    },
+    {
+      label: 'Parametros fisicos',
+      parameters: readGroup([
+        'massOneKilograms',
+        'massTwoKilograms',
+        'springConstantOneNewtonsPerMeter',
+        'springConstantTwoNewtonsPerMeter',
+        'couplingSpringConstantNewtonsPerMeter',
+        'dampingNewtonSecondsPerMeter',
+        'gravityMetersPerSecondSquared',
+      ]),
+    },
+  ].filter((group) => group.parameters.length > 0)
+
+  const remainingParameters = fixture.parameters.filter(
+    (parameter) => !usedParameterIds.has(parameter.id),
+  )
+
+  if (remainingParameters.length > 0) {
+    groups.push({
+      label: 'Outros parametros',
+      parameters: remainingParameters,
+    })
+  }
+
+  return groups
 }
 
 function SimulationSidebar({
@@ -3742,13 +3952,21 @@ function KinematicsRuntime({
     () =>
       readoutsExpanded
         ? buildKinematicsReadoutMetrics({
-            frameStats,
-            sample: liveSample,
-            showEnergy: overlays.energy,
-            simulationId,
-          })
+          frameStats,
+          parameters,
+          sample: liveSample,
+          showEnergy: overlays.energy,
+          simulationId,
+        })
         : [],
-    [frameStats, liveSample, overlays.energy, readoutsExpanded, simulationId],
+    [
+      frameStats,
+      liveSample,
+      overlays.energy,
+      parameters,
+      readoutsExpanded,
+      simulationId,
+    ],
   )
 
   return (
@@ -3927,6 +4145,7 @@ function KinematicsRuntime({
               playbackRate={playbackRate}
               resetVersion={resetVersion}
               samples={samples}
+              showEnergy={overlays.energy}
               showTrace={overlays.trace}
               showVectors={overlays.vectors}
               simulationId={simulationId}
@@ -3936,6 +4155,14 @@ function KinematicsRuntime({
             ) : null}
             {simulationId === 'work-energy-track' && overlays.energy ? (
               <WorkEnergyTrackHud sample={liveSample} />
+            ) : null}
+            {simulationId === 'coupled-oscillators' ? (
+              <CoupledOscillatorHud
+                parameters={parameters as CoupledOscillatorsParameters}
+                sample={liveSample}
+                showAnnotation={!isPlaying}
+                showEnergy={overlays.energy}
+              />
             ) : null}
             {simulationId === 'uniform-linear-motion' ? (
               <UniformLinearMotionHud
@@ -4212,11 +4439,13 @@ function KinematicsRuntime({
 
 function buildKinematicsReadoutMetrics({
   frameStats,
+  parameters,
   sample,
   showEnergy,
   simulationId,
 }: {
   frameStats: KinematicsFrameStats
+  parameters: KinematicsParameters
   sample: KinematicsSample
   showEnergy: boolean
   simulationId: KinematicsSimulationId
@@ -4483,7 +4712,75 @@ function buildKinematicsReadoutMetrics({
         label: 'Acoplamento',
         value: formatNumber(sample.tensionNewtons, 'N'),
       },
+      {
+        label: 'Energia A',
+        value: formatEnergy(
+          sample.leftKineticEnergyJoules +
+            sample.leftElasticPotentialEnergyJoules,
+        ),
+      },
+      {
+        label: 'Energia B',
+        value: formatEnergy(
+          sample.rightKineticEnergyJoules +
+            sample.rightElasticPotentialEnergyJoules,
+        ),
+      },
+      {
+        label: 'Energia acopl.',
+        value: formatEnergy(sample.couplingPotentialEnergyJoules),
+      },
       ...energyMetric,
+      frameMetric,
+    ]
+  }
+
+  if (
+    simulationId === 'beats' ||
+    simulationId === 'doppler-effect'
+  ) {
+    return [
+      {
+        label: simulationId === 'beats' ? 'Pressao resultante' : 'Pressao recebida',
+        value: formatNumber(sample.pressurePascals, 'Pa'),
+      },
+      {
+        label: simulationId === 'beats' ? 'f batimento' : "f observada",
+        value: formatNumber(sample.frequencyHertz, 'Hz'),
+      },
+      {
+        label: simulationId === 'beats' ? 'f media' : 'f emitida',
+        value: formatNumber(sample.secondarySpeedMetersPerSecond, 'Hz'),
+      },
+      {
+        label: simulationId === 'beats' ? 'lambda media' : 'lambda ate observ.',
+        value: formatNumber(sample.secondaryRadiusMeters, 'm'),
+      },
+      {
+        label: 'v som',
+        value: formatNumber(sample.speedMetersPerSecond, 'm/s'),
+      },
+      ...(simulationId === 'doppler-effect'
+        ? [
+            {
+              label: 'v fonte',
+              value: formatNumber(sample.secondaryVelocityXMetersPerSecond, 'm/s'),
+            },
+            {
+              label: 'v observador',
+              value: formatNumber(sample.velocityXMetersPerSecond, 'm/s'),
+            },
+          ]
+        : [
+            {
+              label: 'Tom A',
+              value: formatNumber(sample.secondaryZMeters, 'Pa'),
+            },
+            {
+              label: 'Tom B',
+              value: formatNumber(sample.displacementMeters, 'Pa'),
+            },
+          ]),
       frameMetric,
     ]
   }
@@ -4493,6 +4790,11 @@ function buildKinematicsReadoutMetrics({
     simulationId === 'superposition-interference' ||
     simulationId === 'standing-waves'
   ) {
+    const waveParameters =
+      simulationId === 'wave-on-string'
+        ? (parameters as WaveOnStringParameters)
+        : null
+
     return [
       {
         label: 'y no probe',
@@ -4515,11 +4817,40 @@ function buildKinematicsReadoutMetrics({
         value: formatNumber(sample.frequencyHertz, 'Hz'),
       },
       {
+        label: 'Periodo',
+        value: formatNumber(sample.periodSeconds, 's'),
+      },
+      {
         label: 'v onda',
         value: formatNumber(sample.speedMetersPerSecond, 'm/s'),
       },
+      ...(simulationId === 'wave-on-string'
+        ? [
+            {
+              label: 'lambda efetiva',
+              value: formatNumber(sample.secondaryRadiusMeters, 'm'),
+            },
+            {
+              label: 'Tensao',
+              value: formatNumber(sample.tensionNewtons, 'N'),
+            },
+            {
+              label: 'Densidade linear',
+              value: waveParameters
+                ? formatNumber(
+                    waveParameters.linearDensityKilogramsPerMeter,
+                    'kg/m',
+                  )
+                : '-- kg/m',
+            },
+          ]
+        : []),
       ...(simulationId === 'superposition-interference'
         ? [
+            {
+              label: 'lambda',
+              value: formatNumber(sample.secondaryRadiusMeters, 'm'),
+            },
             {
               label: 'Onda A',
               value: formatNumber(sample.secondaryZMeters, 'm'),
@@ -4532,6 +4863,10 @@ function buildKinematicsReadoutMetrics({
         : []),
       ...(simulationId === 'standing-waves'
         ? [
+            {
+              label: 'lambda_n',
+              value: formatNumber(sample.secondaryRadiusMeters, 'm'),
+            },
             {
               label: 'Envelope',
               value: formatNumber(sample.secondaryZMeters, 'm'),
@@ -4829,6 +5164,57 @@ function PlaybackSpeedControl({
           value={draftValue}
         />
       </Stack>
+      <Stack
+        aria-label="Atalhos de velocidade da simulacao"
+        direction="row"
+        role="group"
+        spacing={0.5}
+        sx={{ mt: 0.75 }}
+      >
+        {playbackRateOptions.map((option) => {
+          const active = Math.abs(value - option) < 0.001
+
+          return (
+            <ButtonBase
+              aria-label={`Velocidade ${formatPlaybackRate(option)}`}
+              aria-pressed={active}
+              key={option}
+              onClick={() => {
+                applyValue(option)
+              }}
+              sx={{
+                bgcolor: active
+                  ? alpha(themeTokens.teal, 0.22)
+                  : alpha(themeTokens.text, 0.06),
+                border: `1px solid ${
+                  active
+                    ? alpha(themeTokens.teal, 0.72)
+                    : alpha(themeTokens.text, 0.12)
+                }`,
+                borderRadius: 1,
+                color: active ? 'primary.main' : 'text.secondary',
+                flex: '1 1 0',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                minHeight: 28,
+                minWidth: 0,
+                textTransform: 'uppercase',
+                '&:focus-visible': {
+                  outline: `2px solid ${themeTokens.teal}`,
+                  outlineOffset: 1,
+                },
+                '&:hover': {
+                  bgcolor: alpha(themeTokens.teal, 0.16),
+                  color: 'primary.main',
+                },
+              }}
+              type="button"
+            >
+              {formatPlaybackRate(option)}
+            </ButtonBase>
+          )
+        })}
+      </Stack>
     </Box>
   )
 }
@@ -4960,6 +5346,94 @@ function ParameterControl({
           value={draftValue}
         />
       </Stack>
+    </Box>
+  )
+}
+
+function ChoiceParameterControl({
+  onChange,
+  parameter,
+  value,
+}: {
+  onChange: (value: string) => void
+  parameter: SimulationParameter
+  value: string
+}) {
+  const options = parameter.options ?? []
+  const activeOption = options.find((option) => option.value === value)
+
+  return (
+    <Box>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: 'center',
+          mb: 0.5,
+        }}
+      >
+        <Typography variant="body2">{parameter.label}</Typography>
+        <Tooltip
+          arrow
+          placement="top"
+          title={
+            <Box sx={{ maxWidth: 300 }}>
+              <Typography sx={{ fontWeight: 700 }} variant="body2">
+                {parameter.label}
+              </Typography>
+              <Typography sx={{ mt: 0.5 }} variant="body2">
+                {parameter.description}
+              </Typography>
+              {activeOption?.description ? (
+                <Typography
+                  color="text.secondary"
+                  component="p"
+                  sx={{ mt: 0.75 }}
+                  variant="caption"
+                >
+                  Opcao atual: {activeOption.description}
+                </Typography>
+              ) : null}
+            </Box>
+          }
+        >
+          <IconButton
+            aria-label={`Ajuda: ${parameter.label}`}
+            size="small"
+            sx={{
+              bgcolor: alpha(themeTokens.teal, 0.12),
+              border: `1px solid ${alpha(themeTokens.teal, 0.75)}`,
+              color: 'primary.main',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              height: 22,
+              lineHeight: 1,
+              width: 22,
+              '&:hover': {
+                bgcolor: alpha(themeTokens.teal, 0.22),
+                borderColor: themeTokens.teal,
+              },
+            }}
+          >
+            ?
+          </IconButton>
+        </Tooltip>
+      </Stack>
+      <TextField
+        fullWidth
+        onChange={(event) => {
+          onChange(event.target.value)
+        }}
+        select
+        size="small"
+        value={value}
+      >
+        {options.map((option) => (
+          <MenuItem key={option.value} value={option.value}>
+            {option.label}
+          </MenuItem>
+        ))}
+      </TextField>
     </Box>
   )
 }
@@ -5119,6 +5593,15 @@ function readBooleanParameter(
   return typeof value === 'boolean'
     ? value
     : parameter.defaultValue === true
+}
+
+function readChoiceParameter(
+  values: Record<string, ParameterValue>,
+  parameter: SimulationParameter,
+) {
+  const value = values[parameter.id]
+
+  return typeof value === 'string' ? value : String(parameter.defaultValue)
 }
 
 function clampToParameterRange(
@@ -5552,6 +6035,256 @@ function WorkEnergyTrackHud({ sample }: { sample: KinematicsSample }) {
           {compactNumber.format(sample.energyLossPercent)}%
         </Typography>
       </Stack>
+    </Box>
+  )
+}
+
+function CoupledOscillatorHud({
+  parameters,
+  sample,
+  showAnnotation,
+  showEnergy,
+}: {
+  parameters: CoupledOscillatorsParameters
+  sample: KinematicsSample
+  showAnnotation: boolean
+  showEnergy: boolean
+}) {
+  const [expandedPanel, setExpandedPanel] = useState<
+    'equations' | 'explanation' | null
+  >(null)
+  const massAEnergy =
+    sample.leftKineticEnergyJoules + sample.leftElasticPotentialEnergyJoules
+  const massBEnergy =
+    sample.rightKineticEnergyJoules + sample.rightElasticPotentialEnergyJoules
+  const terms = [
+    {
+      color: themeTokens.vector,
+      label: 'K',
+      value: sample.kineticEnergyJoules,
+    },
+    {
+      color: themeTokens.warning,
+      label: 'U elast',
+      value: sample.potentialEnergyJoules,
+    },
+    {
+      color: themeTokens.cyan,
+      label: 'E mec',
+      value: sample.totalEnergyJoules,
+    },
+    {
+      color: themeTokens.teal,
+      label: 'Massa A',
+      value: massAEnergy,
+    },
+    {
+      color: '#818CF8',
+      label: 'Massa B',
+      value: massBEnergy,
+    },
+    {
+      color: '#A3E635',
+      label: 'Acopl.',
+      value: sample.couplingPotentialEnergyJoules,
+    },
+  ]
+  const maxMagnitude = Math.max(1, ...terms.map((term) => Math.abs(term.value)))
+  const phaseProduct = sample.positionMeters * (-sample.secondaryZMeters)
+  const couplingActivity = Math.abs(sample.displacementMeters)
+  const energyDifference = massAEnergy - massBEnergy
+  const annotation =
+    parameters.dampingNewtonSecondsPerMeter > 0
+      ? 'Com amortecimento, a energia mecanica diminui e as amplitudes decaem.'
+      : Math.abs(sample.displacementMeters) < 0.035
+        ? 'As massas estao quase em fase; a mola de acoplamento atua pouco.'
+        : phaseProduct < 0
+          ? 'As massas estao em oposicao de fase; a mola central fica mais deformada.'
+          : Math.abs(energyDifference) > 0.015 && couplingActivity > 0.025
+            ? 'Observe a transferencia: a energia alterna entre Massa A e Massa B.'
+            : 'Sem amortecimento, a energia mecanica total fica aproximadamente constante.'
+
+  return (
+    <Box
+      aria-label="Painel didatico dos osciladores acoplados"
+      sx={{
+        bgcolor: alpha(themeTokens.background, 0.84),
+        border: `1px solid ${alpha(themeTokens.text, 0.16)}`,
+        borderRadius: 1,
+        bottom: { xs: 8, sm: 10 },
+        display: 'grid',
+        gap: 0.75,
+        left: { xs: 8, sm: 10 },
+        maxWidth: { xs: 'calc(100% - 16px)', sm: 360 },
+        minWidth: { xs: 250, sm: 320 },
+        p: 1,
+        position: 'absolute',
+        zIndex: 2,
+      }}
+    >
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+      >
+        <Typography sx={{ fontWeight: 900 }} variant="caption">
+          laboratorio de modos
+        </Typography>
+        <Typography color="text.secondary" variant="caption">
+          t = {formatNumber(sample.timeSeconds, 's')}
+        </Typography>
+      </Stack>
+      {showAnnotation ? (
+        <Typography color="text.secondary" variant="caption">
+          {annotation}
+        </Typography>
+      ) : null}
+      <Stack
+        direction="row"
+        spacing={0.75}
+        sx={{ flexWrap: 'wrap', rowGap: 0.75 }}
+      >
+        <Chip
+          label={`xA ${formatNumber(sample.positionMeters, 'm')}`}
+          size="small"
+          sx={{ color: themeTokens.teal }}
+          variant="outlined"
+        />
+        <Chip
+          label={`xB ${formatNumber(-sample.secondaryZMeters, 'm')}`}
+          size="small"
+          sx={{ color: themeTokens.cyan }}
+          variant="outlined"
+        />
+        <Chip
+          label={`xA-xB ${formatNumber(sample.displacementMeters, 'm')}`}
+          size="small"
+          sx={{ color: themeTokens.warning }}
+          variant="outlined"
+        />
+      </Stack>
+      {showEnergy ? (
+        <Box sx={{ display: 'grid', gap: 0.55 }}>
+          {terms.map((term) => (
+            <EnergyHudBar
+              color={term.color}
+              key={term.label}
+              label={term.label}
+              maxMagnitude={maxMagnitude}
+              value={term.value}
+            />
+          ))}
+          {parameters.dampingNewtonSecondsPerMeter > 0 ? (
+            <EnergyHudBar
+              color={themeTokens.danger}
+              label="Dissip."
+              maxMagnitude={maxMagnitude}
+              value={sample.thermalEnergyJoules}
+            />
+          ) : null}
+        </Box>
+      ) : null}
+      <Stack direction="row" spacing={0.75} sx={{ flexWrap: 'wrap' }}>
+        <Button
+          onClick={() => {
+            setExpandedPanel((current) =>
+              current === 'explanation' ? null : 'explanation',
+            )
+          }}
+          size="small"
+          variant={expandedPanel === 'explanation' ? 'contained' : 'outlined'}
+        >
+          Explicar
+        </Button>
+        <Button
+          onClick={() => {
+            setExpandedPanel((current) =>
+              current === 'equations' ? null : 'equations',
+            )
+          }}
+          size="small"
+          variant={expandedPanel === 'equations' ? 'contained' : 'outlined'}
+        >
+          Equacoes
+        </Button>
+      </Stack>
+      {expandedPanel === 'explanation' ? (
+        <Typography color="text.secondary" variant="caption">
+          Duas massas presas a molas verticais ficam ligadas por uma mola de
+          acoplamento. Quando uma massa se desloca, a diferenca xA - xB altera
+          a forca de acoplamento e influencia a outra massa, produzindo modos em
+          fase, oposicao de fase e batimentos.
+        </Typography>
+      ) : null}
+      {expandedPanel === 'equations' ? (
+        <Box sx={{ display: 'grid', gap: 0.35 }}>
+          <Typography sx={{ fontFamily: 'monospace' }} variant="caption">
+            mA xA'' = -kA xA - kc(xA - xB) - c xA'
+          </Typography>
+          <Typography sx={{ fontFamily: 'monospace' }} variant="caption">
+            mB xB'' = -kB xB - kc(xB - xA) - c xB'
+          </Typography>
+          <Typography color="text.secondary" variant="caption">
+            mA/mB sao massas, kA/kB as molas verticais, kc o acoplamento,
+            c o amortecimento, x os deslocamentos e x' as velocidades.
+          </Typography>
+        </Box>
+      ) : null}
+    </Box>
+  )
+}
+
+function EnergyHudBar({
+  color,
+  label,
+  maxMagnitude,
+  value,
+}: {
+  color: string
+  label: string
+  maxMagnitude: number
+  value: number
+}) {
+  const barWidth = `${Math.max(4, (Math.abs(value) / maxMagnitude) * 100)}%`
+
+  return (
+    <Box
+      sx={{
+        columnGap: 0.75,
+        display: 'grid',
+        gridTemplateColumns: '62px minmax(0, 1fr) 74px',
+        minWidth: 0,
+      }}
+    >
+      <Typography sx={{ color, fontWeight: 800 }} variant="caption">
+        {label}
+      </Typography>
+      <Box
+        sx={{
+          alignSelf: 'center',
+          bgcolor: alpha(themeTokens.text, 0.1),
+          borderRadius: 0.5,
+          height: 5,
+          minWidth: 0,
+          overflow: 'hidden',
+        }}
+      >
+        <Box
+          sx={{
+            bgcolor: color,
+            height: '100%',
+            opacity: 0.9,
+            width: barWidth,
+          }}
+        />
+      </Box>
+      <Typography
+        color="text.secondary"
+        sx={{ textAlign: 'right' }}
+        variant="caption"
+      >
+        {formatEnergy(value)}
+      </Typography>
     </Box>
   )
 }
@@ -6416,9 +7149,21 @@ function resolveKinematicsCameraViewMode(
 
 function supportsKinematicsCameraViewMode(simulationId: KinematicsSimulationId) {
   return (
+    isMechanicalWaveSimulationId(simulationId) ||
+    simulationId === 'coupled-oscillators' ||
     simulationId === 'uniform-linear-motion' ||
     simulationId === 'uniformly-accelerated-motion' ||
     simulationId === 'uniform-circular-motion'
+  )
+}
+
+function isMechanicalWaveSimulationId(simulationId: KinematicsSimulationId) {
+  return (
+    simulationId === 'beats' ||
+    simulationId === 'doppler-effect' ||
+    simulationId === 'standing-waves' ||
+    simulationId === 'superposition-interference' ||
+    simulationId === 'wave-on-string'
   )
 }
 
@@ -6432,12 +7177,50 @@ function KinematicsCameraViewSwitch({
   value: KinematicsCameraViewMode
 }) {
   const isCircularMotion = simulationId === 'uniform-circular-motion'
+  const isCoupledOscillator = simulationId === 'coupled-oscillators'
   const isVerticalMotion = simulationId === 'uniformly-accelerated-motion'
+  const isMechanicalWave = isMechanicalWaveSimulationId(simulationId)
   const modes: Array<{
     ariaLabel: string
     label: string
     value: KinematicsCameraViewMode
-  }> = isCircularMotion
+  }> = isMechanicalWave
+    ? [
+        {
+          ariaLabel: 'Vista 3D pedagogica da onda em corda',
+          label: '3D',
+          value: 'cinematic',
+        },
+        {
+          ariaLabel: 'Vista lateral 2D da onda em corda',
+          label: 'Lateral',
+          value: 'side',
+        },
+        {
+          ariaLabel: 'Vista superior simplificada da onda em corda',
+          label: 'Topo',
+          value: 'top',
+        },
+      ]
+    : isCoupledOscillator
+      ? [
+          {
+            ariaLabel: 'Vista 3D dos osciladores acoplados',
+            label: '3D',
+            value: 'cinematic',
+          },
+          {
+            ariaLabel: 'Vista frontal dos osciladores acoplados',
+            label: 'Frontal',
+            value: 'side',
+          },
+          {
+            ariaLabel: 'Vista superior dos osciladores acoplados',
+            label: 'Topo',
+            value: 'top',
+          },
+        ]
+    : isCircularMotion
     ? [
         {
           ariaLabel: 'Camera em perspectiva do MCU',
@@ -6486,7 +7269,9 @@ function KinematicsCameraViewSwitch({
   return (
     <Tooltip
       title={
-        isCircularMotion
+        isMechanicalWave
+          ? 'Visual da camera: 3D pedagogica, lateral ou superior'
+          : isCircularMotion
           ? 'Visual da camera: perspectiva, superior ou acompanhamento'
           : isVerticalMotion
           ? 'Visual da camera: cinematografica, lateral ou frontal'

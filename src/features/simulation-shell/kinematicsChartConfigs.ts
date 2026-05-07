@@ -13,6 +13,7 @@ export type KinematicsChartId =
   | 'field'
   | 'forces'
   | 'flow'
+  | 'frequency'
   | 'kepler'
   | 'momentum'
   | 'position'
@@ -47,6 +48,10 @@ function isMechanicalWaveSimulation(simulationId: KinematicsSimulationId) {
     simulationId === 'superposition-interference' ||
     simulationId === 'wave-on-string'
   )
+}
+
+function isSoundWaveSimulation(simulationId: KinematicsSimulationId) {
+  return simulationId === 'beats' || simulationId === 'doppler-effect'
 }
 
 export function prepareKinematicsChartSamples(samples: KinematicsSample[]) {
@@ -705,7 +710,7 @@ export function buildKinematicsChartConfigs(
       },
       {
         id: 'forces',
-        title: 'Forcas de acoplamento',
+        title: 'Forcas das molas e resultantes',
         traces: [
           {
             lineColor: themeTokens.warning,
@@ -725,8 +730,150 @@ export function buildKinematicsChartConfigs(
             x: time,
             y: samples.map((sample) => sample.tensionNewtons),
           },
+          {
+            lineColor: themeTokens.teal,
+            name: 'Forca da mola A (N)',
+            x: time,
+            y: samples.map((sample) => sample.springForceNewtons),
+          },
+          {
+            lineColor: '#818CF8',
+            name: 'Forca da mola B (N)',
+            x: time,
+            y: samples.map((sample) => sample.forceThreeZNewtons),
+          },
         ],
         yAxisTitle: 'Forca (newtons)',
+      },
+    )
+  } else if (isSoundWaveSimulation(simulationId)) {
+    charts.push(
+      {
+        id: 'pressure',
+        title:
+          simulationId === 'beats'
+            ? 'Pressao e envoltoria no probe'
+            : 'Pressao recebida pelo observador',
+        traces:
+          simulationId === 'beats'
+            ? [
+                {
+                  lineColor: themeTokens.teal,
+                  name: 'Pressao resultante (Pa)',
+                  x: time,
+                  y: samples.map((sample) => sample.pressurePascals),
+                },
+                {
+                  lineColor: themeTokens.cyan,
+                  name: 'Tom A (Pa)',
+                  x: time,
+                  y: samples.map((sample) => sample.secondaryZMeters),
+                },
+                {
+                  lineColor: '#818CF8',
+                  name: 'Tom B (Pa)',
+                  x: time,
+                  y: samples.map((sample) => sample.displacementMeters),
+                },
+                {
+                  lineColor: themeTokens.warning,
+                  name: 'Envoltoria de batimento (Pa)',
+                  x: time,
+                  y: samples.map((sample) => sample.secondaryPressurePascals),
+                },
+              ]
+            : [
+                {
+                  lineColor: themeTokens.teal,
+                  name: 'Pressao no observador (Pa)',
+                  x: time,
+                  y: samples.map((sample) => sample.pressurePascals),
+                },
+              ],
+        yAxisMode: 'zero-centered',
+        yAxisTitle: 'Pressao (pascals)',
+      },
+      {
+        id: 'frequency',
+        title:
+          simulationId === 'beats'
+            ? 'Frequencia dos tons e batimento'
+            : 'Frequencia emitida e observada',
+        traces:
+          simulationId === 'beats'
+            ? [
+                {
+                  lineColor: themeTokens.warning,
+                  name: 'Frequencia de batimento (Hz)',
+                  x: time,
+                  y: samples.map((sample) => sample.frequencyHertz),
+                },
+                {
+                  lineColor: themeTokens.cyan,
+                  name: 'Frequencia media dos tons (Hz)',
+                  x: time,
+                  y: samples.map(
+                    (sample) => sample.secondarySpeedMetersPerSecond,
+                  ),
+                },
+              ]
+            : [
+                {
+                  lineColor: themeTokens.teal,
+                  name: 'Frequencia observada (Hz)',
+                  x: time,
+                  y: samples.map((sample) => sample.frequencyHertz),
+                },
+                {
+                  lineColor: themeTokens.cyan,
+                  name: 'Frequencia emitida (Hz)',
+                  x: time,
+                  y: samples.map(
+                    (sample) => sample.secondarySpeedMetersPerSecond,
+                  ),
+                },
+              ],
+        yAxisTitle: 'Frequencia (hertz)',
+      },
+      {
+        id: 'velocity',
+        title:
+          simulationId === 'beats'
+            ? 'Velocidade de propagacao'
+            : 'Velocidades no eixo fonte-observador',
+        traces:
+          simulationId === 'beats'
+            ? [
+                {
+                  lineColor: themeTokens.vector,
+                  name: 'Velocidade do som no meio (m/s)',
+                  x: time,
+                  y: samples.map((sample) => sample.speedMetersPerSecond),
+                },
+              ]
+            : [
+                {
+                  lineColor: themeTokens.vector,
+                  name: 'Velocidade do som no meio (m/s)',
+                  x: time,
+                  y: samples.map((sample) => sample.speedMetersPerSecond),
+                },
+                {
+                  lineColor: themeTokens.cyan,
+                  name: 'Velocidade da fonte (m/s)',
+                  x: time,
+                  y: samples.map(
+                    (sample) => sample.secondaryVelocityXMetersPerSecond,
+                  ),
+                },
+                {
+                  lineColor: '#818CF8',
+                  name: 'Velocidade do observador (m/s)',
+                  x: time,
+                  y: samples.map((sample) => sample.velocityXMetersPerSecond),
+                },
+              ],
+        yAxisTitle: 'Velocidade (metros por segundo)',
       },
     )
   } else if (isMechanicalWaveSimulation(simulationId)) {
@@ -797,6 +944,8 @@ export function buildKinematicsChartConfigs(
             name:
               simulationId === 'standing-waves'
                 ? 'Velocidade de onda na corda (m/s)'
+                : simulationId === 'wave-on-string'
+                  ? 'Velocidade de propagacao do meio (m/s)'
                 : 'Velocidade de propagacao (m/s)',
             x: time,
             y: samples.map((sample) => sample.speedMetersPerSecond),
@@ -1318,7 +1467,9 @@ export function buildKinematicsChartConfigs(
   }
 
   const supportsEnergyChart =
+    simulationId !== 'beats' &&
     simulationId !== 'continuity-bernoulli' &&
+    simulationId !== 'doppler-effect' &&
     simulationId !== 'hydrostatics-buoyancy'
 
   if (showEnergy && supportsEnergyChart) {
@@ -1450,9 +1601,39 @@ export function buildKinematicsChartConfigs(
                 },
                 {
                   lineColor: themeTokens.warning,
-                  name: 'Energia potencial das molas (J)',
+                  name: 'Energia potencial mola A (J)',
+                  x: time,
+                  y: samples.map(
+                    (sample) => sample.leftElasticPotentialEnergyJoules,
+                  ),
+                },
+                {
+                  lineColor: themeTokens.danger,
+                  name: 'Energia potencial mola B (J)',
+                  x: time,
+                  y: samples.map(
+                    (sample) => sample.rightElasticPotentialEnergyJoules,
+                  ),
+                },
+                {
+                  lineColor: themeTokens.warning,
+                  name: 'Energia na mola de acoplamento (J)',
+                  x: time,
+                  y: samples.map(
+                    (sample) => sample.couplingPotentialEnergyJoules,
+                  ),
+                },
+                {
+                  lineColor: '#FBBF24',
+                  name: 'Energia potencial elastica total (J)',
                   x: time,
                   y: samples.map((sample) => sample.potentialEnergyJoules),
+                },
+                {
+                  lineColor: '#F43F5E',
+                  name: 'Energia dissipada (J)',
+                  x: time,
+                  y: samples.map((sample) => sample.thermalEnergyJoules),
                 },
                 {
                   lineColor: themeTokens.cyan,

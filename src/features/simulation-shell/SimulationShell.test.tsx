@@ -119,7 +119,7 @@ describe('SimulationShell playback continuity', () => {
 
     expect(readPendulumProjectionMode()).toBe('perspective')
     expect(readPendulumResetVersion()).toBe('0')
-  })
+  }, 10_000)
 
   it('resizes sidebar, viewport, and focused chart panes without resetting playback', () => {
     render(

@@ -200,7 +200,7 @@ type InclinedPlaneSample = {
 
 ## Exemplo de sample de Cinematica
 
-O nome historico `KinematicsSample` cobre hoje o motor analitico/numerico compartilhado de Cinematica, Dinamica, Energia/momento, Estatica, Rotacao, Gravitacao, Fluidos basicos, massa-mola vertical, os tres primeiros osciladores de `Oscilacoes e Ondas` e as tres primeiras ondas mecanicas. Nas ondas, `positionMeters/zMeters` representam o deslocamento transversal no probe, `speedMetersPerSecond` representa a velocidade de propagacao, `frequencyHertz` representa a frequencia aplicada ou modal, `secondaryZMeters` e `displacementMeters` carregam componentes/envelope quando a simulacao precisar, e as derivadas de velocidade/aceleracao continuam no mesmo sample. Campos sem uso em uma simulacao ficam zerados, mas toda grandeza exibida em cena, grafico, tabela ou formula deve vir do sample.
+O nome historico `KinematicsSample` cobre hoje o motor analitico/numerico compartilhado de Cinematica, Dinamica, Energia/momento, Estatica, Rotacao, Gravitacao, Fluidos basicos, massa-mola vertical, os tres primeiros osciladores de `Oscilacoes e Ondas`, as tres primeiras ondas mecanicas e as primeiras simulacoes de som. Nas ondas, `positionMeters/zMeters` representam o deslocamento transversal no probe, `speedMetersPerSecond` representa a velocidade de propagacao, `frequencyHertz` representa a frequencia aplicada ou modal, `periodSeconds` representa `1/f` quando houver oscilacao, `secondaryRadiusMeters` representa comprimento de onda efetivo ou modal conforme a simulacao, `secondaryZMeters` e `displacementMeters` carregam componentes/envelope quando a simulacao precisar, e as derivadas de velocidade/aceleracao continuam no mesmo sample. Em `Onda em corda`, `tensionNewtons` tambem pode carregar a tensao que alimenta `v = sqrt(T/mu)`. Em `Superposicao e interferencia`, `secondaryRadiusMeters` acompanha a relacao inversa `lambda = v/f`; em `Ondas estacionarias`, registra `lambda_n = 2L/n`. Em `Batimentos`, `pressurePascals`/`positionMeters` representam a pressao resultante no probe, `secondaryPressurePascals` representa a envoltoria e `secondarySpeedMetersPerSecond` representa a frequencia media. Em `Efeito Doppler`, `frequencyHertz` representa a frequencia observada, `secondarySpeedMetersPerSecond` a frequencia emitida, `secondaryRadiusMeters` o comprimento de onda efetivo na direcao do observador e `secondaryXMeters` a posicao da fonte movel. O volume 3D de pontinhos sonoros e uma extrusao visual do renderer sobre esse perfil 1D, sem novos campos contratuais. Campos sem uso em uma simulacao ficam zerados, mas toda grandeza exibida em cena, grafico, tabela ou formula deve vir do sample.
 
 ```ts
 type KinematicsSample = {
@@ -235,6 +235,7 @@ type KinematicsSample = {
   frequencyHertz: number;
   centripetalAccelerationMetersPerSecondSquared: number;
   centripetalForceNewtons: number;
+  couplingPotentialEnergyJoules: number;
   gravitationalFieldNewtonsPerKilogram: number;
   maxStaticFrictionNewtons: number;
   frictionForceNewtons: number;
@@ -278,7 +279,9 @@ type KinematicsSample = {
   momentumXKilogramMetersPerSecond: number;
   momentumZKilogramMetersPerSecond: number;
   kineticEnergyLostJoules: number;
+  leftElasticPotentialEnergyJoules: number;
   leftKineticEnergyJoules: number;
+  rightElasticPotentialEnergyJoules: number;
   rightKineticEnergyJoules: number;
   centerOfMassMeters: number;
   momentOfInertiaKilogramMetersSquared: number;
@@ -288,6 +291,8 @@ type KinematicsSample = {
   isGrounded: boolean;
 };
 ```
+
+Em `Osciladores acoplados`, os parametros especificos sao `massOneKilograms`, `massTwoKilograms`, `springConstantOneNewtonsPerMeter`, `springConstantTwoNewtonsPerMeter`, `couplingSpringConstantNewtonsPerMeter`, `dampingNewtonSecondsPerMeter`, `gravityMetersPerSecondSquared` e condicoes iniciais por massa. O sample deve usar `positionMeters/secondaryZMeters` para deslocamentos, `velocityMetersPerSecond/secondaryVelocityMetersPerSecond` para velocidades, `displacementMeters` para deslocamento relativo, `centerOfMassMeters` para modo comum, `tensionNewtons` para acoplamento, `forceOne*`, `forceTwo*`, `forceThree*`, `springForceNewtons` e `weightNewtons` para vetores didaticos, e `leftKineticEnergyJoules`, `rightKineticEnergyJoules`, `leftElasticPotentialEnergyJoules`, `rightElasticPotentialEnergyJoules`, `couplingPotentialEnergyJoules`, `thermalEnergyJoules` e `totalEnergyJoules` para barras, graficos e formulas de energia.
 
 Em `Hidrostatica e empuxo`, `objectMassKilograms` vem do controle de massa, `objectDensityKilogramsPerCubicMeter` e derivada de `m/V`, `primaryRadiusMeters` e o raio fisico/visual da esfera e `secondaryRadiusMeters` e a profundidade fixa do tanque transparente. Esses campos precisam concordar com pressao, empuxo, resultante, aceleracao, fracao submersa, graficos e warnings; mudar volume nao deve redimensionar o tanque.
 

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   computeKinematicsTimeline,
+  type BeatsParameters,
   type CoupledOscillatorsParameters,
+  type DopplerEffectParameters,
   type ForcedOscillatorResonanceParameters,
   type GravitationalFieldOrbitsParameters,
   type HydrostaticsBuoyancyParameters,
@@ -211,12 +213,16 @@ describe('kinematics chart configs', () => {
   it('shows modal traces for coupled oscillators', () => {
     const parameters: CoupledOscillatorsParameters = {
       couplingSpringConstantNewtonsPerMeter: 5,
+      dampingNewtonSecondsPerMeter: 0,
+      gravityMetersPerSecondSquared: 9.81,
       initialDisplacementOneMeters: 0.28,
       initialDisplacementTwoMeters: 0,
       initialVelocityOneMetersPerSecond: 0,
       initialVelocityTwoMetersPerSecond: 0,
-      massKilograms: 0.8,
-      springConstantNewtonsPerMeter: 18,
+      massOneKilograms: 0.8,
+      massTwoKilograms: 0.8,
+      springConstantOneNewtonsPerMeter: 18,
+      springConstantTwoNewtonsPerMeter: 18,
     }
     const result = computeKinematicsTimeline({
       durationSeconds: 2,
@@ -239,8 +245,75 @@ describe('kinematics chart configs', () => {
       'Modo relativo xA - xB (m)',
     ])
     expect(energyChart?.traces.map((trace) => trace.name)).toContain(
-      'Energia cinetica B (J)',
+      'Energia na mola de acoplamento (J)',
     )
+  })
+
+  it('shows pressure envelope and beat frequency traces for acoustic beats', () => {
+    const parameters: BeatsParameters = {
+      amplitudePascals: 0.3,
+      frequencyOneHertz: 3,
+      frequencyTwoHertz: 3.5,
+      mediumLengthMeters: 6,
+      mediumSpeedMetersPerSecond: 6,
+      phaseDifferenceDegrees: 0,
+      probePositionMeters: 3,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'beats',
+    })
+    const charts = buildKinematicsChartConfigs(result.samples, 'beats', true)
+    const pressureChart = charts.find((chart) => chart.id === 'pressure')
+    const frequencyChart = charts.find((chart) => chart.id === 'frequency')
+
+    expect(pressureChart?.traces.map((trace) => trace.name)).toEqual([
+      'Pressao resultante (Pa)',
+      'Tom A (Pa)',
+      'Tom B (Pa)',
+      'Envoltoria de batimento (Pa)',
+    ])
+    expect(frequencyChart?.traces[0]?.name).toBe(
+      'Frequencia de batimento (Hz)',
+    )
+    expect(charts.some((chart) => chart.id === 'energy')).toBe(false)
+  })
+
+  it('shows emitted and observed frequency traces for Doppler effect', () => {
+    const parameters: DopplerEffectParameters = {
+      amplitudePascals: 0.4,
+      emittedFrequencyHertz: 2,
+      mediumLengthMeters: 8,
+      mediumSpeedMetersPerSecond: 6,
+      observerPositionMeters: 6,
+      observerSpeedMetersPerSecond: 0,
+      sourceInitialPositionMeters: 2,
+      sourceSpeedMetersPerSecond: 1,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'doppler-effect',
+    })
+    const charts = buildKinematicsChartConfigs(
+      result.samples,
+      'doppler-effect',
+      true,
+    )
+    const frequencyChart = charts.find((chart) => chart.id === 'frequency')
+    const velocityChart = charts.find((chart) => chart.id === 'velocity')
+
+    expect(frequencyChart?.traces.map((trace) => trace.name)).toEqual([
+      'Frequencia observada (Hz)',
+      'Frequencia emitida (Hz)',
+    ])
+    expect(velocityChart?.traces.map((trace) => trace.name)).toContain(
+      'Velocidade da fonte (m/s)',
+    )
+    expect(charts.some((chart) => chart.id === 'energy')).toBe(false)
   })
 })
 

@@ -62,7 +62,7 @@
     {
       "id": "wavelengthMeters",
       "label": "Comprimento de onda",
-      "description": "Distancia entre cristas de cada componente. Aumentar alarga as zonas de interferencia; diminuir deixa reforcos e cancelamentos mais densos.",
+      "description": "Distancia entre cristas de cada componente. Alterar lambda recalcula a frequencia de forma inversa para manter a mesma velocidade de onda no meio atual.",
       "unit": "m",
       "kind": "number",
       "min": 0.6,
@@ -73,7 +73,7 @@
     {
       "id": "frequencyHertz",
       "label": "Frequencia",
-      "description": "Frequencia comum das duas ondas. Zerar congela as componentes; aumentar acelera a alternancia entre interferencia construtiva e destrutiva no probe.",
+      "description": "Frequencia comum das duas ondas. Zerar congela as componentes; aumentar encurta lambda pela relacao lambda = v/f e reduz o periodo T = 1/f.",
       "unit": "Hz",
       "kind": "number",
       "min": 0,
@@ -172,7 +172,8 @@
   ],
   "limits": [
     "Modelo linear de duas ondas senoidais no mesmo meio: a corda resultante e a soma y = y1 + y2.",
-    "As ondas tem mesma frequencia e mesmo comprimento de onda nesta fatia; batimentos por frequencias diferentes ficam para a simulacao de som.",
+    "As ondas tem mesma frequencia, mesmo comprimento de onda e mesma velocidade nesta fatia; batimentos por frequencias diferentes ficam para a simulacao de som.",
+    "Frequencia, periodo e comprimento de onda permanecem acoplados: T = 1/f e lambda = v/f, mantendo a velocidade do meio constante durante ajustes de f ou lambda.",
     "A cena mostra as componentes como linhas secundarias e a soma como corda principal, todas vindas do helper fisico.",
     "Amplitude zero em qualquer componente e valida e reduz o modelo para uma onda simples ou corda reta se ambas forem zero."
   ],
@@ -207,14 +208,17 @@
     {
       "id": "component-waves",
       "title": "Componentes contra-propagantes",
-      "expressionLatex": "y_1=A_1\\sin(kx-\\omega t),\\quad y_2=A_2\\sin(kx+\\omega t+\\Delta\\phi)",
+      "expressionLatex": "y_1=A_1\\sin(kx-\\omega t),\\quad y_2=A_2\\sin(kx+\\omega t+\\Delta\\phi),\\quad v=\\lambda f,\\quad T_p=1/f",
       "description": "Define as duas ondas que viajam em sentidos opostos e alimentam a soma.",
       "variables": [
         { "symbol": "A_1,A_2", "label": "amplitudes", "unit": "m" },
         { "symbol": "\\Delta\\phi", "label": "fase relativa", "unit": "rad" },
-        { "symbol": "k", "label": "numero de onda", "unit": "rad/m" }
+        { "symbol": "k", "label": "numero de onda", "unit": "rad/m" },
+        { "symbol": "\\lambda", "label": "comprimento de onda", "unit": "m" },
+        { "symbol": "f", "label": "frequencia", "unit": "Hz" },
+        { "symbol": "T_p", "label": "periodo", "unit": "s" }
       ],
-      "usedWhen": "Usar para comparar interferencia construtiva, destrutiva e casos de amplitudes diferentes.",
+      "usedWhen": "Usar para comparar interferencia construtiva, destrutiva e casos de amplitudes diferentes no mesmo meio, com lambda e f variando de forma inversa.",
       "notUsedWhen": "Nao representa ondas com velocidades, frequencias ou meios diferentes.",
       "parameterIds": [
         "amplitudeOneMeters",
@@ -226,7 +230,10 @@
       "sampleFields": [
         "secondaryZMeters",
         "displacementMeters",
-        "velocityMetersPerSecond"
+        "velocityMetersPerSecond",
+        "speedMetersPerSecond",
+        "periodSeconds",
+        "secondaryRadiusMeters"
       ],
       "relatedChartIds": ["position", "velocity"],
       "example": "Ao ajustar Delta phi para 180 graus com amplitudes iguais, a soma no probe pode se aproximar de zero."

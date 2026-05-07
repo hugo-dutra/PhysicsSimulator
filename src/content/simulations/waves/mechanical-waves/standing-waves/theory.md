@@ -9,10 +9,12 @@ $$
 A frequencia do harmonico vem de:
 
 $$
-f_n=\frac{n}{2L}\sqrt{\frac{T}{\mu}}
+\lambda_n=\frac{2L}{n},\qquad
+f_n=\frac{v}{\lambda_n}=\frac{n}{2L}\sqrt{\frac{T}{\mu}},\qquad
+T_n=\frac{1}{f_n}
 $$
 
-O motor calcula o perfil, o envelope modal, a velocidade transversal, a aceleracao transversal, a frequencia e a velocidade de onda. A cena desenha nos, ventres e o probe a partir desses mesmos valores.
+O motor calcula o perfil, o envelope modal, a velocidade transversal, a aceleracao transversal, a frequencia, o periodo, o comprimento de onda modal e a velocidade de onda. A cena desenha nos, ventres e o probe a partir desses mesmos valores.
 
 ## Como interpretar
 
@@ -20,6 +22,7 @@ O motor calcula o perfil, o envelope modal, a velocidade transversal, a acelerac
 - Ventres sao regioes de amplitude maxima.
 - Aumentar o harmonico cria mais nos e ventres.
 - Aumentar a tensao eleva a velocidade de onda e a frequencia; aumentar a densidade linear reduz ambas.
+- Aumentar o comprimento da corda alonga \(\lambda_n\), reduz \(f_n\) e aumenta o periodo do modo.
 
 ## Limites declarados no fixture
 

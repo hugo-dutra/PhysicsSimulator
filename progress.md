@@ -3252,3 +3252,237 @@ Validacao:
 - Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
 - Executado `npm run lint`; passou com timeout maior.
 - Executado `npm run test -- --reporter=dot --maxWorkers=1`; 13 arquivos e 118 testes passaram.
+
+## 2026-05-06 - Melhoria visual e fisica da Onda em corda
+
+Status: feito.
+
+Pedido reportado:
+
+- Melhorar a simulacao `Onda em corda` para parecer um experimento didatico em bancada 3D, deixando claro que a perturbacao se propaga horizontalmente enquanto pontos materiais da corda oscilam verticalmente.
+
+Ajuste:
+
+- A cena da onda em corda ganhou bancada escura, suportes laterais, fonte oscilante na esquerda, haste vibrante, linha de equilibrio, particulas discretas ao longo da corda, guia vertical do probe, marcador de amplitude, marcador de comprimento de onda, pacotes visuais de energia e rastro temporal opcional.
+- A viewport passou a oferecer vistas especificas para ondas mecanicas: `3D`, `Lateral` e `Topo`, mantendo renderizacao desacoplada do shell React.
+- O painel de parametros ganhou suporte a controles de escolha e a simulacao passou a declarar `Modelo de velocidade`, `Tensao` e `Densidade linear`.
+- O motor fisico da `Onda em corda` passou a calcular a velocidade por `v = sqrt(T/mu)` no modo de corda tensionada, preservando o modo didatico `v = lambda f`. A lambda efetiva e exposta no sample/readout sem quebrar o caso de amplitude zero ou frequencia zero.
+- Readouts, legenda de vetores, grafico de velocidade, tabela, formulas, fixture local e teoria foram alinhados ao novo modelo de fonte, corda tensionada, particulas, energia visual e medidas.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: parametros, regimes, samples, cena, graficos, tabela, formulas, teoria, warnings e testes foram revisados em conjunto.
+- Amplitude zero continua produzindo corda no equilibrio; frequencia zero continua produzindo perfil estatico; tensao e densidade linear validam apenas valores positivos.
+- A extremidade direita segue como referencia visual nesta fatia; modos fisico-reflexivos fixa/livre/absorvente/infinita permanecem fora do modelo atual e documentados como limite.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/01-strategy.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/05-roadmap.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md`, `guides/issues.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Atualizados catalogo local, teoria da simulacao, dados/API, contratos e qualidade/operacoes para refletir o novo contrato visual e fisico.
+- HLD/diagrama nao foi atualizado porque arquitetura, servicos, pipeline e fluxo estrutural de dados nao mudaram; a entrega evoluiu uma simulacao dentro do shell existente.
+
+Validacao:
+
+- Executado `npm run test -- --reporter=verbose`; 13 arquivos e 119 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado smoke visual local em `http://127.0.0.1:5173` via Chrome DevTools Protocol: `Onda em corda` abriu em desktop e viewport mobile, canvas WebGL nao vazio, controles de tensao/densidade presentes e contador `t` avancando. Capturas geradas em `artifacts/wave-on-string-desktop-smoke.png` e `artifacts/wave-on-string-mobile-smoke.png`; o mobile preserva a limitacao de layout existente em que catalogo/controles aparecem antes da cena.
+
+## 2026-05-06 - Onda em corda com pontos materiais discretos
+
+Status: feito.
+
+Pedido reportado:
+
+- Fazer a corda parecer formada por bolinhas pequenas que sobem e descem, reforcando que a onda se desloca, mas a materia da corda nao viaja horizontalmente.
+- Corrigir labels de amplitude/frequencia que pareciam piscar na cena.
+
+Ajuste:
+
+- A corda da simulacao `Onda em corda` passou de 49 para 121 particulas materiais menores, com material ciano mais legivel e linha principal da onda rebaixada para referencia visual.
+- Os pacotes visuais de energia ficaram menores, menos opacos e levemente deslocados para tras, evitando confusao com os pontos materiais da corda.
+- Labels 3D passaram a ignorar o depth test e usar render order alto, estabilizando as legendas de fonte/frequencia, amplitude e demais sprites sobre a cena.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: o ajuste foi de renderer e nao alterou motor, samples, parametros, formulas, graficos ou tabela. Os pontos continuam lendo o perfil calculado pelo motor em posicoes horizontais fixas, apenas variando verticalmente conforme o sample.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/01-strategy.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/05-roadmap.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md`, `guides/issues.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Nenhum guide estrutural foi alterado porque nao houve mudanca de contrato, modelo fisico, roadmap, dados ou arquitetura; apenas este registro de progresso foi atualizado.
+- HLD/diagrama nao foi atualizado porque arquitetura, servicos, pipeline e fluxo de dados nao mudaram.
+
+Validacao:
+
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm run test -- src/App.test.tsx -t "mechanical waves" --reporter=dot --maxWorkers=1`; 1 teste passou e 9 foram ignorados pelo filtro.
+- Executado smoke visual local em `http://127.0.0.1:5173` via Chrome DevTools Protocol; `Onda em corda` abriu com canvas e captura final em `artifacts/wave-on-string-material-beads-final.png`.
+
+## 2026-05-06 - Limpeza visual da Onda em corda
+
+Status: feito.
+
+Pedido reportado:
+
+- Remover a base escura que ocultava algumas bolinhas da corda e deixar somente as hastes laterais.
+- Remover as sombras/linhas finas da cena, mantendo a leitura da corda pelas bolinhas materiais.
+
+Ajuste:
+
+- A simulacao `Onda em corda` passou a ocultar a bancada escura, a base da fonte e a haste da fonte na cena 3D.
+- A linha fina da corda, o rastro temporal e os pacotes visuais de energia foram desligados especificamente nesse modo, deixando a corda representada pelas bolinhas discretas e pelos suportes laterais.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: o ajuste foi estritamente visual no renderer e nao alterou motor, parametros, samples, graficos, formulas ou tabela.
+- As bolinhas continuam presas a posicoes horizontais fixas e apenas leem o deslocamento vertical calculado pelo perfil da onda.
+
+Documentacao:
+
+- Nenhum guide estrutural foi alterado porque nao houve mudanca de contrato, modelo fisico, roadmap, dados ou arquitetura; apenas este registro de progresso foi atualizado.
+
+Validacao:
+
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm run test -- src/App.test.tsx -t "mechanical waves" --reporter=dot --maxWorkers=1`; 1 teste passou e 9 foram ignorados pelo filtro.
+- Executado smoke visual local em `http://127.0.0.1:5173` via Chrome DevTools Protocol; `Onda em corda` abriu com canvas e captura final em `artifacts/wave-on-string-beads-only-final.png`, sem bancada/base escura e sem rastros finos.
+
+## 2026-05-06 - Correção de lacunas nas bolinhas da Onda em corda
+
+Status: feito.
+
+Pedido reportado:
+
+- Corrigir trechos da simulacao `Onda em corda` em que algumas bolinhas pareciam faltar na corda discretizada.
+
+Ajuste:
+
+- A quantidade de bolinhas materiais passou a usar a mesma capacidade de pontos do perfil da corda (`waveStringPointCapacity`), removendo os saltos periodicos causados por amostrar 121 bolinhas sobre uma linha de 128 pontos.
+- A leitura de pontos do perfil por razao agora interpola entre amostras vizinhas, em vez de arredondar para um unico vertice, mantendo energia, medicoes e particulas alinhadas de forma continua ao perfil calculado.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a correcao foi estritamente visual no renderer e nao alterou motor, parametros, regimes, samples, graficos, tabela, formulas, teoria ou warnings.
+- As bolinhas continuam usando o perfil senoidal calculado pelo motor; a mudanca apenas remove lacunas de amostragem na representacao discreta da corda.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, `guides/01-strategy.md`, `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/05-roadmap.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md`, `guides/issues.md` e `guides/10-simulation-fidelity-adjustment-guide.md`.
+- Nenhum guide estrutural foi alterado porque nao houve mudanca de contrato, modelo fisico, roadmap, dados ou arquitetura; apenas este registro de progresso foi atualizado.
+- HLD/diagrama nao foi atualizado porque arquitetura, servicos, pipeline e fluxo de dados nao mudaram.
+
+Validacao:
+
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts`; 1 arquivo e 40 testes passaram.
+- Executado `npm run test`; 13 arquivos e 119 testes passaram.
+
+## 2026-05-07 - Promocao das ondas mecanicas para pronto
+
+Status: feito.
+
+Pedido reportado:
+
+- Apos validacao manual, marcar `Onda em corda`, `Superposicao e interferencia` e `Ondas estacionarias` como concluidas/prontas.
+
+Ajuste:
+
+- `fixtures/simulations/catalog.json` passou `wave-on-string`, `superposition-interference` e `standing-waves` de `analysis` para `ready`.
+- Os tres osciladores ainda nao aprovados (`damped-oscillator`, `forced-oscillator-resonance` e `coupled-oscillators`) permanecem em `analysis`.
+- Guides de produto, arquitetura, regras, roadmap, dados/API, catalogo planejado e issues foram alinhados ao novo estado.
+- Testes do catalogo foram atualizados para refletir 3 simulacoes em `analysis` e 21 em `ready`.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide` no ciclo anterior de ajuste das ondas mecanicas; a promocao para `ready` foi feita apos aprovacao manual do dono do projeto.
+- As relacoes `T = 1/f`, `lambda = v/f`, `v = lambda f`, `v = sqrt(T/mu)` e `lambda_n = 2L/n` permanecem documentadas e testadas conforme a simulacao.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/05-roadmap.md`, `guides/06-data-and-api.md`, `guides/09-simulation-catalog-plan.md` e `guides/issues.md`.
+- HLD/diagrama nao foi atualizado porque nao houve mudanca arquitetural, de servico, pipeline ou fluxo estrutural; a mudanca foi uma promocao de status validada.
+
+Validacao:
+
+- Executado `npm run test -- --run src/simulation-registry/catalog.test.ts`; 1 arquivo e 11 testes passaram.
+- Executado `npm run test -- --run src/features/simulation-shell/simulationSidebarModel.test.ts`; 1 arquivo e 4 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+
+## 2026-05-07 - Batimentos e Efeito Doppler em analysis
+
+Status: feito.
+
+Pedido reportado:
+
+- Seguir pelo roadmap para `Oscilacoes e Ondas > Som > Batimentos` e `Efeito Doppler`.
+- Incorporar a sugestao visual de usar pequenos pontinhos para demonstrar/desenhar a onda, como marcadores didaticos do efeito, com boa qualidade visual.
+
+Ajuste:
+
+- `Batimentos` entrou como simulacao `analysis` com fixture local, parametros com tooltip, presets, limites, formulas, teoria Markdown e graficos de pressao/frequencia/velocidade.
+- `Efeito Doppler` entrou como simulacao `analysis` com fixture local, fonte movel, observador, frequencia observada, comprimento de onda efetivo, limites classicos/subsonicos, formulas, teoria e graficos sincronizados.
+- O motor compartilhado passou a aceitar `beats` e `doppler-effect`, gerando samples de pressao, frequencia, velocidade do meio, envoltoria, fonte/observador e warnings de regime.
+- A cena Three.js reaproveita o perfil 1D e desenha pontinhos/marcadores de pressao para as duas simulacoes. Em Batimentos, os pontos mostram a pressao resultante e a envoltoria; em Doppler, mostram frentes comprimidas a frente da fonte e alongadas atras.
+- A sidebar agora abre `Oscilacoes e Ondas > Som` por conter simulacoes em `analysis`, enquanto subareas apenas `ready` continuam recolhidas.
+- Os testes do catalogo, graficos, motor e shell foram atualizados para o novo estado.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: parametros, regimes, samples, cena, graficos, tabela, formulas, teoria e warnings consomem a mesma fonte do motor.
+- Zeros fisicamente validos foram preservados: amplitude zero e frequencias iguais em Batimentos viram estado/warning didatico, nao erro visual.
+- Em Doppler, velocidades extremas deixam de quebrar a tela e passam a ser tratadas por warning de validade do modelo classico/subsonico.
+- Os pontinhos sao documentados como marcadores de campo de pressao, nao como moleculas individuais nem audio real obrigatorio.
+- As duas simulacoes permanecem em `analysis`; promocao para `ready` depende de teste manual do dono do projeto.
+
+Documentacao:
+
+- Atualizados `guides/02-product-spec.md`, `guides/03-architecture.md`, `guides/04-rules-and-constraints.md`, `guides/05-roadmap.md`, `guides/06-data-and-api.md`, `guides/07-quality-and-operations.md`, `guides/08-api-contracts.md`, `guides/09-simulation-catalog-plan.md` e `guides/issues.md`.
+- HLD/diagrama nao foi atualizado porque nao houve novo servico, pipeline ou mudanca estrutural de arquitetura; a fatia reutiliza o shell, motor compartilhado e renderer Three.js existentes.
+
+Validacao:
+
+- Executado `npm run test -- --run src/lib/physics/kinematics.test.ts src/simulation-registry/catalog.test.ts src/features/simulation-shell/kinematicsChartConfigs.test.ts`; 3 arquivos e 65 testes passaram.
+- Executado `npm run test -- --run src/App.test.tsx -t 'renders the simulation catalog'`; 1 teste passou e 9 foram ignorados pelo filtro.
+- Executado `npm run test -- --run src/features/simulation-shell/SimulationShell.test.tsx -t 'switches the viewport camera projection'`; 1 teste passou e 3 foram ignorados pelo filtro.
+- Executado `npm run test`; 14 arquivos e 132 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB e aviso de plugin timings.
+- Executado smoke visual local em `http://127.0.0.1:5174/` via Chrome headless/CDP; `Batimentos` e `Efeito Doppler` abriram com canvas, texto de pressao/frequencia e screenshots em `artifacts/sound-beats-smoke.png` e `artifacts/sound-doppler-effect-smoke.png`.
+- Checagem de pixels nos screenshots confirmou renderizacao nao vazia: 77 cores amostradas em Batimentos e 76 em Efeito Doppler.
+
+## 2026-05-07 - Representacao 3D para ondas sonoras
+
+Status: feito.
+
+Pedido reportado:
+
+- Ajustar `Batimentos` e `Efeito Doppler` para que a representacao da onda seja 3D, nao uma curva 2D, mantendo a ideia dos pontinhos para desenhar o efeito.
+
+Ajuste:
+
+- A cena Three.js de `Batimentos` e `Efeito Doppler` deixou de usar a linha 2D de perfil como leitura principal e passou a renderizar um campo volumetrico 3D de pontinhos ao redor do eixo de propagacao.
+- O perfil fisico continua analitico e 1D; o volume 3D e uma extrusao visual didatica do renderer, com raio, escala e cor dos pontos derivados da pressao normalizada do mesmo sample.
+- Fonte, observador e probe foram reposicionados no eixo 1D para nao sugerir que a pressao seja uma posicao fisica vertical.
+- As linhas secundarias de componente/envoltoria foram ocultadas nos casos de som para a cena nao voltar a parecer um grafico 2D dentro do viewport.
+- Textos de acessibilidade, guides, fixtures, teoria e catalogo foram alinhados para documentar que os pontinhos sao marcadores de campo de pressao, nao moleculas nem propagacao acustica 3D real.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: motor, cena, graficos, tabela, formulas e teoria continuam usando a mesma fonte numerica.
+- O renderer ganhou volume visual sem criar novos campos contratuais de sample nem alterar os modelos de batimentos e Doppler.
+- As duas simulacoes permanecem em `analysis`; promocao para `ready` depende de teste manual do dono do projeto.
+
+Validacao:
+
+- Executado `npm run test -- --run src/features/simulation-shell/KinematicsScene.test.ts src/lib/physics/kinematics.test.ts src/features/simulation-shell/kinematicsChartConfigs.test.ts`; 3 arquivos e 64 testes passaram.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Executado `python C:/Users/hugod/.codex/skills/project-strategy-plan/scripts/validate_guides.py D:/_PROJETOS/PhysicSimulator`; falhou por lacunas estruturais preexistentes do pacote SDD (`README.md`, `.agent/`, `tasks/`, `adr/`), nao por erro especifico desta mudanca de cena.
+- Servidor local reiniciado em `http://127.0.0.1:5173/`.
+- Executado smoke visual via Chrome headless/CDP em `http://127.0.0.1:5173/`; screenshots salvos em `artifacts/sound-beats-3d-smoke.png` e `artifacts/sound-doppler-effect-3d-smoke.png`.
+- Checagem de pixels nos screenshots confirmou renderizacao nao vazia: 236 cores amostradas em Batimentos e 248 em Efeito Doppler.

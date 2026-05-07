@@ -174,7 +174,8 @@
   ],
   "limits": [
     "Modelo analitico de onda estacionaria em corda ideal fixa nas duas extremidades, sem amortecimento, rigidez real ou excitacao transiente.",
-    "A frequencia modal usa f_n = n v / 2L com v = sqrt(T/mu), portanto tensao e densidade linear mudam o sample real.",
+    "A frequencia modal usa f_n = n v / 2L com v = sqrt(T/mu), portanto tensao, densidade linear, comprimento da corda e harmonico mudam o sample real.",
+    "O comprimento de onda modal e lambda_n = 2L/n e o periodo e T_n = 1/f_n; ambos aparecem no sample e nas leituras.",
     "Nos e ventres sao desenhados pelo mesmo perfil y_n(x,t) usado para o probe, graficos, tabela e formulas.",
     "Harmonicos altos sao permitidos ate n = 8 para manter a leitura visual e a densidade de pontos da corda."
   ],
@@ -212,15 +213,17 @@
     {
       "id": "modal-frequency",
       "title": "Frequencia do harmonico",
-      "expressionLatex": "f_n=\\frac{n}{2L}\\sqrt{\\frac{T}{\\mu}}",
-      "description": "Conecta tensao, densidade linear, comprimento da corda e numero do harmonico a frequencia exibida.",
+      "expressionLatex": "\\lambda_n=\\frac{2L}{n},\\quad f_n=\\frac{v}{\\lambda_n}=\\frac{n}{2L}\\sqrt{\\frac{T}{\\mu}},\\quad T_n=1/f_n",
+      "description": "Conecta comprimento de onda modal, frequencia, periodo, tensao, densidade linear, comprimento da corda e numero do harmonico.",
       "variables": [
         { "symbol": "T", "label": "tensao", "unit": "N" },
         { "symbol": "\\mu", "label": "densidade linear", "unit": "kg/m" },
         { "symbol": "L", "label": "comprimento", "unit": "m" },
-        { "symbol": "n", "label": "harmonico", "unit": "" }
+        { "symbol": "n", "label": "harmonico", "unit": "" },
+        { "symbol": "\\lambda_n", "label": "comprimento de onda modal", "unit": "m" },
+        { "symbol": "T_n", "label": "periodo modal", "unit": "s" }
       ],
-      "usedWhen": "Usar para comparar como tensionar a corda ou escolher outro harmonico muda a frequencia modal.",
+      "usedWhen": "Usar para comparar como tensionar a corda, alterar o comprimento ou escolher outro harmonico muda lambda_n, periodo e frequencia modal.",
       "notUsedWhen": "Nao inclui perdas, rigidez flexural, corda grossa ou dispersao.",
       "parameterIds": [
         "harmonicMode",
@@ -228,7 +231,12 @@
         "linearDensityKilogramsPerMeter",
         "stringLengthMeters"
       ],
-      "sampleFields": ["frequencyHertz", "speedMetersPerSecond", "periodSeconds"],
+      "sampleFields": [
+        "frequencyHertz",
+        "speedMetersPerSecond",
+        "periodSeconds",
+        "secondaryRadiusMeters"
+      ],
       "relatedChartIds": ["velocity"],
       "example": "Dobrar T aumenta a frequencia por um fator sqrt(2), nao por fator 2."
     }

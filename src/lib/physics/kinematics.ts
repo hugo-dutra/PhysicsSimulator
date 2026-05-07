@@ -1,10 +1,12 @@
 export type KinematicsSimulationId =
   | 'atwood-machine'
+  | 'beats'
   | 'centripetal-force-curve'
   | 'collisions-1d-2d'
   | 'continuity-bernoulli'
   | 'coupled-oscillators'
   | 'damped-oscillator'
+  | 'doppler-effect'
   | 'forced-oscillator-resonance'
   | 'gravitational-field-orbits'
   | 'hydrostatics-buoyancy'
@@ -83,20 +85,48 @@ export type ForcedOscillatorResonanceParameters = {
 
 export type CoupledOscillatorsParameters = {
   couplingSpringConstantNewtonsPerMeter: number
+  dampingNewtonSecondsPerMeter: number
+  gravityMetersPerSecondSquared: number
   initialDisplacementOneMeters: number
   initialDisplacementTwoMeters: number
   initialVelocityOneMetersPerSecond: number
   initialVelocityTwoMetersPerSecond: number
-  massKilograms: number
-  springConstantNewtonsPerMeter: number
+  massOneKilograms: number
+  massTwoKilograms: number
+  springConstantOneNewtonsPerMeter: number
+  springConstantTwoNewtonsPerMeter: number
+}
+
+export type BeatsParameters = {
+  amplitudePascals: number
+  frequencyOneHertz: number
+  frequencyTwoHertz: number
+  mediumLengthMeters: number
+  mediumSpeedMetersPerSecond: number
+  phaseDifferenceDegrees: number
+  probePositionMeters: number
+}
+
+export type DopplerEffectParameters = {
+  amplitudePascals: number
+  emittedFrequencyHertz: number
+  mediumLengthMeters: number
+  mediumSpeedMetersPerSecond: number
+  observerPositionMeters: number
+  observerSpeedMetersPerSecond: number
+  sourceInitialPositionMeters: number
+  sourceSpeedMetersPerSecond: number
 }
 
 export type WaveOnStringParameters = {
   amplitudeMeters: number
   frequencyHertz: number
+  linearDensityKilogramsPerMeter: number
   phaseDegrees: number
   probePositionMeters: number
+  speedModel: 'string-properties' | 'wavelength-frequency'
   stringLengthMeters: number
+  tensionNewtons: number
   wavelengthMeters: number
 }
 
@@ -230,11 +260,13 @@ export type RollingWithoutSlippingParameters = {
 
 export type KinematicsParameters =
   | AtwoodMachineParameters
+  | BeatsParameters
   | CentripetalForceCurveParameters
   | CollisionsParameters
   | ContinuityBernoulliParameters
   | CoupledOscillatorsParameters
   | DampedOscillatorParameters
+  | DopplerEffectParameters
   | ForcedOscillatorResonanceParameters
   | GravitationalFieldOrbitsParameters
   | HydrostaticsBuoyancyParameters
@@ -251,6 +283,22 @@ export type KinematicsParameters =
   | UniformlyAcceleratedMotionParameters
   | WaveOnStringParameters
   | WorkEnergyTrackParameters
+
+export type WaveProfileSimulationId = Extract<
+  KinematicsSimulationId,
+  | 'beats'
+  | 'doppler-effect'
+  | 'standing-waves'
+  | 'superposition-interference'
+  | 'wave-on-string'
+>
+
+export type WaveProfileParameters =
+  | BeatsParameters
+  | DopplerEffectParameters
+  | StandingWavesParameters
+  | SuperpositionInterferenceParameters
+  | WaveOnStringParameters
 
 export type MechanicalWaveProfilePoint = {
   componentOneMeters: number
@@ -277,6 +325,7 @@ export type KinematicsSample = {
   centripetalForceNewtons: number
   centripetalAccelerationMetersPerSecondSquared: number
   crossSectionAreaSquareMeters: number
+  couplingPotentialEnergyJoules: number
   displacementMeters: number
   energyLossPercent: number
   elasticPotentialEnergyJoules: number
@@ -301,6 +350,7 @@ export type KinematicsSample = {
   kineticEnergyJoules: number
   kineticEnergyLostJoules: number
   leftArmMeters: number
+  leftElasticPotentialEnergyJoules: number
   leftGravitationalPotentialEnergyJoules: number
   leftKineticEnergyJoules: number
   maxStaticFrictionNewtons: number
@@ -319,6 +369,7 @@ export type KinematicsSample = {
   pressurePascals: number
   primaryRadiusMeters: number
   rightArmMeters: number
+  rightElasticPotentialEnergyJoules: number
   rightGravitationalPotentialEnergyJoules: number
   rightKineticEnergyJoules: number
   secondaryPressurePascals: number
@@ -371,6 +422,7 @@ export type KinematicsVectorOverlay = {
   label: string
   magnitude: number
   unit:
+    | 'Hz'
     | 'kg m/s'
     | 'kg m^2/s'
     | 'm'
@@ -379,6 +431,7 @@ export type KinematicsVectorOverlay = {
     | 'N'
     | 'N m'
     | 'N s'
+    | 'Pa'
     | 'rad/s'
     | 'rad/s^2'
   direction: {
@@ -407,11 +460,13 @@ export type KinematicsTimelineResult = {
 
 const kinematicsSimulationIds = [
   'atwood-machine',
+  'beats',
   'centripetal-force-curve',
   'collisions-1d-2d',
   'continuity-bernoulli',
   'coupled-oscillators',
   'damped-oscillator',
+  'doppler-effect',
   'forced-oscillator-resonance',
   'gravitational-field-orbits',
   'hydrostatics-buoyancy',
@@ -446,6 +501,7 @@ const sampleNumericKeys = [
   'centripetalForceNewtons',
   'centripetalAccelerationMetersPerSecondSquared',
   'crossSectionAreaSquareMeters',
+  'couplingPotentialEnergyJoules',
   'displacementMeters',
   'energyLossPercent',
   'elasticPotentialEnergyJoules',
@@ -468,6 +524,7 @@ const sampleNumericKeys = [
   'impulseNewtonSeconds',
   'kineticEnergyJoules',
   'kineticEnergyLostJoules',
+  'leftElasticPotentialEnergyJoules',
   'leftGravitationalPotentialEnergyJoules',
   'leftKineticEnergyJoules',
   'maxStaticFrictionNewtons',
@@ -485,6 +542,7 @@ const sampleNumericKeys = [
   'potentialEnergyJoules',
   'pressurePascals',
   'primaryRadiusMeters',
+  'rightElasticPotentialEnergyJoules',
   'rightGravitationalPotentialEnergyJoules',
   'rightKineticEnergyJoules',
   'secondaryCrossSectionAreaSquareMeters',
@@ -652,6 +710,18 @@ export function toKinematicsParameters(
           values,
           'couplingSpringConstantNewtonsPerMeter',
         ),
+        dampingNewtonSecondsPerMeter: readNumberWithFallback(
+          values,
+          'dampingNewtonSecondsPerMeter',
+          'dampingPerSecond',
+          0,
+        ),
+        gravityMetersPerSecondSquared: readNumberWithFallback(
+          values,
+          'gravityMetersPerSecondSquared',
+          undefined,
+          9.81,
+        ),
         initialDisplacementOneMeters: readNumber(
           values,
           'initialDisplacementOneMeters',
@@ -668,9 +738,24 @@ export function toKinematicsParameters(
           values,
           'initialVelocityTwoMetersPerSecond',
         ),
-        massKilograms: readNumber(values, 'massKilograms'),
-        springConstantNewtonsPerMeter: readNumber(
+        massOneKilograms: readNumberWithFallback(
           values,
+          'massOneKilograms',
+          'massKilograms',
+        ),
+        massTwoKilograms: readNumberWithFallback(
+          values,
+          'massTwoKilograms',
+          'massKilograms',
+        ),
+        springConstantOneNewtonsPerMeter: readNumberWithFallback(
+          values,
+          'springConstantOneNewtonsPerMeter',
+          'springConstantNewtonsPerMeter',
+        ),
+        springConstantTwoNewtonsPerMeter: readNumberWithFallback(
+          values,
+          'springConstantTwoNewtonsPerMeter',
           'springConstantNewtonsPerMeter',
         ),
       }
@@ -678,13 +763,63 @@ export function toKinematicsParameters(
       validateCoupledOscillatorsParameters(parameters)
       return parameters
     }
+    case 'beats': {
+      const parameters: BeatsParameters = {
+        amplitudePascals: readNumber(values, 'amplitudePascals'),
+        frequencyOneHertz: readNumber(values, 'frequencyOneHertz'),
+        frequencyTwoHertz: readNumber(values, 'frequencyTwoHertz'),
+        mediumLengthMeters: readNumber(values, 'mediumLengthMeters'),
+        mediumSpeedMetersPerSecond: readNumber(
+          values,
+          'mediumSpeedMetersPerSecond',
+        ),
+        phaseDifferenceDegrees: readNumber(values, 'phaseDifferenceDegrees'),
+        probePositionMeters: readNumber(values, 'probePositionMeters'),
+      }
+
+      validateBeatsParameters(parameters)
+      return parameters
+    }
+    case 'doppler-effect': {
+      const parameters: DopplerEffectParameters = {
+        amplitudePascals: readNumber(values, 'amplitudePascals'),
+        emittedFrequencyHertz: readNumber(values, 'emittedFrequencyHertz'),
+        mediumLengthMeters: readNumber(values, 'mediumLengthMeters'),
+        mediumSpeedMetersPerSecond: readNumber(
+          values,
+          'mediumSpeedMetersPerSecond',
+        ),
+        observerPositionMeters: readNumber(values, 'observerPositionMeters'),
+        observerSpeedMetersPerSecond: readNumber(
+          values,
+          'observerSpeedMetersPerSecond',
+        ),
+        sourceInitialPositionMeters: readNumber(
+          values,
+          'sourceInitialPositionMeters',
+        ),
+        sourceSpeedMetersPerSecond: readNumber(
+          values,
+          'sourceSpeedMetersPerSecond',
+        ),
+      }
+
+      validateDopplerEffectParameters(parameters)
+      return parameters
+    }
     case 'wave-on-string': {
       const parameters: WaveOnStringParameters = {
         amplitudeMeters: readNumber(values, 'amplitudeMeters'),
         frequencyHertz: readNumber(values, 'frequencyHertz'),
+        linearDensityKilogramsPerMeter: readNumber(
+          values,
+          'linearDensityKilogramsPerMeter',
+        ),
         phaseDegrees: readNumber(values, 'phaseDegrees'),
         probePositionMeters: readNumber(values, 'probePositionMeters'),
+        speedModel: readWaveOnStringSpeedModel(values),
         stringLengthMeters: readNumber(values, 'stringLengthMeters'),
+        tensionNewtons: readNumber(values, 'tensionNewtons'),
         wavelengthMeters: readNumber(values, 'wavelengthMeters'),
       }
 
@@ -1133,6 +1268,13 @@ export function computeKinematicsSample(
         parameters as CoupledOscillatorsParameters,
         timeSeconds,
       )
+    case 'beats':
+      return computeBeatsSample(parameters as BeatsParameters, timeSeconds)
+    case 'doppler-effect':
+      return computeDopplerEffectSample(
+        parameters as DopplerEffectParameters,
+        timeSeconds,
+      )
     case 'wave-on-string':
       return computeWaveOnStringSample(
         parameters as WaveOnStringParameters,
@@ -1539,6 +1681,9 @@ export function getKinematicsVectorOverlays(
       sample.secondaryVelocityMetersPerSecond,
     )
     const primaryForceDirection = Math.sign(sample.netForceNewtons)
+    const secondaryForceDirection = Math.sign(sample.forceTwoNewtons)
+    const primarySpringDirection = Math.sign(sample.springForceNewtons)
+    const secondarySpringDirection = Math.sign(sample.forceThreeZNewtons)
     const couplingForceDirection = Math.sign(sample.tensionNewtons)
 
     return [
@@ -1565,11 +1710,21 @@ export function getKinematicsVectorOverlays(
       {
         direction: {
           x: 0,
-          z: -primaryForceDirection,
+          z: primarySpringDirection,
         },
-        id: 'resultant',
-        label: 'Resultante em A',
-        magnitude: Math.abs(sample.netForceNewtons),
+        id: 'forceOne',
+        label: 'F mola A',
+        magnitude: Math.abs(sample.springForceNewtons),
+        unit: 'N',
+      },
+      {
+        direction: {
+          x: 0,
+          z: secondarySpringDirection,
+        },
+        id: 'forceThree',
+        label: 'F mola B',
+        magnitude: Math.abs(sample.forceThreeZNewtons),
         unit: 'N',
       },
       {
@@ -1578,9 +1733,101 @@ export function getKinematicsVectorOverlays(
           z: couplingForceDirection,
         },
         id: 'tension',
-        label: 'Acoplamento',
+        label: 'F acoplamento em A',
         magnitude: Math.abs(sample.tensionNewtons),
         unit: 'N',
+      },
+      {
+        direction: {
+          x: 0,
+          z: -primaryForceDirection,
+        },
+        id: 'resultant',
+        label: 'F resultante A',
+        magnitude: Math.abs(sample.netForceNewtons),
+        unit: 'N',
+      },
+      {
+        direction: {
+          x: 0,
+          z: -secondaryForceDirection,
+        },
+        id: 'forceTwo',
+        label: 'F resultante B',
+        magnitude: Math.abs(sample.forceTwoNewtons),
+        unit: 'N',
+      },
+    ]
+  }
+
+  if (simulationId === 'beats') {
+    return [
+      {
+        direction: { x: 0, z: Math.sign(sample.pressurePascals) || 0 },
+        id: 'displacement',
+        label: 'Pressao resultante',
+        magnitude: Math.abs(sample.pressurePascals),
+        unit: 'Pa',
+      },
+      {
+        direction: { x: 0, z: Math.sign(sample.secondaryZMeters) || 0 },
+        id: 'forceOne',
+        label: 'Tom A',
+        magnitude: Math.abs(sample.secondaryZMeters),
+        unit: 'Pa',
+      },
+      {
+        direction: { x: 0, z: Math.sign(sample.displacementMeters) || 0 },
+        id: 'forceTwo',
+        label: 'Tom B',
+        magnitude: Math.abs(sample.displacementMeters),
+        unit: 'Pa',
+      },
+      {
+        direction: { x: 1, z: 0 },
+        id: 'secondaryVelocity',
+        label: 'Velocidade do som',
+        magnitude: sample.speedMetersPerSecond,
+        unit: 'm/s',
+      },
+    ]
+  }
+
+  if (simulationId === 'doppler-effect') {
+    return [
+      {
+        direction: { x: 0, z: Math.sign(sample.pressurePascals) || 0 },
+        id: 'displacement',
+        label: 'Pressao no observador',
+        magnitude: Math.abs(sample.pressurePascals),
+        unit: 'Pa',
+      },
+      {
+        direction: {
+          x: Math.sign(sample.secondaryVelocityXMetersPerSecond) || 0,
+          z: 0,
+        },
+        id: 'forceOne',
+        label: 'Velocidade da fonte',
+        magnitude: Math.abs(sample.secondaryVelocityXMetersPerSecond),
+        unit: 'm/s',
+      },
+      {
+        direction: {
+          x: Math.sign(sample.velocityXMetersPerSecond) || 0,
+          z: 0,
+        },
+        id: 'forceTwo',
+        label: 'Velocidade do observador',
+        magnitude: Math.abs(sample.velocityXMetersPerSecond),
+        unit: 'm/s',
+      },
+      {
+        direction: { x: 1, z: 0 },
+        id: 'secondaryVelocity',
+        label: 'Velocidade do som',
+        magnitude: sample.speedMetersPerSecond,
+        unit: 'm/s',
       },
     ]
   }
@@ -3310,6 +3557,7 @@ function readSingleOscillatorMechanicalEnergy({
 type CoupledOscillatorState = {
   displacementOneMeters: number
   displacementTwoMeters: number
+  thermalEnergyJoules: number
   velocityOneMetersPerSecond: number
   velocityTwoMetersPerSecond: number
 }
@@ -3329,6 +3577,7 @@ function computeCoupledOscillatorSamples({
   let state: CoupledOscillatorState = {
     displacementOneMeters: parameters.initialDisplacementOneMeters,
     displacementTwoMeters: parameters.initialDisplacementTwoMeters,
+    thermalEnergyJoules: 0,
     velocityOneMetersPerSecond: parameters.initialVelocityOneMetersPerSecond,
     velocityTwoMetersPerSecond: parameters.initialVelocityTwoMetersPerSecond,
   }
@@ -3356,22 +3605,34 @@ function advanceCoupledOscillatorState(
   parameters: CoupledOscillatorsParameters,
 ): CoupledOscillatorState {
   const derivative = (localState: CoupledOscillatorState) => {
+    const dampingForceOneNewtons =
+      -parameters.dampingNewtonSecondsPerMeter *
+      localState.velocityOneMetersPerSecond
+    const dampingForceTwoNewtons =
+      -parameters.dampingNewtonSecondsPerMeter *
+      localState.velocityTwoMetersPerSecond
     const forceOneNewtons =
-      -parameters.springConstantNewtonsPerMeter *
+      -parameters.springConstantOneNewtonsPerMeter *
         localState.displacementOneMeters -
       parameters.couplingSpringConstantNewtonsPerMeter *
-        (localState.displacementOneMeters - localState.displacementTwoMeters)
+        (localState.displacementOneMeters - localState.displacementTwoMeters) +
+      dampingForceOneNewtons
     const forceTwoNewtons =
-      -parameters.springConstantNewtonsPerMeter *
+      -parameters.springConstantTwoNewtonsPerMeter *
         localState.displacementTwoMeters -
       parameters.couplingSpringConstantNewtonsPerMeter *
-        (localState.displacementTwoMeters - localState.displacementOneMeters)
+        (localState.displacementTwoMeters - localState.displacementOneMeters) +
+      dampingForceTwoNewtons
 
     return {
       displacementOneMeters: localState.velocityOneMetersPerSecond,
       displacementTwoMeters: localState.velocityTwoMetersPerSecond,
-      velocityOneMetersPerSecond: forceOneNewtons / parameters.massKilograms,
-      velocityTwoMetersPerSecond: forceTwoNewtons / parameters.massKilograms,
+      thermalEnergyJoules:
+        parameters.dampingNewtonSecondsPerMeter *
+        (localState.velocityOneMetersPerSecond ** 2 +
+          localState.velocityTwoMetersPerSecond ** 2),
+      velocityOneMetersPerSecond: forceOneNewtons / parameters.massOneKilograms,
+      velocityTwoMetersPerSecond: forceTwoNewtons / parameters.massTwoKilograms,
     }
   }
   const addScaled = (
@@ -3383,6 +3644,8 @@ function advanceCoupledOscillatorState(
       localState.displacementOneMeters + delta.displacementOneMeters * scale,
     displacementTwoMeters:
       localState.displacementTwoMeters + delta.displacementTwoMeters * scale,
+    thermalEnergyJoules:
+      localState.thermalEnergyJoules + delta.thermalEnergyJoules * scale,
     velocityOneMetersPerSecond:
       localState.velocityOneMetersPerSecond +
       delta.velocityOneMetersPerSecond * scale,
@@ -3410,6 +3673,13 @@ function advanceCoupledOscillatorState(
           2 * k2.displacementTwoMeters +
           2 * k3.displacementTwoMeters +
           k4.displacementTwoMeters),
+    thermalEnergyJoules:
+      state.thermalEnergyJoules +
+      (stepSeconds / 6) *
+        (k1.thermalEnergyJoules +
+          2 * k2.thermalEnergyJoules +
+          2 * k3.thermalEnergyJoules +
+          k4.thermalEnergyJoules),
     velocityOneMetersPerSecond:
       state.velocityOneMetersPerSecond +
       (stepSeconds / 6) *
@@ -3435,62 +3705,104 @@ function buildCoupledOscillatorSample(
   const couplingStretchMeters =
     state.displacementOneMeters - state.displacementTwoMeters
   const primarySpringForceNewtons =
-    -parameters.springConstantNewtonsPerMeter *
+    -parameters.springConstantOneNewtonsPerMeter *
     state.displacementOneMeters
+  const primaryDampingForceNewtons =
+    -parameters.dampingNewtonSecondsPerMeter *
+    state.velocityOneMetersPerSecond
   const couplingForceOnPrimaryNewtons =
     -parameters.couplingSpringConstantNewtonsPerMeter * couplingStretchMeters
   const primaryNetForceNewtons =
-    primarySpringForceNewtons + couplingForceOnPrimaryNewtons
+    primarySpringForceNewtons +
+    couplingForceOnPrimaryNewtons +
+    primaryDampingForceNewtons
   const secondarySpringForceNewtons =
-    -parameters.springConstantNewtonsPerMeter *
+    -parameters.springConstantTwoNewtonsPerMeter *
     state.displacementTwoMeters
+  const secondaryDampingForceNewtons =
+    -parameters.dampingNewtonSecondsPerMeter *
+    state.velocityTwoMetersPerSecond
   const couplingForceOnSecondaryNewtons =
     parameters.couplingSpringConstantNewtonsPerMeter * couplingStretchMeters
   const secondaryNetForceNewtons =
-    secondarySpringForceNewtons + couplingForceOnSecondaryNewtons
-  const kineticEnergyJoules =
-    0.5 * parameters.massKilograms * state.velocityOneMetersPerSecond ** 2 +
-    0.5 * parameters.massKilograms * state.velocityTwoMetersPerSecond ** 2
+    secondarySpringForceNewtons +
+    couplingForceOnSecondaryNewtons +
+    secondaryDampingForceNewtons
+  const leftKineticEnergyJoules =
+    0.5 *
+    parameters.massOneKilograms *
+    state.velocityOneMetersPerSecond ** 2
+  const rightKineticEnergyJoules =
+    0.5 *
+    parameters.massTwoKilograms *
+    state.velocityTwoMetersPerSecond ** 2
+  const kineticEnergyJoules = leftKineticEnergyJoules + rightKineticEnergyJoules
+  const leftElasticPotentialEnergyJoules =
+    0.5 *
+    parameters.springConstantOneNewtonsPerMeter *
+    state.displacementOneMeters ** 2
+  const rightElasticPotentialEnergyJoules =
+    0.5 *
+    parameters.springConstantTwoNewtonsPerMeter *
+    state.displacementTwoMeters ** 2
+  const couplingPotentialEnergyJoules =
+    0.5 *
+    parameters.couplingSpringConstantNewtonsPerMeter *
+    couplingStretchMeters ** 2
   const potentialEnergyJoules =
-    0.5 *
-      parameters.springConstantNewtonsPerMeter *
-      state.displacementOneMeters ** 2 +
-    0.5 *
-      parameters.springConstantNewtonsPerMeter *
-      state.displacementTwoMeters ** 2 +
-    0.5 *
-      parameters.couplingSpringConstantNewtonsPerMeter *
-      couplingStretchMeters ** 2
-  const inPhaseAngularFrequency =
-    Math.sqrt(parameters.springConstantNewtonsPerMeter / parameters.massKilograms)
-  const outOfPhaseAngularFrequency = Math.sqrt(
-    (parameters.springConstantNewtonsPerMeter +
-      2 * parameters.couplingSpringConstantNewtonsPerMeter) /
-      parameters.massKilograms,
+    leftElasticPotentialEnergyJoules +
+    rightElasticPotentialEnergyJoules +
+    couplingPotentialEnergyJoules
+  const inPhaseAngularFrequency = Math.sqrt(
+    ((parameters.springConstantOneNewtonsPerMeter /
+      parameters.massOneKilograms) +
+      (parameters.springConstantTwoNewtonsPerMeter /
+        parameters.massTwoKilograms)) /
+      2,
   )
+  const outOfPhaseAngularFrequency = Math.sqrt(
+    (((parameters.springConstantOneNewtonsPerMeter +
+      2 * parameters.couplingSpringConstantNewtonsPerMeter) /
+      parameters.massOneKilograms) +
+      ((parameters.springConstantTwoNewtonsPerMeter +
+        2 * parameters.couplingSpringConstantNewtonsPerMeter) /
+        parameters.massTwoKilograms)) /
+      2,
+  )
+  const weightOneNewtons =
+    parameters.massOneKilograms * parameters.gravityMetersPerSecondSquared
+  const mechanicalEnergyJoules = kineticEnergyJoules + potentialEnergyJoules
 
   return buildSample({
     accelerationMetersPerSecondSquared:
-      primaryNetForceNewtons / parameters.massKilograms,
+      primaryNetForceNewtons / parameters.massOneKilograms,
     accelerationZMetersPerSecondSquared:
-      -primaryNetForceNewtons / parameters.massKilograms,
+      -primaryNetForceNewtons / parameters.massOneKilograms,
+    couplingPotentialEnergyJoules,
     centerOfMassMeters:
-      (state.displacementOneMeters + state.displacementTwoMeters) / 2,
+      (parameters.massOneKilograms * state.displacementOneMeters +
+        parameters.massTwoKilograms * state.displacementTwoMeters) /
+      (parameters.massOneKilograms + parameters.massTwoKilograms),
     displacementMeters: couplingStretchMeters,
     elasticPotentialEnergyJoules: potentialEnergyJoules,
-    forceOneNewtons: primaryNetForceNewtons,
+    forceOneNewtons: Math.abs(primarySpringForceNewtons),
+    forceOneZNewtons: -primarySpringForceNewtons,
+    forceThreeNewtons: Math.abs(secondarySpringForceNewtons),
+    forceThreeZNewtons: -secondarySpringForceNewtons,
     forceTwoNewtons: secondaryNetForceNewtons,
+    forceTwoZNewtons: -secondaryNetForceNewtons,
+    frictionForceNewtons: -primaryDampingForceNewtons,
     frequencyHertz: outOfPhaseAngularFrequency / (2 * Math.PI),
     kineticEnergyJoules,
-    leftKineticEnergyJoules:
-      0.5 * parameters.massKilograms * state.velocityOneMetersPerSecond ** 2,
+    leftElasticPotentialEnergyJoules,
+    leftKineticEnergyJoules,
     netForceNewtons: primaryNetForceNewtons,
     periodSeconds: (2 * Math.PI) / inPhaseAngularFrequency,
     positionMeters: state.displacementOneMeters,
     potentialEnergyJoules,
     primaryRadiusMeters: massSpringVisualNaturalLengthMeters,
-    rightKineticEnergyJoules:
-      0.5 * parameters.massKilograms * state.velocityTwoMetersPerSecond ** 2,
+    rightElasticPotentialEnergyJoules,
+    rightKineticEnergyJoules,
     secondarySpeedMetersPerSecond: Math.abs(
       state.velocityTwoMetersPerSecond,
     ),
@@ -3502,24 +3814,20 @@ function buildCoupledOscillatorSample(
     speedMetersPerSecond: Math.abs(state.velocityOneMetersPerSecond),
     springForceNewtons: -primarySpringForceNewtons,
     tensionNewtons: -couplingForceOnPrimaryNewtons,
+    thermalEnergyJoules: state.thermalEnergyJoules,
     timeSeconds,
-    totalEnergyJoules: kineticEnergyJoules + potentialEnergyJoules,
+    totalEnergyJoules: mechanicalEnergyJoules,
     velocityMetersPerSecond: state.velocityOneMetersPerSecond,
     velocityZMetersPerSecond: -state.velocityOneMetersPerSecond,
+    weightNewtons: weightOneNewtons,
     xMeters: -1.45,
     zMeters: -state.displacementOneMeters,
   })
 }
 
 export function computeMechanicalWaveProfile(
-  simulationId: Extract<
-    KinematicsSimulationId,
-    'standing-waves' | 'superposition-interference' | 'wave-on-string'
-  >,
-  parameters:
-    | StandingWavesParameters
-    | SuperpositionInterferenceParameters
-    | WaveOnStringParameters,
+  simulationId: WaveProfileSimulationId,
+  parameters: WaveProfileParameters,
   timeSeconds: number,
   pointCount = 128,
 ): MechanicalWaveProfilePoint[] {
@@ -3543,6 +3851,140 @@ export function computeMechanicalWaveProfile(
   })
 }
 
+function computeBeatsSample(
+  parameters: BeatsParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const point = computeMechanicalWavePoint(
+    'beats',
+    parameters,
+    parameters.probePositionMeters,
+    timeSeconds,
+  )
+  const angularFrequencyOne = 2 * Math.PI * parameters.frequencyOneHertz
+  const angularFrequencyTwo = 2 * Math.PI * parameters.frequencyTwoHertz
+  const componentVelocities = computeBeatsComponentPressureRates(
+    parameters,
+    parameters.probePositionMeters,
+    timeSeconds,
+  )
+  const pressureRatePascalsPerSecond =
+    componentVelocities.componentOnePressureRate +
+    componentVelocities.componentTwoPressureRate
+  const beatFrequencyHertz = Math.abs(
+    parameters.frequencyTwoHertz - parameters.frequencyOneHertz,
+  )
+  const carrierFrequencyHertz =
+    (parameters.frequencyOneHertz + parameters.frequencyTwoHertz) / 2
+  const carrierWavelengthMeters =
+    carrierFrequencyHertz > 0
+      ? parameters.mediumSpeedMetersPerSecond / carrierFrequencyHertz
+      : 0
+
+  return buildSample({
+    accelerationMetersPerSecondSquared:
+      -(Math.max(angularFrequencyOne, angularFrequencyTwo) ** 2) *
+      point.zMeters,
+    accelerationZMetersPerSecondSquared:
+      -(Math.max(angularFrequencyOne, angularFrequencyTwo) ** 2) *
+      point.zMeters,
+    angleRadians:
+      angularFrequencyOne * timeSeconds +
+      degreesToRadians(parameters.phaseDifferenceDegrees),
+    angularVelocityRadiansPerSecond:
+      2 * Math.PI * carrierFrequencyHertz,
+    centerOfMassMeters: point.envelopeMeters,
+    displacementMeters: point.componentTwoMeters,
+    frequencyHertz: beatFrequencyHertz,
+    periodSeconds: beatFrequencyHertz > 0 ? 1 / beatFrequencyHertz : 0,
+    positionMeters: point.zMeters,
+    pressurePascals: point.zMeters,
+    primaryRadiusMeters: parameters.amplitudePascals,
+    secondaryPressurePascals: point.envelopeMeters,
+    secondaryRadiusMeters: carrierWavelengthMeters,
+    secondarySpeedMetersPerSecond: carrierFrequencyHertz,
+    secondaryVelocityMetersPerSecond:
+      componentVelocities.componentTwoPressureRate,
+    secondaryVelocityZMetersPerSecond:
+      componentVelocities.componentTwoPressureRate,
+    secondaryZMeters: point.componentOneMeters,
+    speedMetersPerSecond: parameters.mediumSpeedMetersPerSecond,
+    timeSeconds,
+    velocityMetersPerSecond: pressureRatePascalsPerSecond,
+    velocityXMetersPerSecond: parameters.mediumSpeedMetersPerSecond,
+    velocityZMetersPerSecond: pressureRatePascalsPerSecond,
+    xMeters: point.xMeters,
+    zMeters: point.zMeters,
+  })
+}
+
+function computeDopplerEffectSample(
+  parameters: DopplerEffectParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const sourcePositionMeters =
+    parameters.sourceInitialPositionMeters +
+    parameters.sourceSpeedMetersPerSecond * timeSeconds
+  const sourceCenteredMeters =
+    sourcePositionMeters - parameters.mediumLengthMeters / 2
+  const observerPositionMeters =
+    parameters.observerPositionMeters +
+    parameters.observerSpeedMetersPerSecond * timeSeconds
+  const observerCenteredMeters =
+    observerPositionMeters - parameters.mediumLengthMeters / 2
+  const point = computeMechanicalWavePoint(
+    'doppler-effect',
+    parameters,
+    clamp(observerPositionMeters, 0, parameters.mediumLengthMeters),
+    timeSeconds,
+  )
+  const observedFrequencyHertz = computeDopplerObservedFrequency(
+    parameters,
+    sourcePositionMeters,
+    observerPositionMeters,
+  )
+  const emittedWavelengthMeters =
+    parameters.emittedFrequencyHertz > 0
+      ? parameters.mediumSpeedMetersPerSecond / parameters.emittedFrequencyHertz
+      : 0
+  const wavelengthTowardObserverMeters =
+    computeDopplerWavelengthForPoint(
+      parameters,
+      observerPositionMeters,
+      sourcePositionMeters,
+    )
+
+  return buildSample({
+    angleRadians: 2 * Math.PI * observedFrequencyHertz * timeSeconds,
+    angularVelocityRadiansPerSecond: 2 * Math.PI * observedFrequencyHertz,
+    displacementMeters: observerPositionMeters - sourcePositionMeters,
+    frequencyHertz: observedFrequencyHertz,
+    gripRatio:
+      Math.abs(parameters.sourceSpeedMetersPerSecond) /
+      parameters.mediumSpeedMetersPerSecond,
+    periodSeconds:
+      observedFrequencyHertz > 0 ? 1 / observedFrequencyHertz : 0,
+    positionMeters: point.zMeters,
+    pressurePascals: point.zMeters,
+    primaryRadiusMeters: parameters.amplitudePascals,
+    secondaryRadiusMeters: wavelengthTowardObserverMeters,
+    secondarySpeedMetersPerSecond: parameters.emittedFrequencyHertz,
+    secondaryVelocityMetersPerSecond:
+      parameters.sourceSpeedMetersPerSecond,
+    secondaryVelocityXMetersPerSecond:
+      parameters.sourceSpeedMetersPerSecond,
+    secondaryXMeters: sourceCenteredMeters,
+    secondaryZMeters: 0,
+    speedMetersPerSecond: parameters.mediumSpeedMetersPerSecond,
+    timeSeconds,
+    velocityMetersPerSecond: parameters.observerSpeedMetersPerSecond,
+    velocityXMetersPerSecond: parameters.observerSpeedMetersPerSecond,
+    xMeters: observerCenteredMeters,
+    zMeters: point.zMeters,
+    forceOneNewtons: emittedWavelengthMeters,
+  })
+}
+
 function computeWaveOnStringSample(
   parameters: WaveOnStringParameters,
   timeSeconds: number,
@@ -3553,8 +3995,9 @@ function computeWaveOnStringSample(
     parameters.probePositionMeters,
     timeSeconds,
   )
-  const waveSpeedMetersPerSecond =
-    parameters.frequencyHertz * parameters.wavelengthMeters
+  const waveSpeedMetersPerSecond = computeWaveOnStringSpeed(parameters)
+  const effectiveWavelengthMeters =
+    computeWaveOnStringEffectiveWavelength(parameters)
   const angularFrequencyRadiansPerSecond =
     2 * Math.PI * parameters.frequencyHertz
 
@@ -3573,16 +4016,18 @@ function computeWaveOnStringSample(
       timeSeconds,
     ),
     angularVelocityRadiansPerSecond: angularFrequencyRadiansPerSecond,
-    displacementMeters: waveSpeedMetersPerSecond * timeSeconds,
+    displacementMeters:
+      parameters.frequencyHertz > 0 ? waveSpeedMetersPerSecond * timeSeconds : 0,
     frequencyHertz: parameters.frequencyHertz,
     periodSeconds:
       parameters.frequencyHertz > 0 ? 1 / parameters.frequencyHertz : 0,
     positionMeters: point.zMeters,
     primaryRadiusMeters: parameters.amplitudeMeters,
-    secondaryRadiusMeters: parameters.wavelengthMeters,
+    secondaryRadiusMeters: effectiveWavelengthMeters,
     secondaryVelocityMetersPerSecond: waveSpeedMetersPerSecond,
     secondaryVelocityXMetersPerSecond: waveSpeedMetersPerSecond,
     speedMetersPerSecond: waveSpeedMetersPerSecond,
+    tensionNewtons: parameters.tensionNewtons,
     timeSeconds,
     velocityMetersPerSecond: computeTravelingWaveTransverseVelocity(
       parameters,
@@ -3632,9 +4077,13 @@ function computeSuperpositionInterferenceSample(
       {
         amplitudeMeters: parameters.amplitudeOneMeters,
         frequencyHertz: parameters.frequencyHertz,
+        linearDensityKilogramsPerMeter: 1,
         phaseDegrees: 0,
         probePositionMeters: parameters.probePositionMeters,
+        speedModel: 'wavelength-frequency',
         stringLengthMeters: parameters.stringLengthMeters,
+        tensionNewtons:
+          (parameters.frequencyHertz * parameters.wavelengthMeters) ** 2,
         wavelengthMeters: parameters.wavelengthMeters,
       },
       parameters.probePositionMeters,
@@ -3686,6 +4135,8 @@ function computeStandingWavesSample(
   const frequencyHertz =
     (harmonicMode * waveSpeedMetersPerSecond) /
     (2 * parameters.stringLengthMeters)
+  const modalWavelengthMeters =
+    (2 * parameters.stringLengthMeters) / harmonicMode
   const angularFrequencyRadiansPerSecond = 2 * Math.PI * frequencyHertz
   const modalShape = Math.sin(
     (harmonicMode * Math.PI * parameters.probePositionMeters) /
@@ -3713,7 +4164,7 @@ function computeStandingWavesSample(
     periodSeconds: frequencyHertz > 0 ? 1 / frequencyHertz : 0,
     positionMeters: point.zMeters,
     primaryRadiusMeters: parameters.amplitudeMeters,
-    secondaryRadiusMeters: parameters.stringLengthMeters,
+    secondaryRadiusMeters: modalWavelengthMeters,
     secondarySpeedMetersPerSecond: waveSpeedMetersPerSecond,
     secondaryVelocityMetersPerSecond: waveSpeedMetersPerSecond,
     speedMetersPerSecond: waveSpeedMetersPerSecond,
@@ -3728,19 +4179,88 @@ function computeStandingWavesSample(
 }
 
 function computeMechanicalWavePoint(
-  simulationId: Extract<
-    KinematicsSimulationId,
-    'standing-waves' | 'superposition-interference' | 'wave-on-string'
-  >,
-  parameters:
-    | StandingWavesParameters
-    | SuperpositionInterferenceParameters
-    | WaveOnStringParameters,
+  simulationId: WaveProfileSimulationId,
+  parameters: WaveProfileParameters,
   xOnStringMeters: number,
   timeSeconds: number,
 ): MechanicalWaveProfilePoint {
   const stringLengthMeters = readMechanicalWaveStringLength(parameters)
   const centeredXMeters = xOnStringMeters - stringLengthMeters / 2
+
+  if (simulationId === 'beats') {
+    const beatsParameters = parameters as BeatsParameters
+    const kOne =
+      (2 * Math.PI * beatsParameters.frequencyOneHertz) /
+      beatsParameters.mediumSpeedMetersPerSecond
+    const kTwo =
+      (2 * Math.PI * beatsParameters.frequencyTwoHertz) /
+      beatsParameters.mediumSpeedMetersPerSecond
+    const omegaOne = 2 * Math.PI * beatsParameters.frequencyOneHertz
+    const omegaTwo = 2 * Math.PI * beatsParameters.frequencyTwoHertz
+    const phaseDifferenceRadians = degreesToRadians(
+      beatsParameters.phaseDifferenceDegrees,
+    )
+    const componentOneMeters =
+      beatsParameters.amplitudePascals *
+      Math.sin(kOne * xOnStringMeters - omegaOne * timeSeconds)
+    const componentTwoMeters =
+      beatsParameters.amplitudePascals *
+      Math.sin(
+        kTwo * xOnStringMeters -
+          omegaTwo * timeSeconds +
+          phaseDifferenceRadians,
+      )
+    const zMeters = componentOneMeters + componentTwoMeters
+    const envelopeMeters =
+      2 *
+      beatsParameters.amplitudePascals *
+      Math.abs(
+        Math.cos(
+          ((kTwo - kOne) * xOnStringMeters -
+            (omegaTwo - omegaOne) * timeSeconds +
+            phaseDifferenceRadians) /
+            2,
+        ),
+      )
+
+    return {
+      componentOneMeters,
+      componentTwoMeters,
+      envelopeMeters,
+      xMeters: centeredXMeters,
+      zMeters,
+    }
+  }
+
+  if (simulationId === 'doppler-effect') {
+    const dopplerParameters = parameters as DopplerEffectParameters
+    const sourcePositionMeters =
+      dopplerParameters.sourceInitialPositionMeters +
+      dopplerParameters.sourceSpeedMetersPerSecond * timeSeconds
+    const distanceFromSourceMeters = xOnStringMeters - sourcePositionMeters
+    const wavelengthMeters = computeDopplerWavelengthForPoint(
+      dopplerParameters,
+      xOnStringMeters,
+      sourcePositionMeters,
+    )
+    const distanceMagnitudeMeters = Math.abs(distanceFromSourceMeters)
+    const attenuation = 1 / Math.sqrt(1 + distanceMagnitudeMeters * 0.22)
+    const phase =
+      wavelengthMeters > 0
+        ? (2 * Math.PI * distanceMagnitudeMeters) / wavelengthMeters -
+          2 * Math.PI * dopplerParameters.emittedFrequencyHertz * timeSeconds
+        : 0
+    const zMeters =
+      dopplerParameters.amplitudePascals * attenuation * Math.sin(phase)
+
+    return {
+      componentOneMeters: zMeters,
+      componentTwoMeters: 0,
+      envelopeMeters: Math.abs(dopplerParameters.amplitudePascals * attenuation),
+      xMeters: centeredXMeters,
+      zMeters,
+    }
+  }
 
   if (simulationId === 'standing-waves') {
     const standingParameters = parameters as StandingWavesParameters
@@ -3818,8 +4338,11 @@ function computeTravelingWavePhase(
   xOnStringMeters: number,
   timeSeconds: number,
 ) {
+  const effectiveWavelengthMeters =
+    computeWaveOnStringEffectiveWavelength(parameters)
+
   return (
-    ((2 * Math.PI) / parameters.wavelengthMeters) * xOnStringMeters -
+    ((2 * Math.PI) / effectiveWavelengthMeters) * xOnStringMeters -
     2 * Math.PI * parameters.frequencyHertz * timeSeconds +
     degreesToRadians(parameters.phaseDegrees)
   )
@@ -3837,6 +4360,29 @@ function computeTravelingWaveTransverseVelocity(
     parameters.frequencyHertz *
     Math.cos(computeTravelingWavePhase(parameters, xOnStringMeters, timeSeconds))
   )
+}
+
+function computeWaveOnStringSpeed(parameters: WaveOnStringParameters) {
+  if (parameters.speedModel === 'string-properties') {
+    return Math.sqrt(
+      parameters.tensionNewtons / parameters.linearDensityKilogramsPerMeter,
+    )
+  }
+
+  return parameters.frequencyHertz * parameters.wavelengthMeters
+}
+
+function computeWaveOnStringEffectiveWavelength(
+  parameters: WaveOnStringParameters,
+) {
+  if (
+    parameters.speedModel === 'string-properties' &&
+    parameters.frequencyHertz > 0
+  ) {
+    return computeWaveOnStringSpeed(parameters) / parameters.frequencyHertz
+  }
+
+  return parameters.wavelengthMeters
 }
 
 function computeSuperpositionComponentVelocities(
@@ -3862,6 +4408,77 @@ function computeSuperpositionComponentVelocities(
   }
 }
 
+function computeBeatsComponentPressureRates(
+  parameters: BeatsParameters,
+  xOnMediumMeters: number,
+  timeSeconds: number,
+) {
+  const kOne =
+    (2 * Math.PI * parameters.frequencyOneHertz) /
+    parameters.mediumSpeedMetersPerSecond
+  const kTwo =
+    (2 * Math.PI * parameters.frequencyTwoHertz) /
+    parameters.mediumSpeedMetersPerSecond
+  const omegaOne = 2 * Math.PI * parameters.frequencyOneHertz
+  const omegaTwo = 2 * Math.PI * parameters.frequencyTwoHertz
+  const phaseDifferenceRadians = degreesToRadians(
+    parameters.phaseDifferenceDegrees,
+  )
+
+  return {
+    componentOnePressureRate:
+      -parameters.amplitudePascals *
+      omegaOne *
+      Math.cos(kOne * xOnMediumMeters - omegaOne * timeSeconds),
+    componentTwoPressureRate:
+      -parameters.amplitudePascals *
+      omegaTwo *
+      Math.cos(
+        kTwo * xOnMediumMeters -
+          omegaTwo * timeSeconds +
+          phaseDifferenceRadians,
+      ),
+  }
+}
+
+function computeDopplerObservedFrequency(
+  parameters: DopplerEffectParameters,
+  sourcePositionMeters: number,
+  observerPositionMeters: number,
+) {
+  const directionFromSourceToObserver =
+    Math.sign(observerPositionMeters - sourcePositionMeters) || 1
+  const sourceTowardObserver =
+    parameters.sourceSpeedMetersPerSecond * directionFromSourceToObserver
+  const observerTowardSource =
+    -parameters.observerSpeedMetersPerSecond * directionFromSourceToObserver
+  const numerator =
+    parameters.mediumSpeedMetersPerSecond + observerTowardSource
+  const denominator =
+    parameters.mediumSpeedMetersPerSecond - sourceTowardObserver
+
+  if (denominator <= 1e-9 || numerator <= 0) {
+    return 0
+  }
+
+  return parameters.emittedFrequencyHertz * (numerator / denominator)
+}
+
+function computeDopplerWavelengthForPoint(
+  parameters: DopplerEffectParameters,
+  pointPositionMeters: number,
+  sourcePositionMeters: number,
+) {
+  const sideSign = Math.sign(pointPositionMeters - sourcePositionMeters) || 1
+  const apparentWaveSpeed =
+    parameters.mediumSpeedMetersPerSecond -
+    parameters.sourceSpeedMetersPerSecond * sideSign
+
+  return parameters.emittedFrequencyHertz > 0
+    ? Math.max(0.01, apparentWaveSpeed / parameters.emittedFrequencyHertz)
+    : 0
+}
+
 function pointEnvelopeAcceleration(
   displacementMeters: number,
   angularFrequencyRadiansPerSecond: number,
@@ -3878,11 +4495,12 @@ function readStandingWaveHarmonicMode(parameters: StandingWavesParameters) {
 }
 
 function readMechanicalWaveStringLength(
-  parameters:
-    | StandingWavesParameters
-    | SuperpositionInterferenceParameters
-    | WaveOnStringParameters,
+  parameters: WaveProfileParameters,
 ) {
+  if ('mediumLengthMeters' in parameters) {
+    return parameters.mediumLengthMeters
+  }
+
   return parameters.stringLengthMeters
 }
 
@@ -5243,6 +5861,7 @@ function buildSample(
     centripetalAccelerationMetersPerSecondSquared:
       sample.centripetalAccelerationMetersPerSecondSquared ?? 0,
     crossSectionAreaSquareMeters: sample.crossSectionAreaSquareMeters ?? 0,
+    couplingPotentialEnergyJoules: sample.couplingPotentialEnergyJoules ?? 0,
     displacementMeters: sample.displacementMeters ?? 0,
     energyLossPercent: sample.energyLossPercent ?? 0,
     elasticPotentialEnergyJoules: sample.elasticPotentialEnergyJoules ?? 0,
@@ -5270,6 +5889,8 @@ function buildSample(
     kineticEnergyJoules,
     kineticEnergyLostJoules: sample.kineticEnergyLostJoules ?? 0,
     leftArmMeters: sample.leftArmMeters ?? 0,
+    leftElasticPotentialEnergyJoules:
+      sample.leftElasticPotentialEnergyJoules ?? 0,
     leftGravitationalPotentialEnergyJoules:
       sample.leftGravitationalPotentialEnergyJoules ?? 0,
     leftKineticEnergyJoules: sample.leftKineticEnergyJoules ?? 0,
@@ -5294,6 +5915,8 @@ function buildSample(
     pressurePascals: sample.pressurePascals ?? 0,
     primaryRadiusMeters: sample.primaryRadiusMeters ?? 0,
     rightArmMeters: sample.rightArmMeters ?? 0,
+    rightElasticPotentialEnergyJoules:
+      sample.rightElasticPotentialEnergyJoules ?? 0,
     rightGravitationalPotentialEnergyJoules:
       sample.rightGravitationalPotentialEnergyJoules ?? 0,
     rightKineticEnergyJoules: sample.rightKineticEnergyJoules ?? 0,
@@ -5559,6 +6182,26 @@ function getKinematicsWarnings(
   if (simulationId === 'coupled-oscillators') {
     const coupledParameters = parameters as CoupledOscillatorsParameters
 
+    if (coupledParameters.dampingNewtonSecondsPerMeter > 0) {
+      return [
+        {
+          code: 'COUPLED_DAMPED_SYSTEM',
+          message:
+            'O amortecimento linear esta ativo; a energia mecanica diminui enquanto a dissipacao acumulada aparece nos samples.',
+        },
+      ]
+    }
+
+    if (coupledParameters.couplingSpringConstantNewtonsPerMeter === 0) {
+      return [
+        {
+          code: 'COUPLED_UNCOUPLED_REFERENCE',
+          message:
+            'A mola de acoplamento esta zerada; as massas oscilam independentemente e nao trocam energia entre si.',
+        },
+      ]
+    }
+
     if (
       Math.abs(coupledParameters.initialDisplacementOneMeters) > 0 &&
       Math.abs(coupledParameters.initialDisplacementTwoMeters) > 0 &&
@@ -5575,6 +6218,82 @@ function getKinematicsWarnings(
     }
 
     return []
+  }
+
+  if (simulationId === 'beats') {
+    const beatsParameters = parameters as BeatsParameters
+    const beatFrequencyHertz = Math.abs(
+      beatsParameters.frequencyTwoHertz - beatsParameters.frequencyOneHertz,
+    )
+
+    if (beatsParameters.amplitudePascals === 0) {
+      return [
+        {
+          code: 'BEATS_ZERO_AMPLITUDE',
+          message:
+            'A amplitude esta zerada; os pontos permanecem na linha de equilibrio e a pressao resultante fica nula.',
+        },
+      ]
+    }
+
+    if (beatFrequencyHertz < 1e-9) {
+      return [
+        {
+          code: 'BEATS_EQUAL_FREQUENCIES',
+          message:
+            'As duas frequencias sao iguais; a envoltoria de batimentos deixa de pulsar e resta uma soma senoidal comum.',
+        },
+      ]
+    }
+
+    return [
+      {
+        code: 'BEATS_ENVELOPE_ACTIVE',
+        message:
+          'A diferenca entre as frequencias produz uma envoltoria lenta; os pontinhos desenham a pressao resultante e os graficos usam o mesmo probe.',
+      },
+    ]
+  }
+
+  if (simulationId === 'doppler-effect') {
+    const dopplerParameters = parameters as DopplerEffectParameters
+    const sourceMachRatio =
+      Math.abs(dopplerParameters.sourceSpeedMetersPerSecond) /
+      dopplerParameters.mediumSpeedMetersPerSecond
+    const observerMachRatio =
+      Math.abs(dopplerParameters.observerSpeedMetersPerSecond) /
+      dopplerParameters.mediumSpeedMetersPerSecond
+
+    if (
+      dopplerParameters.sourceSpeedMetersPerSecond === 0 &&
+      dopplerParameters.observerSpeedMetersPerSecond === 0
+    ) {
+      return [
+        {
+          code: 'DOPPLER_NO_RELATIVE_MOTION',
+          message:
+            'Fonte e observador estao parados no meio; a frequencia observada permanece igual a frequencia emitida.',
+        },
+      ]
+    }
+
+    if (sourceMachRatio > 0.72 || observerMachRatio > 0.72) {
+      return [
+        {
+          code: 'DOPPLER_HIGH_SOURCE_SPEED',
+          message:
+            'Fonte ou observador esta proximo da velocidade do meio didatico; as frentes ficam muito comprimidas e o modelo continua classico/subsonico.',
+        },
+      ]
+    }
+
+    return [
+      {
+        code: 'DOPPLER_SHIFT_ACTIVE',
+        message:
+          'O movimento relativo altera a frequencia observada; os pontinhos mostram frentes comprimidas a frente da fonte e alongadas atras.',
+      },
+    ]
   }
 
   if (simulationId === 'wave-on-string') {
@@ -5595,7 +6314,19 @@ function getKinematicsWarnings(
         {
           code: 'WAVE_STATIC_PROFILE',
           message:
-            'A frequencia esta zerada; o perfil fica congelado e a velocidade de propagacao v = lambda f tambem zera.',
+            waveParameters.speedModel === 'string-properties'
+              ? 'A frequencia esta zerada; a fonte nao injeta ciclos, o perfil fica congelado, mas a velocidade do meio ainda vem de sqrt(T/mu).'
+              : 'A frequencia esta zerada; o perfil fica congelado e a velocidade de propagacao v = lambda f tambem zera.',
+        },
+      ]
+    }
+
+    if (waveParameters.speedModel === 'string-properties') {
+      return [
+        {
+          code: 'WAVE_SPEED_FROM_STRING',
+          message:
+            'A velocidade da onda esta sendo calculada por v = sqrt(T/mu); o comprimento de onda efetivo exibido vem de lambda = v/f.',
         },
       ]
     }
@@ -5818,6 +6549,9 @@ function validateKinematicsParameters(
     case 'atwood-machine':
       validateAtwoodMachineParameters(parameters as AtwoodMachineParameters)
       return
+    case 'beats':
+      validateBeatsParameters(parameters as BeatsParameters)
+      return
     case 'centripetal-force-curve':
       validateCentripetalForceCurveParameters(
         parameters as CentripetalForceCurveParameters,
@@ -5840,6 +6574,9 @@ function validateKinematicsParameters(
       validateDampedOscillatorParameters(
         parameters as DampedOscillatorParameters,
       )
+      return
+    case 'doppler-effect':
+      validateDopplerEffectParameters(parameters as DopplerEffectParameters)
       return
     case 'forced-oscillator-resonance':
       validateForcedOscillatorResonanceParameters(
@@ -6071,19 +6808,84 @@ function validateCoupledOscillatorsParameters(
     'initialVelocityTwoMetersPerSecond',
     parameters.initialVelocityTwoMetersPerSecond,
   )
-  assertFinitePositive('massKilograms', parameters.massKilograms)
+  assertFiniteNonNegative(
+    'dampingNewtonSecondsPerMeter',
+    parameters.dampingNewtonSecondsPerMeter,
+  )
   assertFinitePositive(
-    'springConstantNewtonsPerMeter',
-    parameters.springConstantNewtonsPerMeter,
+    'gravityMetersPerSecondSquared',
+    parameters.gravityMetersPerSecondSquared,
+  )
+  assertFinitePositive('massOneKilograms', parameters.massOneKilograms)
+  assertFinitePositive('massTwoKilograms', parameters.massTwoKilograms)
+  assertFinitePositive(
+    'springConstantOneNewtonsPerMeter',
+    parameters.springConstantOneNewtonsPerMeter,
+  )
+  assertFinitePositive(
+    'springConstantTwoNewtonsPerMeter',
+    parameters.springConstantTwoNewtonsPerMeter,
+  )
+}
+
+function validateBeatsParameters(parameters: BeatsParameters) {
+  assertFiniteNonNegative('amplitudePascals', parameters.amplitudePascals)
+  assertFiniteNonNegative('frequencyOneHertz', parameters.frequencyOneHertz)
+  assertFiniteNonNegative('frequencyTwoHertz', parameters.frequencyTwoHertz)
+  assertFinitePositive('mediumLengthMeters', parameters.mediumLengthMeters)
+  assertFinitePositive(
+    'mediumSpeedMetersPerSecond',
+    parameters.mediumSpeedMetersPerSecond,
+  )
+  assertFinite('phaseDifferenceDegrees', parameters.phaseDifferenceDegrees)
+  assertProbeInsideString(
+    parameters.probePositionMeters,
+    parameters.mediumLengthMeters,
+  )
+}
+
+function validateDopplerEffectParameters(parameters: DopplerEffectParameters) {
+  assertFiniteNonNegative('amplitudePascals', parameters.amplitudePascals)
+  assertFiniteNonNegative(
+    'emittedFrequencyHertz',
+    parameters.emittedFrequencyHertz,
+  )
+  assertFinitePositive('mediumLengthMeters', parameters.mediumLengthMeters)
+  assertFinitePositive(
+    'mediumSpeedMetersPerSecond',
+    parameters.mediumSpeedMetersPerSecond,
+  )
+  assertFinite('observerSpeedMetersPerSecond', parameters.observerSpeedMetersPerSecond)
+  assertFinite('sourceSpeedMetersPerSecond', parameters.sourceSpeedMetersPerSecond)
+  assertProbeInsideString(
+    parameters.sourceInitialPositionMeters,
+    parameters.mediumLengthMeters,
+  )
+  assertProbeInsideString(
+    parameters.observerPositionMeters,
+    parameters.mediumLengthMeters,
   )
 }
 
 function validateWaveOnStringParameters(parameters: WaveOnStringParameters) {
   assertFiniteNonNegative('amplitudeMeters', parameters.amplitudeMeters)
   assertFiniteNonNegative('frequencyHertz', parameters.frequencyHertz)
+  assertFinitePositive(
+    'linearDensityKilogramsPerMeter',
+    parameters.linearDensityKilogramsPerMeter,
+  )
   assertFinite('phaseDegrees', parameters.phaseDegrees)
   assertFinitePositive('stringLengthMeters', parameters.stringLengthMeters)
+  assertFinitePositive('tensionNewtons', parameters.tensionNewtons)
   assertFinitePositive('wavelengthMeters', parameters.wavelengthMeters)
+  if (
+    parameters.speedModel !== 'string-properties' &&
+    parameters.speedModel !== 'wavelength-frequency'
+  ) {
+    throw new Error(
+      'speedModel must be string-properties or wavelength-frequency.',
+    )
+  }
   assertProbeInsideString(
     parameters.probePositionMeters,
     parameters.stringLengthMeters,
@@ -6817,6 +7619,41 @@ function readNumber(values: Record<string, unknown>, key: string) {
   return value
 }
 
+function readNumberWithFallback(
+  values: Record<string, unknown>,
+  key: string,
+  fallbackKey?: string,
+  defaultValue?: number,
+) {
+  const value = values[key]
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  if (typeof value !== 'undefined') {
+    throw new Error(`${key} must be a finite number.`)
+  }
+
+  if (fallbackKey) {
+    const fallbackValue = values[fallbackKey]
+
+    if (typeof fallbackValue === 'number' && Number.isFinite(fallbackValue)) {
+      return fallbackValue
+    }
+
+    if (typeof fallbackValue !== 'undefined') {
+      throw new Error(`${fallbackKey} must be a finite number.`)
+    }
+  }
+
+  if (typeof defaultValue === 'number' && Number.isFinite(defaultValue)) {
+    return defaultValue
+  }
+
+  throw new Error(`${key} must be a finite number.`)
+}
+
 function readOptionalNumber(values: Record<string, unknown>, key: string) {
   const value = values[key]
 
@@ -6829,6 +7666,21 @@ function readOptionalNumber(values: Record<string, unknown>, key: string) {
   }
 
   return value
+}
+
+function readWaveOnStringSpeedModel(
+  values: Record<string, unknown>,
+): WaveOnStringParameters['speedModel'] {
+  const value = values.speedModel
+
+  if (
+    value === 'string-properties' ||
+    value === 'wavelength-frequency'
+  ) {
+    return value
+  }
+
+  return 'wavelength-frequency'
 }
 
 function readBoolean(

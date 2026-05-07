@@ -616,7 +616,7 @@ describe('App', () => {
     ).toBeInTheDocument()
   }, 45_000)
 
-  it('renders the simulation catalog with ready subareas collapsed', () => {
+  it('renders the simulation catalog with analysis subareas open and ready subareas collapsed', () => {
     render(
       <ThemeProvider theme={appTheme}>
         <App />
@@ -639,6 +639,25 @@ describe('App', () => {
     expect(
       document.querySelector('[aria-controls="subarea-mechanics-oscilacoes"]'),
     ).toBeNull()
+    expect(
+      screen.getByRole('button', { name: /Alternar area Oscilacoes e Ondas/i }),
+    ).toHaveAttribute('aria-expanded', 'true')
+    openWavesArea()
+    expect(getWavesOscillationsToggle()).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
+    expect(getToggleByControls('subarea-waves-som')).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+    expect(
+      screen.getByRole('button', { name: /Batimentos/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Efeito Doppler/i }),
+    ).toBeInTheDocument()
+    fireEvent.click(getWavesOscillationsToggle())
     expect(getWavesOscillationsToggle()).toHaveAttribute(
       'aria-expanded',
       'true',
@@ -669,7 +688,7 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
     ).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(6)
+    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(2)
     expect(screen.getAllByText(/^pronto$/i).length).toBeGreaterThan(0)
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
@@ -828,6 +847,12 @@ describe('App', () => {
       .toBeGreaterThan(0)
     expect(screen.getByLabelText(/Cena 3D dos osciladores acoplados/i))
       .toHaveAccessibleName(/duas massas.*modo comum.*Shift \+ scroll/i)
+    const coupledAnnotation =
+      /Observe a transferencia|As massas estao|Sem amortecimento|Com amortecimento/i
+
+    expect(screen.queryByText(coupledAnnotation)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Pausar simulacao/i }))
+    expect(screen.getByText(coupledAnnotation)).toBeInTheDocument()
   }, 30_000)
 
   it('opens the mechanical waves through the shared shell', () => {

@@ -1,0 +1,239 @@
+{
+  "simulationId": "beats",
+  "durationSeconds": 18,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 8,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Horizonte calculado",
+      "description": "Tempo pre-calculado para a soma dos dois tons. Aumentar mostra mais pulsos da envoltoria de batimento; diminuir foca os primeiros reforcos e cancelamentos.",
+      "unit": "s",
+      "kind": "number",
+      "min": 6,
+      "max": 60,
+      "step": 1,
+      "defaultValue": 18
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente exibido nos graficos e na tabela. Aumentar compara varios ciclos de batimento; diminuir destaca a pressao instantanea no probe.",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 30,
+      "step": 1,
+      "defaultValue": 8
+    }
+  ],
+  "defaultParameters": {
+    "amplitudePascals": 0.32,
+    "frequencyOneHertz": 3.2,
+    "frequencyTwoHertz": 3.55,
+    "mediumSpeedMetersPerSecond": 5.2,
+    "phaseDifferenceDegrees": 0,
+    "mediumLengthMeters": 7,
+    "probePositionMeters": 3.5
+  },
+  "parameters": [
+    {
+      "id": "amplitudePascals",
+      "label": "Amplitude de pressao",
+      "description": "Amplitude de cada tom em pascals no modelo didatico. Zerar deixa os pontinhos no volume neutro de equilibrio; aumentar intensifica a pressao resultante e a envoltoria.",
+      "unit": "Pa",
+      "kind": "number",
+      "min": 0,
+      "max": 1.2,
+      "step": 0.01,
+      "defaultValue": 0.32
+    },
+    {
+      "id": "frequencyOneHertz",
+      "label": "Frequencia A",
+      "description": "Frequencia do primeiro tom. Aproximar de B torna o batimento mais lento; afastar de B aumenta a frequencia da envoltoria percebida.",
+      "unit": "Hz",
+      "kind": "number",
+      "min": 0,
+      "max": 8,
+      "step": 0.01,
+      "defaultValue": 3.2
+    },
+    {
+      "id": "frequencyTwoHertz",
+      "label": "Frequencia B",
+      "description": "Frequencia do segundo tom. Quando B iguala A, nao ha pulsacao de batimento; quando difere pouco, a pressao cresce e diminui lentamente.",
+      "unit": "Hz",
+      "kind": "number",
+      "min": 0,
+      "max": 8,
+      "step": 0.01,
+      "defaultValue": 3.55
+    },
+    {
+      "id": "mediumSpeedMetersPerSecond",
+      "label": "Velocidade do som",
+      "description": "Velocidade de propagacao no meio didatico visual. Aumentar alonga os comprimentos de onda dos tons; diminuir aproxima cristas e vales no mesmo trecho.",
+      "unit": "m/s",
+      "kind": "number",
+      "min": 1,
+      "max": 20,
+      "step": 0.1,
+      "defaultValue": 5.2
+    },
+    {
+      "id": "phaseDifferenceDegrees",
+      "label": "Fase relativa",
+      "description": "Defasagem inicial do tom B em relacao ao tom A. Alterar desloca onde o reforco e o cancelamento aparecem, sem mudar as frequencias.",
+      "unit": "deg",
+      "kind": "number",
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "defaultValue": 0
+    },
+    {
+      "id": "mediumLengthMeters",
+      "label": "Comprimento do meio",
+      "description": "Trecho visual de ar onde o volume 3D de pontinhos desenha a pressao sonora. Aumentar mostra mais cristas; diminuir concentra o padrao perto do probe.",
+      "unit": "m",
+      "kind": "number",
+      "min": 3,
+      "max": 12,
+      "step": 0.1,
+      "defaultValue": 7
+    },
+    {
+      "id": "probePositionMeters",
+      "label": "Probe sonoro",
+      "description": "Ponto do meio onde graficos e tabela leem os dois tons, a soma e a envoltoria. Mover o probe troca a fase local sem criar outra fonte de dados.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 7,
+      "step": 0.05,
+      "defaultValue": 3.5
+    }
+  ],
+  "presets": [
+    {
+      "id": "slow-beat",
+      "label": "Batimento lento",
+      "parameters": {
+        "amplitudePascals": 0.32,
+        "frequencyOneHertz": 3.2,
+        "frequencyTwoHertz": 3.55,
+        "mediumSpeedMetersPerSecond": 5.2,
+        "phaseDifferenceDegrees": 0,
+        "mediumLengthMeters": 7,
+        "probePositionMeters": 3.5
+      }
+    },
+    {
+      "id": "fast-beat",
+      "label": "Batimento rapido",
+      "parameters": {
+        "amplitudePascals": 0.26,
+        "frequencyOneHertz": 2.8,
+        "frequencyTwoHertz": 4.1,
+        "mediumSpeedMetersPerSecond": 5.2,
+        "phaseDifferenceDegrees": 30,
+        "mediumLengthMeters": 7,
+        "probePositionMeters": 3.5
+      }
+    },
+    {
+      "id": "no-beat",
+      "label": "Sem batimento",
+      "parameters": {
+        "amplitudePascals": 0.32,
+        "frequencyOneHertz": 3.2,
+        "frequencyTwoHertz": 3.2,
+        "mediumSpeedMetersPerSecond": 5.2,
+        "phaseDifferenceDegrees": 0,
+        "mediumLengthMeters": 7,
+        "probePositionMeters": 3.5
+      }
+    }
+  ],
+  "regimes": [
+    {
+      "id": "linear-acoustic-beats",
+      "label": "Batimentos acusticos lineares",
+      "condition": "amplitudePascals >= 0, frequencyOneHertz >= 0, frequencyTwoHertz >= 0 e mediumSpeedMetersPerSecond > 0.",
+      "transitionLimit": "frequencyOneHertz = frequencyTwoHertz remove a envoltoria lenta; amplitudePascals = 0 zera a pressao resultante.",
+      "sampleFields": [
+        "pressurePascals",
+        "secondaryZMeters",
+        "displacementMeters",
+        "secondaryPressurePascals",
+        "frequencyHertz",
+        "secondaryRadiusMeters"
+      ],
+      "warningCode": "BEATS_ENVELOPE_ACTIVE"
+    }
+  ],
+  "limits": [
+    "Modelo linear de dois tons senoidais no mesmo meio: a pressao resultante e p = p1 + p2, sem reflexao, absorcao ou propagacao 3D real.",
+    "As frequencias sao mantidas em escala didatica para que o volume 3D de pontinhos e a envoltoria fiquem visiveis no tempo da animacao.",
+    "Os pontinhos sao uma extrusao visual do perfil 1D de pressao do proprio sample; graficos, tabela, formulas e teoria leem o mesmo probe.",
+    "Amplitude zero e frequencias iguais sao parametros validos e mudam o regime exibido para pressao nula ou soma sem batimento."
+  ],
+  "formulas": [
+    {
+      "id": "beats-superposition",
+      "title": "Soma dos dois tons",
+      "expressionLatex": "p(x,t)=A\\sin(k_1x-\\omega_1t)+A\\sin(k_2x-\\omega_2t+\\Delta\\phi)",
+      "description": "Calcula a pressao resultante desenhada pelo volume de pontinhos e lida pelo probe.",
+      "variables": [
+        { "symbol": "p", "label": "pressao resultante", "unit": "Pa" },
+        { "symbol": "A", "label": "amplitude de pressao", "unit": "Pa" },
+        { "symbol": "k_i", "label": "numero de onda de cada tom", "unit": "rad/m" },
+        { "symbol": "\\omega_i", "label": "frequencia angular", "unit": "rad/s" }
+      ],
+      "usedWhen": "Usar para dois tons de pequena amplitude propagando-se no mesmo meio linear.",
+      "notUsedWhen": "Nao modela reverberacao, eco, atenuacao real, fontes extensas ou ondas em tres dimensoes.",
+      "parameterIds": [
+        "amplitudePascals",
+        "frequencyOneHertz",
+        "frequencyTwoHertz",
+        "phaseDifferenceDegrees",
+        "probePositionMeters"
+      ],
+      "sampleFields": [
+        "pressurePascals",
+        "secondaryZMeters",
+        "displacementMeters"
+      ],
+      "relatedChartIds": ["pressure"],
+      "relatedVectorIds": ["displacement", "forceOne", "forceTwo"],
+      "example": "Com 3,20 Hz e 3,55 Hz, a envoltoria pulsa a 0,35 Hz."
+    },
+    {
+      "id": "beat-frequency",
+      "title": "Frequencia de batimento",
+      "expressionLatex": "f_b=|f_2-f_1|,\\quad T_b=1/f_b,\\quad \\lambda_i=v/f_i",
+      "description": "Conecta a diferenca entre os tons com a pulsacao lenta percebida.",
+      "variables": [
+        { "symbol": "f_b", "label": "frequencia de batimento", "unit": "Hz" },
+        { "symbol": "T_b", "label": "periodo do batimento", "unit": "s" },
+        { "symbol": "v", "label": "velocidade do som no meio", "unit": "m/s" },
+        { "symbol": "\\lambda_i", "label": "comprimento de onda de cada tom", "unit": "m" }
+      ],
+      "usedWhen": "Usar quando as frequencias sao proximas e a diferenca fica lenta o bastante para ser percebida como pulsacao.",
+      "notUsedWhen": "Se as frequencias forem iguais, f_b = 0 e nao ha batimento; se forem muito diferentes, a percepcao deixa de ser uma envoltoria lenta.",
+      "parameterIds": [
+        "frequencyOneHertz",
+        "frequencyTwoHertz",
+        "mediumSpeedMetersPerSecond"
+      ],
+      "sampleFields": [
+        "frequencyHertz",
+        "periodSeconds",
+        "secondaryRadiusMeters"
+      ],
+      "relatedChartIds": ["frequency"],
+      "example": "Tons de 4,0 Hz e 4,8 Hz produzem f_b = 0,8 Hz."
+    }
+  ]
+}

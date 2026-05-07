@@ -40,10 +40,10 @@ describe('simulation registry', () => {
     expect(allSimulations).toHaveLength(51)
     expect(
       allSimulations.filter((item) => item.status === 'analysis'),
-    ).toHaveLength(6)
+    ).toHaveLength(2)
     expect(
       allSimulations.filter((item) => item.status === 'ready'),
-    ).toHaveLength(18)
+    ).toHaveLength(24)
     expect(allSimulations.some((item) => item.status === 'planned')).toBe(true)
     expect(findSimulation('inclined-plane-friction').status).toBe('ready')
     expect(findSimulation('projectile-motion').status).toBe('ready')
@@ -178,8 +178,8 @@ describe('simulation registry', () => {
     })
   })
 
-  it('declares the Fase 4 waves simulations as analysis simulations', () => {
-    const analysisWaveIds = [
+  it('declares the approved Fase 4 oscillators and mechanical waves as ready', () => {
+    const readyWaveIds = [
       'damped-oscillator',
       'forced-oscillator-resonance',
       'coupled-oscillators',
@@ -188,12 +188,34 @@ describe('simulation registry', () => {
       'standing-waves',
     ] as const
 
-    analysisWaveIds.forEach((simulationId) => {
+    readyWaveIds.forEach((simulationId) => {
+      const simulation = findSimulation(simulationId)
+      const fixture = kinematicsFixtures[simulationId]
+
+      expect(simulation.status).toBe('ready')
+      expect(simulation.topicPath[0]).toBe('Oscilacoes e Ondas')
+      expect(simulation.fixturePath).toBeDefined()
+      expect(simulation.theoryPath).toBeDefined()
+      expect(fixture.simulationId).toBe(simulationId)
+      expect(fixture.regimes?.length).toBeGreaterThan(0)
+      expect(fixture.formulas.length).toBeGreaterThan(0)
+    })
+  })
+
+  it('declares the sound simulations as runnable analysis items', () => {
+    const analysisSoundIds = ['beats', 'doppler-effect'] as const
+
+    analysisSoundIds.forEach((simulationId) => {
       const simulation = findSimulation(simulationId)
       const fixture = kinematicsFixtures[simulationId]
 
       expect(simulation.status).toBe('analysis')
-      expect(simulation.topicPath[0]).toBe('Oscilacoes e Ondas')
+      expect(simulation.topicPath).toEqual([
+        'Oscilacoes e Ondas',
+        'Som',
+        simulationId === 'beats' ? 'Batimentos' : 'Efeito Doppler',
+      ])
+      expect(simulation.renderer).toBe('three')
       expect(simulation.fixturePath).toBeDefined()
       expect(simulation.theoryPath).toBeDefined()
       expect(fixture.simulationId).toBe(simulationId)

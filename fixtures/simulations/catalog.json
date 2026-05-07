@@ -1051,7 +1051,7 @@
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Oscilacoes", "Oscilador amortecido"],
           "title": "Oscilador amortecido",
-          "status": "analysis",
+          "status": "ready",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
@@ -1103,7 +1103,7 @@
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Oscilacoes", "Oscilador forcado e ressonancia"],
           "title": "Oscilador forcado e ressonancia",
-          "status": "analysis",
+          "status": "ready",
           "level": "introductory",
           "modelKind": "numerical",
           "renderer": "three",
@@ -1152,7 +1152,7 @@
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Oscilacoes", "Osciladores acoplados"],
           "title": "Osciladores acoplados",
-          "status": "analysis",
+          "status": "ready",
           "level": "introductory",
           "modelKind": "numerical",
           "renderer": "three",
@@ -1204,18 +1204,18 @@
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Ondas mecanicas", "Onda em corda"],
           "title": "Onda em corda",
-          "status": "analysis",
+          "status": "ready",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
           "fixturePath": "fixtures/simulations/waves-wave-on-string.json",
           "theoryPath": "src/content/simulations/waves/mechanical-waves/wave-on-string/theory.md",
-          "description": "Comprimento de onda, frequencia, velocidade, amplitude e perfil senoidal viajante sincronizado por probe.",
+          "description": "Corda tensionada com fonte oscilante, particulas materiais, velocidade por sqrt(T/mu) ou lambda f e probe sincronizado.",
           "technologyPlan": {
             "engine": "custom-analytic",
             "charting": "live-canvas",
             "content": "mdx-katex",
-            "notes": "Solucao senoidal 1D com helper de perfil espacial no physics-core e cena Three.js renderer-first."
+            "notes": "Solucao senoidal 1D com helper de perfil espacial no physics-core, velocidade opcional por tensao/densidade e cena Three.js renderer-first."
           },
           "charts": [
             {
@@ -1247,7 +1247,7 @@
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Ondas mecanicas", "Superposicao e interferencia"],
           "title": "Superposicao e interferencia",
-          "status": "analysis",
+          "status": "ready",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
@@ -1295,7 +1295,7 @@
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Ondas mecanicas", "Ondas estacionarias"],
           "title": "Ondas estacionarias",
-          "status": "analysis",
+          "status": "ready",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",
@@ -1342,22 +1342,86 @@
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Som", "Batimentos"],
           "title": "Batimentos",
-          "status": "planned",
+          "status": "analysis",
           "level": "introductory",
           "modelKind": "analytic",
-          "renderer": "dom",
-          "description": "Diferenca de frequencias, envoltoria, grafico de pressao e audio opcional."
+          "renderer": "three",
+          "fixturePath": "fixtures/simulations/waves-beats.json",
+          "theoryPath": "src/content/simulations/waves/sound/beats/theory.md",
+          "description": "Diferenca de frequencias, envoltoria de batimento, volume 3D de pontinhos de pressao e graficos sincronizados.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo acustico 1D em escala didatica, reutilizando o helper de perfil de onda e cena Three.js com marcadores volumetricos de pressao."
+          },
+          "charts": [
+            {
+              "id": "pressure",
+              "title": "Pressao e envoltoria no probe",
+              "sampleFields": [
+                "timeSeconds",
+                "pressurePascals",
+                "secondaryZMeters",
+                "displacementMeters",
+                "secondaryPressurePascals"
+              ]
+            },
+            {
+              "id": "frequency",
+              "title": "Frequencia dos tons e batimento",
+              "sampleFields": [
+                "timeSeconds",
+                "frequencyHertz",
+                "secondarySpeedMetersPerSecond"
+              ]
+            }
+          ]
         },
         {
           "id": "doppler-effect",
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Som", "Efeito Doppler"],
           "title": "Efeito Doppler",
-          "status": "planned",
+          "status": "analysis",
           "level": "introductory",
           "modelKind": "analytic",
-          "renderer": "pixi",
-          "description": "Fonte e observador em movimento, frequencia percebida e limites classicos."
+          "renderer": "three",
+          "fixturePath": "fixtures/simulations/waves-doppler-effect.json",
+          "theoryPath": "src/content/simulations/waves/sound/doppler-effect/theory.md",
+          "description": "Fonte e observador em movimento, frequencia percebida e frentes de pressao em volume 3D de pontinhos.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo Doppler 1D subsonico em escala didatica, com fonte movel, observador e perfil de pressao extrudido como volume 3D no renderer Three.js."
+          },
+          "charts": [
+            {
+              "id": "pressure",
+              "title": "Pressao recebida pelo observador",
+              "sampleFields": ["timeSeconds", "pressurePascals"]
+            },
+            {
+              "id": "frequency",
+              "title": "Frequencia emitida e observada",
+              "sampleFields": [
+                "timeSeconds",
+                "frequencyHertz",
+                "secondarySpeedMetersPerSecond"
+              ]
+            },
+            {
+              "id": "velocity",
+              "title": "Velocidades no eixo fonte-observador",
+              "sampleFields": [
+                "timeSeconds",
+                "speedMetersPerSecond",
+                "secondaryVelocityXMetersPerSecond",
+                "velocityXMetersPerSecond"
+              ]
+            }
+          ]
         },
         {
           "id": "reflection-refraction",

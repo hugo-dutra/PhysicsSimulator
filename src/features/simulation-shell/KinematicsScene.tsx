@@ -21,8 +21,9 @@ import {
   type KinematicsSample,
   type KinematicsSimulationId,
   type KinematicsVectorOverlay,
-  type StandingWavesParameters,
-  type SuperpositionInterferenceParameters,
+  type MechanicalWaveProfilePoint,
+  type WaveProfileParameters,
+  type WaveProfileSimulationId,
   type WaveOnStringParameters,
 } from '../../lib/physics/kinematics'
 import {
@@ -89,6 +90,7 @@ type KinematicsSceneProps = {
   playbackRate: number
   resetVersion: number
   samples: KinematicsSample[]
+  showEnergy: boolean
   showTrace: boolean
   showVectors: boolean
   simulationId: KinematicsSimulationId
@@ -104,6 +106,41 @@ type RigidRotationCurvedArrow = {
   line: THREE.Line
   positionAttribute: THREE.BufferAttribute
   positions: Float32Array
+}
+
+type WaveHistoryLine = {
+  line: THREE.Line
+  positionAttribute: THREE.BufferAttribute
+  positions: Float32Array
+}
+
+type WaveLabObjects = {
+  amplitudeLabel: THREE.Sprite
+  amplitudeMarker: THREE.Line
+  amplitudeMarkerPositionAttribute: THREE.BufferAttribute
+  amplitudeMarkerPositions: Float32Array
+  beads: THREE.InstancedMesh
+  bench: THREE.Mesh
+  energyPackets: THREE.InstancedMesh
+  equilibriumLine: THREE.Line
+  equilibriumPositionAttribute: THREE.BufferAttribute
+  equilibriumPositions: Float32Array
+  group: THREE.Group
+  historyLines: WaveHistoryLine[]
+  instanceHelper: THREE.Object3D
+  leftSupport: THREE.Mesh
+  probeGuide: THREE.Line
+  probeGuidePositionAttribute: THREE.BufferAttribute
+  probeGuidePositions: Float32Array
+  probeLabel: THREE.Sprite
+  rightSupport: THREE.Mesh
+  sourceBase: THREE.Mesh
+  sourceLabel: THREE.Sprite
+  sourceRod: THREE.Mesh
+  wavelengthLabel: THREE.Sprite
+  wavelengthMarker: THREE.Line
+  wavelengthMarkerPositionAttribute: THREE.BufferAttribute
+  wavelengthMarkerPositions: Float32Array
 }
 
 type BernoulliFlowLookup = {
@@ -134,6 +171,25 @@ type SceneObjects = {
   cameraMinRadius: number
   cameraRadius: number
   cameraTarget: THREE.Vector3
+  coupledCouplingSpring: THREE.Line
+  coupledCouplingSpringPositionAttribute: THREE.BufferAttribute
+  coupledCouplingSpringPositions: Float32Array
+  coupledDisplacementLabelA: THREE.Sprite
+  coupledDisplacementLabelB: THREE.Sprite
+  coupledEnergyPacketHelper: THREE.Object3D
+  coupledEnergyPackets: THREE.InstancedMesh
+  coupledEquilibriumLabel: THREE.Sprite
+  coupledEquilibriumLineA: THREE.Line
+  coupledEquilibriumLineB: THREE.Line
+  coupledMassLabelA: THREE.Sprite
+  coupledMassLabelB: THREE.Sprite
+  coupledRulerA: THREE.LineSegments
+  coupledRulerB: THREE.LineSegments
+  coupledSecondaryTrace: THREE.Line
+  coupledSecondaryTraceColorAttribute: THREE.BufferAttribute
+  coupledSecondaryTraceColors: Float32Array
+  coupledSecondaryTracePositionAttribute: THREE.BufferAttribute
+  coupledSecondaryTracePositions: Float32Array
   hydroDisplacedVolume: THREE.Mesh
   hydroPressureArrows: HydroPressureArrow[]
   hydroPressureField: THREE.Mesh
@@ -206,6 +262,7 @@ type SceneObjects = {
   waveEnvelopeUpper: THREE.Line
   waveEnvelopeUpperPositionAttribute: THREE.BufferAttribute
   waveEnvelopeUpperPositions: Float32Array
+  waveLab: WaveLabObjects
   waveString: THREE.Line
   waveStringPositionAttribute: THREE.BufferAttribute
   waveStringPositions: Float32Array
@@ -243,6 +300,7 @@ type RuntimeProps = {
   playbackRate: number
   sampleRateHz: number
   samples: KinematicsSample[]
+  showEnergy: boolean
   showTrace: boolean
   showVectors: boolean
   simulationId: KinematicsSimulationId
@@ -311,11 +369,21 @@ const bodySize = 0.22
 const atwoodPulleyRadius = 0.34
 const atwoodRopePointCapacity = 192
 const atwoodRopeArcSegments = 28
+const coupledCouplingSpringPointCapacity = 64
+const coupledEnergyPacketCount = 10
 const massSpringCoilSegments = 72
 const massSpringCoilTurns = 9
 const maxPathPoints = 360
 const maxTracePoints = 120
+const waveEnergyPacketCount = 18
+const waveHistoryLineCount = 7
 const waveStringPointCapacity = 128
+const waveStringBeadCount = waveStringPointCapacity
+const soundWaveFieldColumnCount = 52
+const soundWaveFieldRingCount = 12
+const soundWaveFieldBeadCount =
+  soundWaveFieldColumnCount * soundWaveFieldRingCount
+const waveBeadCapacity = Math.max(waveStringBeadCount, soundWaveFieldBeadCount)
 const traceFadeSeconds = 2.4
 const uniformLinearTracePointCount = 48
 const constantAccelerationTracePointCount = 72
@@ -412,6 +480,7 @@ export function KinematicsScene({
   playbackRate,
   resetVersion,
   samples,
+  showEnergy,
   showTrace,
   showVectors,
   simulationId,
@@ -427,6 +496,7 @@ export function KinematicsScene({
     playbackRate,
     sampleRateHz: readSampleRateHz(samples),
     samples,
+    showEnergy,
     showTrace,
     showVectors,
     simulationId,
@@ -482,6 +552,7 @@ export function KinematicsScene({
       sample,
       sampleIndex: traceSamplesRef.current.length - 1,
       samples: traceSamplesRef.current,
+      showEnergy: runtime.showEnergy,
       showTrace: runtime.showTrace,
       showVectors: runtime.showVectors,
       simulationId: runtime.simulationId,
@@ -612,6 +683,7 @@ export function KinematicsScene({
       playbackRate,
       sampleRateHz: readSampleRateHz(samples),
       samples,
+      showEnergy,
       showTrace,
       showVectors,
       simulationId,
@@ -626,6 +698,7 @@ export function KinematicsScene({
     playbackRate,
     renderCurrentFrame,
     samples,
+    showEnergy,
     showTrace,
     showVectors,
     simulationId,
@@ -1366,6 +1439,102 @@ export function KinematicsScene({
     )
     scene.add(rope)
 
+    const coupledCouplingSpringPositions = new Float32Array(
+      coupledCouplingSpringPointCapacity * 3,
+    )
+    const coupledCouplingSpringGeometry = new THREE.BufferGeometry()
+    const coupledCouplingSpringPositionAttribute = new THREE.BufferAttribute(
+      coupledCouplingSpringPositions,
+      3,
+    )
+
+    coupledCouplingSpringPositionAttribute.setUsage(THREE.DynamicDrawUsage)
+    coupledCouplingSpringGeometry.setAttribute(
+      'position',
+      coupledCouplingSpringPositionAttribute,
+    )
+    coupledCouplingSpringGeometry.setDrawRange(0, 0)
+    const coupledCouplingSpring = new THREE.Line(
+      coupledCouplingSpringGeometry,
+      new THREE.LineBasicMaterial({
+        color: 0xa3e635,
+        depthWrite: false,
+        opacity: 0.9,
+        transparent: true,
+      }),
+    )
+    const coupledEnergyPackets = new THREE.InstancedMesh(
+      new THREE.SphereGeometry(0.032, 12, 8),
+      new THREE.MeshBasicMaterial({
+        color: 0xfbbf24,
+        depthWrite: false,
+        opacity: 0.82,
+        transparent: true,
+      }),
+      coupledEnergyPacketCount,
+    )
+    const coupledEnergyPacketHelper = new THREE.Object3D()
+    const coupledMassLabelA = createSceneTextSprite('Massa A', {
+      background: 'rgba(15, 17, 21, 0.74)',
+      color: '#2DD4BF',
+      scale: 0.18,
+    })
+    const coupledMassLabelB = createSceneTextSprite('Massa B', {
+      background: 'rgba(15, 17, 21, 0.74)',
+      color: '#38BDF8',
+      scale: 0.18,
+    })
+    const coupledDisplacementLabelA = createSceneTextSprite('xA = 0 m', {
+      background: 'rgba(15, 17, 21, 0.7)',
+      color: '#2DD4BF',
+      scale: 0.155,
+    })
+    const coupledDisplacementLabelB = createSceneTextSprite('xB = 0 m', {
+      background: 'rgba(15, 17, 21, 0.7)',
+      color: '#38BDF8',
+      scale: 0.155,
+    })
+    const coupledEquilibriumLabel = createSceneTextSprite(
+      'posicao de equilibrio',
+      {
+        background: 'rgba(15, 17, 21, 0.62)',
+        color: '#CBD5E1',
+        scale: 0.135,
+      },
+    )
+    const coupledEquilibriumLineA = createSceneLine(
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+      0xcbd5e1,
+      0.38,
+    )
+    const coupledEquilibriumLineB = createSceneLine(
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+      0xcbd5e1,
+      0.38,
+    )
+    const coupledRulerA = createCoupledOscillatorRuler()
+    const coupledRulerB = createCoupledOscillatorRuler()
+
+    ;[
+      coupledCouplingSpring,
+      coupledEnergyPackets,
+      coupledMassLabelA,
+      coupledMassLabelB,
+      coupledDisplacementLabelA,
+      coupledDisplacementLabelB,
+      coupledEquilibriumLabel,
+      coupledEquilibriumLineA,
+      coupledEquilibriumLineB,
+      coupledRulerA,
+      coupledRulerB,
+    ].forEach((object) => {
+      object.renderOrder = 11
+      object.visible = false
+      scene.add(object)
+    })
+
     const tracePositions = new Float32Array(maxTracePoints * 3)
     const traceColors = new Float32Array(maxTracePoints * 4)
     const traceGeometry = new THREE.BufferGeometry()
@@ -1387,6 +1556,40 @@ export function KinematicsScene({
       }),
     )
     scene.add(trace)
+
+    const coupledSecondaryTracePositions = new Float32Array(maxTracePoints * 3)
+    const coupledSecondaryTraceColors = new Float32Array(maxTracePoints * 4)
+    const coupledSecondaryTraceGeometry = new THREE.BufferGeometry()
+    const coupledSecondaryTracePositionAttribute = new THREE.BufferAttribute(
+      coupledSecondaryTracePositions,
+      3,
+    )
+    const coupledSecondaryTraceColorAttribute = new THREE.BufferAttribute(
+      coupledSecondaryTraceColors,
+      4,
+    )
+
+    coupledSecondaryTracePositionAttribute.setUsage(THREE.DynamicDrawUsage)
+    coupledSecondaryTraceColorAttribute.setUsage(THREE.DynamicDrawUsage)
+    coupledSecondaryTraceGeometry.setAttribute(
+      'position',
+      coupledSecondaryTracePositionAttribute,
+    )
+    coupledSecondaryTraceGeometry.setAttribute(
+      'color',
+      coupledSecondaryTraceColorAttribute,
+    )
+    coupledSecondaryTraceGeometry.setDrawRange(0, 0)
+    const coupledSecondaryTrace = new THREE.Line(
+      coupledSecondaryTraceGeometry,
+      new THREE.LineBasicMaterial({
+        depthWrite: false,
+        transparent: true,
+        vertexColors: true,
+      }),
+    )
+    coupledSecondaryTrace.visible = false
+    scene.add(coupledSecondaryTrace)
 
     const waveStringPositions = new Float32Array(waveStringPointCapacity * 3)
     const waveComponentOnePositions = new Float32Array(
@@ -1457,6 +1660,11 @@ export function KinematicsScene({
       line.visible = false
       scene.add(line)
     })
+
+    const waveLab = createWaveLabObjects()
+
+    waveLab.group.visible = false
+    scene.add(waveLab.group)
 
     const acceleratedMotionBodyShadow = new THREE.Mesh(
       new THREE.CircleGeometry(sceneBodySize * 1.22, 36),
@@ -1678,6 +1886,25 @@ export function KinematicsScene({
       cameraMinRadius,
       cameraRadius,
       cameraTarget,
+      coupledCouplingSpring,
+      coupledCouplingSpringPositionAttribute,
+      coupledCouplingSpringPositions,
+      coupledDisplacementLabelA,
+      coupledDisplacementLabelB,
+      coupledEnergyPacketHelper,
+      coupledEnergyPackets,
+      coupledEquilibriumLabel,
+      coupledEquilibriumLineA,
+      coupledEquilibriumLineB,
+      coupledMassLabelA,
+      coupledMassLabelB,
+      coupledRulerA,
+      coupledRulerB,
+      coupledSecondaryTrace,
+      coupledSecondaryTraceColorAttribute,
+      coupledSecondaryTraceColors,
+      coupledSecondaryTracePositionAttribute,
+      coupledSecondaryTracePositions,
       hydroDisplacedVolume,
       hydroPressureArrows,
       hydroPressureBaseRing,
@@ -1750,6 +1977,7 @@ export function KinematicsScene({
       waveEnvelopeUpper,
       waveEnvelopeUpperPositionAttribute,
       waveEnvelopeUpperPositions,
+      waveLab,
       waveString,
       waveStringPositionAttribute,
       waveStringPositions,
@@ -1930,6 +2158,7 @@ function updateKinematicsObjects({
   sample,
   sampleIndex,
   samples,
+  showEnergy,
   showTrace,
   showVectors,
   simulationId,
@@ -1939,6 +2168,7 @@ function updateKinematicsObjects({
   sample: KinematicsSample
   sampleIndex: number
   samples: KinematicsSample[]
+  showEnergy: boolean
   showTrace: boolean
   showVectors: boolean
   simulationId: KinematicsSimulationId
@@ -1973,6 +2203,7 @@ function updateKinematicsObjects({
     parameters,
     sample,
     simulationId,
+    showEnergy,
     showTrace,
     showVectors,
   )
@@ -2025,9 +2256,18 @@ function getKinematicsVectorOrigin(
   if (
     (simulationId === 'collisions-1d-2d' ||
       simulationId === 'coupled-oscillators') &&
-    vectorId === 'secondaryVelocity'
+    (vectorId === 'secondaryVelocity' ||
+      (simulationId === 'coupled-oscillators' &&
+        (vectorId === 'forceTwo' || vectorId === 'forceThree')))
   ) {
     return objects.secondaryBody.position.clone()
+  }
+
+  if (simulationId === 'coupled-oscillators' && vectorId === 'tension') {
+    return objects.body.position
+      .clone()
+      .lerp(objects.secondaryBody.position, 0.5)
+      .add(new THREE.Vector3(0, -objects.bodyRadius * 0.9, 0))
   }
 
   if (simulationId === 'uniform-linear-motion' && vectorId === 'displacement') {
@@ -2167,6 +2407,7 @@ function updateConstrainedBodyObjects(
   parameters: KinematicsParameters,
   sample: KinematicsSample,
   simulationId: KinematicsSimulationId,
+  showEnergy: boolean,
   showTrace: boolean,
   showVectors: boolean,
 ) {
@@ -2178,6 +2419,7 @@ function updateConstrainedBodyObjects(
   const isSingleSpringOscillator =
     isSingleSpringOscillatorSimulation(simulationId)
   const isMechanicalWave = isMechanicalWaveSimulation(simulationId)
+  const isSoundWave = isSoundWaveSimulation(simulationId)
   const isOrbit = simulationId === 'gravitational-field-orbits'
   const isRigidRotation = simulationId === 'rigid-body-rotation'
   const isRolling = simulationId === 'rolling-without-slipping'
@@ -2189,7 +2431,11 @@ function updateConstrainedBodyObjects(
 
   setRigidBodyRotationObjectsVisible(objects, isRigidRotation)
   objects.secondaryBody.visible =
-    isAtwood || isCollision || isCoupledOscillator || isOrbit
+    isAtwood ||
+    isCollision ||
+    isCoupledOscillator ||
+    isOrbit ||
+    simulationId === 'doppler-effect'
   objects.rollingPlane.visible = isRolling
   objects.rollingPlaneEdges.visible = isRolling
   objects.pulley.visible = isAtwood
@@ -2213,6 +2459,17 @@ function updateConstrainedBodyObjects(
     arrow.visible = isHydrostatics && showVectors
   })
   objects.bernoulli.group.visible = isBernoulli
+  objects.coupledCouplingSpring.visible = isCoupledOscillator
+  objects.coupledDisplacementLabelA.visible = isCoupledOscillator
+  objects.coupledDisplacementLabelB.visible = isCoupledOscillator
+  objects.coupledEnergyPackets.visible = isCoupledOscillator && showEnergy
+  objects.coupledEquilibriumLabel.visible = isCoupledOscillator
+  objects.coupledEquilibriumLineA.visible = isCoupledOscillator
+  objects.coupledEquilibriumLineB.visible = isCoupledOscillator
+  objects.coupledMassLabelA.visible = isCoupledOscillator
+  objects.coupledMassLabelB.visible = isCoupledOscillator
+  objects.coupledRulerA.visible = isCoupledOscillator
+  objects.coupledRulerB.visible = isCoupledOscillator
   objects.leverAppliedForceMarker.visible = isTorqueLever
   objects.leverCenterOfMassMarker.visible = isTorqueLever
   objects.leverLeftMass.visible = isTorqueLever
@@ -2243,7 +2500,8 @@ function updateConstrainedBodyObjects(
   objects.uniformCircularLapPulse.visible = isUniformCircularMotion
   objects.uniformCircularRadiusLabel.visible =
     isUniformCircularMotion && showVectors
-  objects.waveString.visible = isMechanicalWave
+  objects.waveString.visible =
+    isMechanicalWave && !isSoundWave && simulationId !== 'wave-on-string'
   objects.waveComponentOne.visible =
     simulationId === 'superposition-interference' && showTrace
   objects.waveComponentTwo.visible =
@@ -2252,6 +2510,7 @@ function updateConstrainedBodyObjects(
     simulationId === 'standing-waves' && showTrace
   objects.waveEnvelopeLower.visible =
     simulationId === 'standing-waves' && showTrace
+  objects.waveLab.group.visible = isMechanicalWave
 
   if (isRigidRotation) {
     updateRigidBodyRotationObjects(objects, sample, showVectors)
@@ -2341,12 +2600,20 @@ function updateConstrainedBodyObjects(
   }
 
   if (isCoupledOscillator) {
-    updateCoupledOscillatorObjects(objects, sample)
+    updateCoupledOscillatorObjects(objects, sample, showEnergy, showTrace)
     return
   }
 
   if (isMechanicalWave) {
-    updateMechanicalWaveObjects(objects, parameters, sample, simulationId)
+    updateMechanicalWaveObjects(
+      objects,
+      parameters,
+      sample,
+      simulationId,
+      showEnergy,
+      showTrace,
+      showVectors,
+    )
     return
   }
 
@@ -3907,15 +4174,20 @@ function isSingleSpringOscillatorSimulation(
 
 function isMechanicalWaveSimulation(
   simulationId: KinematicsSimulationId,
-): simulationId is
-  | 'standing-waves'
-  | 'superposition-interference'
-  | 'wave-on-string' {
+): simulationId is WaveProfileSimulationId {
   return (
+    simulationId === 'beats' ||
+    simulationId === 'doppler-effect' ||
     simulationId === 'standing-waves' ||
     simulationId === 'superposition-interference' ||
     simulationId === 'wave-on-string'
   )
+}
+
+function isSoundWaveSimulation(
+  simulationId: KinematicsSimulationId,
+): simulationId is 'beats' | 'doppler-effect' {
+  return simulationId === 'beats' || simulationId === 'doppler-effect'
 }
 
 function updateMassSpringObjects(
@@ -3960,6 +4232,8 @@ function updateMassSpringObjects(
 function updateCoupledOscillatorObjects(
   objects: SceneObjects,
   sample: KinematicsSample,
+  showEnergy: boolean,
+  showTrace: boolean,
 ) {
   const scale = objects.sceneProjection.positionScale
   const primaryPosition = toKinematicsScenePosition(sample, objects.sceneProjection)
@@ -3976,6 +4250,7 @@ function updateCoupledOscillatorObjects(
   const supportZ = springTopZ + Math.max(0.18, bodyRadius * 0.9)
   const supportWidth =
     Math.abs(primaryPosition.x - secondaryPosition.x) + bodyRadius * 5.4
+  const rulerHalfSpan = Math.max(0.65, bodyRadius * 3.1)
   const primarySpringBottomZ = Math.min(
     springTopZ - 0.12,
     primaryPosition.z + bodyRadius * 0.82,
@@ -4005,10 +4280,20 @@ function updateCoupledOscillatorObjects(
 
   objects.body.position.copy(primaryPosition)
   objects.body.scale.setScalar(1)
+  configureCoupledOscillatorMassMaterial(
+    objects.body,
+    0x2dd4bf,
+    sample.speedMetersPerSecond,
+  )
   objects.secondaryBody.position.copy(secondaryPosition)
   objects.secondaryBody.scale.setScalar(1)
+  configureCoupledOscillatorMassMaterial(
+    objects.secondaryBody,
+    0x38bdf8,
+    sample.secondarySpeedMetersPerSecond,
+  )
   objects.supportBar.position.set(0, 0, supportZ)
-  objects.supportBar.scale.set(supportWidth, 0.075, 0.075)
+  objects.supportBar.scale.set(supportWidth, 0.11, 0.09)
   objects.supportStem.position.set(0, 0, (springTopZ + supportZ) / 2)
   objects.supportStem.scale.set(0.075, 0.075, Math.max(0.12, supportZ - springTopZ))
 
@@ -4021,6 +4306,201 @@ function updateCoupledOscillatorObjects(
   })
   objects.rope.geometry.setDrawRange(0, ropePoints.length)
   objects.ropePositionAttribute.needsUpdate = true
+  updateCoupledOscillatorDidacticObjects({
+    bodyRadius,
+    objects,
+    primaryPosition,
+    rulerHalfSpan,
+    sample,
+    scale,
+    secondaryPosition,
+    showEnergy,
+    showTrace,
+  })
+}
+
+function configureCoupledOscillatorMassMaterial(
+  body: THREE.Mesh,
+  color: number,
+  speedMetersPerSecond: number,
+) {
+  const material = body.material as THREE.MeshStandardMaterial
+  const speedGlow = clamp(speedMetersPerSecond / 1.8, 0, 1)
+
+  material.color.setHex(color)
+  material.emissive.setHex(color)
+  material.emissiveIntensity = 0.1 + speedGlow * 0.36
+  material.metalness = 0.1 + speedGlow * 0.08
+  material.opacity = body.geometry.type === 'SphereGeometry' ? 0.86 : 0.96
+  material.roughness = body.geometry.type === 'SphereGeometry' ? 0.26 : 0.38
+  material.transparent = true
+}
+
+function updateCoupledOscillatorDidacticObjects({
+  bodyRadius,
+  objects,
+  primaryPosition,
+  rulerHalfSpan,
+  sample,
+  scale,
+  secondaryPosition,
+  showEnergy,
+  showTrace,
+}: {
+  bodyRadius: number
+  objects: SceneObjects
+  primaryPosition: THREE.Vector3
+  rulerHalfSpan: number
+  sample: KinematicsSample
+  scale: number
+  secondaryPosition: THREE.Vector3
+  showEnergy: boolean
+  showTrace: boolean
+}) {
+  const couplingStart = primaryPosition
+    .clone()
+    .add(new THREE.Vector3(Math.max(0.12, bodyRadius * 0.8), 0, 0))
+  const couplingEnd = secondaryPosition
+    .clone()
+    .add(new THREE.Vector3(-Math.max(0.12, bodyRadius * 0.8), 0, 0))
+  const couplingPoints = createHorizontalCoilPoints({
+    end: couplingEnd,
+    radius: clamp(bodyRadius * 0.42, 0.055, 0.13),
+    start: couplingStart,
+  }).slice(0, coupledCouplingSpringPointCapacity)
+  const deformationRatio = clamp(Math.abs(sample.displacementMeters) / 0.45, 0, 1)
+  const couplingMaterial =
+    objects.coupledCouplingSpring.material as THREE.LineBasicMaterial
+  const ropeMaterial = objects.rope.material as THREE.LineBasicMaterial
+
+  couplingMaterial.color.set(deformationRatio > 0.35 ? 0xfbbf24 : 0xa3e635)
+  couplingMaterial.opacity = 0.5 + deformationRatio * 0.46
+  ropeMaterial.color.set(
+    sample.displacementMeters > 0.05
+      ? 0xfbbf24
+      : sample.displacementMeters < -0.05
+        ? 0x7dd3fc
+        : 0xe6e8ec,
+  )
+  ropeMaterial.opacity = 0.72 + deformationRatio * 0.2
+
+  couplingPoints.forEach((point, index) => {
+    const offset = index * 3
+
+    objects.coupledCouplingSpringPositions[offset] = point.x
+    objects.coupledCouplingSpringPositions[offset + 1] = point.y
+    objects.coupledCouplingSpringPositions[offset + 2] = point.z
+  })
+  objects.coupledCouplingSpring.geometry.setDrawRange(0, couplingPoints.length)
+  objects.coupledCouplingSpringPositionAttribute.needsUpdate = true
+
+  updateCoupledEquilibriumLine(
+    objects.coupledEquilibriumLineA,
+    primaryPosition.x,
+    bodyRadius,
+  )
+  updateCoupledEquilibriumLine(
+    objects.coupledEquilibriumLineB,
+    secondaryPosition.x,
+    bodyRadius,
+  )
+  objects.coupledEquilibriumLabel.position.set(
+    (primaryPosition.x + secondaryPosition.x) / 2,
+    -0.34,
+    bodyRadius * 0.55,
+  )
+  objects.coupledMassLabelA.position.copy(
+    primaryPosition.clone().add(new THREE.Vector3(0, -0.24, bodyRadius * 1.75)),
+  )
+  objects.coupledMassLabelB.position.copy(
+    secondaryPosition.clone().add(new THREE.Vector3(0, -0.24, bodyRadius * 1.75)),
+  )
+  objects.coupledDisplacementLabelA.position.copy(
+    primaryPosition.clone().add(new THREE.Vector3(-bodyRadius * 1.8, -0.2, 0.02)),
+  )
+  objects.coupledDisplacementLabelB.position.copy(
+    secondaryPosition.clone().add(new THREE.Vector3(bodyRadius * 1.8, -0.2, 0.02)),
+  )
+  updateSceneTextSprite(
+    objects.coupledDisplacementLabelA,
+    `xA = ${formatSceneDynamicNumber(sample.positionMeters)} m`,
+  )
+  updateSceneTextSprite(
+    objects.coupledDisplacementLabelB,
+    `xB = ${formatSceneDynamicNumber(-sample.secondaryZMeters)} m`,
+  )
+
+  updateCoupledRuler(objects.coupledRulerA, {
+    halfSpan: rulerHalfSpan,
+    position: new THREE.Vector3(primaryPosition.x - bodyRadius * 1.75, -0.34, 0),
+  })
+  updateCoupledRuler(objects.coupledRulerB, {
+    halfSpan: rulerHalfSpan,
+    position: new THREE.Vector3(secondaryPosition.x + bodyRadius * 1.75, -0.34, 0),
+  })
+  updateCoupledEnergyPackets({
+    couplingEnd,
+    couplingStart,
+    deformationRatio,
+    objects,
+    sample,
+    scale,
+    showEnergy,
+    showTrace,
+  })
+}
+
+function updateCoupledEnergyPackets({
+  couplingEnd,
+  couplingStart,
+  deformationRatio,
+  objects,
+  sample,
+  scale,
+  showEnergy,
+  showTrace,
+}: {
+  couplingEnd: THREE.Vector3
+  couplingStart: THREE.Vector3
+  deformationRatio: number
+  objects: SceneObjects
+  sample: KinematicsSample
+  scale: number
+  showEnergy: boolean
+  showTrace: boolean
+}) {
+  const material = objects.coupledEnergyPackets.material as THREE.MeshBasicMaterial
+  const transferDirection =
+    sample.leftKineticEnergyJoules >= sample.rightKineticEnergyJoules ? 1 : -1
+  const pulseOpacity = showEnergy ? 0.16 + deformationRatio * 0.72 : 0
+  const span = couplingEnd.clone().sub(couplingStart)
+  const normalOffset = new THREE.Vector3(0, -0.055, 0)
+
+  material.opacity = pulseOpacity
+  objects.coupledEnergyPackets.visible = showEnergy
+
+  for (let index = 0; index < coupledEnergyPacketCount; index += 1) {
+    const phase =
+      (sample.timeSeconds * (0.42 + deformationRatio) + index / coupledEnergyPacketCount) %
+      1
+    const ratio = transferDirection > 0 ? phase : 1 - phase
+    const bob = Math.sin((phase + index * 0.13) * Math.PI * 2) * 0.025
+    const packetScale =
+      (showTrace ? 0.82 : 0.64) * (0.55 + deformationRatio * 0.78) * scale
+
+    objects.coupledEnergyPacketHelper.position
+      .copy(couplingStart)
+      .addScaledVector(span, ratio)
+      .add(normalOffset)
+    objects.coupledEnergyPacketHelper.position.z += bob
+    objects.coupledEnergyPacketHelper.scale.setScalar(packetScale)
+    objects.coupledEnergyPacketHelper.updateMatrix()
+    objects.coupledEnergyPackets.setMatrixAt(
+      index,
+      objects.coupledEnergyPacketHelper.matrix,
+    )
+  }
+  objects.coupledEnergyPackets.instanceMatrix.needsUpdate = true
 }
 
 function updateMechanicalWaveObjects(
@@ -4028,6 +4508,9 @@ function updateMechanicalWaveObjects(
   parameters: KinematicsParameters,
   sample: KinematicsSample,
   simulationId: KinematicsSimulationId,
+  showEnergy: boolean,
+  showTrace: boolean,
+  showVectors: boolean,
 ) {
   if (!isMechanicalWaveSimulation(simulationId)) {
     return
@@ -4035,10 +4518,7 @@ function updateMechanicalWaveObjects(
 
   const profile = computeMechanicalWaveProfile(
     simulationId,
-    parameters as
-      | StandingWavesParameters
-      | SuperpositionInterferenceParameters
-      | WaveOnStringParameters,
+    parameters as WaveProfileParameters,
     sample.timeSeconds,
     waveStringPointCapacity,
   )
@@ -4081,8 +4561,48 @@ function updateMechanicalWaveObjects(
   objects.waveEnvelopeUpperPositionAttribute.needsUpdate = true
   objects.waveEnvelopeLowerPositionAttribute.needsUpdate = true
 
-  objects.body.position.copy(toKinematicsScenePosition(sample, objects.sceneProjection))
-  objects.body.scale.setScalar(0.72)
+  const waveStringMaterial = objects.waveString.material as THREE.LineBasicMaterial
+  const waveStringOpacity =
+    simulationId === 'wave-on-string'
+      ? 0.38
+      : isSoundWaveSimulation(simulationId)
+        ? 0.74
+        : 0.96
+
+  if (
+    waveStringMaterial.opacity !== waveStringOpacity ||
+    !waveStringMaterial.transparent
+  ) {
+    waveStringMaterial.opacity = waveStringOpacity
+    waveStringMaterial.transparent = true
+    waveStringMaterial.needsUpdate = true
+  }
+
+  const soundWave = isSoundWaveSimulation(simulationId)
+
+  objects.body.position.copy(
+    soundWave
+      ? toWaveScenePoint(objects, sample.xMeters, 0, 0)
+      : toKinematicsScenePosition(sample, objects.sceneProjection),
+  )
+  objects.body.scale.setScalar(soundWave ? 0.3 : simulationId === 'wave-on-string' ? 0.34 : 0.72)
+  configureWaveProbeMarker(objects.body, simulationId)
+  if (simulationId === 'doppler-effect') {
+    objects.secondaryBody.position.copy(
+      toWaveScenePoint(objects, sample.secondaryXMeters, 0, 0),
+    )
+    objects.secondaryBody.scale.setScalar(0.42)
+  }
+  updateWaveLabObjects({
+    objects,
+    parameters,
+    profile,
+    sample,
+    showEnergy,
+    showTrace,
+    showVectors,
+    simulationId,
+  })
 }
 
 function writeWavePoint(
@@ -4104,6 +4624,24 @@ function writeWavePoint(
   positions[offset] = point.xMeters * scale
   positions[offset + 1] = 0
   positions[offset + 2] = point.zMeters * scale
+}
+
+function configureWaveProbeMarker(
+  body: THREE.Mesh,
+  simulationId: KinematicsSimulationId,
+) {
+  const material = body.material as THREE.MeshStandardMaterial
+  const isTravelingWave =
+    simulationId === 'wave-on-string' || isSoundWaveSimulation(simulationId)
+
+  material.depthWrite = !isTravelingWave
+  material.opacity = isSoundWaveSimulation(simulationId)
+    ? 0.84
+    : isTravelingWave
+      ? 0.58
+      : 1
+  material.transparent = isTravelingWave
+  body.renderOrder = isTravelingWave ? 12 : 0
 }
 
 function createAtwoodRopePoints({
@@ -4271,6 +4809,17 @@ function updateTrace(
     return
   }
 
+  if (simulationId === 'coupled-oscillators') {
+    updateCoupledOscillatorTrace(
+      objects,
+      samples,
+      sampleIndex,
+      currentSample,
+      showTrace,
+    )
+    return
+  }
+
   if (!showTrace || sampleIndex < 1) {
     objects.trace.visible = false
     objects.trace.geometry.setDrawRange(0, 0)
@@ -4340,6 +4889,132 @@ function updateTrace(
   objects.trace.geometry.setDrawRange(0, drawCount)
   objects.tracePositionAttribute.needsUpdate = true
   objects.traceColorAttribute.needsUpdate = true
+}
+
+function updateCoupledOscillatorTrace(
+  objects: SceneObjects,
+  samples: KinematicsSample[],
+  sampleIndex: number,
+  currentSample: KinematicsSample,
+  showTrace: boolean,
+) {
+  if (!showTrace || sampleIndex < 1) {
+    objects.trace.visible = false
+    objects.coupledSecondaryTrace.visible = false
+    objects.trace.geometry.setDrawRange(0, 0)
+    objects.coupledSecondaryTrace.geometry.setDrawRange(0, 0)
+    return
+  }
+
+  const traceHistorySeconds = getTraceFadeSeconds('coupled-oscillators')
+  const oldestVisibleTimeSeconds = Math.max(
+    0,
+    currentSample.timeSeconds - traceHistorySeconds,
+  )
+  const firstTraceSampleIndex = findTraceStartIndex(
+    samples,
+    sampleIndex,
+    oldestVisibleTimeSeconds,
+  )
+  const traceSamples = samples
+    .slice(firstTraceSampleIndex, sampleIndex + 1)
+    .slice(-maxTracePoints)
+
+  if (traceSamples.length < 2) {
+    objects.trace.visible = false
+    objects.coupledSecondaryTrace.visible = false
+    return
+  }
+
+  writeCoupledTraceLine({
+    color: { blue: 0xbf / 255, green: 0xd4 / 255, red: 0x2d / 255 },
+    colorAttribute: objects.traceColorAttribute,
+    colors: objects.traceColors,
+    line: objects.trace,
+    objects,
+    positionAttribute: objects.tracePositionAttribute,
+    positions: objects.tracePositions,
+    samples: traceSamples,
+    selectSample: (sample) => sample,
+    traceHistorySeconds,
+  })
+  writeCoupledTraceLine({
+    color: { blue: 0xf8 / 255, green: 0xbd / 255, red: 0x38 / 255 },
+    colorAttribute: objects.coupledSecondaryTraceColorAttribute,
+    colors: objects.coupledSecondaryTraceColors,
+    line: objects.coupledSecondaryTrace,
+    objects,
+    positionAttribute: objects.coupledSecondaryTracePositionAttribute,
+    positions: objects.coupledSecondaryTracePositions,
+    samples: traceSamples,
+    selectSample: (sample) => ({
+      ...sample,
+      xMeters: sample.secondaryXMeters,
+      zMeters: sample.secondaryZMeters,
+    }),
+    traceHistorySeconds,
+  })
+}
+
+function writeCoupledTraceLine({
+  color,
+  colorAttribute,
+  colors,
+  line,
+  objects,
+  positionAttribute,
+  positions,
+  samples,
+  selectSample,
+  traceHistorySeconds,
+}: {
+  color: { blue: number; green: number; red: number }
+  colorAttribute: THREE.BufferAttribute
+  colors: Float32Array
+  line: THREE.Line
+  objects: SceneObjects
+  positionAttribute: THREE.BufferAttribute
+  positions: Float32Array
+  samples: KinematicsSample[]
+  selectSample: (sample: KinematicsSample) => KinematicsSample
+  traceHistorySeconds: number
+}) {
+  const newestSample = samples.at(-1)
+
+  if (!newestSample) {
+    line.visible = false
+    return
+  }
+
+  samples.forEach((sample, traceIndex) => {
+    const position = toKinematicsScenePosition(
+      selectSample(sample),
+      objects.sceneProjection,
+    )
+    const positionOffset = traceIndex * 3
+    const colorOffset = traceIndex * 4
+    const ageRatio = Math.min(
+      1,
+      Math.max(
+        0,
+        (newestSample.timeSeconds - sample.timeSeconds) / traceHistorySeconds,
+      ),
+    )
+    const opacity = traceMaxOpacity - ageRatio * (traceMaxOpacity - traceMinOpacity)
+
+    positions[positionOffset] = position.x
+    positions[positionOffset + 1] = position.y
+    positions[positionOffset + 2] = position.z
+    colors[colorOffset] = color.red
+    colors[colorOffset + 1] = color.green
+    colors[colorOffset + 2] = color.blue
+    colors[colorOffset + 3] = opacity
+  })
+
+  line.visible = true
+  line.geometry.setDrawRange(0, samples.length)
+  positionAttribute.needsUpdate = true
+  colorAttribute.needsUpdate = true
 }
 
 function updateUniformLinearMotionTrace(
@@ -4584,10 +5259,7 @@ function createSceneReferencePathSamples(
       samples[0] ?? computeKinematicsSample(simulationId, parameters, 0)
     const profile = computeMechanicalWaveProfile(
       simulationId,
-      parameters as
-        | StandingWavesParameters
-        | SuperpositionInterferenceParameters
-        | WaveOnStringParameters,
+      parameters as WaveProfileParameters,
       firstSample?.timeSeconds ?? 0,
       waveStringPointCapacity,
     )
@@ -4889,6 +5561,65 @@ function createSceneLine(
   )
 }
 
+function createCoupledOscillatorRuler() {
+  const vertices: number[] = [0, 0, -1, 0, 0, 1]
+
+  ;[-1, -0.5, 0, 0.5, 1].forEach((z) => {
+    vertices.push(-0.055, 0, z, 0.055, 0, z)
+  })
+
+  const geometry = new THREE.BufferGeometry()
+
+  geometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(new Float32Array(vertices), 3),
+  )
+
+  return new THREE.LineSegments(
+    geometry,
+    new THREE.LineBasicMaterial({
+      color: 0xcbd5e1,
+      depthWrite: false,
+      opacity: 0.38,
+      transparent: true,
+    }),
+  )
+}
+
+function updateCoupledRuler(
+  ruler: THREE.LineSegments,
+  {
+    halfSpan,
+    position,
+  }: {
+    halfSpan: number
+    position: THREE.Vector3
+  },
+) {
+  ruler.position.copy(position)
+  ruler.scale.set(1, 1, halfSpan)
+}
+
+function updateCoupledEquilibriumLine(
+  line: THREE.Line,
+  x: number,
+  bodyRadius: number,
+) {
+  const positionAttribute = line.geometry.getAttribute(
+    'position',
+  ) as THREE.BufferAttribute
+  const positions = positionAttribute.array as Float32Array
+  const halfWidth = bodyRadius * 1.35
+
+  positions[0] = x - halfWidth
+  positions[1] = -0.28
+  positions[2] = 0
+  positions[3] = x + halfWidth
+  positions[4] = -0.28
+  positions[5] = 0
+  positionAttribute.needsUpdate = true
+}
+
 function createDynamicWaveLine(
   positionAttribute: THREE.BufferAttribute,
   color: number,
@@ -4909,6 +5640,861 @@ function createDynamicWaveLine(
       transparent: opacity < 1,
     }),
   )
+}
+
+function createWaveLabObjects(): WaveLabObjects {
+  const group = new THREE.Group()
+  const metalMaterial = new THREE.MeshStandardMaterial({
+    color: 0x9ca3af,
+    metalness: 0.42,
+    roughness: 0.38,
+  })
+  const sourceMaterial = new THREE.MeshStandardMaterial({
+    color: 0x20242d,
+    emissive: 0x06352e,
+    emissiveIntensity: 0.18,
+    metalness: 0.2,
+    roughness: 0.44,
+  })
+  const tealMaterial = new THREE.MeshStandardMaterial({
+    color: 0x5eead4,
+    depthTest: false,
+    depthWrite: false,
+    emissive: 0x14b8a6,
+    emissiveIntensity: 0.58,
+    metalness: 0.08,
+    opacity: 1,
+    roughness: 0.34,
+    transparent: true,
+  })
+  const energyMaterial = new THREE.MeshBasicMaterial({
+    color: 0xf59e0b,
+    depthWrite: false,
+    transparent: true,
+    opacity: 0.6,
+  })
+  const bench = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), sourceMaterial)
+  const sourceBase = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), sourceMaterial)
+  const sourceRod = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.026, 0.026, 1, 16),
+    metalMaterial,
+  )
+  const leftSupport = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), metalMaterial)
+  const rightSupport = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), metalMaterial)
+  const beads = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(1, 12, 8),
+    tealMaterial,
+    waveBeadCapacity,
+  )
+  const energyPackets = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(1, 10, 6),
+    energyMaterial,
+    waveEnergyPacketCount,
+  )
+  const equilibrium = createDynamicTwoPointLine(0xe6e8ec, 0.34)
+  const amplitude = createDynamicTwoPointLine(0xa3e635, 0.9)
+  const wavelength = createDynamicTwoPointLine(0x818cf8, 0.86)
+  const probeGuide = createDynamicTwoPointLine(0xe6e8ec, 0.34)
+  const historyLines = Array.from({ length: waveHistoryLineCount }, (_, index) => {
+    const positions = new Float32Array(waveStringPointCapacity * 3)
+    const positionAttribute = new THREE.BufferAttribute(positions, 3)
+    const line = createDynamicWaveLine(
+      positionAttribute,
+      0x2dd4bf,
+      clamp(0.28 - index * 0.032, 0.06, 0.24),
+    )
+
+    line.visible = false
+
+    return {
+      line,
+      positionAttribute,
+      positions,
+    }
+  })
+  const sourceLabel = createSceneTextSprite('Fonte oscilante', {
+    background: 'rgba(15, 17, 21, 0.76)',
+    color: '#2DD4BF',
+    fontSize: 34,
+    minWidthPx: 380,
+    scale: 0.16,
+  })
+  const probeLabel = createSceneTextSprite('Ponto da corda', {
+    background: 'rgba(15, 17, 21, 0.76)',
+    color: '#E6E8EC',
+    fontSize: 32,
+    minWidthPx: 420,
+    scale: 0.15,
+  })
+  const amplitudeLabel = createSceneTextSprite('A', {
+    background: 'rgba(15, 17, 21, 0.72)',
+    color: '#A3E635',
+    fontSize: 32,
+    minWidthPx: 180,
+    scale: 0.13,
+  })
+  const wavelengthLabel = createSceneTextSprite('lambda', {
+    background: 'rgba(15, 17, 21, 0.72)',
+    color: '#A5B4FC',
+    fontSize: 32,
+    minWidthPx: 280,
+    scale: 0.13,
+  })
+
+  sourceRod.rotation.x = Math.PI / 2
+  beads.frustumCulled = false
+  beads.renderOrder = 20
+  energyPackets.frustumCulled = false
+  energyPackets.renderOrder = 18
+  ;[
+    bench,
+    sourceBase,
+    sourceRod,
+    leftSupport,
+    rightSupport,
+    beads,
+    energyPackets,
+    equilibrium.line,
+    amplitude.line,
+    wavelength.line,
+    probeGuide.line,
+    sourceLabel,
+    probeLabel,
+    amplitudeLabel,
+    wavelengthLabel,
+    ...historyLines.map((historyLine) => historyLine.line),
+  ].forEach((object) => {
+    object.visible = false
+    group.add(object)
+  })
+
+  return {
+    amplitudeLabel,
+    amplitudeMarker: amplitude.line,
+    amplitudeMarkerPositionAttribute: amplitude.positionAttribute,
+    amplitudeMarkerPositions: amplitude.positions,
+    beads,
+    bench,
+    energyPackets,
+    equilibriumLine: equilibrium.line,
+    equilibriumPositionAttribute: equilibrium.positionAttribute,
+    equilibriumPositions: equilibrium.positions,
+    group,
+    historyLines,
+    instanceHelper: new THREE.Object3D(),
+    leftSupport,
+    probeGuide: probeGuide.line,
+    probeGuidePositionAttribute: probeGuide.positionAttribute,
+    probeGuidePositions: probeGuide.positions,
+    probeLabel,
+    rightSupport,
+    sourceBase,
+    sourceLabel,
+    sourceRod,
+    wavelengthLabel,
+    wavelengthMarker: wavelength.line,
+    wavelengthMarkerPositionAttribute: wavelength.positionAttribute,
+    wavelengthMarkerPositions: wavelength.positions,
+  }
+}
+
+function createDynamicTwoPointLine(color: number, opacity: number) {
+  const positions = new Float32Array(6)
+  const positionAttribute = new THREE.BufferAttribute(positions, 3)
+  const line = createDynamicWaveLine(positionAttribute, color, opacity)
+
+  line.geometry.setDrawRange(0, 2)
+
+  return {
+    line,
+    positionAttribute,
+    positions,
+  }
+}
+
+function updateWaveLabObjects({
+  objects,
+  parameters,
+  profile,
+  sample,
+  showEnergy,
+  showTrace,
+  showVectors,
+  simulationId,
+}: {
+  objects: SceneObjects
+  parameters: KinematicsParameters
+  profile: MechanicalWaveProfilePoint[]
+  sample: KinematicsSample
+  showEnergy: boolean
+  showTrace: boolean
+  showVectors: boolean
+  simulationId: WaveProfileSimulationId
+}) {
+  const lab = objects.waveLab
+  const firstPoint = profile[0]
+  const lastPoint = profile.at(-1)
+  const isSoundWave = isSoundWaveSimulation(simulationId)
+
+  if (!firstPoint || !lastPoint) {
+    return
+  }
+
+  const waveParameters =
+    simulationId === 'wave-on-string'
+      ? (parameters as WaveOnStringParameters)
+      : null
+  const scale = objects.sceneProjection.positionScale
+  const stringLengthScene = Math.max(1, lastPoint.xMeters - firstPoint.xMeters) * scale
+  const amplitudeScene = isSoundWave
+    ? getSoundWaveFieldBaseRadiusScene(simulationId)
+    : Math.max(0.18, Math.abs(sample.primaryRadiusMeters) * scale)
+  const supportHeight = isSoundWave
+    ? 1.04
+    : Math.max(0.74, amplitudeScene * 2.25 + 0.38)
+  const leftX = firstPoint.xMeters * scale
+  const rightX = lastPoint.xMeters * scale
+  const sourceX =
+    simulationId === 'doppler-effect' ? sample.secondaryXMeters * scale : leftX
+
+  lab.bench.visible = false
+  lab.bench.position.set(0, 0.18, -0.18)
+  lab.bench.scale.set(stringLengthScene + 1.25, 0.52, 0.055)
+  lab.leftSupport.visible = !isSoundWave
+  lab.leftSupport.position.set(leftX, 0, supportHeight / 2 - 0.2)
+  lab.leftSupport.scale.set(0.075, 0.075, supportHeight)
+  lab.rightSupport.visible = !isSoundWave
+  lab.rightSupport.position.set(rightX, 0, supportHeight / 2 - 0.2)
+  lab.rightSupport.scale.set(0.075, 0.075, supportHeight)
+  lab.sourceBase.visible = simulationId === 'doppler-effect'
+  lab.sourceBase.position.set(sourceX, -0.3, -0.2)
+  lab.sourceBase.scale.set(0.5, 0.28, 0.22)
+
+  lab.sourceRod.visible = false
+  lab.sourceRod.position.set(leftX, -0.18, 0)
+  lab.sourceRod.scale.set(1, 0.08, 1)
+
+  updateTwoPointLine(
+    lab.equilibriumPositions,
+    lab.equilibriumPositionAttribute,
+    lab.equilibriumLine,
+    new THREE.Vector3(leftX, 0.015, 0),
+    new THREE.Vector3(rightX, 0.015, 0),
+    true,
+  )
+  updateWaveBeads(lab, profile, objects, simulationId, waveParameters)
+  updateWaveEnergyPackets({
+    lab,
+    objects,
+    profile,
+    sample,
+    showEnergy: showEnergy && simulationId === 'wave-on-string',
+  })
+  updateWaveHistory({
+    lab,
+    objects,
+    parameters,
+    sample,
+    showTrace: showTrace && simulationId === 'wave-on-string',
+    simulationId,
+  })
+  updateWaveMeasurements({
+    lab,
+    objects,
+    profile,
+    sample,
+    showVectors,
+    simulationId,
+  })
+  updateWaveProbeGuide({
+    lab,
+    objects,
+    sample,
+    showVectors,
+    simulationId,
+  })
+
+  lab.sourceLabel.visible =
+    simulationId === 'beats' ||
+    simulationId === 'doppler-effect' ||
+    simulationId === 'wave-on-string'
+  lab.sourceLabel.position.set(
+    simulationId === 'doppler-effect' ? sourceX : leftX - 0.22,
+    -0.34,
+    supportHeight + 0.18,
+  )
+  updateSceneTextSprite(lab.sourceLabel, buildWaveSourceLabel(simulationId, sample))
+  lab.probeLabel.visible = showVectors
+  const probeLabelBase = isSoundWave
+    ? toWaveScenePoint(objects, sample.xMeters, 0, 0)
+    : toWaveScenePoint(objects, sample.xMeters, sample.zMeters, 0.16)
+  lab.probeLabel.position.copy(
+    probeLabelBase.add(new THREE.Vector3(0.15, 0, 0.24)),
+  )
+  updateSceneTextSprite(
+    lab.probeLabel,
+    buildWaveProbeLabel(
+      simulationId,
+      sample,
+      lastPoint.xMeters - firstPoint.xMeters,
+    ),
+  )
+}
+
+function buildWaveSourceLabel(
+  simulationId: WaveProfileSimulationId,
+  sample: KinematicsSample,
+) {
+  if (simulationId === 'beats') {
+    return `Batimento df=${formatSceneNumber(sample.frequencyHertz)} Hz`
+  }
+
+  if (simulationId === 'doppler-effect') {
+    return `Fonte f=${formatSceneNumber(sample.secondarySpeedMetersPerSecond)} Hz`
+  }
+
+  return `Fonte f=${formatSceneNumber(sample.frequencyHertz)} Hz A=${formatSceneNumber(
+    sample.primaryRadiusMeters,
+  )} m`
+}
+
+function buildWaveProbeLabel(
+  simulationId: WaveProfileSimulationId,
+  sample: KinematicsSample,
+  profileLengthMeters: number,
+) {
+  const probePositionMeters = sample.xMeters + profileLengthMeters / 2
+
+  if (simulationId === 'beats') {
+    return `Probe x=${formatSceneNumber(probePositionMeters)} m p=${formatSceneNumber(
+      sample.pressurePascals,
+    )} Pa`
+  }
+
+  if (simulationId === 'doppler-effect') {
+    return `Observador f'=${formatSceneNumber(sample.frequencyHertz)} Hz p=${formatSceneNumber(
+      sample.pressurePascals,
+    )} Pa`
+  }
+
+  return `Ponto x=${formatSceneNumber(probePositionMeters)} m y=${formatSceneNumber(
+    sample.positionMeters,
+  )} m`
+}
+
+function updateWaveBeads(
+  lab: WaveLabObjects,
+  profile: MechanicalWaveProfilePoint[],
+  objects: SceneObjects,
+  simulationId: KinematicsSimulationId,
+  waveParameters: WaveOnStringParameters | null,
+) {
+  const material = lab.beads.material as THREE.MeshStandardMaterial
+  const isSoundWave = isSoundWaveSimulation(simulationId)
+
+  material.color.setHex(isSoundWave ? 0xffffff : 0x5eead4)
+  material.depthTest = isSoundWave
+  material.depthWrite = false
+  material.emissive.setHex(isSoundWave ? 0x0b3a43 : 0x14b8a6)
+  material.emissiveIntensity = isSoundWave ? 0.46 : 0.58
+  material.opacity = isSoundWave ? 0.82 : 1
+  material.transparent = true
+  material.needsUpdate = true
+
+  if (isSoundWave) {
+    updateSoundWaveFieldBeads(lab, profile, objects, simulationId)
+    return
+  }
+
+  const helper = lab.instanceHelper
+  const densityScale = waveParameters
+    ? clamp(waveParameters.linearDensityKilogramsPerMeter / 0.025, 0.72, 1.7)
+    : 1
+  const beadRadius = clamp(0.018 * Math.sqrt(densityScale), 0.014, 0.03)
+  const beadColor = new THREE.Color(0x5eead4)
+
+  lab.beads.visible = true
+  lab.beads.count = waveStringBeadCount
+
+  for (let index = 0; index < waveStringBeadCount; index += 1) {
+    const ratio = index / (waveStringBeadCount - 1)
+    const point = readProfilePointAtRatio(profile, ratio)
+
+    helper.position.copy(toWaveScenePoint(objects, point.xMeters, point.zMeters, 0))
+    helper.scale.setScalar(beadRadius)
+    helper.updateMatrix()
+    lab.beads.setMatrixAt(index, helper.matrix)
+    lab.beads.setColorAt(index, beadColor)
+  }
+
+  lab.beads.instanceMatrix.needsUpdate = true
+
+  if (lab.beads.instanceColor) {
+    lab.beads.instanceColor.needsUpdate = true
+  }
+}
+
+function updateSoundWaveFieldBeads(
+  lab: WaveLabObjects,
+  profile: MechanicalWaveProfilePoint[],
+  objects: SceneObjects,
+  simulationId: KinematicsSimulationId,
+) {
+  const helper = lab.instanceHelper
+  const maxPressure = findSoundProfileMaxPressure(profile)
+  const baseRadius = getSoundWaveFieldBaseRadiusScene(simulationId)
+  const radialPressureScale = simulationId === 'doppler-effect' ? 0.14 : 0.18
+  const neutralColor = new THREE.Color(0xa7fff3)
+  const compressionColor = new THREE.Color(0x22d3ee)
+  const rarefactionColor = new THREE.Color(0xfacc15)
+  const beadColor = new THREE.Color()
+  const sceneScale = Math.max(objects.sceneProjection.positionScale, 1e-6)
+
+  lab.beads.visible = true
+  lab.beads.count = soundWaveFieldBeadCount
+
+  for (let columnIndex = 0; columnIndex < soundWaveFieldColumnCount; columnIndex += 1) {
+    const profileRatio = columnIndex / (soundWaveFieldColumnCount - 1)
+    const point = readProfilePointAtRatio(profile, profileRatio)
+    const pressureRatio =
+      maxPressure > 1e-9 ? clamp(point.zMeters / maxPressure, -1, 1) : 0
+    const envelopeRatio =
+      maxPressure > 1e-9
+        ? clamp(Math.abs(point.envelopeMeters) / maxPressure, 0, 1)
+        : 0
+    const absolutePressureRatio = Math.abs(pressureRatio)
+    const fieldRadius = clamp(
+      baseRadius +
+        pressureRatio * radialPressureScale +
+        envelopeRatio * 0.045,
+      baseRadius * 0.58,
+      baseRadius * 1.62,
+    )
+
+    for (let ringIndex = 0; ringIndex < soundWaveFieldRingCount; ringIndex += 1) {
+      const instanceIndex =
+        columnIndex * soundWaveFieldRingCount + ringIndex
+      const ringRatio = ringIndex / soundWaveFieldRingCount
+      const angle =
+        ringRatio * Math.PI * 2 +
+        columnIndex * 0.24 +
+        pressureRatio * 0.22
+      const ringWobble =
+        1 + Math.sin(columnIndex * 0.41 + ringIndex * 1.7) * 0.045
+      const radialYScene = Math.cos(angle) * fieldRadius * ringWobble
+      const radialZScene = Math.sin(angle) * fieldRadius * 0.68 * ringWobble
+      const xJitterMeters =
+        (Math.sin(angle * 2.4 + columnIndex * 0.31) * 0.018) / sceneScale
+      const compressionBias = clamp((pressureRatio + 1) / 2, 0, 1)
+      const beadRadius = clamp(
+        0.012 + absolutePressureRatio * 0.01 + compressionBias * 0.004,
+        0.011,
+        0.028,
+      )
+
+      helper.position.copy(
+        toSoundWaveFieldScenePoint(
+          objects,
+          point.xMeters + xJitterMeters,
+          radialYScene,
+          radialZScene,
+        ),
+      )
+      helper.scale.setScalar(beadRadius)
+      helper.updateMatrix()
+      lab.beads.setMatrixAt(instanceIndex, helper.matrix)
+
+      if (pressureRatio >= 0) {
+        beadColor
+          .copy(neutralColor)
+          .lerp(compressionColor, clamp(pressureRatio, 0, 1))
+      } else {
+        beadColor
+          .copy(neutralColor)
+          .lerp(rarefactionColor, clamp(-pressureRatio * 0.86, 0, 1))
+      }
+
+      lab.beads.setColorAt(instanceIndex, beadColor)
+    }
+  }
+
+  lab.beads.instanceMatrix.needsUpdate = true
+
+  if (lab.beads.instanceColor) {
+    lab.beads.instanceColor.needsUpdate = true
+  }
+}
+
+function findSoundProfileMaxPressure(profile: MechanicalWaveProfilePoint[]) {
+  return profile.reduce(
+    (maxPressure, point) =>
+      Math.max(
+        maxPressure,
+        Math.abs(point.componentOneMeters),
+        Math.abs(point.componentTwoMeters),
+        Math.abs(point.envelopeMeters),
+        Math.abs(point.zMeters),
+      ),
+    0,
+  )
+}
+
+function getSoundWaveFieldBaseRadiusScene(
+  simulationId: KinematicsSimulationId,
+) {
+  return simulationId === 'doppler-effect' ? 0.28 : 0.32
+}
+
+function updateWaveEnergyPackets({
+  lab,
+  objects,
+  profile,
+  sample,
+  showEnergy,
+}: {
+  lab: WaveLabObjects
+  objects: SceneObjects
+  profile: MechanicalWaveProfilePoint[]
+  sample: KinematicsSample
+  showEnergy: boolean
+}) {
+  lab.energyPackets.visible = showEnergy
+
+  if (!showEnergy) {
+    return
+  }
+
+  const helper = lab.instanceHelper
+  const material = lab.energyPackets.material as THREE.MeshBasicMaterial
+  const stringLengthMeters =
+    profile.length > 1
+      ? Math.max(0.1, profile[profile.length - 1].xMeters - profile[0].xMeters)
+      : 1
+  const speedRatio = stringLengthMeters > 0
+    ? (sample.timeSeconds * Math.max(0, sample.speedMetersPerSecond)) /
+      stringLengthMeters
+    : 0
+  const pulseRadius = clamp(
+    0.012 + Math.abs(sample.primaryRadiusMeters) * 0.018,
+    0.014,
+    0.032,
+  )
+
+  material.opacity = clamp(0.12 + Math.abs(sample.primaryRadiusMeters) * 0.42, 0.12, 0.36)
+  lab.energyPackets.count = waveEnergyPacketCount
+
+  for (let index = 0; index < waveEnergyPacketCount; index += 1) {
+    const ratio = positiveModulo(speedRatio + index / waveEnergyPacketCount, 1)
+    const point = readProfilePointAtRatio(profile, ratio)
+
+    helper.position.copy(
+      toWaveScenePoint(objects, point.xMeters, point.zMeters, -0.12),
+    )
+    helper.scale.setScalar(pulseRadius)
+    helper.updateMatrix()
+    lab.energyPackets.setMatrixAt(index, helper.matrix)
+  }
+
+  lab.energyPackets.instanceMatrix.needsUpdate = true
+}
+
+function updateWaveHistory({
+  lab,
+  objects,
+  parameters,
+  sample,
+  showTrace,
+  simulationId,
+}: {
+  lab: WaveLabObjects
+  objects: SceneObjects
+  parameters: KinematicsParameters
+  sample: KinematicsSample
+  showTrace: boolean
+  simulationId: WaveProfileSimulationId
+}) {
+  lab.historyLines.forEach((historyLine, index) => {
+    const visible = showTrace && index > 0
+
+    historyLine.line.visible = visible
+
+    if (!visible) {
+      historyLine.line.geometry.setDrawRange(0, 0)
+      return
+    }
+
+    const lagSeconds = index * 0.14
+    const profile = computeMechanicalWaveProfile(
+      simulationId,
+      parameters as WaveProfileParameters,
+      Math.max(0, sample.timeSeconds - lagSeconds),
+      waveStringPointCapacity,
+    )
+
+    profile.forEach((point, pointIndex) => {
+      writeWavePoint(historyLine.positions, pointIndex, objects, {
+        xMeters: point.xMeters,
+        zMeters: point.zMeters,
+      })
+    })
+    historyLine.line.geometry.setDrawRange(0, profile.length)
+    historyLine.positionAttribute.needsUpdate = true
+  })
+}
+
+function updateWaveMeasurements({
+  lab,
+  objects,
+  profile,
+  sample,
+  showVectors,
+  simulationId,
+}: {
+  lab: WaveLabObjects
+  objects: SceneObjects
+  profile: MechanicalWaveProfilePoint[]
+  sample: KinematicsSample
+  showVectors: boolean
+  simulationId: KinematicsSimulationId
+}) {
+  const shouldShow = showVectors && simulationId === 'wave-on-string'
+  const crest = findHighestWavePoint(profile)
+  const amplitudeVisible = shouldShow && Math.abs(crest.zMeters) > 1e-4
+
+  updateTwoPointLine(
+    lab.amplitudeMarkerPositions,
+    lab.amplitudeMarkerPositionAttribute,
+    lab.amplitudeMarker,
+    toWaveScenePoint(objects, crest.xMeters, 0, 0.06),
+    toWaveScenePoint(objects, crest.xMeters, crest.zMeters, 0.06),
+    amplitudeVisible,
+  )
+  lab.amplitudeLabel.visible = amplitudeVisible
+  lab.amplitudeLabel.position.copy(
+    toWaveScenePoint(objects, crest.xMeters, crest.zMeters / 2, 0.12),
+  )
+  updateSceneTextSprite(
+    lab.amplitudeLabel,
+    `A=${formatSceneNumber(sample.primaryRadiusMeters)} m`,
+  )
+
+  const wavelengthVisible =
+    shouldShow && sample.secondaryRadiusMeters > 0 && profile.length > 1
+  const wavelengthMeasure = wavelengthVisible
+    ? findWavelengthMeasure(profile, sample.secondaryRadiusMeters)
+    : null
+
+  if (!wavelengthMeasure) {
+    updateTwoPointLine(
+      lab.wavelengthMarkerPositions,
+      lab.wavelengthMarkerPositionAttribute,
+      lab.wavelengthMarker,
+      new THREE.Vector3(),
+      new THREE.Vector3(),
+      false,
+    )
+    lab.wavelengthLabel.visible = false
+    return
+  }
+
+  const markerZ =
+    Math.max(
+      Math.abs(crest.zMeters),
+      Math.abs(sample.primaryRadiusMeters),
+      0.18,
+    ) + 0.26 / Math.max(objects.sceneProjection.positionScale, 0.2)
+
+  updateTwoPointLine(
+    lab.wavelengthMarkerPositions,
+    lab.wavelengthMarkerPositionAttribute,
+    lab.wavelengthMarker,
+    toWaveScenePoint(objects, wavelengthMeasure.startXMeters, markerZ, 0.08),
+    toWaveScenePoint(objects, wavelengthMeasure.endXMeters, markerZ, 0.08),
+    true,
+  )
+  lab.wavelengthLabel.visible = true
+  lab.wavelengthLabel.position.copy(
+    toWaveScenePoint(
+      objects,
+      (wavelengthMeasure.startXMeters + wavelengthMeasure.endXMeters) / 2,
+      markerZ,
+      0.12,
+    ),
+  )
+  updateSceneTextSprite(
+    lab.wavelengthLabel,
+    `lambda=${formatSceneNumber(sample.secondaryRadiusMeters)} m`,
+  )
+}
+
+function updateWaveProbeGuide({
+  lab,
+  objects,
+  sample,
+  showVectors,
+  simulationId,
+}: {
+  lab: WaveLabObjects
+  objects: SceneObjects
+  sample: KinematicsSample
+  showVectors: boolean
+  simulationId: KinematicsSimulationId
+}) {
+  if (isSoundWaveSimulation(simulationId)) {
+    const guideRadius = getSoundWaveFieldBaseRadiusScene(simulationId) * 1.35
+
+    updateTwoPointLine(
+      lab.probeGuidePositions,
+      lab.probeGuidePositionAttribute,
+      lab.probeGuide,
+      toSoundWaveFieldScenePoint(objects, sample.xMeters, 0, -guideRadius),
+      toSoundWaveFieldScenePoint(objects, sample.xMeters, 0, guideRadius),
+      showVectors,
+    )
+    return
+  }
+
+  updateTwoPointLine(
+    lab.probeGuidePositions,
+    lab.probeGuidePositionAttribute,
+    lab.probeGuide,
+    toWaveScenePoint(objects, sample.xMeters, -sample.primaryRadiusMeters, 0.05),
+    toWaveScenePoint(objects, sample.xMeters, sample.primaryRadiusMeters, 0.05),
+    showVectors,
+  )
+}
+
+function updateTwoPointLine(
+  positions: Float32Array,
+  positionAttribute: THREE.BufferAttribute,
+  line: THREE.Line,
+  start: THREE.Vector3,
+  end: THREE.Vector3,
+  visible: boolean,
+) {
+  line.visible = visible
+  line.geometry.setDrawRange(0, visible ? 2 : 0)
+
+  if (!visible) {
+    return
+  }
+
+  writeVectorToPositions(positions, 0, start)
+  writeVectorToPositions(positions, 1, end)
+  positionAttribute.needsUpdate = true
+}
+
+function writeVectorToPositions(
+  positions: Float32Array,
+  index: number,
+  point: THREE.Vector3,
+) {
+  const offset = index * 3
+
+  positions[offset] = point.x
+  positions[offset + 1] = point.y
+  positions[offset + 2] = point.z
+}
+
+function toWaveScenePoint(
+  objects: SceneObjects,
+  xMeters: number,
+  zMeters: number,
+  depthMeters = 0,
+) {
+  const scale = objects.sceneProjection.positionScale
+
+  if (objects.sceneProjection.horizontalPlane) {
+    return new THREE.Vector3(xMeters * scale, zMeters * scale, depthMeters)
+  }
+
+  return new THREE.Vector3(xMeters * scale, depthMeters, zMeters * scale)
+}
+
+function toSoundWaveFieldScenePoint(
+  objects: SceneObjects,
+  xMeters: number,
+  radialYScene: number,
+  radialZScene: number,
+) {
+  const xScene = xMeters * objects.sceneProjection.positionScale
+
+  if (objects.sceneProjection.horizontalPlane) {
+    return new THREE.Vector3(xScene, radialZScene, radialYScene)
+  }
+
+  return new THREE.Vector3(xScene, radialYScene, radialZScene)
+}
+
+function readProfilePointAtRatio(
+  profile: MechanicalWaveProfilePoint[],
+  ratio: number,
+) {
+  const position = clamp(ratio, 0, 1) * (profile.length - 1)
+  const leftIndex = Math.floor(position)
+  const rightIndex = Math.min(profile.length - 1, leftIndex + 1)
+  const blend = position - leftIndex
+  const left = profile[leftIndex]
+  const right = profile[rightIndex]
+
+  if (!left || !right || left === right) {
+    return left ?? profile[0]
+  }
+
+  return {
+    componentOneMeters: lerp(
+      left.componentOneMeters,
+      right.componentOneMeters,
+      blend,
+    ),
+    componentTwoMeters: lerp(
+      left.componentTwoMeters,
+      right.componentTwoMeters,
+      blend,
+    ),
+    envelopeMeters: lerp(left.envelopeMeters, right.envelopeMeters, blend),
+    xMeters: lerp(left.xMeters, right.xMeters, blend),
+    zMeters: lerp(left.zMeters, right.zMeters, blend),
+  }
+}
+
+function findHighestWavePoint(profile: MechanicalWaveProfilePoint[]) {
+  return profile.reduce((highest, point) =>
+    point.zMeters > highest.zMeters ? point : highest,
+  )
+}
+
+function findWavelengthMeasure(
+  profile: MechanicalWaveProfilePoint[],
+  wavelengthMeters: number,
+) {
+  const firstPoint = profile[0]
+  const lastPoint = profile.at(-1)
+
+  if (!firstPoint || !lastPoint || wavelengthMeters <= 0) {
+    return null
+  }
+
+  const crest = findHighestWavePoint(profile)
+  const rightCandidate = crest.xMeters + wavelengthMeters
+
+  if (rightCandidate <= lastPoint.xMeters) {
+    return {
+      endXMeters: rightCandidate,
+      startXMeters: crest.xMeters,
+    }
+  }
+
+  const leftCandidate = crest.xMeters - wavelengthMeters
+
+  if (leftCandidate >= firstPoint.xMeters) {
+    return {
+      endXMeters: crest.xMeters,
+      startXMeters: leftCandidate,
+    }
+  }
+
+  return null
 }
 
 function createReferencePath(
@@ -6391,8 +7977,19 @@ function getInitialCameraYawRadians(
     return -0.52
   }
 
+  if (isMechanicalWaveSimulation(simulationId)) {
+    return cameraViewMode === 'cinematic' ? -0.72 : -Math.PI / 2
+  }
+
+  if (simulationId === 'coupled-oscillators') {
+    if (cameraViewMode === 'side') {
+      return -Math.PI / 2
+    }
+
+    return cameraViewMode === 'top' ? -Math.PI / 2 : -0.68
+  }
+
   return simulationId === 'atwood-machine' ||
-    simulationId === 'coupled-oscillators' ||
     simulationId === 'hydrostatics-buoyancy' ||
     isMechanicalWaveSimulation(simulationId) ||
     isSingleSpringOscillatorSimulation(simulationId)
@@ -6428,6 +8025,26 @@ function getInitialCameraPitchRadians(
     return cameraViewMode === 'follow'
       ? Math.atan2(0.42, 0.9)
       : Math.atan2(0.56, 0.82)
+  }
+
+  if (isMechanicalWaveSimulation(simulationId)) {
+    if (cameraViewMode === 'top') {
+      return Math.PI / 2 - 0.12
+    }
+
+    return cameraViewMode === 'side'
+      ? Math.atan2(0.1, 0.99)
+      : Math.atan2(0.42, 0.9)
+  }
+
+  if (simulationId === 'coupled-oscillators') {
+    if (cameraViewMode === 'top') {
+      return Math.PI / 2 - 0.12
+    }
+
+    return cameraViewMode === 'side'
+      ? Math.atan2(0.12, 0.99)
+      : Math.atan2(0.42, 0.9)
   }
 
   return simulationId === 'rigid-body-rotation'
@@ -6466,6 +8083,14 @@ function getKinematicsCanvasAriaLabel(simulationId: KinematicsSimulationId) {
 
   if (simulationId === 'wave-on-string') {
     return 'Cena 3D de onda em corda com perfil senoidal viajante, probe sincronizado, componentes de velocidade transversal e arraste para orbitar, e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'beats') {
+    return 'Cena 3D de batimentos sonoros com campo volumetrico de pontinhos de pressao, envoltoria sincronizada, probe e arraste para orbitar, e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'doppler-effect') {
+    return 'Cena 3D do efeito Doppler com fonte movel, observador, campo volumetrico de pontinhos de pressao e arraste para orbitar, e Shift + scroll para zoom'
   }
 
   if (simulationId === 'superposition-interference') {
@@ -6529,9 +8154,20 @@ type SceneTextSpriteOptions = {
   background: string
   color: string
   fontSize?: number
+  minWidthPx?: number
   paddingX?: number
   paddingY?: number
   scale?: number
+}
+
+type SceneTextSpriteState = {
+  canvas: HTMLCanvasElement
+  context: CanvasRenderingContext2D
+  height: number
+  options: Required<SceneTextSpriteOptions>
+  text: string
+  texture: THREE.CanvasTexture
+  width: number
 }
 
 function createSceneTextSprite(
@@ -6542,6 +8178,7 @@ function createSceneTextSprite(
   const textureData = createSceneTextTexture(text, resolvedOptions)
   const sprite = new THREE.Sprite(
     new THREE.SpriteMaterial({
+      depthTest: false,
       depthWrite: false,
       map: textureData.texture,
       transparent: true,
@@ -6549,45 +8186,64 @@ function createSceneTextSprite(
   )
 
   sprite.userData.sceneText = {
+    canvas: textureData.canvas,
+    context: textureData.context,
+    height: textureData.height,
     options: resolvedOptions,
     text,
-  }
+    texture: textureData.texture,
+    width: textureData.width,
+  } satisfies SceneTextSpriteState
   sprite.scale.set(
     resolvedOptions.scale * textureData.aspectRatio,
     resolvedOptions.scale,
     1,
   )
+  sprite.frustumCulled = false
+  sprite.renderOrder = 50
 
   return sprite
 }
 
 function updateSceneTextSprite(sprite: THREE.Sprite, text: string) {
   const sceneText = sprite.userData.sceneText as
-    | { options: Required<SceneTextSpriteOptions>; text: string }
+    | SceneTextSpriteState
     | undefined
 
   if (!sceneText || sceneText.text === text) {
     return
   }
 
-  const material = sprite.material as THREE.SpriteMaterial
-  const previousTexture = material.map
-  const textureData = createSceneTextTexture(text, sceneText.options)
+  const nextSize = measureSceneTextCanvasSize(text, sceneText.options)
+  const nextWidth = Math.max(sceneText.width, nextSize.width)
+  const nextHeight = Math.max(sceneText.height, nextSize.height)
 
-  material.map = textureData.texture
-  material.needsUpdate = true
-  previousTexture?.dispose()
-  sprite.scale.set(
-    sceneText.options.scale * textureData.aspectRatio,
-    sceneText.options.scale,
-    1,
+  if (nextWidth !== sceneText.width || nextHeight !== sceneText.height) {
+    sceneText.canvas.width = nextWidth
+    sceneText.canvas.height = nextHeight
+    sceneText.width = nextWidth
+    sceneText.height = nextHeight
+    sprite.scale.set(
+      sceneText.options.scale * (nextWidth / nextHeight),
+      sceneText.options.scale,
+      1,
+    )
+  }
+
+  drawSceneTextCanvas(
+    sceneText.canvas,
+    sceneText.context,
+    text,
+    sceneText.options,
   )
+  sceneText.texture.needsUpdate = true
   sceneText.text = text
 }
 
 function resolveSceneTextSpriteOptions(options: SceneTextSpriteOptions) {
   return {
     fontSize: 42,
+    minWidthPx: 0,
     paddingX: 18,
     paddingY: 10,
     scale: 0.18,
@@ -6606,21 +8262,11 @@ function createSceneTextTexture(
     throw new Error('Canvas 2D context is required for scene labels.')
   }
 
-  context.font = `700 ${options.fontSize}px Inter, Segoe UI, Arial, sans-serif`
-  const metrics = context.measureText(text)
-  const width = Math.ceil(metrics.width + options.paddingX * 2)
-  const height = Math.ceil(options.fontSize + options.paddingY * 2)
+  const { height, width } = measureSceneTextCanvasSize(text, options, context)
 
   canvas.width = width
   canvas.height = height
-  context.font = `700 ${options.fontSize}px Inter, Segoe UI, Arial, sans-serif`
-  context.textAlign = 'center'
-  context.textBaseline = 'middle'
-  context.fillStyle = options.background
-  roundRect(context, 0, 0, width, height, height * 0.24)
-  context.fill()
-  context.fillStyle = options.color
-  context.fillText(text, width / 2, height / 2)
+  drawSceneTextCanvas(canvas, context, text, options)
 
   const texture = new THREE.CanvasTexture(canvas)
 
@@ -6629,8 +8275,59 @@ function createSceneTextTexture(
 
   return {
     aspectRatio: width / height,
+    canvas,
+    context,
+    height,
     texture,
+    width,
   }
+}
+
+function measureSceneTextCanvasSize(
+  text: string,
+  options: Required<SceneTextSpriteOptions>,
+  context?: CanvasRenderingContext2D,
+) {
+  const measurementCanvas = context ? null : document.createElement('canvas')
+  const measurementContext =
+    context ?? measurementCanvas?.getContext('2d')
+
+  if (!measurementContext) {
+    throw new Error('Canvas 2D context is required for scene labels.')
+  }
+
+  measurementContext.font = createSceneTextFont(options)
+  const metrics = measurementContext.measureText(text)
+  const width = Math.max(
+    options.minWidthPx,
+    Math.ceil(metrics.width + options.paddingX * 2),
+  )
+  const height = Math.ceil(options.fontSize + options.paddingY * 2)
+
+  return { height, width }
+}
+
+function drawSceneTextCanvas(
+  canvas: HTMLCanvasElement,
+  context: CanvasRenderingContext2D,
+  text: string,
+  options: Required<SceneTextSpriteOptions>,
+) {
+  const { height, width } = canvas
+
+  context.clearRect(0, 0, width, height)
+  context.font = createSceneTextFont(options)
+  context.textAlign = 'center'
+  context.textBaseline = 'middle'
+  context.fillStyle = options.background
+  roundRect(context, 0, 0, width, height, height * 0.24)
+  context.fill()
+  context.fillStyle = options.color
+  context.fillText(text, width / 2, height / 2)
+}
+
+function createSceneTextFont(options: Required<SceneTextSpriteOptions>) {
+  return `700 ${options.fontSize}px Inter, Segoe UI, Arial, sans-serif`
 }
 
 function roundRect(

@@ -1,0 +1,254 @@
+{
+  "simulationId": "doppler-effect",
+  "durationSeconds": 18,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 8,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Horizonte calculado",
+      "description": "Tempo pre-calculado para a fonte movel e o observador. Aumentar acompanha mais frentes de onda; diminuir foca o encontro inicial.",
+      "unit": "s",
+      "kind": "number",
+      "min": 6,
+      "max": 60,
+      "step": 1,
+      "defaultValue": 18
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente exibido em graficos e tabela. Aumentar compara a frequencia observada por mais tempo; diminuir destaca o deslocamento instantaneo.",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 30,
+      "step": 1,
+      "defaultValue": 8
+    }
+  ],
+  "defaultParameters": {
+    "amplitudePascals": 0.42,
+    "emittedFrequencyHertz": 1.35,
+    "mediumSpeedMetersPerSecond": 4.8,
+    "sourceInitialPositionMeters": 1.3,
+    "sourceSpeedMetersPerSecond": 0.42,
+    "observerPositionMeters": 5.8,
+    "observerSpeedMetersPerSecond": 0,
+    "mediumLengthMeters": 8
+  },
+  "parameters": [
+    {
+      "id": "amplitudePascals",
+      "label": "Amplitude de pressao",
+      "description": "Amplitude da onda emitida pela fonte. Zerar deixa o volume de pontinhos neutro; aumentar torna as frentes e o grafico de pressao mais intensos.",
+      "unit": "Pa",
+      "kind": "number",
+      "min": 0,
+      "max": 1.4,
+      "step": 0.01,
+      "defaultValue": 0.42
+    },
+    {
+      "id": "emittedFrequencyHertz",
+      "label": "Frequencia emitida",
+      "description": "Frequencia propria da fonte no meio didatico. Aumentar cria frentes mais proximas; a frequencia observada tambem muda pelo movimento relativo.",
+      "unit": "Hz",
+      "kind": "number",
+      "min": 0,
+      "max": 5,
+      "step": 0.01,
+      "defaultValue": 1.35
+    },
+    {
+      "id": "mediumSpeedMetersPerSecond",
+      "label": "Velocidade do som",
+      "description": "Velocidade de propagacao no meio didatico. Aumentar reduz o efeito relativo das velocidades da fonte e do observador; diminuir comprime mais as frentes.",
+      "unit": "m/s",
+      "kind": "number",
+      "min": 1,
+      "max": 20,
+      "step": 0.1,
+      "defaultValue": 4.8
+    },
+    {
+      "id": "sourceInitialPositionMeters",
+      "label": "Posicao inicial da fonte",
+      "description": "Local inicial da fonte sonora dentro do trecho visual. Mudar a posicao altera quando as frentes comprimidas chegam ao observador.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 8,
+      "step": 0.05,
+      "defaultValue": 1.3
+    },
+    {
+      "id": "sourceSpeedMetersPerSecond",
+      "label": "Velocidade da fonte",
+      "description": "Velocidade da fonte no eixo horizontal. Valor positivo move a fonte para a direita; zerar remove o deslocamento da fonte; aproximar da velocidade do meio aumenta a compressao a frente.",
+      "unit": "m/s",
+      "kind": "number",
+      "min": -3.8,
+      "max": 3.8,
+      "step": 0.02,
+      "defaultValue": 0.42
+    },
+    {
+      "id": "observerPositionMeters",
+      "label": "Posicao do observador",
+      "description": "Ponto onde graficos e tabela leem pressao e frequencia observada. Mover o observador troca a direcao relativa usada na equacao de Doppler.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 8,
+      "step": 0.05,
+      "defaultValue": 5.8
+    },
+    {
+      "id": "observerSpeedMetersPerSecond",
+      "label": "Velocidade do observador",
+      "description": "Velocidade do observador no mesmo eixo da fonte. Valor positivo move para a direita; quando ele se aproxima da fonte, a frequencia percebida aumenta.",
+      "unit": "m/s",
+      "kind": "number",
+      "min": -3.8,
+      "max": 3.8,
+      "step": 0.02,
+      "defaultValue": 0
+    },
+    {
+      "id": "mediumLengthMeters",
+      "label": "Comprimento do meio",
+      "description": "Trecho visual onde o volume 3D de pontinhos mostra as frentes de pressao. Aumentar oferece mais espaco para fonte e observador; diminuir aproxima os elementos.",
+      "unit": "m",
+      "kind": "number",
+      "min": 4,
+      "max": 14,
+      "step": 0.1,
+      "defaultValue": 8
+    }
+  ],
+  "presets": [
+    {
+      "id": "approaching-source",
+      "label": "Fonte se aproximando",
+      "parameters": {
+        "amplitudePascals": 0.42,
+        "emittedFrequencyHertz": 1.35,
+        "mediumSpeedMetersPerSecond": 4.8,
+        "sourceInitialPositionMeters": 1.3,
+        "sourceSpeedMetersPerSecond": 0.42,
+        "observerPositionMeters": 5.8,
+        "observerSpeedMetersPerSecond": 0,
+        "mediumLengthMeters": 8
+      }
+    },
+    {
+      "id": "receding-source",
+      "label": "Fonte afastando",
+      "parameters": {
+        "amplitudePascals": 0.42,
+        "emittedFrequencyHertz": 1.35,
+        "mediumSpeedMetersPerSecond": 4.8,
+        "sourceInitialPositionMeters": 6.7,
+        "sourceSpeedMetersPerSecond": -0.42,
+        "observerPositionMeters": 2.2,
+        "observerSpeedMetersPerSecond": 0,
+        "mediumLengthMeters": 8
+      }
+    },
+    {
+      "id": "observer-moving",
+      "label": "Observador em movimento",
+      "parameters": {
+        "amplitudePascals": 0.36,
+        "emittedFrequencyHertz": 1.2,
+        "mediumSpeedMetersPerSecond": 4.8,
+        "sourceInitialPositionMeters": 2,
+        "sourceSpeedMetersPerSecond": 0,
+        "observerPositionMeters": 6,
+        "observerSpeedMetersPerSecond": -0.55,
+        "mediumLengthMeters": 8
+      }
+    }
+  ],
+  "regimes": [
+    {
+      "id": "subsonic-doppler",
+      "label": "Doppler classico subsonico",
+      "condition": "emittedFrequencyHertz >= 0, mediumSpeedMetersPerSecond > 0 e as velocidades da fonte e do observador ficam abaixo da velocidade do meio.",
+      "transitionLimit": "velocidades nulas removem o deslocamento de frequencia; velocidades altas comprimem ou alongam as frentes, mas o modelo nao entra em cone de Mach.",
+      "sampleFields": [
+        "pressurePascals",
+        "frequencyHertz",
+        "secondarySpeedMetersPerSecond",
+        "secondaryRadiusMeters",
+        "secondaryXMeters",
+        "xMeters",
+        "gripRatio"
+      ],
+      "warningCode": "DOPPLER_SHIFT_ACTIVE"
+    }
+  ],
+  "limits": [
+    "Modelo classico 1D subsonico: fonte, observador e meio compartilham o mesmo eixo, sem vento, reflexao, absorcao ou cone de Mach.",
+    "A velocidade do meio e mantida em escala didatica para tornar a compressao das frentes visivel no canvas.",
+    "A cena desenha um volume 3D de pontinhos de pressao a partir do mesmo sample 1D usado pelos graficos e pela tabela; fonte e observador leem as mesmas posicoes calculadas pelo motor.",
+    "Velocidade zero da fonte ou do observador e valida e reduz o deslocamento Doppler conforme a equacao classica."
+  ],
+  "formulas": [
+    {
+      "id": "doppler-frequency",
+      "title": "Frequencia observada",
+      "expressionLatex": "f'=f\\frac{v+v_o}{v-v_s}",
+      "description": "Calcula a frequencia recebida quando fonte e observador se aproximam ao longo da linha de propagacao; os sinais sao ajustados pelo motor conforme a direcao relativa.",
+      "variables": [
+        { "symbol": "f'", "label": "frequencia observada", "unit": "Hz" },
+        { "symbol": "f", "label": "frequencia emitida", "unit": "Hz" },
+        { "symbol": "v", "label": "velocidade do som", "unit": "m/s" },
+        { "symbol": "v_o", "label": "velocidade do observador em direcao a fonte", "unit": "m/s" },
+        { "symbol": "v_s", "label": "velocidade da fonte em direcao ao observador", "unit": "m/s" }
+      ],
+      "usedWhen": "Usar para movimento relativo em linha reta, velocidades subsonicas e meio parado.",
+      "notUsedWhen": "Nao cobre fonte supersonica, vento, propagacao acustica 3D real, reflexoes ou aceleracoes fortes dentro de um ciclo.",
+      "parameterIds": [
+        "emittedFrequencyHertz",
+        "mediumSpeedMetersPerSecond",
+        "sourceSpeedMetersPerSecond",
+        "observerSpeedMetersPerSecond"
+      ],
+      "sampleFields": [
+        "frequencyHertz",
+        "secondarySpeedMetersPerSecond",
+        "speedMetersPerSecond"
+      ],
+      "relatedChartIds": ["frequency"],
+      "relatedVectorIds": ["forceOne", "forceTwo", "secondaryVelocity"],
+      "example": "Se a fonte se aproxima, o denominador diminui e f' fica maior que f."
+    },
+    {
+      "id": "doppler-wavelength",
+      "title": "Frentes comprimidas",
+      "expressionLatex": "\\lambda_{frente}=\\frac{v-v_s}{f},\\quad \\lambda_{tras}=\\frac{v+v_s}{f}",
+      "description": "Aproxima os comprimentos de onda a frente e atras de uma fonte em movimento subsonico.",
+      "variables": [
+        { "symbol": "\\lambda", "label": "comprimento de onda aparente", "unit": "m" },
+        { "symbol": "v_s", "label": "velocidade da fonte", "unit": "m/s" },
+        { "symbol": "f", "label": "frequencia emitida", "unit": "Hz" }
+      ],
+      "usedWhen": "Usar para visualizar por que as cristas ficam comprimidas a frente da fonte e mais espacadas atras.",
+      "notUsedWhen": "Nao descreve cone de choque, meios dispersivos ou mudancas bruscas de velocidade.",
+      "parameterIds": [
+        "emittedFrequencyHertz",
+        "mediumSpeedMetersPerSecond",
+        "sourceSpeedMetersPerSecond"
+      ],
+      "sampleFields": [
+        "secondaryRadiusMeters",
+        "forceOneNewtons",
+        "secondaryXMeters"
+      ],
+      "relatedChartIds": ["pressure", "velocity"],
+      "example": "Com v = 4,8 m/s, f = 1,35 Hz e fonte a 0,42 m/s, as frentes dianteiras ficam mais proximas."
+    }
+  ]
+}
