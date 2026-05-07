@@ -136,7 +136,6 @@ type WaveLabObjects = {
   probeGuidePositions: Float32Array
   probeLabel: THREE.Sprite
   rightSupport: THREE.Mesh
-  sourceBase: THREE.Mesh
   sourceLabel: THREE.Sprite
   sourceRod: THREE.Mesh
   wavelengthLabel: THREE.Sprite
@@ -5833,7 +5832,6 @@ function createWaveLabObjects(): WaveLabObjects {
     vertexColors: true,
   })
   const bench = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), sourceMaterial)
-  const sourceBase = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), sourceMaterial)
   const sourceRod = new THREE.Mesh(
     new THREE.CylinderGeometry(0.026, 0.026, 1, 16),
     metalMaterial,
@@ -5907,7 +5905,6 @@ function createWaveLabObjects(): WaveLabObjects {
   energyPackets.renderOrder = 18
   ;[
     bench,
-    sourceBase,
     sourceRod,
     leftSupport,
     rightSupport,
@@ -5947,7 +5944,6 @@ function createWaveLabObjects(): WaveLabObjects {
     probeGuidePositions: probeGuide.positions,
     probeLabel,
     rightSupport,
-    sourceBase,
     sourceLabel,
     sourceRod,
     wavelengthLabel,
@@ -6027,14 +6023,6 @@ function updateWaveLabObjects({
     0,
     0,
   )
-  const sourceBasePosition = toSoundWaveFieldScenePointForSimulation(
-    simulationId,
-    objects,
-    sample.secondaryXMeters,
-    -0.3,
-    -0.2,
-  )
-
   lab.bench.visible = false
   lab.bench.position.set(0, 0.18, -0.18)
   lab.bench.scale.set(stringLengthScene + 1.25, 0.52, 0.055)
@@ -6044,9 +6032,6 @@ function updateWaveLabObjects({
   lab.rightSupport.visible = !isSoundWave
   lab.rightSupport.position.set(rightX, 0, supportHeight / 2 - 0.2)
   lab.rightSupport.scale.set(0.075, 0.075, supportHeight)
-  lab.sourceBase.visible = simulationId === 'doppler-effect'
-  lab.sourceBase.position.copy(sourceBasePosition)
-  lab.sourceBase.scale.set(0.5, 0.28, 0.22)
 
   lab.sourceRod.visible = false
   lab.sourceRod.position.set(leftX, -0.18, 0)

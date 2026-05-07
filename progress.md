@@ -3657,3 +3657,29 @@ Validacao:
 - Executado `npm run lint`; passou.
 - Executado `npm run build:pages`; passou com aviso conhecido de chunk acima de 500 kB.
 - Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+
+## 2026-05-07 - Remocao do cubo visual no emissor Doppler
+
+Status: feito.
+
+Pedido reportado:
+
+- Remover o cubo estranho pintado junto do emissor no `Efeito Doppler`.
+
+Ajuste:
+
+- Removido o mesh `sourceBase` do laboratorio de ondas em Three.js.
+- O emissor Doppler continua indicado pelo rotulo da fonte e pelo campo/frentes de pressao; nenhum campo do motor, grafico, tabela, formula ou fixture foi alterado.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a mudanca e apenas de renderer visual e remove um marcador que nao representava uma grandeza fisica do sample.
+- A simulacao permanece `ready`; nao houve mudanca de modelo, parametros, warnings, teoria ou contrato de dados.
+
+Validacao:
+
+- Executado `npm run test -- src/features/simulation-shell/KinematicsScene.test.ts --reporter=dot`; 1 arquivo e 11 testes passaram.
+- Executado `npm run test -- --reporter=dot`; 14 arquivos e 136 testes passaram.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run build:pages`; passou com aviso conhecido de chunk acima de 500 kB.
