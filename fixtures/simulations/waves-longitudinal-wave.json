@@ -1,0 +1,329 @@
+{
+  "simulationId": "longitudinal-wave",
+  "durationSeconds": 16,
+  "sampleRateHz": 120,
+  "chartWindowSeconds": 8,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Horizonte calculado",
+      "description": "Tempo pre-calculado para a onda longitudinal. Aumentar mostra mais frentes de compressao atravessando a mola; diminuir concentra a leitura nos primeiros ciclos.",
+      "unit": "s",
+      "kind": "number",
+      "min": 6,
+      "max": 60,
+      "step": 1,
+      "defaultValue": 16
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente exibido em graficos e tabela. Aumentar compara mais ciclos de compressao; diminuir evidencia fase, velocidade longitudinal e forca elastica locais.",
+      "unit": "s",
+      "kind": "number",
+      "min": 3,
+      "max": 30,
+      "step": 1,
+      "defaultValue": 8
+    }
+  ],
+  "defaultParameters": {
+    "amplitudeMeters": 0.22,
+    "wavelengthMeters": 2.2,
+    "frequencyHertz": 0.75,
+    "speedModel": "spring-properties",
+    "longitudinalStiffnessNewtons": 0.5,
+    "linearDensityKilogramsPerMeter": 0.18,
+    "phaseDegrees": 0,
+    "springLengthMeters": 7,
+    "probePositionMeters": 3.5
+  },
+  "parameters": [
+    {
+      "id": "amplitudeMeters",
+      "label": "Amplitude longitudinal",
+      "description": "Deslocamento maximo de cada elo da mola ao longo do proprio eixo. Zerar deixa as espiras igualmente espacadas; aumentar intensifica compressao, rarefacao, velocidade e aceleracao locais.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 0.55,
+      "step": 0.01,
+      "defaultValue": 0.22
+    },
+    {
+      "id": "wavelengthMeters",
+      "label": "Comprimento de onda",
+      "description": "Distancia entre duas regioes equivalentes de compressao. No modo mola elastica, alterar lambda recalcula a frequencia para preservar v = sqrt(C/mu); no modo lambda f, altera a velocidade.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0.6,
+      "max": 6,
+      "step": 0.05,
+      "defaultValue": 2.2
+    },
+    {
+      "id": "frequencyHertz",
+      "label": "Frequencia",
+      "description": "Numero de compressoes emitidas por segundo pela fonte. Zerar congela o perfil; no modo mola elastica, aumentar frequencia encurta lambda pela relacao lambda = v/f.",
+      "unit": "Hz",
+      "kind": "number",
+      "min": 0,
+      "max": 3,
+      "step": 0.05,
+      "defaultValue": 0.75
+    },
+    {
+      "id": "speedModel",
+      "label": "Modelo de velocidade",
+      "description": "Define de onde vem a velocidade de propagacao da compressao. No modo mola elastica, o motor usa v = sqrt(C/mu); no modo lambda f, calcula v diretamente por lambda f.",
+      "kind": "choice",
+      "defaultValue": "spring-properties",
+      "options": [
+        {
+          "label": "Mola elastica",
+          "value": "spring-properties",
+          "description": "A velocidade vem da rigidez longitudinal efetiva e da densidade linear; frequencia e lambda variam de forma inversa."
+        },
+        {
+          "label": "lambda vezes f",
+          "value": "wavelength-frequency",
+          "description": "A velocidade e calculada diretamente por lambda f para comparar a relacao cinematica."
+        }
+      ]
+    },
+    {
+      "id": "longitudinalStiffnessNewtons",
+      "label": "Rigidez longitudinal",
+      "description": "Rigidez efetiva C que resiste a compressao relativa da mola. No modo mola elastica, aumentar C eleva v = sqrt(C/mu) e faz a frente de compressao viajar mais rapido.",
+      "unit": "N",
+      "kind": "number",
+      "min": 0.05,
+      "max": 3,
+      "step": 0.01,
+      "defaultValue": 0.5
+    },
+    {
+      "id": "linearDensityKilogramsPerMeter",
+      "label": "Densidade linear",
+      "description": "Massa por comprimento da mola. No modo mola elastica, aumentar mu reduz v = sqrt(C/mu), deixando a propagacao mais lenta e as frentes mais proximas para a mesma frequencia.",
+      "unit": "kg/m",
+      "kind": "number",
+      "min": 0.04,
+      "max": 0.8,
+      "step": 0.01,
+      "defaultValue": 0.18
+    },
+    {
+      "id": "phaseDegrees",
+      "label": "Fase inicial",
+      "description": "Desloca a onda no tempo e ao longo da mola sem alterar amplitude, frequencia ou velocidade. Alterar a fase muda a compressao que o probe le em t = 0.",
+      "unit": "deg",
+      "kind": "number",
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "defaultValue": 0
+    },
+    {
+      "id": "springLengthMeters",
+      "label": "Comprimento da mola",
+      "description": "Comprimento fisico do trecho de mola mostrado na cena. Aumentar exibe mais frentes de compressao e rarefacao; diminuir aproxima as extremidades da bancada didatica.",
+      "unit": "m",
+      "kind": "number",
+      "min": 5,
+      "max": 9,
+      "step": 0.1,
+      "defaultValue": 7
+    },
+    {
+      "id": "probePositionMeters",
+      "label": "Probe na mola",
+      "description": "Elo da mola usado por graficos, tabela, vetores e formulas. Mover o probe troca a fase local lida sem criar outra fonte de dados.",
+      "unit": "m",
+      "kind": "number",
+      "min": 0,
+      "max": 5,
+      "step": 0.05,
+      "defaultValue": 3.5
+    }
+  ],
+  "presets": [
+    {
+      "id": "slow-slinky",
+      "label": "Mola lenta",
+      "parameters": {
+        "amplitudeMeters": 0.22,
+        "wavelengthMeters": 2.2,
+        "frequencyHertz": 0.75,
+        "speedModel": "spring-properties",
+        "longitudinalStiffnessNewtons": 0.5,
+        "linearDensityKilogramsPerMeter": 0.18,
+        "phaseDegrees": 0,
+        "springLengthMeters": 7,
+        "probePositionMeters": 3.5
+      }
+    },
+    {
+      "id": "short-compressions",
+      "label": "Compressoes curtas",
+      "parameters": {
+        "amplitudeMeters": 0.16,
+        "wavelengthMeters": 1.15,
+        "frequencyHertz": 1.35,
+        "speedModel": "wavelength-frequency",
+        "longitudinalStiffnessNewtons": 0.5,
+        "linearDensityKilogramsPerMeter": 0.18,
+        "phaseDegrees": 35,
+        "springLengthMeters": 7,
+        "probePositionMeters": 2.8
+      }
+    },
+    {
+      "id": "heavy-spring",
+      "label": "Mola pesada",
+      "parameters": {
+        "amplitudeMeters": 0.2,
+        "wavelengthMeters": 2.2,
+        "frequencyHertz": 0.55,
+        "speedModel": "spring-properties",
+        "longitudinalStiffnessNewtons": 0.42,
+        "linearDensityKilogramsPerMeter": 0.38,
+        "phaseDegrees": -25,
+        "springLengthMeters": 7,
+        "probePositionMeters": 3.5
+      }
+    },
+    {
+      "id": "zero-amplitude",
+      "label": "Sem perturbacao",
+      "parameters": {
+        "amplitudeMeters": 0,
+        "wavelengthMeters": 2.2,
+        "frequencyHertz": 0.75,
+        "speedModel": "spring-properties",
+        "longitudinalStiffnessNewtons": 0.5,
+        "linearDensityKilogramsPerMeter": 0.18,
+        "phaseDegrees": 0,
+        "springLengthMeters": 7,
+        "probePositionMeters": 3.5
+      }
+    }
+  ],
+  "regimes": [
+    {
+      "id": "ideal-longitudinal-spring-wave",
+      "label": "Onda longitudinal senoidal ideal",
+      "condition": "amplitudeMeters >= 0, wavelengthMeters > 0, frequencyHertz >= 0, longitudinalStiffnessNewtons > 0 e linearDensityKilogramsPerMeter > 0.",
+      "transitionLimit": "frequencyHertz = 0 congela o perfil, amplitudeMeters = 0 deixa a mola sem compressao, e speedModel troca entre v = sqrt(C/mu) com lambda/f acoplados e v = lambda f.",
+      "sampleFields": [
+        "positionMeters",
+        "velocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared",
+        "springForceNewtons",
+        "speedMetersPerSecond",
+        "frequencyHertz",
+        "secondaryRadiusMeters"
+      ],
+      "warningCode": "LONGITUDINAL_LARGE_STRAIN"
+    }
+  ],
+  "limits": [
+    "Modelo senoidal 1D ideal: xi(x,t) = A sin(kx - omega t + phi), com deslocamento paralelo ao eixo da mola e sem dispersao, atrito ou reflexao nas extremidades.",
+    "No modo mola elastica, a velocidade de propagacao e calculada por v = sqrt(C/mu); frequencia e lambda permanecem inversamente acopladas pela UI e o sample exibe lambda = v/f.",
+    "A cena desenha espiras e elos deslocados pelo mesmo perfil longitudinal usado pelo probe, graficos, tabela e formulas.",
+    "Amplitude zero e frequencia zero sao parametros fisicamente validos e mudam o sample para mola sem perturbacao ou perfil congelado.",
+    "Compressao relativa grande indica limite didatico do modelo linear; a simulacao mostra warning em vez de sugerir mola realista ilimitada."
+  ],
+  "formulas": [
+    {
+      "id": "longitudinal-displacement",
+      "title": "Deslocamento longitudinal",
+      "expressionLatex": "\\xi(x,t)=A\\sin(kx-\\omega t+\\phi)",
+      "description": "Define o deslocamento paralelo ao eixo da mola em cada elo e no probe usado pelos graficos.",
+      "variables": [
+        { "symbol": "\\xi", "label": "deslocamento longitudinal", "unit": "m" },
+        { "symbol": "A", "label": "amplitude longitudinal", "unit": "m" },
+        { "symbol": "k", "label": "numero de onda", "unit": "rad/m" },
+        { "symbol": "\\omega", "label": "frequencia angular", "unit": "rad/s" },
+        { "symbol": "\\phi", "label": "fase inicial", "unit": "rad" }
+      ],
+      "usedWhen": "Usar para ondas longitudinais pequenas em uma mola ideal, longe de reflexoes e perdas.",
+      "notUsedWhen": "Nao descreve choques entre espiras, atrito, dispersao real da mola nem movimento transversal.",
+      "parameterIds": [
+        "amplitudeMeters",
+        "wavelengthMeters",
+        "frequencyHertz",
+        "speedModel",
+        "phaseDegrees",
+        "probePositionMeters"
+      ],
+      "sampleFields": [
+        "positionMeters",
+        "zMeters",
+        "velocityMetersPerSecond",
+        "accelerationMetersPerSecondSquared"
+      ],
+      "relatedChartIds": ["position", "velocity", "acceleration"],
+      "relatedVectorIds": ["displacement", "velocity", "acceleration"],
+      "example": "Com A = 0,22 m, lambda = 2,2 m e f = 0,75 Hz, os elos oscilam para frente e para tras enquanto a compressao se propaga."
+    },
+    {
+      "id": "longitudinal-speed",
+      "title": "Velocidade de propagacao na mola",
+      "expressionLatex": "v=\\sqrt{C/\\mu},\\quad T_p=1/f,\\quad \\lambda=v/f=vT_p",
+      "description": "Relaciona rigidez longitudinal efetiva, densidade linear, frequencia, periodo e comprimento de onda.",
+      "variables": [
+        { "symbol": "v", "label": "velocidade da onda", "unit": "m/s" },
+        { "symbol": "C", "label": "rigidez longitudinal efetiva", "unit": "N" },
+        { "symbol": "\\mu", "label": "densidade linear", "unit": "kg/m" },
+        { "symbol": "\\lambda", "label": "comprimento de onda", "unit": "m" },
+        { "symbol": "f", "label": "frequencia", "unit": "Hz" }
+      ],
+      "usedWhen": "Usar no modo mola elastica para comparar como uma mola mais rigida ou mais massiva muda a velocidade da frente de compressao.",
+      "notUsedWhen": "Nao substitui um modelo continuo real de modulo elastico, perdas, atrito interno ou dispersao de uma mola fisica.",
+      "parameterIds": [
+        "speedModel",
+        "longitudinalStiffnessNewtons",
+        "linearDensityKilogramsPerMeter",
+        "wavelengthMeters",
+        "frequencyHertz"
+      ],
+      "sampleFields": [
+        "speedMetersPerSecond",
+        "secondaryRadiusMeters",
+        "periodSeconds",
+        "secondaryVelocityXMetersPerSecond"
+      ],
+      "relatedChartIds": ["velocity"],
+      "relatedVectorIds": ["secondaryVelocity"],
+      "example": "Com C = 0,5 N e mu = 0,18 kg/m, v = 1,67 m/s; se f = 0,75 Hz, lambda efetiva = 2,22 m."
+    },
+    {
+      "id": "compression-force",
+      "title": "Compressao e forca elastica local",
+      "expressionLatex": "\\epsilon=-\\frac{\\partial \\xi}{\\partial x},\\quad F_x=C\\epsilon",
+      "description": "A compressao relativa vem do gradiente espacial do deslocamento longitudinal e alimenta a forca elastica local exibida nos vetores e graficos.",
+      "variables": [
+        { "symbol": "\\epsilon", "label": "compressao relativa", "unit": "" },
+        { "symbol": "F_x", "label": "forca elastica local", "unit": "N" },
+        { "symbol": "C", "label": "rigidez longitudinal efetiva", "unit": "N" }
+      ],
+      "usedWhen": "Usar para ver por que regioes comprimidas e rarefeitas alternam ao longo da mola enquanto a frente viaja.",
+      "notUsedWhen": "Nao descreve contato nao linear entre espiras nem deformacoes grandes fora do limite linear.",
+      "parameterIds": [
+        "amplitudeMeters",
+        "longitudinalStiffnessNewtons",
+        "wavelengthMeters",
+        "frequencyHertz"
+      ],
+      "sampleFields": [
+        "centerOfMassMeters",
+        "springForceNewtons",
+        "netForceNewtons"
+      ],
+      "relatedChartIds": ["forces"],
+      "relatedVectorIds": ["forceOne"],
+      "example": "Onde o gradiente e negativo, as espiras se aproximam; onde e positivo, elas se afastam."
+    }
+  ]
+}

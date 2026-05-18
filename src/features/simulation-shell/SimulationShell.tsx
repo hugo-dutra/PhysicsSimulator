@@ -78,6 +78,7 @@ import {
   type KinematicsVectorOverlay,
   type LensesMirrorsParameters,
   type LightDiffractionInterferenceParameters,
+  type LongitudinalWaveParameters,
   type ReflectionRefractionParameters,
   type UniformCircularMotionParameters,
   type UniformLinearMotionParameters,
@@ -95,6 +96,7 @@ import dopplerEffectTheory from '../../content/simulations/waves/sound/doppler-e
 import forcedOscillatorResonanceTheory from '../../content/simulations/waves/oscillations/forced-oscillator-resonance/theory.md?raw'
 import lensesMirrorsTheory from '../../content/simulations/waves/optics/lenses-mirrors/theory.md?raw'
 import lightDiffractionInterferenceTheory from '../../content/simulations/waves/optics/light-diffraction-interference/theory.md?raw'
+import longitudinalWaveTheory from '../../content/simulations/waves/mechanical-waves/longitudinal-wave/theory.md?raw'
 import reflectionRefractionTheory from '../../content/simulations/waves/optics/reflection-refraction/theory.md?raw'
 import standingWavesTheory from '../../content/simulations/waves/mechanical-waves/standing-waves/theory.md?raw'
 import superpositionInterferenceTheory from '../../content/simulations/waves/mechanical-waves/superposition-interference/theory.md?raw'
@@ -137,6 +139,7 @@ import {
 import { LiveLineChart } from './LiveLineChart'
 import {
   linkSuperpositionInterferenceParameterValues,
+  linkLongitudinalWaveParameterValues,
   linkWaveOnStringParameterValues,
 } from './mechanicalWaveParameterLinking'
 import { ChartFocusButton, PendulumCharts } from './PendulumCharts'
@@ -242,6 +245,7 @@ const kinematicsTheoryById = {
   'hydrostatics-buoyancy': hydrostaticsBuoyancyTheory,
   'lenses-mirrors': lensesMirrorsTheory,
   'light-diffraction-interference': lightDiffractionInterferenceTheory,
+  'longitudinal-wave': longitudinalWaveTheory,
   'mass-spring': massSpringTheory,
   'particle-equilibrium': particleEquilibriumTheory,
   'projectile-motion': projectileMotionTheory,
@@ -988,6 +992,39 @@ const kinematicsVectorLegendItemsById = {
         'velocidade horizontal da perturbacao, por lambda f ou por sqrt(T/mu) conforme o modo',
     },
   ],
+  'longitudinal-wave': [
+    {
+      id: 'displacement',
+      label: 'dx',
+      color: themeTokens.vector,
+      description: 'deslocamento paralelo ao eixo da mola no elo observado',
+    },
+    {
+      id: 'velocity',
+      label: 'v_x',
+      color: themeTokens.cyan,
+      description: 'velocidade longitudinal local do elo da mola',
+    },
+    {
+      id: 'acceleration',
+      label: 'a_x',
+      color: themeTokens.warning,
+      description: 'aceleracao longitudinal derivada da mesma onda',
+    },
+    {
+      id: 'forceOne',
+      label: 'F_el',
+      color: themeTokens.teal,
+      description: 'forca elastica local associada a compressao/rarefacao',
+    },
+    {
+      id: 'secondaryVelocity',
+      label: 'v_onda',
+      color: '#818CF8',
+      description:
+        'velocidade de propagacao da compressao pela mola, por lambda f ou sqrt(C/mu)',
+    },
+  ],
   'superposition-interference': [
     {
       id: 'displacement',
@@ -1385,6 +1422,12 @@ export function SimulationShell() {
                 parameterDefinitions: selectedKinematicsFixture.parameters,
                 values: nextParameterValues,
               })
+            : selectedKinematicsSimulationId === 'longitudinal-wave'
+              ? linkLongitudinalWaveParameterValues({
+                  changedParameterId: 'speedModel',
+                  parameterDefinitions: selectedKinematicsFixture.parameters,
+                  values: nextParameterValues,
+                })
             : nextParameterValues,
       }))
     } else {
@@ -1451,6 +1494,12 @@ export function SimulationShell() {
                 parameterDefinitions: selectedKinematicsFixture.parameters,
                 values: nextValues,
               })
+            : selectedKinematicsSimulationId === 'longitudinal-wave'
+              ? linkLongitudinalWaveParameterValues({
+                  changedParameterId: parameter.id,
+                  parameterDefinitions: selectedKinematicsFixture.parameters,
+                  values: nextValues,
+                })
             : selectedKinematicsSimulationId === 'superposition-interference'
               ? linkSuperpositionInterferenceParameterValues({
                   changedParameterId: parameter.id,
@@ -4957,6 +5006,7 @@ function buildKinematicsReadoutMetrics({
   }
 
   if (
+    simulationId === 'longitudinal-wave' ||
     simulationId === 'wave-on-string' ||
     simulationId === 'superposition-interference' ||
     simulationId === 'standing-waves'
@@ -4965,18 +5015,23 @@ function buildKinematicsReadoutMetrics({
       simulationId === 'wave-on-string'
         ? (parameters as WaveOnStringParameters)
         : null
+    const longitudinalParameters =
+      simulationId === 'longitudinal-wave'
+        ? (parameters as LongitudinalWaveParameters)
+        : null
 
     return [
       {
-        label: 'y no probe',
+        label:
+          simulationId === 'longitudinal-wave' ? 'dx no elo' : 'y no probe',
         value: formatNumber(sample.positionMeters, 'm'),
       },
       {
-        label: 'v_y',
+        label: simulationId === 'longitudinal-wave' ? 'v_x' : 'v_y',
         value: formatNumber(sample.velocityMetersPerSecond, 'm/s'),
       },
       {
-        label: 'a_y',
+        label: simulationId === 'longitudinal-wave' ? 'a_x' : 'a_y',
         value: formatNumber(
           sample.accelerationMetersPerSecondSquared,
           'm/s^2',
@@ -5010,6 +5065,36 @@ function buildKinematicsReadoutMetrics({
               value: waveParameters
                 ? formatNumber(
                     waveParameters.linearDensityKilogramsPerMeter,
+                    'kg/m',
+                  )
+                : '-- kg/m',
+            },
+          ]
+        : []),
+      ...(simulationId === 'longitudinal-wave'
+        ? [
+            {
+              label: 'lambda efetiva',
+              value: formatNumber(sample.secondaryRadiusMeters, 'm'),
+            },
+            {
+              label: 'Forca elastica',
+              value: formatNumber(sample.springForceNewtons, 'N'),
+            },
+            {
+              label: 'Rigidez',
+              value: longitudinalParameters
+                ? formatNumber(
+                    longitudinalParameters.longitudinalStiffnessNewtons,
+                    'N',
+                  )
+                : '-- N',
+            },
+            {
+              label: 'Densidade linear',
+              value: longitudinalParameters
+                ? formatNumber(
+                    longitudinalParameters.linearDensityKilogramsPerMeter,
                     'kg/m',
                   )
                 : '-- kg/m',
@@ -7341,6 +7426,7 @@ function isMechanicalWaveSimulationId(simulationId: KinematicsSimulationId) {
   return (
     simulationId === 'beats' ||
     simulationId === 'doppler-effect' ||
+    simulationId === 'longitudinal-wave' ||
     simulationId === 'standing-waves' ||
     simulationId === 'superposition-interference' ||
     simulationId === 'wave-on-string'

@@ -1243,6 +1243,58 @@
           ]
         },
         {
+          "id": "longitudinal-wave",
+          "areaId": "waves",
+          "topicPath": ["Oscilacoes e Ondas", "Ondas mecanicas", "Onda longitudinal em mola"],
+          "title": "Onda longitudinal em mola",
+          "status": "analysis",
+          "level": "introductory",
+          "modelKind": "analytic",
+          "renderer": "three",
+          "fixturePath": "fixtures/simulations/waves-longitudinal-wave.json",
+          "theoryPath": "src/content/simulations/waves/mechanical-waves/longitudinal-wave/theory.md",
+          "description": "Mola horizontal em diagonal com espiras que comprimem e estendem enquanto a onda longitudinal se propaga paralela ao eixo da mola.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Modelo senoidal longitudinal 1D com velocidade por rigidez/densidade ou lambda f, cena Three.js renderer-first e mola helicoidal deslocada pelo sample."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Deslocamento longitudinal por tempo",
+              "sampleFields": ["timeSeconds", "positionMeters", "zMeters"]
+            },
+            {
+              "id": "velocity-time",
+              "title": "Velocidade longitudinal e propagacao",
+              "sampleFields": [
+                "timeSeconds",
+                "velocityMetersPerSecond",
+                "speedMetersPerSecond"
+              ]
+            },
+            {
+              "id": "acceleration-time",
+              "title": "Aceleracao longitudinal",
+              "sampleFields": [
+                "timeSeconds",
+                "accelerationMetersPerSecondSquared"
+              ]
+            },
+            {
+              "id": "force-time",
+              "title": "Compressao e forca elastica local",
+              "sampleFields": [
+                "timeSeconds",
+                "springForceNewtons",
+                "centerOfMassMeters"
+              ]
+            }
+          ]
+        },
+        {
           "id": "superposition-interference",
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Ondas mecanicas", "Superposicao e interferencia"],

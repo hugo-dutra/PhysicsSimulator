@@ -13,6 +13,7 @@ import hydrostaticsBuoyancyFixtureJson from '../../fixtures/simulations/mechanic
 import inclinedPlaneFixtureJson from '../../fixtures/simulations/mechanics-inclined-plane-friction.json'
 import lensesMirrorsFixtureJson from '../../fixtures/simulations/waves-lenses-mirrors.json'
 import lightDiffractionInterferenceFixtureJson from '../../fixtures/simulations/waves-light-diffraction-interference.json'
+import longitudinalWaveFixtureJson from '../../fixtures/simulations/waves-longitudinal-wave.json'
 import massSpringFixtureJson from '../../fixtures/simulations/mechanics-mass-spring.json'
 import particleEquilibriumFixtureJson from '../../fixtures/simulations/mechanics-particle-equilibrium.json'
 import pendulumFixtureJson from '../../fixtures/simulations/mechanics-pendulum.json'
@@ -62,6 +63,7 @@ export const kinematicsFixtures = {
   'lenses-mirrors': lensesMirrorsFixtureJson as SimulationFixture,
   'light-diffraction-interference':
     lightDiffractionInterferenceFixtureJson as SimulationFixture,
+  'longitudinal-wave': longitudinalWaveFixtureJson as SimulationFixture,
   'mass-spring': massSpringFixtureJson as SimulationFixture,
   'particle-equilibrium': particleEquilibriumFixtureJson as SimulationFixture,
   'projectile-motion': projectileMotionFixtureJson as SimulationFixture,

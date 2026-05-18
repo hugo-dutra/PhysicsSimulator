@@ -44,6 +44,7 @@ function isSingleSpringOscillatorSimulation(
 
 function isMechanicalWaveSimulation(simulationId: KinematicsSimulationId) {
   return (
+    simulationId === 'longitudinal-wave' ||
     simulationId === 'standing-waves' ||
     simulationId === 'superposition-interference' ||
     simulationId === 'wave-on-string'
@@ -1057,6 +1058,8 @@ export function buildKinematicsChartConfigs(
             ? 'Superposicao no probe por tempo'
             : simulationId === 'standing-waves'
               ? 'Deslocamento estacionario por tempo'
+              : simulationId === 'longitudinal-wave'
+                ? 'Deslocamento longitudinal por tempo'
               : 'Deslocamento da corda por tempo',
         traces:
           simulationId === 'superposition-interference'
@@ -1083,7 +1086,10 @@ export function buildKinematicsChartConfigs(
             : [
                 {
                   lineColor: themeTokens.teal,
-                  name: 'Deslocamento transversal no probe (m)',
+                  name:
+                    simulationId === 'longitudinal-wave'
+                      ? 'Deslocamento longitudinal no elo (m)'
+                      : 'Deslocamento transversal no probe (m)',
                   x: time,
                   y: samples.map((sample) => sample.positionMeters),
                 },
@@ -1103,11 +1109,17 @@ export function buildKinematicsChartConfigs(
       },
       {
         id: 'velocity',
-        title: 'Velocidade transversal e propagacao',
+        title:
+          simulationId === 'longitudinal-wave'
+            ? 'Velocidade longitudinal e propagacao'
+            : 'Velocidade transversal e propagacao',
         traces: [
           {
             lineColor: themeTokens.cyan,
-            name: 'Velocidade transversal no probe (m/s)',
+            name:
+              simulationId === 'longitudinal-wave'
+                ? 'Velocidade longitudinal do elo (m/s)'
+                : 'Velocidade transversal no probe (m/s)',
             x: time,
             y: samples.map((sample) => sample.velocityMetersPerSecond),
           },
@@ -1116,6 +1128,8 @@ export function buildKinematicsChartConfigs(
             name:
               simulationId === 'standing-waves'
                 ? 'Velocidade de onda na corda (m/s)'
+                : simulationId === 'longitudinal-wave'
+                  ? 'Velocidade de propagacao na mola (m/s)'
                 : simulationId === 'wave-on-string'
                   ? 'Velocidade de propagacao do meio (m/s)'
                 : 'Velocidade de propagacao (m/s)',
@@ -1127,11 +1141,17 @@ export function buildKinematicsChartConfigs(
       },
       {
         id: 'acceleration',
-        title: 'Aceleracao transversal',
+        title:
+          simulationId === 'longitudinal-wave'
+            ? 'Aceleracao longitudinal'
+            : 'Aceleracao transversal',
         traces: [
           {
             lineColor: themeTokens.warning,
-            name: 'Aceleracao transversal no probe (m/s^2)',
+            name:
+              simulationId === 'longitudinal-wave'
+                ? 'Aceleracao longitudinal do elo (m/s^2)'
+                : 'Aceleracao transversal no probe (m/s^2)',
             x: time,
             y: samples.map(
               (sample) => sample.accelerationMetersPerSecondSquared,
@@ -1141,6 +1161,23 @@ export function buildKinematicsChartConfigs(
         yAxisTitle: 'Aceleracao (metros por segundo ao quadrado)',
       },
     )
+
+    if (simulationId === 'longitudinal-wave') {
+      charts.push({
+        id: 'forces',
+        title: 'Compressao e forca elastica local',
+        traces: [
+          {
+            lineColor: themeTokens.vector,
+            name: 'Forca elastica longitudinal (N)',
+            x: time,
+            y: samples.map((sample) => sample.springForceNewtons),
+          },
+        ],
+        yAxisMode: 'zero-centered',
+        yAxisTitle: 'Forca (newtons)',
+      })
+    }
   } else if (simulationId === 'particle-equilibrium') {
     charts.push(
       {

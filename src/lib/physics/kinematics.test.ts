@@ -21,6 +21,7 @@ import {
   type KinematicsSimulationId,
   type LensesMirrorsParameters,
   type LightDiffractionInterferenceParameters,
+  type LongitudinalWaveParameters,
   type MassSpringParameters,
   type ParticleEquilibriumParameters,
   type ProjectileMotionParameters,
@@ -487,6 +488,61 @@ describe('kinematics physics engine', () => {
     expect(highFrequencySample.secondaryRadiusMeters).toBeCloseTo(2.1)
     expect(lowFrequencySample.periodSeconds).toBeCloseTo(2.5)
     expect(highFrequencySample.periodSeconds).toBeCloseTo(1.25)
+  })
+
+  it('propagates a longitudinal spring wave from one analytic profile', () => {
+    const parameters: LongitudinalWaveParameters = {
+      amplitudeMeters: 0.18,
+      frequencyHertz: 0.5,
+      linearDensityKilogramsPerMeter: 0.2,
+      longitudinalStiffnessNewtons: 0.8,
+      phaseDegrees: 0,
+      probePositionMeters: 1,
+      speedModel: 'wavelength-frequency',
+      springLengthMeters: 4,
+      wavelengthMeters: 2,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 4,
+      simulationId: 'longitudinal-wave',
+    })
+    const midSample = result.samples[2]
+    const profile = computeMechanicalWaveProfile(
+      'longitudinal-wave',
+      parameters,
+      midSample.timeSeconds,
+      9,
+    )
+
+    expect(midSample.speedMetersPerSecond).toBeCloseTo(1)
+    expect(midSample.positionMeters).toBeCloseTo(0.18)
+    expect(midSample.accelerationMetersPerSecondSquared).toBeCloseTo(
+      -(Math.PI ** 2) * 0.18,
+    )
+    expect(midSample.springForceNewtons).toBeCloseTo(0)
+    expect(profile[2].zMeters).toBeCloseTo(midSample.positionMeters)
+  })
+
+  it('ties longitudinal wave speed to spring stiffness and linear density', () => {
+    const parameters: LongitudinalWaveParameters = {
+      amplitudeMeters: 0.18,
+      frequencyHertz: 0.5,
+      linearDensityKilogramsPerMeter: 0.2,
+      longitudinalStiffnessNewtons: 0.8,
+      phaseDegrees: 0,
+      probePositionMeters: 0.5,
+      speedModel: 'spring-properties',
+      springLengthMeters: 4,
+      wavelengthMeters: 2,
+    }
+    const sample = computeKinematicsSample('longitudinal-wave', parameters, 0)
+
+    expect(sample.speedMetersPerSecond).toBeCloseTo(2)
+    expect(sample.secondaryRadiusMeters).toBeCloseTo(4)
+    expect(sample.periodSeconds).toBeCloseTo(2)
+    expect(sample.springForceNewtons).not.toBe(0)
   })
 
   it('sums counter-propagating waves and reports destructive phase', () => {
@@ -1815,6 +1871,7 @@ describe('kinematics physics engine', () => {
       'forced-oscillator-resonance',
       'gravitational-field-orbits',
       'hydrostatics-buoyancy',
+      'longitudinal-wave',
       'mass-spring',
       'particle-equilibrium',
       'rolling-without-slipping',
@@ -2040,6 +2097,18 @@ function readFixtureLikeParameters(
         speedModel: 'wavelength-frequency',
         stringLengthMeters: 4,
         tensionNewtons: 0.2304,
+        wavelengthMeters: 2,
+      }
+    case 'longitudinal-wave':
+      return {
+        amplitudeMeters: 0.18,
+        frequencyHertz: 0.8,
+        linearDensityKilogramsPerMeter: 0.2,
+        longitudinalStiffnessNewtons: 0.72,
+        phaseDegrees: 0,
+        probePositionMeters: 1.5,
+        speedModel: 'spring-properties',
+        springLengthMeters: 4,
         wavelengthMeters: 2,
       }
     case 'superposition-interference':

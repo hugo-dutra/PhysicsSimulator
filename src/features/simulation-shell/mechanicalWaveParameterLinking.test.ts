@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SimulationParameter } from '../../simulation-registry/types'
 import {
+  linkLongitudinalWaveParameterValues,
   linkSuperpositionInterferenceParameterValues,
   linkWaveOnStringParameterValues,
 } from './mechanicalWaveParameterLinking'
@@ -76,6 +77,40 @@ describe('wave-on-string parameter linking', () => {
 
     expect(values.frequencyHertz).toBe(0)
     expect(values.wavelengthMeters).toBe(2.2)
+  })
+})
+
+describe('longitudinal-wave parameter linking', () => {
+  it('keeps wavelength inversely linked in spring-properties mode', () => {
+    const values = linkLongitudinalWaveParameterValues({
+      changedParameterId: 'frequencyHertz',
+      parameterDefinitions: waveParameters,
+      values: {
+        frequencyHertz: 0.5,
+        linearDensityKilogramsPerMeter: 0.2,
+        longitudinalStiffnessNewtons: 0.8,
+        speedModel: 'spring-properties',
+        wavelengthMeters: 2,
+      },
+    })
+
+    expect(values.wavelengthMeters).toBeCloseTo(4)
+  })
+
+  it('keeps frequency inversely linked when wavelength changes', () => {
+    const values = linkLongitudinalWaveParameterValues({
+      changedParameterId: 'wavelengthMeters',
+      parameterDefinitions: waveParameters,
+      values: {
+        frequencyHertz: 0.5,
+        linearDensityKilogramsPerMeter: 0.2,
+        longitudinalStiffnessNewtons: 0.8,
+        speedModel: 'spring-properties',
+        wavelengthMeters: 2.5,
+      },
+    })
+
+    expect(values.frequencyHertz).toBeCloseTo(0.8)
   })
 })
 

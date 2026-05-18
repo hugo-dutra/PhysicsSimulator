@@ -9,6 +9,7 @@ import {
   type HydrostaticsBuoyancyParameters,
   type LensesMirrorsParameters,
   type LightDiffractionInterferenceParameters,
+  type LongitudinalWaveParameters,
   type ReflectionRefractionParameters,
   type TorqueLeversCenterMassParameters,
   type UniformCircularMotionParameters,
@@ -317,6 +318,41 @@ describe('kinematics chart configs', () => {
       'Velocidade da fonte (m/s)',
     )
     expect(charts.some((chart) => chart.id === 'energy')).toBe(false)
+  })
+
+  it('shows longitudinal displacement and elastic force traces for a spring wave', () => {
+    const parameters: LongitudinalWaveParameters = {
+      amplitudeMeters: 0.18,
+      frequencyHertz: 0.8,
+      linearDensityKilogramsPerMeter: 0.2,
+      longitudinalStiffnessNewtons: 0.72,
+      phaseDegrees: 0,
+      probePositionMeters: 1.5,
+      speedModel: 'spring-properties',
+      springLengthMeters: 4,
+      wavelengthMeters: 2,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 1,
+      parameters,
+      sampleRateHz: 20,
+      simulationId: 'longitudinal-wave',
+    })
+    const charts = buildKinematicsChartConfigs(
+      result.samples,
+      'longitudinal-wave',
+      true,
+    )
+    const positionChart = charts.find((chart) => chart.id === 'position')
+    const forceChart = charts.find((chart) => chart.id === 'forces')
+
+    expect(positionChart?.title).toBe('Deslocamento longitudinal por tempo')
+    expect(positionChart?.traces[0]?.name).toBe(
+      'Deslocamento longitudinal no elo (m)',
+    )
+    expect(forceChart?.traces[0]?.name).toBe(
+      'Forca elastica longitudinal (N)',
+    )
   })
 
   it('shows angle, image and intensity chart sets for optics simulations', () => {

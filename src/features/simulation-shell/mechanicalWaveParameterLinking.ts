@@ -4,6 +4,7 @@ import type {
 } from '../../simulation-registry/types'
 
 const stringSpeedModel = 'string-properties'
+const springSpeedModel = 'spring-properties'
 
 export function linkWaveOnStringParameterValues({
   changedParameterId,
@@ -43,6 +44,83 @@ export function linkWaveOnStringParameterValues({
     changedParameterId === 'frequencyHertz' ||
     changedParameterId === 'tensionNewtons' ||
     changedParameterId === 'linearDensityKilogramsPerMeter' ||
+    changedParameterId === 'speedModel'
+  ) {
+    const frequencyHertz = readPositiveNumber(values.frequencyHertz)
+
+    if (frequencyHertz === null) {
+      return values
+    }
+
+    return {
+      ...values,
+      wavelengthMeters: clampParameterValue(
+        waveSpeedMetersPerSecond / frequencyHertz,
+        findParameter(parameterDefinitions, 'wavelengthMeters'),
+      ),
+    }
+  }
+
+  if (changedParameterId === 'wavelengthMeters') {
+    const currentFrequencyHertz = readNumber(values.frequencyHertz)
+    const wavelengthMeters = readPositiveNumber(values.wavelengthMeters)
+
+    if (currentFrequencyHertz === 0 || wavelengthMeters === null) {
+      return values
+    }
+
+    return {
+      ...values,
+      frequencyHertz: clampParameterValue(
+        waveSpeedMetersPerSecond / wavelengthMeters,
+        findParameter(parameterDefinitions, 'frequencyHertz'),
+      ),
+    }
+  }
+
+  return values
+}
+
+export function linkLongitudinalWaveParameterValues({
+  changedParameterId,
+  parameterDefinitions,
+  values,
+}: {
+  changedParameterId: string
+  parameterDefinitions: SimulationParameter[]
+  values: Record<string, ParameterValue>
+}) {
+  const speedModel = values.speedModel
+
+  if (
+    speedModel !== springSpeedModel ||
+    !isLongitudinalWaveLinkingParameter(changedParameterId)
+  ) {
+    return values
+  }
+
+  const longitudinalStiffnessNewtons = readPositiveNumber(
+    values.longitudinalStiffnessNewtons,
+  )
+  const linearDensityKilogramsPerMeter = readPositiveNumber(
+    values.linearDensityKilogramsPerMeter,
+  )
+
+  if (
+    longitudinalStiffnessNewtons === null ||
+    linearDensityKilogramsPerMeter === null
+  ) {
+    return values
+  }
+
+  const waveSpeedMetersPerSecond = Math.sqrt(
+    longitudinalStiffnessNewtons / linearDensityKilogramsPerMeter,
+  )
+
+  if (
+    changedParameterId === 'frequencyHertz' ||
+    changedParameterId === 'linearDensityKilogramsPerMeter' ||
+    changedParameterId === 'longitudinalStiffnessNewtons' ||
     changedParameterId === 'speedModel'
   ) {
     const frequencyHertz = readPositiveNumber(values.frequencyHertz)
@@ -149,6 +227,16 @@ function isWaveOnStringLinkingParameter(parameterId: string) {
     parameterId === 'linearDensityKilogramsPerMeter' ||
     parameterId === 'speedModel' ||
     parameterId === 'tensionNewtons' ||
+    parameterId === 'wavelengthMeters'
+  )
+}
+
+function isLongitudinalWaveLinkingParameter(parameterId: string) {
+  return (
+    parameterId === 'frequencyHertz' ||
+    parameterId === 'linearDensityKilogramsPerMeter' ||
+    parameterId === 'longitudinalStiffnessNewtons' ||
+    parameterId === 'speedModel' ||
     parameterId === 'wavelengthMeters'
   )
 }

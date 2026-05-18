@@ -648,8 +648,15 @@ describe('App', () => {
       'false',
     )
     const soundToggle = getToggleByControls('subarea-waves-som')
+    const mechanicalWavesToggle = getToggleByControls(
+      'subarea-waves-ondas-mecanicas',
+    )
     const opticsToggle = getToggleByControls('subarea-waves-optica')
 
+    expect(mechanicalWavesToggle).toHaveAttribute('aria-expanded', 'true')
+    expect(
+      screen.getByRole('button', { name: /Onda longitudinal em mola/i }),
+    ).toBeInTheDocument()
     expect(soundToggle).toHaveAttribute(
       'aria-expanded',
       'false',
@@ -703,7 +710,7 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
     ).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(3)
+    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(4)
     expect(screen.getAllByText(/^pronto$/i).length).toBeGreaterThan(0)
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
@@ -742,7 +749,7 @@ describe('App', () => {
     )
     expect(screen.getByText(/Circuito RLC/i)).toBeInTheDocument()
     expect(screen.getByText(/Fasores e potencia AC/i)).toBeInTheDocument()
-  }, 20_000)
+  }, 30_000)
 
   it('opens the vertical mass-spring simulation in oscillations and waves', () => {
     render(
@@ -890,6 +897,12 @@ describe('App', () => {
         chart: /Deslocamento da corda por tempo/i,
         control: /Comprimento de onda \(m\)/i,
         canvas: /Cena 3D de onda em corda/i,
+      },
+      {
+        title: /Onda longitudinal em mola/i,
+        chart: /Deslocamento longitudinal por tempo/i,
+        control: /Rigidez longitudinal \(N\)/i,
+        canvas: /Cena 3D de onda longitudinal em mola/i,
       },
       {
         title: /Superposicao e interferencia/i,

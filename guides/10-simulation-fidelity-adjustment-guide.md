@@ -84,6 +84,19 @@ Sistemas massa-mola verticais devem parecer um diagrama fisico pendurado, nao um
 
 Aplicacao imediata: `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical` deve mostrar uma mola presa no topo, oscilando no eixo vertical com massa esferica na extremidade inferior.
 
+## Guia visual para ondas longitudinais em molas
+
+Ondas longitudinais em mola devem comunicar que o meio material oscila na mesma direcao da propagacao:
+
+- A mola fica alinhada ao eixo declarado da simulacao e a perturbacao percorre esse eixo.
+- As espiras se comprimem e se rarefazem a partir do deslocamento longitudinal calculado no sample; nao deve haver oscilacao transversal usada como atalho visual.
+- Fonte, probe, vetores de deslocamento/velocidade/aceleracao e medida de comprimento de onda devem estar paralelos ao eixo da mola.
+- A velocidade da onda deve vir do modelo declarado, seja `v = sqrt(C/mu)` para rigidez longitudinal e densidade linear, seja `v = lambda f` no modo didatico.
+- Compressao local, forca elastica, energia didatica, graficos, tabela, formulas e teoria devem usar os mesmos campos do sample.
+- Amplitude zero e frequencia zero sao casos fisicamente validos e devem produzir mola reta ou perfil estatico com warning, nao erro visual.
+
+Aplicacao imediata: `Oscilacoes e Ondas > Ondas mecanicas > Onda longitudinal em mola` deve mostrar uma mola diagonal comprimindo e expandindo paralelamente ao eixo de propagacao.
+
 ## Guia para perda de restricao
 
 Quando o usuario escolhe parametros que tornam a restricao impossivel, a simulacao deve mostrar o evento fisico:

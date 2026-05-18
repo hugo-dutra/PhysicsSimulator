@@ -12,6 +12,7 @@ export type KinematicsSimulationId =
   | 'hydrostatics-buoyancy'
   | 'lenses-mirrors'
   | 'light-diffraction-interference'
+  | 'longitudinal-wave'
   | 'mass-spring'
   | 'particle-equilibrium'
   | 'projectile-motion'
@@ -164,6 +165,18 @@ export type WaveOnStringParameters = {
   wavelengthMeters: number
 }
 
+export type LongitudinalWaveParameters = {
+  amplitudeMeters: number
+  frequencyHertz: number
+  linearDensityKilogramsPerMeter: number
+  longitudinalStiffnessNewtons: number
+  phaseDegrees: number
+  probePositionMeters: number
+  speedModel: 'spring-properties' | 'wavelength-frequency'
+  springLengthMeters: number
+  wavelengthMeters: number
+}
+
 export type SuperpositionInterferenceParameters = {
   amplitudeOneMeters: number
   amplitudeTwoMeters: number
@@ -306,6 +319,7 @@ export type KinematicsParameters =
   | HydrostaticsBuoyancyParameters
   | LensesMirrorsParameters
   | LightDiffractionInterferenceParameters
+  | LongitudinalWaveParameters
   | MassSpringParameters
   | ParticleEquilibriumParameters
   | ProjectileMotionParameters
@@ -325,6 +339,7 @@ export type WaveProfileSimulationId = Extract<
   KinematicsSimulationId,
   | 'beats'
   | 'doppler-effect'
+  | 'longitudinal-wave'
   | 'standing-waves'
   | 'superposition-interference'
   | 'wave-on-string'
@@ -333,6 +348,7 @@ export type WaveProfileSimulationId = Extract<
 export type WaveProfileParameters =
   | BeatsParameters
   | DopplerEffectParameters
+  | LongitudinalWaveParameters
   | StandingWavesParameters
   | SuperpositionInterferenceParameters
   | WaveOnStringParameters
@@ -516,6 +532,7 @@ const kinematicsSimulationIds = [
   'hydrostatics-buoyancy',
   'lenses-mirrors',
   'light-diffraction-interference',
+  'longitudinal-wave',
   'mass-spring',
   'particle-equilibrium',
   'rigid-body-rotation',
@@ -914,6 +931,28 @@ export function toKinematicsParameters(
       }
 
       validateWaveOnStringParameters(parameters)
+      return parameters
+    }
+    case 'longitudinal-wave': {
+      const parameters: LongitudinalWaveParameters = {
+        amplitudeMeters: readNumber(values, 'amplitudeMeters'),
+        frequencyHertz: readNumber(values, 'frequencyHertz'),
+        linearDensityKilogramsPerMeter: readNumber(
+          values,
+          'linearDensityKilogramsPerMeter',
+        ),
+        longitudinalStiffnessNewtons: readNumber(
+          values,
+          'longitudinalStiffnessNewtons',
+        ),
+        phaseDegrees: readNumber(values, 'phaseDegrees'),
+        probePositionMeters: readNumber(values, 'probePositionMeters'),
+        speedModel: readLongitudinalWaveSpeedModel(values),
+        springLengthMeters: readNumber(values, 'springLengthMeters'),
+        wavelengthMeters: readNumber(values, 'wavelengthMeters'),
+      }
+
+      validateLongitudinalWaveParameters(parameters)
       return parameters
     }
     case 'superposition-interference': {
@@ -1378,6 +1417,11 @@ export function computeKinematicsSample(
     case 'light-diffraction-interference':
       return computeLightDiffractionInterferenceSample(
         parameters as LightDiffractionInterferenceParameters,
+        timeSeconds,
+      )
+    case 'longitudinal-wave':
+      return computeLongitudinalWaveSample(
+        parameters as LongitudinalWaveParameters,
         timeSeconds,
       )
     case 'wave-on-string':
@@ -2058,6 +2102,55 @@ export function getKinematicsVectorOverlays(
       },
       {
         direction: { x: Math.sign(sample.velocityXMetersPerSecond) || 1, z: 0 },
+        id: 'secondaryVelocity',
+        label: 'Velocidade de propagacao',
+        magnitude: sample.speedMetersPerSecond,
+        unit: 'm/s',
+      },
+    ]
+  }
+
+  if (simulationId === 'longitudinal-wave') {
+    return [
+      {
+        direction: { x: Math.sign(sample.positionMeters) || 0, z: 0 },
+        id: 'displacement',
+        label: 'Deslocamento longitudinal',
+        magnitude: Math.abs(sample.positionMeters),
+        unit: 'm',
+      },
+      {
+        direction: {
+          x: Math.sign(sample.velocityMetersPerSecond) || 0,
+          z: 0,
+        },
+        id: 'velocity',
+        label: 'Velocidade do elo',
+        magnitude: Math.abs(sample.velocityMetersPerSecond),
+        unit: 'm/s',
+      },
+      {
+        direction: {
+          x: Math.sign(sample.accelerationMetersPerSecondSquared) || 0,
+          z: 0,
+        },
+        id: 'acceleration',
+        label: 'Aceleracao do elo',
+        magnitude: Math.abs(sample.accelerationMetersPerSecondSquared),
+        unit: 'm/s^2',
+      },
+      {
+        direction: {
+          x: Math.sign(sample.springForceNewtons) || 0,
+          z: 0,
+        },
+        id: 'forceOne',
+        label: 'Forca elastica local',
+        magnitude: Math.abs(sample.springForceNewtons),
+        unit: 'N',
+      },
+      {
+        direction: { x: 1, z: 0 },
         id: 'secondaryVelocity',
         label: 'Velocidade de propagacao',
         magnitude: sample.speedMetersPerSecond,
@@ -4584,6 +4677,84 @@ function computeWaveOnStringSample(
   })
 }
 
+function computeLongitudinalWaveSample(
+  parameters: LongitudinalWaveParameters,
+  timeSeconds: number,
+): KinematicsSample {
+  const point = computeMechanicalWavePoint(
+    'longitudinal-wave',
+    parameters,
+    parameters.probePositionMeters,
+    timeSeconds,
+  )
+  const waveSpeedMetersPerSecond = computeLongitudinalWaveSpeed(parameters)
+  const effectiveWavelengthMeters =
+    computeLongitudinalWaveEffectiveWavelength(parameters)
+  const angularFrequencyRadiansPerSecond =
+    2 * Math.PI * parameters.frequencyHertz
+  const phaseRadians = computeLongitudinalWavePhase(
+    parameters,
+    parameters.probePositionMeters,
+    timeSeconds,
+  )
+  const particleVelocityMetersPerSecond =
+    -parameters.amplitudeMeters *
+    angularFrequencyRadiansPerSecond *
+    Math.cos(phaseRadians)
+  const particleAccelerationMetersPerSecondSquared =
+    pointEnvelopeAcceleration(
+      point.zMeters,
+      angularFrequencyRadiansPerSecond,
+    )
+  const compressionRatio = point.componentTwoMeters
+  const springForceNewtons =
+    parameters.longitudinalStiffnessNewtons * compressionRatio
+  const effectiveMassKilograms =
+    parameters.linearDensityKilogramsPerMeter *
+    Math.max(effectiveWavelengthMeters, 1e-9)
+  const kineticEnergyJoules =
+    0.5 * effectiveMassKilograms * particleVelocityMetersPerSecond ** 2
+  const elasticPotentialEnergyJoules =
+    0.5 *
+    parameters.longitudinalStiffnessNewtons *
+    compressionRatio ** 2 *
+    Math.max(effectiveWavelengthMeters, 1e-9)
+
+  return buildSample({
+    accelerationMetersPerSecondSquared:
+      particleAccelerationMetersPerSecondSquared,
+    accelerationXMetersPerSecondSquared:
+      particleAccelerationMetersPerSecondSquared,
+    angleRadians: phaseRadians,
+    angularVelocityRadiansPerSecond: angularFrequencyRadiansPerSecond,
+    centerOfMassMeters: compressionRatio,
+    displacementMeters:
+      parameters.frequencyHertz > 0 ? waveSpeedMetersPerSecond * timeSeconds : 0,
+    elasticPotentialEnergyJoules,
+    forceOneNewtons: Math.abs(compressionRatio),
+    frequencyHertz: parameters.frequencyHertz,
+    kineticEnergyJoules,
+    netForceNewtons: springForceNewtons,
+    periodSeconds:
+      parameters.frequencyHertz > 0 ? 1 / parameters.frequencyHertz : 0,
+    positionMeters: point.zMeters,
+    potentialEnergyJoules: elasticPotentialEnergyJoules,
+    primaryRadiusMeters: parameters.amplitudeMeters,
+    secondaryRadiusMeters: effectiveWavelengthMeters,
+    secondarySpeedMetersPerSecond: waveSpeedMetersPerSecond,
+    secondaryVelocityMetersPerSecond: waveSpeedMetersPerSecond,
+    secondaryVelocityXMetersPerSecond: waveSpeedMetersPerSecond,
+    speedMetersPerSecond: waveSpeedMetersPerSecond,
+    springForceNewtons,
+    timeSeconds,
+    totalEnergyJoules: kineticEnergyJoules + elasticPotentialEnergyJoules,
+    velocityMetersPerSecond: particleVelocityMetersPerSecond,
+    velocityXMetersPerSecond: particleVelocityMetersPerSecond,
+    xMeters: point.xMeters,
+    zMeters: point.zMeters,
+  })
+}
+
 function computeSuperpositionInterferenceSample(
   parameters: SuperpositionInterferenceParameters,
   timeSeconds: number,
@@ -4802,6 +4973,35 @@ function computeMechanicalWavePoint(
     }
   }
 
+  if (simulationId === 'longitudinal-wave') {
+    const longitudinalParameters = parameters as LongitudinalWaveParameters
+    const phaseRadians = computeLongitudinalWavePhase(
+      longitudinalParameters,
+      xOnStringMeters,
+      timeSeconds,
+    )
+    const displacementMeters =
+      longitudinalParameters.amplitudeMeters * Math.sin(phaseRadians)
+    const effectiveWavelengthMeters =
+      computeLongitudinalWaveEffectiveWavelength(longitudinalParameters)
+    const waveNumberRadiansPerMeter =
+      effectiveWavelengthMeters > 0
+        ? (2 * Math.PI) / effectiveWavelengthMeters
+        : 0
+    const compressionRatio =
+      -longitudinalParameters.amplitudeMeters *
+      waveNumberRadiansPerMeter *
+      Math.cos(phaseRadians)
+
+    return {
+      componentOneMeters: displacementMeters,
+      componentTwoMeters: compressionRatio,
+      envelopeMeters: Math.abs(longitudinalParameters.amplitudeMeters),
+      xMeters: centeredXMeters,
+      zMeters: displacementMeters,
+    }
+  }
+
   if (simulationId === 'standing-waves') {
     const standingParameters = parameters as StandingWavesParameters
     const harmonicMode = readStandingWaveHarmonicMode(standingParameters)
@@ -4920,6 +5120,47 @@ function computeWaveOnStringEffectiveWavelength(
     parameters.frequencyHertz > 0
   ) {
     return computeWaveOnStringSpeed(parameters) / parameters.frequencyHertz
+  }
+
+  return parameters.wavelengthMeters
+}
+
+function computeLongitudinalWavePhase(
+  parameters: LongitudinalWaveParameters,
+  xOnSpringMeters: number,
+  timeSeconds: number,
+) {
+  const effectiveWavelengthMeters =
+    computeLongitudinalWaveEffectiveWavelength(parameters)
+
+  return (
+    ((2 * Math.PI) / effectiveWavelengthMeters) * xOnSpringMeters -
+    2 * Math.PI * parameters.frequencyHertz * timeSeconds +
+    degreesToRadians(parameters.phaseDegrees)
+  )
+}
+
+function computeLongitudinalWaveSpeed(
+  parameters: LongitudinalWaveParameters,
+) {
+  if (parameters.speedModel === 'spring-properties') {
+    return Math.sqrt(
+      parameters.longitudinalStiffnessNewtons /
+        parameters.linearDensityKilogramsPerMeter,
+    )
+  }
+
+  return parameters.frequencyHertz * parameters.wavelengthMeters
+}
+
+function computeLongitudinalWaveEffectiveWavelength(
+  parameters: LongitudinalWaveParameters,
+) {
+  if (
+    parameters.speedModel === 'spring-properties' &&
+    parameters.frequencyHertz > 0
+  ) {
+    return computeLongitudinalWaveSpeed(parameters) / parameters.frequencyHertz
   }
 
   return parameters.wavelengthMeters
@@ -5073,6 +5314,10 @@ function readMechanicalWaveStringLength(
 ) {
   if ('mediumLengthMeters' in parameters) {
     return parameters.mediumLengthMeters
+  }
+
+  if ('springLengthMeters' in parameters) {
+    return parameters.springLengthMeters
   }
 
   return parameters.stringLengthMeters
@@ -7047,6 +7292,62 @@ function getKinematicsWarnings(
     return []
   }
 
+  if (simulationId === 'longitudinal-wave') {
+    const longitudinalParameters = parameters as LongitudinalWaveParameters
+
+    if (longitudinalParameters.amplitudeMeters === 0) {
+      return [
+        {
+          code: 'LONGITUDINAL_ZERO_AMPLITUDE',
+          message:
+            'A amplitude esta zerada; a mola fica igualmente espacada, enquanto velocidade e comprimento de onda continuam declarados.',
+        },
+      ]
+    }
+
+    if (longitudinalParameters.frequencyHertz === 0) {
+      return [
+        {
+          code: 'LONGITUDINAL_STATIC_PROFILE',
+          message:
+            longitudinalParameters.speedModel === 'spring-properties'
+              ? 'A frequencia esta zerada; a fonte nao injeta ciclos, o perfil fica congelado, mas a velocidade da mola ainda vem de sqrt(C/mu).'
+              : 'A frequencia esta zerada; o perfil fica congelado e a velocidade de propagacao v = lambda f tambem zera.',
+        },
+      ]
+    }
+
+    const effectiveWavelengthMeters =
+      computeLongitudinalWaveEffectiveWavelength(longitudinalParameters)
+    const strainAmplitude =
+      effectiveWavelengthMeters > 0
+        ? (2 * Math.PI * longitudinalParameters.amplitudeMeters) /
+          effectiveWavelengthMeters
+        : 0
+
+    if (strainAmplitude > 0.72) {
+      return [
+        {
+          code: 'LONGITUDINAL_LARGE_STRAIN',
+          message:
+            'A compressao relativa fica grande para o modelo linear; a cena ainda mostra a propagacao ideal, mas a teoria marca esse limite didatico.',
+        },
+      ]
+    }
+
+    if (longitudinalParameters.speedModel === 'spring-properties') {
+      return [
+        {
+          code: 'LONGITUDINAL_SPEED_FROM_SPRING',
+          message:
+            'A velocidade longitudinal esta sendo calculada por v = sqrt(C/mu); o comprimento de onda efetivo exibido vem de lambda = v/f.',
+        },
+      ]
+    }
+
+    return []
+  }
+
   if (simulationId === 'superposition-interference') {
     const superpositionParameters =
       parameters as SuperpositionInterferenceParameters
@@ -7302,6 +7603,11 @@ function validateKinematicsParameters(
     case 'light-diffraction-interference':
       validateLightDiffractionInterferenceParameters(
         parameters as LightDiffractionInterferenceParameters,
+      )
+      return
+    case 'longitudinal-wave':
+      validateLongitudinalWaveParameters(
+        parameters as LongitudinalWaveParameters,
       )
       return
     case 'forced-oscillator-resonance':
@@ -7668,6 +7974,38 @@ function validateWaveOnStringParameters(parameters: WaveOnStringParameters) {
   assertProbeInsideString(
     parameters.probePositionMeters,
     parameters.stringLengthMeters,
+  )
+}
+
+function validateLongitudinalWaveParameters(
+  parameters: LongitudinalWaveParameters,
+) {
+  assertFiniteNonNegative('amplitudeMeters', parameters.amplitudeMeters)
+  assertFiniteNonNegative('frequencyHertz', parameters.frequencyHertz)
+  assertFinitePositive(
+    'linearDensityKilogramsPerMeter',
+    parameters.linearDensityKilogramsPerMeter,
+  )
+  assertFinitePositive(
+    'longitudinalStiffnessNewtons',
+    parameters.longitudinalStiffnessNewtons,
+  )
+  assertFinite('phaseDegrees', parameters.phaseDegrees)
+  assertFinitePositive('springLengthMeters', parameters.springLengthMeters)
+  assertFinitePositive('wavelengthMeters', parameters.wavelengthMeters)
+
+  if (
+    parameters.speedModel !== 'spring-properties' &&
+    parameters.speedModel !== 'wavelength-frequency'
+  ) {
+    throw new Error(
+      'speedModel must be spring-properties or wavelength-frequency.',
+    )
+  }
+
+  assertProbeInsideString(
+    parameters.probePositionMeters,
+    parameters.springLengthMeters,
   )
 }
 
@@ -8454,6 +8792,21 @@ function readWaveOnStringSpeedModel(
 
   if (
     value === 'string-properties' ||
+    value === 'wavelength-frequency'
+  ) {
+    return value
+  }
+
+  return 'wavelength-frequency'
+}
+
+function readLongitudinalWaveSpeedModel(
+  values: Record<string, unknown>,
+): LongitudinalWaveParameters['speedModel'] {
+  const value = values.speedModel
+
+  if (
+    value === 'spring-properties' ||
     value === 'wavelength-frequency'
   ) {
     return value

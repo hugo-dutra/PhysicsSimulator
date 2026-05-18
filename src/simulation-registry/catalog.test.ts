@@ -37,10 +37,10 @@ describe('simulation registry', () => {
       (area) => area.simulations,
     )
 
-    expect(allSimulations).toHaveLength(51)
+    expect(allSimulations).toHaveLength(52)
     expect(
       allSimulations.filter((item) => item.status === 'analysis'),
-    ).toHaveLength(3)
+    ).toHaveLength(4)
     expect(
       allSimulations.filter((item) => item.status === 'ready'),
     ).toHaveLength(26)
@@ -56,7 +56,7 @@ describe('simulation registry', () => {
 
     expect(simulationsByArea.get('mechanics')).toHaveLength(16)
     expect(simulationsByArea.get('thermodynamics')).toHaveLength(10)
-    expect(simulationsByArea.get('waves')).toHaveLength(13)
+    expect(simulationsByArea.get('waves')).toHaveLength(14)
     expect(simulationsByArea.get('electromagnetism')).toHaveLength(12)
     expect(findSimulation('continuity-bernoulli').topicPath).toEqual([
       'Mecanica',
@@ -200,6 +200,26 @@ describe('simulation registry', () => {
       expect(fixture.regimes?.length).toBeGreaterThan(0)
       expect(fixture.formulas.length).toBeGreaterThan(0)
     })
+  })
+
+  it('declares the longitudinal spring wave as an analysis simulation', () => {
+    const simulation = findSimulation('longitudinal-wave')
+    const fixture = kinematicsFixtures['longitudinal-wave']
+
+    expect(simulation.status).toBe('analysis')
+    expect(simulation.topicPath).toEqual([
+      'Oscilacoes e Ondas',
+      'Ondas mecanicas',
+      'Onda longitudinal em mola',
+    ])
+    expect(simulation.renderer).toBe('three')
+    expect(simulation.fixturePath).toBeDefined()
+    expect(simulation.theoryPath).toBeDefined()
+    expect(fixture.simulationId).toBe('longitudinal-wave')
+    expect(fixture.regimes?.length).toBeGreaterThan(0)
+    expect(fixture.formulas.map((formula) => formula.id)).toContain(
+      'compression-force',
+    )
   })
 
   it('declares the approved sound simulations as ready items', () => {

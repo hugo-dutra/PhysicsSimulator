@@ -3716,3 +3716,37 @@ Validacao:
 - A suite completa foi validada em dois lotes porque a execucao monolitica estourou o timeout da ferramenta: 13 arquivos e 131 testes passaram fora de `App.test.tsx`; em seguida `src/App.test.tsx` passou isolado com 10 testes.
 - Servidor local iniciado em `http://127.0.0.1:5173`.
 - Executado smoke visual Chrome/CDP em desktop e mobile para as tres simulacoes de Optica; screenshots em `artifacts/optics-*-smoke.png`, com canvas nao vazio e variacao entre frames detectada nas cenas animadas.
+
+## 2026-05-18 - Onda longitudinal em mola em analysis
+
+Status: feito.
+
+Pedido:
+
+- Adicionar uma simulacao de propagacao longitudinal em uma mola horizontal/diagonal, com a onda viajando paralela ao eixo da mola e as espiras comprimindo e expandindo.
+
+Ajuste:
+
+- `Onda longitudinal em mola` entrou em `Oscilacoes e Ondas > Ondas mecanicas` como simulacao `analysis`, aguardando teste manual antes de qualquer promocao para `ready`.
+- O motor compartilhado passou a calcular deslocamento longitudinal `xi = A sin(kx - omega t + phi)`, velocidade/aceleracao materiais, velocidade de propagacao por `sqrt(C/mu)` ou `lambda f`, compressao local e forca elastica longitudinal.
+- A cena Three.js reaproveita o laboratorio de ondas, mas desenha a mola em eixo diagonal com espiras comprimindo/rarefazendo paralelas a propagacao, fonte/probe, etiquetas, rastro, energia didatica e vetores alinhados ao eixo.
+- Graficos, tabela, readouts, legenda de vetores, fixture, formulas, presets, warnings e apendice teorico foram adicionados para a nova simulacao.
+- Guides de produto, arquitetura, regras, dados/API, contratos, qualidade, catalogo planejado e guia de fidelidade foram atualizados. Nenhum HLD/diagrama foi alterado porque a mudanca reutiliza o shell, motor e renderer existentes sem nova fronteira arquitetural.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: parametros, zeros fisicamente validos, regime ideal declarado, samples, cena, graficos, tabela, formulas, teoria e warnings foram alinhados antes de promover a simulacao para `analysis`.
+- Amplitude zero gera mola sem deslocamento longitudinal com aviso; frequencia zero gera perfil estatico; deformacao relativa alta emite warning de limite didatico.
+- A velocidade do pulso e mantida coerente com a rigidez longitudinal e densidade linear quando o modo fisico esta ativo, religando `lambda = v/f`.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts --reporter=dot --maxWorkers=1`; 1 arquivo e 54 testes passaram.
+- Executado `npm run test -- src/features/simulation-shell/mechanicalWaveParameterLinking.test.ts src/features/simulation-shell/kinematicsChartConfigs.test.ts --reporter=dot --maxWorkers=1`; 2 arquivos e 17 testes passaram.
+- Executado `npm run test -- src/simulation-registry/catalog.test.ts --reporter=dot --maxWorkers=1`; 1 arquivo e 14 testes passaram.
+- Executado `npm run test -- src/App.test.tsx -t "mechanical waves" --reporter=dot --maxWorkers=1`; 1 teste passou e 9 foram ignorados pelo filtro.
+- Executado `npm run test -- src/App.test.tsx -t "renders the simulation catalog" --reporter=dot --maxWorkers=1`; 1 teste passou e 9 foram ignorados pelo filtro apos atualizar a contagem para 4 itens em `analysis`.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run test -- --reporter=dot --maxWorkers=1`; 14 arquivos e 147 testes passaram.
+- Executado `npm run lint`; passou.
+- Smoke no navegador local em `http://127.0.0.1:5175`: a simulacao abriu pelo catalogo, o canvas com label acessivel da onda longitudinal apareceu, o controle `Rigidez longitudinal (N)` estava presente, o grafico `Deslocamento longitudinal por tempo` abriu e o console nao registrou warnings/erros. A captura de screenshot pelo navegador interno falhou por timeout no comando de captura, sem bloquear a verificacao funcional.

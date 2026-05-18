@@ -25,6 +25,7 @@ import {
   type KinematicsVectorOverlay,
   type LensesMirrorsParameters,
   type LightDiffractionInterferenceParameters,
+  type LongitudinalWaveParameters,
   type MechanicalWaveProfileDomain,
   type MechanicalWaveProfilePoint,
   type ReflectionRefractionParameters,
@@ -2279,6 +2280,8 @@ function updateKinematicsObjects({
       const direction =
         simulationId === 'doppler-effect'
           ? toDopplerDiagonalSceneDirection(vector)
+          : simulationId === 'longitudinal-wave'
+            ? toLongitudinalWaveSceneDirection(vector)
           : toKinematicsSceneDirection(vector, objects.sceneProjection)
 
       if (!showVectors || direction.lengthSq() === 0 || vector.magnitude === 0) {
@@ -4289,6 +4292,7 @@ function isMechanicalWaveSimulation(
   return (
     simulationId === 'beats' ||
     simulationId === 'doppler-effect' ||
+    simulationId === 'longitudinal-wave' ||
     simulationId === 'standing-waves' ||
     simulationId === 'superposition-interference' ||
     simulationId === 'wave-on-string'
@@ -5005,10 +5009,19 @@ function updateMechanicalWaveObjects(
   )
 
   profile.forEach((point, index) => {
-    writeWavePoint(objects.waveStringPositions, index, objects, {
-      xMeters: point.xMeters,
-      zMeters: point.zMeters,
-    })
+    if (simulationId === 'longitudinal-wave') {
+      writeLongitudinalWaveSpringPoint(
+        objects.waveStringPositions,
+        index,
+        objects,
+        point,
+      )
+    } else {
+      writeWavePoint(objects.waveStringPositions, index, objects, {
+        xMeters: point.xMeters,
+        zMeters: point.zMeters,
+      })
+    }
     writeWavePoint(objects.waveComponentOnePositions, index, objects, {
       xMeters: point.xMeters,
       zMeters: point.componentOneMeters,
@@ -5062,7 +5075,14 @@ function updateMechanicalWaveObjects(
   const soundWave = isSoundWaveSimulation(simulationId)
 
   objects.body.position.copy(
-    simulationId === 'doppler-effect'
+    simulationId === 'longitudinal-wave'
+      ? toLongitudinalWaveScenePoint(
+          objects,
+          sample.xMeters + sample.positionMeters,
+          0,
+          0.14,
+        )
+      : simulationId === 'doppler-effect'
       ? toSoundWaveFieldScenePointForSimulation(
           simulationId,
           objects,
@@ -5075,7 +5095,12 @@ function updateMechanicalWaveObjects(
         : toKinematicsScenePosition(sample, objects.sceneProjection),
   )
   objects.body.scale.setScalar(
-    soundWave ? 0.3 : simulationId === 'wave-on-string' ? 0.34 : 0.72,
+    soundWave
+      ? 0.3
+      : simulationId === 'wave-on-string' ||
+          simulationId === 'longitudinal-wave'
+        ? 0.34
+        : 0.72,
   )
   configureWaveProbeMarker(objects.body, simulationId)
   if (simulationId === 'doppler-effect') {
@@ -5123,13 +5148,36 @@ function writeWavePoint(
   positions[offset + 2] = point.zMeters * scale
 }
 
+function writeLongitudinalWaveSpringPoint(
+  positions: Float32Array,
+  index: number,
+  objects: SceneObjects,
+  point: MechanicalWaveProfilePoint,
+) {
+  const offset = index * 3
+  const turnAngle = index * 0.88
+  const coilRadiusScene = 0.105
+  const position = toLongitudinalWaveScenePoint(
+    objects,
+    point.xMeters + point.zMeters,
+    Math.cos(turnAngle) * coilRadiusScene,
+    0.16 + Math.sin(turnAngle) * coilRadiusScene * 0.72,
+  )
+
+  positions[offset] = position.x
+  positions[offset + 1] = position.y
+  positions[offset + 2] = position.z
+}
+
 function configureWaveProbeMarker(
   body: THREE.Mesh,
   simulationId: KinematicsSimulationId,
 ) {
   const material = body.material as THREE.MeshStandardMaterial
   const isTravelingWave =
-    simulationId === 'wave-on-string' || isSoundWaveSimulation(simulationId)
+    simulationId === 'longitudinal-wave' ||
+    simulationId === 'wave-on-string' ||
+    isSoundWaveSimulation(simulationId)
 
   material.depthWrite = !isTravelingWave
   material.opacity = isSoundWaveSimulation(simulationId)
@@ -6573,6 +6621,7 @@ function updateWaveLabObjects({
   const firstPoint = profile[0]
   const lastPoint = profile.at(-1)
   const isSoundWave = isSoundWaveSimulation(simulationId)
+  const isLongitudinalWave = simulationId === 'longitudinal-wave'
 
   if (!firstPoint || !lastPoint) {
     return
@@ -6582,6 +6631,8 @@ function updateWaveLabObjects({
     simulationId === 'wave-on-string'
       ? (parameters as WaveOnStringParameters)
       : null
+  const longitudinalParameters =
+    isLongitudinalWave ? (parameters as LongitudinalWaveParameters) : null
   const scale = objects.sceneProjection.positionScale
   const stringLengthScene = Math.max(1, lastPoint.xMeters - firstPoint.xMeters) * scale
   const amplitudeScene = isSoundWave
@@ -6610,10 +6661,28 @@ function updateWaveLabObjects({
   lab.bench.position.set(0, 0.18, -0.18)
   lab.bench.scale.set(stringLengthScene + 1.25, 0.52, 0.055)
   lab.leftSupport.visible = !isSoundWave
-  lab.leftSupport.position.set(leftX, 0, supportHeight / 2 - 0.2)
+  lab.leftSupport.position.copy(
+    isLongitudinalWave
+      ? toLongitudinalWaveScenePoint(
+          objects,
+          firstPoint.xMeters,
+          0,
+          supportHeight / 2 - 0.2,
+        )
+      : new THREE.Vector3(leftX, 0, supportHeight / 2 - 0.2),
+  )
   lab.leftSupport.scale.set(0.075, 0.075, supportHeight)
   lab.rightSupport.visible = !isSoundWave
-  lab.rightSupport.position.set(rightX, 0, supportHeight / 2 - 0.2)
+  lab.rightSupport.position.copy(
+    isLongitudinalWave
+      ? toLongitudinalWaveScenePoint(
+          objects,
+          lastPoint.xMeters,
+          0,
+          supportHeight / 2 - 0.2,
+        )
+      : new THREE.Vector3(rightX, 0, supportHeight / 2 - 0.2),
+  )
   lab.rightSupport.scale.set(0.075, 0.075, supportHeight)
 
   lab.sourceRod.visible = false
@@ -6624,15 +6693,27 @@ function updateWaveLabObjects({
     lab.equilibriumPositions,
     lab.equilibriumPositionAttribute,
     lab.equilibriumLine,
-    isSoundWave
+    isLongitudinalWave
+      ? toLongitudinalWaveScenePoint(objects, firstPoint.xMeters, 0, 0.035)
+      : isSoundWave
       ? soundAxisStart.clone().add(new THREE.Vector3(0, 0, 0.015))
       : new THREE.Vector3(leftX, 0.015, 0),
-    isSoundWave
+    isLongitudinalWave
+      ? toLongitudinalWaveScenePoint(objects, lastPoint.xMeters, 0, 0.035)
+      : isSoundWave
       ? soundAxisEnd.clone().add(new THREE.Vector3(0, 0, 0.015))
       : new THREE.Vector3(rightX, 0.015, 0),
     true,
   )
-  updateWaveBeads(lab, profile, objects, simulationId, waveParameters, sample)
+  updateWaveBeads(
+    lab,
+    profile,
+    objects,
+    simulationId,
+    waveParameters,
+    longitudinalParameters,
+    sample,
+  )
   if (simulationId === 'doppler-effect') {
     updateDopplerWavefrontMarkers({ lab, objects, profile, sample })
   } else {
@@ -6641,7 +6722,11 @@ function updateWaveLabObjects({
       objects,
       profile,
       sample,
-      showEnergy: showEnergy && simulationId === 'wave-on-string',
+      simulationId,
+      showEnergy:
+        showEnergy &&
+        (simulationId === 'wave-on-string' ||
+          simulationId === 'longitudinal-wave'),
     })
   }
   updateWaveHistory({
@@ -6649,7 +6734,10 @@ function updateWaveLabObjects({
     objects,
     parameters,
     sample,
-    showTrace: showTrace && simulationId === 'wave-on-string',
+    showTrace:
+      showTrace &&
+      (simulationId === 'wave-on-string' ||
+        simulationId === 'longitudinal-wave'),
     simulationId,
   })
   updateWaveMeasurements({
@@ -6671,9 +6759,17 @@ function updateWaveLabObjects({
   lab.sourceLabel.visible =
     simulationId === 'beats' ||
     simulationId === 'doppler-effect' ||
+    simulationId === 'longitudinal-wave' ||
     simulationId === 'wave-on-string'
   lab.sourceLabel.position.copy(
-    simulationId === 'doppler-effect'
+    simulationId === 'longitudinal-wave'
+      ? toLongitudinalWaveScenePoint(
+          objects,
+          firstPoint.xMeters,
+          -0.34,
+          supportHeight + 0.18,
+        )
+      : simulationId === 'doppler-effect'
       ? toSoundWaveFieldScenePointForSimulation(
           simulationId,
           objects,
@@ -6693,7 +6789,14 @@ function updateWaveLabObjects({
         0,
         0,
       )
-    : toWaveScenePoint(objects, sample.xMeters, sample.zMeters, 0.16)
+    : simulationId === 'longitudinal-wave'
+      ? toLongitudinalWaveScenePoint(
+          objects,
+          sample.xMeters + sample.positionMeters,
+          0,
+          0.16,
+        )
+      : toWaveScenePoint(objects, sample.xMeters, sample.zMeters, 0.16)
   lab.probeLabel.position.copy(
     probeLabelBase.add(new THREE.Vector3(0.15, 0, 0.24)),
   )
@@ -6717,6 +6820,10 @@ function buildWaveSourceLabel(
 
   if (simulationId === 'doppler-effect') {
     return `Fonte f=${formatSceneNumber(sample.secondarySpeedMetersPerSecond)} Hz`
+  }
+
+  if (simulationId === 'longitudinal-wave') {
+    return `Fonte longitudinal f=${formatSceneNumber(sample.frequencyHertz)} Hz`
   }
 
   return `Fonte f=${formatSceneNumber(sample.frequencyHertz)} Hz A=${formatSceneNumber(
@@ -6743,6 +6850,12 @@ function buildWaveProbeLabel(
     )} Pa`
   }
 
+  if (simulationId === 'longitudinal-wave') {
+    return `Elo x=${formatSceneNumber(probePositionMeters)} m dx=${formatSceneNumber(
+      sample.positionMeters,
+    )} m`
+  }
+
   return `Ponto x=${formatSceneNumber(probePositionMeters)} m y=${formatSceneNumber(
     sample.positionMeters,
   )} m`
@@ -6754,6 +6867,7 @@ function updateWaveBeads(
   objects: SceneObjects,
   simulationId: KinematicsSimulationId,
   waveParameters: WaveOnStringParameters | null,
+  longitudinalParameters: LongitudinalWaveParameters | null,
   sample: KinematicsSample,
 ) {
   const material = lab.beads.material as THREE.MeshStandardMaterial
@@ -6775,6 +6889,16 @@ function updateWaveBeads(
     return
   }
 
+  if (simulationId === 'longitudinal-wave') {
+    updateLongitudinalWaveSpringBeads(
+      lab,
+      profile,
+      objects,
+      longitudinalParameters,
+    )
+    return
+  }
+
   const helper = lab.instanceHelper
   const densityScale = waveParameters
     ? clamp(waveParameters.linearDensityKilogramsPerMeter / 0.025, 0.72, 1.7)
@@ -6793,6 +6917,65 @@ function updateWaveBeads(
     helper.scale.setScalar(beadRadius)
     helper.updateMatrix()
     lab.beads.setMatrixAt(index, helper.matrix)
+    lab.beads.setColorAt(index, beadColor)
+  }
+
+  lab.beads.instanceMatrix.needsUpdate = true
+
+  if (lab.beads.instanceColor) {
+    lab.beads.instanceColor.needsUpdate = true
+  }
+}
+
+function updateLongitudinalWaveSpringBeads(
+  lab: WaveLabObjects,
+  profile: MechanicalWaveProfilePoint[],
+  objects: SceneObjects,
+  parameters: LongitudinalWaveParameters | null,
+) {
+  const helper = lab.instanceHelper
+  const neutralColor = new THREE.Color(0x5eead4)
+  const compressionColor = new THREE.Color(0x22d3ee)
+  const stretchColor = new THREE.Color(0xfacc15)
+  const beadColor = new THREE.Color()
+  const densityScale = parameters
+    ? clamp(parameters.linearDensityKilogramsPerMeter / 0.18, 0.72, 1.7)
+    : 1
+  const beadRadius = clamp(0.018 * Math.sqrt(densityScale), 0.014, 0.032)
+  const maxCompression = profile.reduce(
+    (maxValue, point) => Math.max(maxValue, Math.abs(point.componentTwoMeters)),
+    0,
+  )
+
+  lab.beads.visible = true
+  lab.beads.count = waveStringBeadCount
+
+  for (let index = 0; index < waveStringBeadCount; index += 1) {
+    const ratio = index / (waveStringBeadCount - 1)
+    const point = readProfilePointAtRatio(profile, ratio)
+    const compressionRatio =
+      maxCompression > 1e-9
+        ? clamp(point.componentTwoMeters / maxCompression, -1, 1)
+        : 0
+
+    helper.position.copy(
+      toLongitudinalWaveScenePoint(
+        objects,
+        point.xMeters + point.zMeters,
+        0,
+        0.16,
+      ),
+    )
+    helper.scale.setScalar(beadRadius * (1 + Math.abs(compressionRatio) * 0.5))
+    helper.updateMatrix()
+    lab.beads.setMatrixAt(index, helper.matrix)
+
+    beadColor
+      .copy(neutralColor)
+      .lerp(
+        compressionRatio >= 0 ? compressionColor : stretchColor,
+        Math.abs(compressionRatio) * 0.86,
+      )
     lab.beads.setColorAt(index, beadColor)
   }
 
@@ -7108,12 +7291,14 @@ function updateWaveEnergyPackets({
   objects,
   profile,
   sample,
+  simulationId,
   showEnergy,
 }: {
   lab: WaveLabObjects
   objects: SceneObjects
   profile: MechanicalWaveProfilePoint[]
   sample: KinematicsSample
+  simulationId: KinematicsSimulationId
   showEnergy: boolean
 }) {
   lab.energyPackets.visible = showEnergy
@@ -7148,7 +7333,14 @@ function updateWaveEnergyPackets({
     const point = readProfilePointAtRatio(profile, ratio)
 
     helper.position.copy(
-      toWaveScenePoint(objects, point.xMeters, point.zMeters, -0.12),
+      simulationId === 'longitudinal-wave'
+        ? toLongitudinalWaveScenePoint(
+            objects,
+            point.xMeters + point.zMeters,
+            -0.16,
+            0.08,
+          )
+        : toWaveScenePoint(objects, point.xMeters, point.zMeters, -0.12),
     )
     helper.scale.setScalar(pulseRadius)
     helper.updateMatrix()
@@ -7197,10 +7389,19 @@ function updateWaveHistory({
     )
 
     profile.forEach((point, pointIndex) => {
-      writeWavePoint(historyLine.positions, pointIndex, objects, {
-        xMeters: point.xMeters,
-        zMeters: point.zMeters,
-      })
+      if (simulationId === 'longitudinal-wave') {
+        writeLongitudinalWaveSpringPoint(
+          historyLine.positions,
+          pointIndex,
+          objects,
+          point,
+        )
+      } else {
+        writeWavePoint(historyLine.positions, pointIndex, objects, {
+          xMeters: point.xMeters,
+          zMeters: point.zMeters,
+        })
+      }
     })
     historyLine.line.geometry.setDrawRange(0, profile.length)
     historyLine.positionAttribute.needsUpdate = true
@@ -7222,6 +7423,17 @@ function updateWaveMeasurements({
   showVectors: boolean
   simulationId: KinematicsSimulationId
 }) {
+  if (simulationId === 'longitudinal-wave') {
+    updateLongitudinalWaveMeasurements({
+      lab,
+      objects,
+      profile,
+      sample,
+      showVectors,
+    })
+    return
+  }
+
   const shouldShow = showVectors && simulationId === 'wave-on-string'
   const crest = findHighestWavePoint(profile)
   const amplitudeVisible = shouldShow && Math.abs(crest.zMeters) > 1e-4
@@ -7292,6 +7504,98 @@ function updateWaveMeasurements({
   )
 }
 
+function updateLongitudinalWaveMeasurements({
+  lab,
+  objects,
+  profile,
+  sample,
+  showVectors,
+}: {
+  lab: WaveLabObjects
+  objects: SceneObjects
+  profile: MechanicalWaveProfilePoint[]
+  sample: KinematicsSample
+  showVectors: boolean
+}) {
+  const strongestPoint = findLargestLongitudinalDisplacementPoint(profile)
+  const amplitudeVisible =
+    showVectors && Math.abs(strongestPoint.zMeters) > 1e-4
+  const equilibrium = toLongitudinalWaveScenePoint(
+    objects,
+    strongestPoint.xMeters,
+    0.18,
+    0.35,
+  )
+  const displaced = toLongitudinalWaveScenePoint(
+    objects,
+    strongestPoint.xMeters + strongestPoint.zMeters,
+    0.18,
+    0.35,
+  )
+
+  updateTwoPointLine(
+    lab.amplitudeMarkerPositions,
+    lab.amplitudeMarkerPositionAttribute,
+    lab.amplitudeMarker,
+    equilibrium,
+    displaced,
+    amplitudeVisible,
+  )
+  lab.amplitudeLabel.visible = amplitudeVisible
+  lab.amplitudeLabel.position.copy(equilibrium.clone().lerp(displaced, 0.5))
+  updateSceneTextSprite(
+    lab.amplitudeLabel,
+    `A=${formatSceneNumber(sample.primaryRadiusMeters)} m`,
+  )
+
+  const wavelengthVisible =
+    showVectors && sample.secondaryRadiusMeters > 0 && profile.length > 1
+  const wavelengthMeasure = wavelengthVisible
+    ? findWavelengthMeasure(profile, sample.secondaryRadiusMeters)
+    : null
+
+  if (!wavelengthMeasure) {
+    updateTwoPointLine(
+      lab.wavelengthMarkerPositions,
+      lab.wavelengthMarkerPositionAttribute,
+      lab.wavelengthMarker,
+      new THREE.Vector3(),
+      new THREE.Vector3(),
+      false,
+    )
+    lab.wavelengthLabel.visible = false
+    return
+  }
+
+  const start = toLongitudinalWaveScenePoint(
+    objects,
+    wavelengthMeasure.startXMeters,
+    0.28,
+    0.56,
+  )
+  const end = toLongitudinalWaveScenePoint(
+    objects,
+    wavelengthMeasure.endXMeters,
+    0.28,
+    0.56,
+  )
+
+  updateTwoPointLine(
+    lab.wavelengthMarkerPositions,
+    lab.wavelengthMarkerPositionAttribute,
+    lab.wavelengthMarker,
+    start,
+    end,
+    true,
+  )
+  lab.wavelengthLabel.visible = true
+  lab.wavelengthLabel.position.copy(start.clone().lerp(end, 0.5))
+  updateSceneTextSprite(
+    lab.wavelengthLabel,
+    `lambda=${formatSceneNumber(sample.secondaryRadiusMeters)} m`,
+  )
+}
+
 function updateWaveProbeGuide({
   lab,
   objects,
@@ -7326,6 +7630,20 @@ function updateWaveProbeGuide({
         0,
         guideRadius,
       ),
+      showVectors,
+    )
+    return
+  }
+
+  if (simulationId === 'longitudinal-wave') {
+    const actualProbeXMeters = sample.xMeters + sample.positionMeters
+
+    updateTwoPointLine(
+      lab.probeGuidePositions,
+      lab.probeGuidePositionAttribute,
+      lab.probeGuide,
+      toLongitudinalWaveScenePoint(objects, actualProbeXMeters, -0.32, 0.12),
+      toLongitudinalWaveScenePoint(objects, actualProbeXMeters, 0.32, 0.42),
       showVectors,
     )
     return
@@ -7451,6 +7769,30 @@ function toDopplerDiagonalSceneDirection(vector: KinematicsVectorOverlay) {
   )
 }
 
+function toLongitudinalWaveScenePoint(
+  objects: SceneObjects,
+  xMeters: number,
+  lateralScene = 0,
+  verticalScene = 0,
+) {
+  const axisScene = xMeters * objects.sceneProjection.positionScale
+  const lateralOffset = lateralScene / Math.SQRT2
+
+  return new THREE.Vector3(
+    axisScene + lateralOffset,
+    -axisScene + lateralOffset,
+    verticalScene,
+  )
+}
+
+function toLongitudinalWaveSceneDirection(vector: KinematicsVectorOverlay) {
+  return new THREE.Vector3(
+    vector.direction.x,
+    -vector.direction.x,
+    vector.direction.z,
+  )
+}
+
 function readProfilePointAtRatio(
   profile: MechanicalWaveProfilePoint[],
   ratio: number,
@@ -7486,6 +7828,14 @@ function readProfilePointAtRatio(
 function findHighestWavePoint(profile: MechanicalWaveProfilePoint[]) {
   return profile.reduce((highest, point) =>
     point.zMeters > highest.zMeters ? point : highest,
+  )
+}
+
+function findLargestLongitudinalDisplacementPoint(
+  profile: MechanicalWaveProfilePoint[],
+) {
+  return profile.reduce((largest, point) =>
+    Math.abs(point.zMeters) > Math.abs(largest.zMeters) ? point : largest,
   )
 }
 
@@ -7566,6 +7916,10 @@ function createReferencePath(
 
   if (simulationId === 'doppler-effect') {
     return createDopplerDiagonalReferencePath(samples, sceneProjection)
+  }
+
+  if (simulationId === 'longitudinal-wave') {
+    return createLongitudinalWaveReferencePath(samples, sceneProjection)
   }
 
   if (isOpticsSimulation(simulationId)) {
@@ -8236,6 +8590,61 @@ function createCoupledOscillatorReferencePath(
   return group
 }
 
+function createLongitudinalWaveReferencePath(
+  samples: KinematicsSample[],
+  sceneProjection: KinematicsSceneProjection,
+) {
+  const group = new THREE.Group()
+  const pathMeters = samples
+    .flatMap((sample) => [
+      sample.xMeters - Math.abs(sample.primaryRadiusMeters),
+      sample.xMeters + Math.abs(sample.primaryRadiusMeters),
+    ])
+    .filter(Number.isFinite)
+
+  if (pathMeters.length === 0) {
+    return group
+  }
+
+  const startMeters = Math.min(...pathMeters)
+  const endMeters = Math.max(...pathMeters)
+  const railOffset = 0.18
+  const toPoint = (
+    xMeters: number,
+    lateralScene = 0,
+    verticalScene = 0,
+  ) => {
+    const axisScene = xMeters * sceneProjection.positionScale
+    const lateralOffset = lateralScene / Math.SQRT2
+
+    return new THREE.Vector3(
+      axisScene + lateralOffset,
+      -axisScene + lateralOffset,
+      verticalScene,
+    )
+  }
+
+  group.add(createSceneLine(toPoint(startMeters, 0, 0.035), toPoint(endMeters, 0, 0.035), 0x2dd4bf, 0.44))
+  group.add(
+    createSceneLine(
+      toPoint(startMeters, railOffset, 0.045),
+      toPoint(endMeters, railOffset, 0.045),
+      0x38bdf8,
+      0.28,
+    ),
+  )
+  group.add(
+    createSceneLine(
+      toPoint(startMeters, -railOffset, 0.045),
+      toPoint(endMeters, -railOffset, 0.045),
+      0x818cf8,
+      0.24,
+    ),
+  )
+
+  return group
+}
+
 function createCollisionReferencePath(
   samples: KinematicsSample[],
   sceneProjection: KinematicsSceneProjection,
@@ -8680,6 +9089,28 @@ function estimateSceneBounds(
           -fieldRadius,
         ),
       )
+    })
+  }
+
+  if (simulationId === 'longitudinal-wave') {
+    const axisPadding = Math.max(
+      0.8,
+      ...samples.map((sample) => Math.abs(sample.primaryRadiusMeters) * 2),
+    )
+
+    positions.length = 0
+    samples.forEach((sample) => {
+      const actualX = sample.xMeters + sample.positionMeters
+      const xValues = [sample.xMeters - axisPadding, actualX, sample.xMeters + axisPadding]
+
+      xValues.forEach((xMeters) => {
+        const axisScene = xMeters * sceneProjection.positionScale
+
+        positions.push(
+          new THREE.Vector3(axisScene - 0.35, -axisScene - 0.35, -0.1),
+          new THREE.Vector3(axisScene + 0.35, -axisScene + 0.35, 0.75),
+        )
+      })
     })
   }
 
@@ -9268,6 +9699,10 @@ function getKinematicsCanvasAriaLabel(simulationId: KinematicsSimulationId) {
 
   if (simulationId === 'wave-on-string') {
     return 'Cena 3D de onda em corda com perfil senoidal viajante, probe sincronizado, componentes de velocidade transversal e arraste para orbitar, e Shift + scroll para zoom'
+  }
+
+  if (simulationId === 'longitudinal-wave') {
+    return 'Cena 3D de onda longitudinal em mola com espiras comprimindo e estendendo paralelas a propagacao, arraste para orbitar, e Shift + scroll para zoom'
   }
 
   if (simulationId === 'beats') {
