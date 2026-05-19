@@ -901,7 +901,7 @@ describe('App', () => {
       {
         title: /Onda longitudinal em mola/i,
         chart: /Deslocamento longitudinal por tempo/i,
-        control: /Rigidez longitudinal \(N\)/i,
+        control: /Voltas da mola/i,
         canvas: /Cena 3D de onda longitudinal em mola/i,
       },
       {

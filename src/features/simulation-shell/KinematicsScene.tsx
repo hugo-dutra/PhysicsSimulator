@@ -417,7 +417,14 @@ const waveEnergyPacketCapacity = Math.max(
 )
 const waveHistoryLineCount = 7
 const waveStringPointCapacity = 128
+const longitudinalWaveStringPointCapacity = 384
+const waveLinePointCapacity = Math.max(
+  waveStringPointCapacity,
+  longitudinalWaveStringPointCapacity,
+)
 const waveStringBeadCount = waveStringPointCapacity
+const longitudinalSpringBeadCapacity = 384
+const defaultLongitudinalSpringCoilTurns = 54
 const soundWaveFieldColumnCount = 72
 const soundWaveFieldRingCount = 12
 const dopplerSoundWaveFieldColumnCount = 128
@@ -428,6 +435,7 @@ const dopplerSoundWaveFieldBeadCount =
   dopplerSoundWaveFieldColumnCount * dopplerSoundWaveFieldRingCount
 const waveBeadCapacity = Math.max(
   waveStringBeadCount,
+  longitudinalSpringBeadCapacity,
   soundWaveFieldBeadCount,
   dopplerSoundWaveFieldBeadCount,
 )
@@ -1647,18 +1655,18 @@ export function KinematicsScene({
     coupledSecondaryTrace.visible = false
     scene.add(coupledSecondaryTrace)
 
-    const waveStringPositions = new Float32Array(waveStringPointCapacity * 3)
+    const waveStringPositions = new Float32Array(waveLinePointCapacity * 3)
     const waveComponentOnePositions = new Float32Array(
-      waveStringPointCapacity * 3,
+      waveLinePointCapacity * 3,
     )
     const waveComponentTwoPositions = new Float32Array(
-      waveStringPointCapacity * 3,
+      waveLinePointCapacity * 3,
     )
     const waveEnvelopeUpperPositions = new Float32Array(
-      waveStringPointCapacity * 3,
+      waveLinePointCapacity * 3,
     )
     const waveEnvelopeLowerPositions = new Float32Array(
-      waveStringPointCapacity * 3,
+      waveLinePointCapacity * 3,
     )
     const waveStringPositionAttribute = new THREE.BufferAttribute(
       waveStringPositions,
@@ -5000,11 +5008,15 @@ function updateMechanicalWaveObjects(
     return
   }
 
+  const longitudinalParameters =
+    simulationId === 'longitudinal-wave'
+      ? (parameters as LongitudinalWaveParameters)
+      : null
   const profile = computeMechanicalWaveProfile(
     simulationId,
     parameters as WaveProfileParameters,
     sample.timeSeconds,
-    waveStringPointCapacity,
+    getWaveProfilePointCount(simulationId),
     objects.waveProfileDomain ?? undefined,
   )
 
@@ -5015,6 +5027,8 @@ function updateMechanicalWaveObjects(
         index,
         objects,
         point,
+        longitudinalParameters,
+        profile.length,
       )
     } else {
       writeWavePoint(objects.waveStringPositions, index, objects, {
@@ -5153,10 +5167,14 @@ function writeLongitudinalWaveSpringPoint(
   index: number,
   objects: SceneObjects,
   point: MechanicalWaveProfilePoint,
+  parameters: LongitudinalWaveParameters | null,
+  pointCount: number,
 ) {
   const offset = index * 3
-  const turnAngle = index * 0.88
-  const coilRadiusScene = 0.105
+  const ratio = pointCount > 1 ? index / (pointCount - 1) : 0
+  const turnAngle =
+    ratio * readLongitudinalSpringCoilTurns(parameters) * Math.PI * 2
+  const coilRadiusScene = 0.63
   const position = toLongitudinalWaveScenePoint(
     objects,
     point.xMeters + point.zMeters,
@@ -5857,6 +5875,34 @@ function readFirstKinematicsSample(samples: KinematicsSample[]) {
   return firstSample
 }
 
+function getWaveProfilePointCount(simulationId: KinematicsSimulationId) {
+  return simulationId === 'longitudinal-wave'
+    ? longitudinalWaveStringPointCapacity
+    : waveStringPointCapacity
+}
+
+function readLongitudinalSpringCoilTurns(
+  parameters: LongitudinalWaveParameters | null,
+) {
+  return clamp(
+    parameters?.springCoilTurns ?? defaultLongitudinalSpringCoilTurns,
+    12,
+    72,
+  )
+}
+
+function getLongitudinalSpringBeadCount(
+  parameters: LongitudinalWaveParameters | null,
+) {
+  return Math.round(
+    clamp(
+      readLongitudinalSpringCoilTurns(parameters) * 4,
+      96,
+      longitudinalSpringBeadCapacity,
+    ),
+  )
+}
+
 function createSceneReferencePathSamples(
   samples: KinematicsSample[],
   simulationId: KinematicsSimulationId,
@@ -5876,7 +5922,7 @@ function createSceneReferencePathSamples(
       simulationId,
       parameters as WaveProfileParameters,
       firstSample?.timeSeconds ?? 0,
-      waveStringPointCapacity,
+      getWaveProfilePointCount(simulationId),
       waveProfileDomain ?? undefined,
     )
 
@@ -6341,7 +6387,7 @@ function createWaveLabObjects(): WaveLabObjects {
   const wavelength = createDynamicTwoPointLine(0x818cf8, 0.86)
   const probeGuide = createDynamicTwoPointLine(0xe6e8ec, 0.34)
   const historyLines = Array.from({ length: waveHistoryLineCount }, (_, index) => {
-    const positions = new Float32Array(waveStringPointCapacity * 3)
+    const positions = new Float32Array(waveLinePointCapacity * 3)
     const positionAttribute = new THREE.BufferAttribute(positions, 3)
     const line = createDynamicWaveLine(
       positionAttribute,
@@ -6947,11 +6993,13 @@ function updateLongitudinalWaveSpringBeads(
     0,
   )
 
-  lab.beads.visible = true
-  lab.beads.count = waveStringBeadCount
+  const beadCount = getLongitudinalSpringBeadCount(parameters)
 
-  for (let index = 0; index < waveStringBeadCount; index += 1) {
-    const ratio = index / (waveStringBeadCount - 1)
+  lab.beads.visible = true
+  lab.beads.count = beadCount
+
+  for (let index = 0; index < beadCount; index += 1) {
+    const ratio = index / (beadCount - 1)
     const point = readProfilePointAtRatio(profile, ratio)
     const compressionRatio =
       maxCompression > 1e-9
@@ -7385,8 +7433,12 @@ function updateWaveHistory({
       simulationId,
       parameters as WaveProfileParameters,
       Math.max(0, sample.timeSeconds - lagSeconds),
-      waveStringPointCapacity,
+      getWaveProfilePointCount(simulationId),
     )
+    const longitudinalParameters =
+      simulationId === 'longitudinal-wave'
+        ? (parameters as LongitudinalWaveParameters)
+        : null
 
     profile.forEach((point, pointIndex) => {
       if (simulationId === 'longitudinal-wave') {
@@ -7395,6 +7447,8 @@ function updateWaveHistory({
           pointIndex,
           objects,
           point,
+          longitudinalParameters,
+          profile.length,
         )
       } else {
         writeWavePoint(historyLine.positions, pointIndex, objects, {

@@ -38,6 +38,7 @@ $$
 
 - Espiras mais proximas indicam compressao.
 - Espiras mais afastadas indicam rarefacao.
+- O controle `Voltas da mola` altera apenas quantas espiras sao desenhadas, ajudando a inspecionar a compressao visual sem mudar os samples fisicos.
 - O marcador do probe acompanha o elo selecionado e oscila ao longo do eixo da mola.
 - O vetor `v_onda` mostra a propagacao da frente de compressao; os vetores `dx`, `v_x` e `a_x` mostram o movimento local do elo.
 

@@ -172,6 +172,7 @@ export type LongitudinalWaveParameters = {
   longitudinalStiffnessNewtons: number
   phaseDegrees: number
   probePositionMeters: number
+  springCoilTurns: number
   speedModel: 'spring-properties' | 'wavelength-frequency'
   springLengthMeters: number
   wavelengthMeters: number
@@ -947,6 +948,7 @@ export function toKinematicsParameters(
         ),
         phaseDegrees: readNumber(values, 'phaseDegrees'),
         probePositionMeters: readNumber(values, 'probePositionMeters'),
+        springCoilTurns: readNumber(values, 'springCoilTurns'),
         speedModel: readLongitudinalWaveSpeedModel(values),
         springLengthMeters: readNumber(values, 'springLengthMeters'),
         wavelengthMeters: readNumber(values, 'wavelengthMeters'),
@@ -7991,6 +7993,7 @@ function validateLongitudinalWaveParameters(
     parameters.longitudinalStiffnessNewtons,
   )
   assertFinite('phaseDegrees', parameters.phaseDegrees)
+  assertFinitePositive('springCoilTurns', parameters.springCoilTurns)
   assertFinitePositive('springLengthMeters', parameters.springLengthMeters)
   assertFinitePositive('wavelengthMeters', parameters.wavelengthMeters)
 

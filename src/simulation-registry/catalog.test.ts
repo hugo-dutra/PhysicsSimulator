@@ -220,6 +220,10 @@ describe('simulation registry', () => {
     expect(fixture.formulas.map((formula) => formula.id)).toContain(
       'compression-force',
     )
+    expect(fixture.defaultParameters.springCoilTurns).toBe(54)
+    expect(fixture.parameters.map((parameter) => parameter.id)).toContain(
+      'springCoilTurns',
+    )
   })
 
   it('declares the approved sound simulations as ready items', () => {

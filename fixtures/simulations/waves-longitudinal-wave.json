@@ -35,8 +35,9 @@
     "longitudinalStiffnessNewtons": 0.5,
     "linearDensityKilogramsPerMeter": 0.18,
     "phaseDegrees": 0,
-    "springLengthMeters": 7,
-    "probePositionMeters": 3.5
+    "springLengthMeters": 8.4,
+    "springCoilTurns": 54,
+    "probePositionMeters": 4.2
   },
   "parameters": [
     {
@@ -131,9 +132,19 @@
       "unit": "m",
       "kind": "number",
       "min": 5,
-      "max": 9,
+      "max": 10.8,
       "step": 0.1,
-      "defaultValue": 7
+      "defaultValue": 8.4
+    },
+    {
+      "id": "springCoilTurns",
+      "label": "Voltas da mola",
+      "description": "Quantidade visual de espiras desenhadas na mola. Aumentar deixa a mola mais densa e evidencia compressao/rarefacao; nao altera velocidade, forca ou os samples fisicos da onda.",
+      "kind": "number",
+      "min": 12,
+      "max": 72,
+      "step": 1,
+      "defaultValue": 54
     },
     {
       "id": "probePositionMeters",
@@ -142,9 +153,9 @@
       "unit": "m",
       "kind": "number",
       "min": 0,
-      "max": 5,
+      "max": 8.4,
       "step": 0.05,
-      "defaultValue": 3.5
+      "defaultValue": 4.2
     }
   ],
   "presets": [
@@ -159,8 +170,9 @@
         "longitudinalStiffnessNewtons": 0.5,
         "linearDensityKilogramsPerMeter": 0.18,
         "phaseDegrees": 0,
-        "springLengthMeters": 7,
-        "probePositionMeters": 3.5
+        "springLengthMeters": 8.4,
+        "springCoilTurns": 54,
+        "probePositionMeters": 4.2
       }
     },
     {
@@ -174,8 +186,9 @@
         "longitudinalStiffnessNewtons": 0.5,
         "linearDensityKilogramsPerMeter": 0.18,
         "phaseDegrees": 35,
-        "springLengthMeters": 7,
-        "probePositionMeters": 2.8
+        "springLengthMeters": 8.4,
+        "springCoilTurns": 54,
+        "probePositionMeters": 3.36
       }
     },
     {
@@ -189,8 +202,9 @@
         "longitudinalStiffnessNewtons": 0.42,
         "linearDensityKilogramsPerMeter": 0.38,
         "phaseDegrees": -25,
-        "springLengthMeters": 7,
-        "probePositionMeters": 3.5
+        "springLengthMeters": 8.4,
+        "springCoilTurns": 54,
+        "probePositionMeters": 4.2
       }
     },
     {
@@ -204,8 +218,9 @@
         "longitudinalStiffnessNewtons": 0.5,
         "linearDensityKilogramsPerMeter": 0.18,
         "phaseDegrees": 0,
-        "springLengthMeters": 7,
-        "probePositionMeters": 3.5
+        "springLengthMeters": 8.4,
+        "springCoilTurns": 54,
+        "probePositionMeters": 4.2
       }
     }
   ],

@@ -3750,3 +3750,41 @@ Validacao:
 - Executado `npm run test -- --reporter=dot --maxWorkers=1`; 14 arquivos e 147 testes passaram.
 - Executado `npm run lint`; passou.
 - Smoke no navegador local em `http://127.0.0.1:5175`: a simulacao abriu pelo catalogo, o canvas com label acessivel da onda longitudinal apareceu, o controle `Rigidez longitudinal (N)` estava presente, o grafico `Deslocamento longitudinal por tempo` abriu e o console nao registrou warnings/erros. A captura de screenshot pelo navegador interno falhou por timeout no comando de captura, sem bloquear a verificacao funcional.
+
+## 2026-05-18 - Controle de voltas da mola longitudinal
+
+Status: feito.
+
+Pedido:
+
+- Aumentar em 3x o numero de voltas visiveis da mola na simulacao `Onda longitudinal em mola` e deixar essa quantidade configuravel.
+
+Ajuste:
+
+- O renderer da onda longitudinal passou a desenhar a mola com `54` voltas por padrao, cerca de 3x a densidade visual anterior.
+- Adicionado o parametro `springCoilTurns` como controle `Voltas da mola`, com faixa de `12` a `72` voltas e tooltip declarando que e um ajuste visual.
+- A linha da mola longitudinal ganhou mais pontos de amostragem visual para manter as espiras densas legiveis, sem alterar os samples fisicos, graficos, formulas ou velocidade da onda.
+- A teoria local registra que `Voltas da mola` muda apenas a renderizacao da espiral.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: a mudanca altera apenas a cena e o contrato de parametro visual; deslocamento, compressao, forca elastica, graficos, tabela, formulas e warnings continuam derivados dos mesmos samples.
+- Nenhum HLD/diagrama foi alterado porque nao houve nova fronteira de arquitetura, dados remotos ou pipeline.
+
+Validacao:
+
+- Executado `npm run test -- src/lib/physics/kinematics.test.ts --reporter=dot --maxWorkers=1`; 1 arquivo e 54 testes passaram.
+- Executado `npm run test -- src/features/simulation-shell/kinematicsChartConfigs.test.ts src/simulation-registry/catalog.test.ts --reporter=dot --maxWorkers=1`; 2 arquivos e 24 testes passaram.
+- Executado `npm run test -- src/App.test.tsx -t "mechanical waves" --reporter=dot --maxWorkers=1`; 1 teste passou e 9 foram ignorados pelo filtro.
+- Executado `npm run build`; passou com aviso conhecido de chunk acima de 500 kB.
+- Executado `npm run lint`; passou.
+- Smoke no navegador local em `http://127.0.0.1:5175`: `Onda longitudinal em mola` abriu, o controle `Voltas da mola` apareceu com valor `54`, o canvas estava presente e o console nao registrou warnings/erros.
+
+Complemento visual:
+
+- O diametro visual da mola longitudinal foi dobrado no renderer, mantendo apenas a geometria da helice mais larga.
+- A alteracao nao muda samples, velocidade, compressao, forca elastica, graficos, tabela, formulas ou teoria.
+- Executado `npm run lint`; passou.
+- Executado `npm run test -- src/App.test.tsx -t "mechanical waves" --reporter=dot --maxWorkers=1`; passou quando executado isoladamente. A primeira tentativa em paralelo com lint estourou o timeout de 30s do teste de UI.
+- Novo ajuste visual: o diametro da helice foi triplicado em relacao ao ajuste anterior, mantendo a mesma densidade de voltas e sem alterar samples fisicos ou contratos de formula/grafico.
+- Novo ajuste de escala: o comprimento padrao da mola longitudinal passou de `7 m` para `8,4 m`, com probe padrao no novo centro (`4,2 m`) e presets alinhados. A densidade de voltas permanece em `54` voltas.

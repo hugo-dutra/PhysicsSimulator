@@ -328,6 +328,7 @@ describe('kinematics chart configs', () => {
       longitudinalStiffnessNewtons: 0.72,
       phaseDegrees: 0,
       probePositionMeters: 1.5,
+      springCoilTurns: 54,
       speedModel: 'spring-properties',
       springLengthMeters: 4,
       wavelengthMeters: 2,
