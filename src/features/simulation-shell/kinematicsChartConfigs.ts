@@ -10,6 +10,7 @@ export type KinematicsChartId =
   | 'angle'
   | 'density'
   | 'energy'
+  | 'fabric'
   | 'field'
   | 'forces'
   | 'flow'
@@ -18,6 +19,7 @@ export type KinematicsChartId =
   | 'momentum'
   | 'position'
   | 'pressure'
+  | 'potential'
   | 'torque'
   | 'velocity'
   | 'work'
@@ -438,6 +440,41 @@ export function buildKinematicsChartConfigs(
           },
         ],
         yAxisTitle: 'Campo e forca',
+      },
+      {
+        id: 'potential',
+        title: 'Potencial gravitacional especifico',
+        traces: [
+          {
+            lineColor: themeTokens.danger,
+            name: 'Potencial gravitacional especifico (J/kg)',
+            x: time,
+            y: samples.map(
+              (sample) =>
+                sample.specificGravitationalPotentialJoulesPerKilogram,
+            ),
+          },
+        ],
+        yAxisTitle: 'Potencial especifico (joules por quilograma)',
+      },
+      {
+        id: 'fabric',
+        title: 'Pocos da malha didatica',
+        traces: [
+          {
+            lineColor: themeTokens.warning,
+            name: 'Poco central (escala visual)',
+            x: time,
+            y: samples.map((sample) => sample.spacetimeCentralDeformation),
+          },
+          {
+            lineColor: themeTokens.teal,
+            name: 'Poco orbital amplificado (escala visual)',
+            x: time,
+            y: samples.map((sample) => sample.spacetimeOrbitingDeformation),
+          },
+        ],
+        yAxisTitle: 'Escala visual adimensional',
       },
     )
   } else if (simulationId === 'hydrostatics-buoyancy') {

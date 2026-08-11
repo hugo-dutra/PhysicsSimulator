@@ -3788,3 +3788,53 @@ Complemento visual:
 - Executado `npm run test -- src/App.test.tsx -t "mechanical waves" --reporter=dot --maxWorkers=1`; passou quando executado isoladamente. A primeira tentativa em paralelo com lint estourou o timeout de 30s do teste de UI.
 - Novo ajuste visual: o diametro da helice foi triplicado em relacao ao ajuste anterior, mantendo a mesma densidade de voltas e sem alterar samples fisicos ou contratos de formula/grafico.
 - Novo ajuste de escala: o comprimento padrao da mola longitudinal passou de `7 m` para `8,4 m`, com probe padrao no novo centro (`4,2 m`) e presets alinhados. A densidade de voltas permanece em `54` voltas.
+
+## 2026-08-11 - Malha gravitacional deformavel com dois pocos
+
+Status: feito em `analysis`, aguardando aprovacao visual do dono para retornar a `ready`.
+
+Pedido:
+
+- Evoluir `Campo gravitacional e orbitas` com um tecido do espaco-tempo deformado pela massa central, um corpo orbitando e produzindo seu proprio poco, maior suavidade/profundidade e controle do alfa das linhas.
+- Ao terminar, executar build e manter o projeto rodando.
+
+Ajuste:
+
+- A orbita kepleriana newtoniana continua sendo a fonte fisica; a malha e declarada como analogia visual amplificada do potencial, sem representar literalmente uma metrica relativistica.
+- O motor passou a expor potencial gravitacional especifico e escalas independentes para o poco central e o poco orbital, mantendo cena, graficos, tabela, formulas, teoria e warnings sincronizados.
+- O renderer reutiliza uma geometria dinamica de `96 x 96`, com 9.409 vertices, atualizando apenas o buffer de posicoes em `requestAnimationFrame`.
+- A grade visivel usa `LineSegments` ortogonais alternados, sem diagonais triangulares, preservando a suavidade da deformacao sem transformar o tecido em uma superficie visualmente saturada.
+- O poco central ficou mais profundo e usa a maior distancia da trajetoria de referencia para iniciar a curvatura proxima da orbita sem variar sua largura durante o playback; o poco menor acompanha `xMeters/zMeters` do corpo orbital.
+- Adicionado `Alfa das linhas`, de `0` a `1`, com tooltip e padrao `0.6`; o controle altera somente a transparencia da malha.
+- Adicionado o preset `Dois pocos visiveis`, graficos de potencial/deformacao, tabela orbital especializada, formulas, teoria e documentacao de limites.
+- `Campo gravitacional e orbitas` voltou para `analysis` ate a nova aprovacao visual. Nenhum HLD/diagrama foi alterado porque a mudanca reutiliza o motor, shell e renderer existentes sem nova fronteira arquitetural.
+
+Gate de fidelidade:
+
+- Aplicado o `Simulation Fidelity Adjustment Guide`: zeros das escalas visuais e do alfa sao validos e nao alteram posicao, velocidade, campo, forca, periodo ou energia orbital.
+- O warning `SPACETIME_FABRIC_ANALOGY` e os limites da teoria deixam explicito que profundidade, largura e poco orbital sao amplificacoes didaticas.
+- A largura do poco central usa a trajetoria de referencia completa, evitando que a superficie respire em orbitas excentricas.
+
+Validacao:
+
+- Executado `npx vitest run src/lib src/features src/simulation-registry --reporter=dot --maxWorkers=1`; 14 arquivos e 141 testes passaram.
+- Executado o conjunto direcionado final de fisica, malha, cena e catalogo; 4 arquivos e 83 testes passaram. Depois do refinamento de `LineSegments`, os 14 testes de malha/cena passaram novamente.
+- O teste afetado de abertura automatica das areas em `analysis` de `src/App.test.tsx` passou apos alinhar as expectativas ao novo status da simulacao.
+- Executado `npm run lint`; passou.
+- Executado `npm run build`; passou com o aviso conhecido de chunk acima de 500 kB.
+- O validador legado de guides nao foi usado como gate porque o frontend ja existe; a tentativa registrou incompatibilidade com o layout SDD novo esperado pelo script (`README`, `.agent`, `tasks` e `adr` ausentes), sem indicar erro nos guides atuais.
+- Smoke final limpo no navegador em `http://127.0.0.1:5175/`: alfa inicial `0.6`, dois pocos visiveis, viewport maximizada a 75 FPS e nenhum warning/erro no console.
+- O Vite permaneceu rodando em segundo plano na porta `5175`.
+
+## 2026-08-11 - Aprovacao da malha gravitacional
+
+Status: pronto.
+
+- O dono do projeto aprovou manualmente `Mecanica > Gravitacao > Campo gravitacional e orbitas` depois da revisao visual da malha `96 x 96`, do poco central amplo/profundo, do poco orbital e do controle de alfa padrao em 60%.
+- O catalogo promoveu `gravitational-field-orbits` de `analysis` para `ready`; a subarea `Gravitacao` volta a iniciar recolhida por nao conter simulacoes em analise.
+- Guides de produto, arquitetura, regras, roadmap, dados, catalogo e issues foram alinhados com a aprovacao. O HLD nao mudou porque a promocao altera apenas o status de produto, sem nova fronteira arquitetural.
+- A promocao preserva o gate de fidelidade e o smoke visual registrado na implementacao anterior.
+- Os testes direcionados de catalogo e shell passaram: 2 testes aprovados e 23 ignorados pelo filtro.
+- A suite completa passou com 15 arquivos e 152 testes aprovados.
+- `npm run lint` passou sem erros.
+- `npm run build:pages` gerou o bundle de producao com a base `/PhysicsSimulator-build/`; permaneceu apenas o aviso conhecido de chunk acima de 500 kB.

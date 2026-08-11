@@ -21,7 +21,10 @@ describe('kinematics chart configs', () => {
     const parameters: GravitationalFieldOrbitsParameters = {
       centralMassEarths: 1,
       eccentricity: 0.45,
+      fabricDeformationScale: 1,
+      fabricLineOpacity: 0.6,
       initialAngleDegrees: 0,
+      orbitingBodyWellAmplification: 0.35,
       orbitalRadiusKilometers: 7000,
       satelliteMassKilograms: 900,
     }
@@ -38,6 +41,8 @@ describe('kinematics chart configs', () => {
     )
     const keplerChart = charts.find((chart) => chart.id === 'kepler')
     const velocityChart = charts.find((chart) => chart.id === 'velocity')
+    const fabricChart = charts.find((chart) => chart.id === 'fabric')
+    const potentialChart = charts.find((chart) => chart.id === 'potential')
     const arealRateTrace = keplerChart?.traces[0]
     const angularVelocityTrace = keplerChart?.traces[1]
 
@@ -48,6 +53,11 @@ describe('kinematics chart configs', () => {
       'Taxa areolar relativa (adimensional)',
       'Velocidade angular relativa (adimensional)',
     ])
+    expect(fabricChart?.traces.map((trace) => trace.name)).toEqual([
+      'Poco central (escala visual)',
+      'Poco orbital amplificado (escala visual)',
+    ])
+    expect(potentialChart?.traces[0]?.y.every((value) => value < 0)).toBe(true)
     expect(
       Math.max(...(arealRateTrace?.y ?? [])) -
         Math.min(...(arealRateTrace?.y ?? [])),

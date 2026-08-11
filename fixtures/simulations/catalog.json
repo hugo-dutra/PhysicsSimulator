@@ -668,12 +668,12 @@
           "renderer": "three",
           "fixturePath": "fixtures/simulations/mechanics-gravitational-field-orbits.json",
           "theoryPath": "src/content/simulations/mechanics/gravitational-field-orbits/theory.md",
-          "description": "Lei da gravitacao, campo, velocidade orbital e orbitas didaticas.",
+          "description": "Lei da gravitacao, orbitas e malha didatica do espaco-tempo com pocos central e orbital.",
           "technologyPlan": {
             "engine": "custom-analytic",
             "charting": "live-canvas",
             "content": "mdx-katex",
-            "notes": "Campo central de dois corpos com amostragem eliptica didatica, vetores de velocidade/campo e energia orbital."
+            "notes": "Campo central de dois corpos com amostragem eliptica, vetores, energia e malha Three.js deformada por dois pocos derivados do mesmo sample; a malha e uma analogia visual amplificada."
           },
           "charts": [
             {
@@ -692,7 +692,17 @@
               "sampleFields": [
                 "timeSeconds",
                 "gravitationalFieldNewtonsPerKilogram",
-                "centripetalForceNewtons"
+                "centripetalForceNewtons",
+                "specificGravitationalPotentialJoulesPerKilogram"
+              ]
+            },
+            {
+              "id": "fabric-time",
+              "title": "Pocos da malha por tempo",
+              "sampleFields": [
+                "timeSeconds",
+                "spacetimeCentralDeformation",
+                "spacetimeOrbitingDeformation"
               ]
             },
             {

@@ -269,7 +269,10 @@ describe('KinematicsScene projection helpers', () => {
     const parameters: GravitationalFieldOrbitsParameters = {
       centralMassEarths: 1,
       eccentricity: 0.08,
+      fabricDeformationScale: 1,
+      fabricLineOpacity: 0.6,
       initialAngleDegrees: 0,
+      orbitingBodyWellAmplification: 0.35,
       orbitalRadiusKilometers: 7000,
       satelliteMassKilograms: 900,
     }
@@ -306,7 +309,10 @@ describe('KinematicsScene projection helpers', () => {
     const parameters: GravitationalFieldOrbitsParameters = {
       centralMassEarths: 1,
       eccentricity: 0.84,
+      fabricDeformationScale: 1,
+      fabricLineOpacity: 0.6,
       initialAngleDegrees: 0,
+      orbitingBodyWellAmplification: 0.35,
       orbitalRadiusKilometers: 7000,
       satelliteMassKilograms: 900,
     }
@@ -354,7 +360,10 @@ describe('KinematicsScene projection helpers', () => {
     const parameters: GravitationalFieldOrbitsParameters = {
       centralMassEarths: 1,
       eccentricity: 0.84,
+      fabricDeformationScale: 1,
+      fabricLineOpacity: 0.6,
       initialAngleDegrees: 0,
+      orbitingBodyWellAmplification: 0.35,
       orbitalRadiusKilometers: 7000,
       satelliteMassKilograms: 900,
     }

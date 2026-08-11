@@ -109,6 +109,22 @@ Quando o usuario escolhe parametros que tornam a restricao impossivel, a simulac
 
 Aplicacao imediata: em Forca centripeta em curva, `mu = 0` e valido. Se `v^2 / r > mu g`, o corpo deixa a curva ideal; com `mu = 0`, segue em linha reta pela tangente.
 
+## Guia visual para a analogia de tecido do espaco-tempo
+
+Visualizacoes de gravidade com uma malha deformavel devem separar explicitamente a fisica orbital da analogia visual:
+
+- A orbita, campo, forca, potencial e energia continuam sendo calculados pelo motor declarado.
+- O poco central permanece fixo na massa central; o poco do corpo orbital acompanha exatamente a posicao calculada no sample.
+- Intensidades de deformacao e potencial especifico pertencem ao sample. O renderer apenas mapeia esses campos para a geometria reutilizavel da malha.
+- A largura visual do poco central pode usar o raio maximo da trajetoria de referencia para tornar a curvatura perceptivel perto da orbita, mas deve permanecer estavel durante o playback e nao pode retroagir sobre a dinamica.
+- A tesselação deve ser densa o suficiente para evitar funis facetados, mantendo o buffer de posicoes reutilizado e uma taxa de quadros utilizavel no smoke visual.
+- Controles de opacidade da malha devem aceitar zero, declarar que sao somente visuais, ter tooltip e nunca alterar pocos, samples fisicos ou trajetoria; o padrao atual e 60%.
+- Amplificacao visual do poco menor precisa ser um parametro declarado e deve avisar que a escala nao e fisica.
+- Zerar profundidade ou amplificacao achata o poco correspondente sem mudar posicao, periodo, velocidade, forca ou energia.
+- A teoria deve explicar que a superficie 2D nao e um tecido material, nao desenha literalmente uma dimensao espacial extra e nao substitui uma metrica relativistica.
+
+Aplicacao imediata: `Mecanica > Gravitacao > Campo gravitacional e orbitas` mostra um poco fixo sob a massa central e outro, amplificado, seguindo o planeta na malha wireframe.
+
 ## Plano de ajuste das demais simulacoes
 
 Ao revisar uma simulacao existente, seguir esta ordem:

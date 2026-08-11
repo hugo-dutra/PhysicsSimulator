@@ -201,7 +201,10 @@ export type StandingWavesParameters = {
 export type GravitationalFieldOrbitsParameters = {
   centralMassEarths: number
   eccentricity: number
+  fabricDeformationScale: number
+  fabricLineOpacity: number
   initialAngleDegrees: number
+  orbitingBodyWellAmplification: number
   orbitalRadiusKilometers: number
   satelliteMassKilograms: number
 }
@@ -441,6 +444,9 @@ export type KinematicsSample = {
   secondaryXMeters: number
   secondaryZMeters: number
   speedMetersPerSecond: number
+  spacetimeCentralDeformation: number
+  spacetimeOrbitingDeformation: number
+  specificGravitationalPotentialJoulesPerKilogram: number
   springForceNewtons: number
   submergedFraction: number
   tensionNewtons: number
@@ -620,6 +626,9 @@ const sampleNumericKeys = [
   'secondaryXMeters',
   'secondaryZMeters',
   'speedMetersPerSecond',
+  'spacetimeCentralDeformation',
+  'spacetimeOrbitingDeformation',
+  'specificGravitationalPotentialJoulesPerKilogram',
   'springForceNewtons',
   'submergedFraction',
   'tensionNewtons',
@@ -1039,7 +1048,16 @@ export function toKinematicsParameters(
       const parameters: GravitationalFieldOrbitsParameters = {
         centralMassEarths: readNumber(values, 'centralMassEarths'),
         eccentricity: readNumber(values, 'eccentricity'),
+        fabricDeformationScale: readNumber(
+          values,
+          'fabricDeformationScale',
+        ),
+        fabricLineOpacity: readNumber(values, 'fabricLineOpacity'),
         initialAngleDegrees: readNumber(values, 'initialAngleDegrees'),
+        orbitingBodyWellAmplification: readNumber(
+          values,
+          'orbitingBodyWellAmplification',
+        ),
         orbitalRadiusKilometers: readNumber(values, 'orbitalRadiusKilometers'),
         satelliteMassKilograms: readNumber(values, 'satelliteMassKilograms'),
       }
@@ -3058,6 +3076,15 @@ function computeGravitationalFieldOrbitsSample(
   const potentialEnergyJoules =
     (-gravitationalParameter * parameters.satelliteMassKilograms) /
     orbitalRadiusMeters
+  const specificGravitationalPotentialJoulesPerKilogram =
+    -gravitationalParameter / orbitalRadiusMeters
+  const spacetimeCentralDeformation =
+    parameters.fabricDeformationScale *
+    Math.cbrt(parameters.centralMassEarths)
+  const spacetimeOrbitingDeformation =
+    parameters.fabricDeformationScale *
+    parameters.orbitingBodyWellAmplification *
+    Math.cbrt(parameters.satelliteMassKilograms / 900)
   const periodSeconds =
     (2 * Math.PI) / meanMotionRadiansPerSecond
 
@@ -3076,7 +3103,12 @@ function computeGravitationalFieldOrbitsSample(
     displacementMeters: orbitalRadiusMeters - periapsisRadiusMeters,
     frequencyHertz: 1 / periodSeconds,
     gravitationalFieldNewtonsPerKilogram,
+    gravitationalPotentialEnergyJoules: potentialEnergyJoules,
     kineticEnergyJoules,
+    netForceNewtons:
+      parameters.satelliteMassKilograms *
+      gravitationalFieldNewtonsPerKilogram,
+    objectMassKilograms: parameters.satelliteMassKilograms,
     periodSeconds,
     positionMeters: orbitalRadiusMeters,
     potentialEnergyJoules,
@@ -3088,6 +3120,9 @@ function computeGravitationalFieldOrbitsSample(
     secondaryXMeters,
     secondaryZMeters,
     speedMetersPerSecond: orbitalSpeedMetersPerSecond,
+    spacetimeCentralDeformation,
+    spacetimeOrbitingDeformation,
+    specificGravitationalPotentialJoulesPerKilogram,
     timeSeconds,
     totalEnergyJoules: kineticEnergyJoules + potentialEnergyJoules,
     velocityMetersPerSecond: orbitalSpeedMetersPerSecond,
@@ -6786,6 +6821,12 @@ function buildSample(
     secondaryXMeters: sample.secondaryXMeters ?? 0,
     secondaryZMeters: sample.secondaryZMeters ?? 0,
     speedMetersPerSecond: sample.speedMetersPerSecond ?? 0,
+    spacetimeCentralDeformation:
+      sample.spacetimeCentralDeformation ?? 0,
+    spacetimeOrbitingDeformation:
+      sample.spacetimeOrbitingDeformation ?? 0,
+    specificGravitationalPotentialJoulesPerKilogram:
+      sample.specificGravitationalPotentialJoulesPerKilogram ?? 0,
     springForceNewtons: sample.springForceNewtons ?? 0,
     submergedFraction: sample.submergedFraction ?? 0,
     tensionNewtons: sample.tensionNewtons ?? 0,
@@ -6906,18 +6947,23 @@ function getKinematicsWarnings(
 
   if (simulationId === 'gravitational-field-orbits') {
     const orbitParameters = parameters as GravitationalFieldOrbitsParameters
+    const warnings: SimulationWarning[] = [
+      {
+        code: 'SPACETIME_FABRIC_ANALOGY',
+        message:
+          'A malha deformada e uma analogia visual amplificada do potencial gravitacional, nao um tecido fisico nem uma representacao em escala da relatividade geral.',
+      },
+    ]
 
     if (orbitParameters.eccentricity > highEccentricityWarningThreshold) {
-      return [
-        {
-          code: 'ORBIT_HIGH_ECCENTRICITY',
-          message:
-            'A excentricidade alta destaca uma orbita didatica eliptica; perturbacoes, atmosfera e precessao nao entram no modelo.',
-        },
-      ]
+      warnings.push({
+        code: 'ORBIT_HIGH_ECCENTRICITY',
+        message:
+          'A excentricidade alta destaca uma orbita didatica eliptica; perturbacoes, atmosfera e precessao nao entram no modelo.',
+      })
     }
 
-    return []
+    return warnings
   }
 
   if (simulationId === 'hydrostatics-buoyancy') {
@@ -8052,7 +8098,16 @@ function validateGravitationalFieldOrbitsParameters(
 ) {
   assertFinitePositive('centralMassEarths', parameters.centralMassEarths)
   assertFinite('eccentricity', parameters.eccentricity)
+  assertFiniteNonNegative(
+    'fabricDeformationScale',
+    parameters.fabricDeformationScale,
+  )
+  assertFiniteNonNegative('fabricLineOpacity', parameters.fabricLineOpacity)
   assertFinite('initialAngleDegrees', parameters.initialAngleDegrees)
+  assertFiniteNonNegative(
+    'orbitingBodyWellAmplification',
+    parameters.orbitingBodyWellAmplification,
+  )
   assertFinitePositive(
     'orbitalRadiusKilometers',
     parameters.orbitalRadiusKilometers,
@@ -8064,6 +8119,10 @@ function validateGravitationalFieldOrbitsParameters(
 
   if (parameters.eccentricity < 0 || parameters.eccentricity >= 0.85) {
     throw new Error('eccentricity must be between 0 and 0.85.')
+  }
+
+  if (parameters.fabricLineOpacity > 1) {
+    throw new Error('fabricLineOpacity must be between 0 and 1.')
   }
 }
 

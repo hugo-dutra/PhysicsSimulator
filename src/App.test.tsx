@@ -616,7 +616,7 @@ describe('App', () => {
     ).toBeInTheDocument()
   }, 45_000)
 
-  it('renders the simulation catalog with ready subareas collapsed', () => {
+  it('opens analysis subareas while keeping ready subareas collapsed', () => {
     render(
       <ThemeProvider theme={appTheme}>
         <App />
@@ -639,6 +639,16 @@ describe('App', () => {
     expect(
       document.querySelector('[aria-controls="subarea-mechanics-oscilacoes"]'),
     ).toBeNull()
+    expect(
+      getToggleByControls('subarea-mechanics-gravitacao'),
+    ).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(getToggleByControls('subarea-mechanics-gravitacao'))
+    expect(
+      getToggleByControls('subarea-mechanics-gravitacao'),
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(
+      screen.getByRole('button', { name: /Campo gravitacional e orbitas/i }),
+    ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Alternar area Oscilacoes e Ondas/i }),
     ).toHaveAttribute('aria-expanded', 'true')
@@ -706,7 +716,7 @@ describe('App', () => {
     ).toHaveAttribute('aria-expanded', 'false')
     expect(
       screen.getByRole('button', { name: /Alternar subarea Gravitacao/i }),
-    ).toHaveAttribute('aria-expanded', 'false')
+    ).toHaveAttribute('aria-expanded', 'true')
     expect(
       screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
     ).toHaveAttribute('aria-expanded', 'false')

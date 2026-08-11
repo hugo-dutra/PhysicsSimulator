@@ -56,6 +56,10 @@ import {
   getGridLowerLeftOrigin,
   getOriginAxesLength,
 } from '../../lib/rendering/originAxes'
+import {
+  computeSpacetimeFabricHeight,
+  createSpacetimeFabricGridIndices,
+} from '../../lib/rendering/spacetimeFabric'
 import { themeTokens } from '../../theme/appTheme'
 import {
   getRigidBodyRotationBaseRadius,
@@ -271,6 +275,10 @@ type SceneObjects = {
   leverSupportHoleShadow: THREE.Mesh
   leverSupport: THREE.Mesh
   orbitCentralBody: THREE.Mesh
+  orbitFabric: THREE.LineSegments
+  orbitFabricBasePositions: Float32Array
+  orbitFabricPositionAttribute: THREE.BufferAttribute
+  orbitFabricReferenceRadius: number
   orbitSatellitePath: THREE.Line
   orbitSatellitePathPositionAttribute: THREE.BufferAttribute
   orbitSatellitePathPositions: Float32Array
@@ -490,6 +498,7 @@ const rigidRotationBaseThickness = 0.12
 const rigidRotationCurvedArrowSegments = 36
 const rigidRotationAxisHeight = 0.7
 const orbitSatellitePathSegments = 96
+const orbitFabricSegments = 96
 const hydroTankWidthMeters = 2.8
 const hydroTankHorizontalDepthMeters = 1.8
 const hydroPressureFieldSegments = 24
@@ -860,7 +869,46 @@ export function KinematicsScene({
       simulationId === 'rigid-body-rotation' ? 0.18 : 0.38
     grid.material.depthWrite = false
     grid.renderOrder = 1
+    grid.visible = simulationId !== 'gravitational-field-orbits'
     scene.add(grid)
+
+    const orbitFabricGeometry = new THREE.PlaneGeometry(
+      gridSize * 1.08,
+      gridSize * 1.08,
+      orbitFabricSegments,
+      orbitFabricSegments,
+    )
+    const orbitFabricPositionAttribute =
+      orbitFabricGeometry.getAttribute('position') as THREE.BufferAttribute
+    const orbitFabricBasePositions = new Float32Array(
+      orbitFabricPositionAttribute.array,
+    )
+    orbitFabricPositionAttribute.setUsage(THREE.DynamicDrawUsage)
+    orbitFabricGeometry.setIndex(
+      createSpacetimeFabricGridIndices(orbitFabricSegments, 2),
+    )
+    const orbitFabric = new THREE.LineSegments(
+      orbitFabricGeometry,
+      new THREE.LineBasicMaterial({
+        color: 0x2dd4bf,
+        depthWrite: false,
+        opacity:
+          simulationId === 'gravitational-field-orbits'
+            ? clamp(
+                (parameters as GravitationalFieldOrbitsParameters)
+                  .fabricLineOpacity,
+                0,
+                1,
+              )
+            : 0.6,
+        transparent: true,
+      }),
+    )
+
+    orbitFabric.position.set(bounds.centerX, bounds.centerY, 0.015)
+    orbitFabric.renderOrder = 3
+    orbitFabric.visible = simulationId === 'gravitational-field-orbits'
+    scene.add(orbitFabric)
     scene.add(
       createOriginAxesMarker({
         axisLength: getOriginAxesLength(gridSize),
@@ -886,6 +934,17 @@ export function KinematicsScene({
     )
 
     const sceneBodySize = getBodyDisplaySize(bounds.span)
+    const orbitFabricReferenceRadius =
+      simulationId === 'gravitational-field-orbits'
+        ? Math.max(
+            sceneBodySize * 4,
+            ...referencePathSamples.map(
+              (sample) =>
+                Math.hypot(sample.xMeters, sample.zMeters) *
+                sceneProjection.positionScale,
+            ),
+          )
+        : sceneBodySize * 4
     const atwoodMassSize = sceneBodySize * 1.8
     const rigidRotationBaseRadius =
       getRigidBodyRotationBaseRadius(sceneBodySize)
@@ -2023,6 +2082,10 @@ export function KinematicsScene({
       leverSupportHoleShadow,
       leverSupport,
       orbitCentralBody,
+      orbitFabric,
+      orbitFabricBasePositions,
+      orbitFabricPositionAttribute,
+      orbitFabricReferenceRadius,
       orbitSatellitePath,
       orbitSatellitePathPositionAttribute,
       orbitSatellitePathPositions,
@@ -2590,6 +2653,7 @@ function updateConstrainedBodyObjects(
   objects.leverSupportHoleShadow.visible = isTorqueLever
   objects.leverSupport.visible = isTorqueLever
   objects.orbitCentralBody.visible = isOrbit
+  objects.orbitFabric.visible = isOrbit
   objects.orbitSatellitePath.visible = isOrbit
   objects.acceleratedMotionAccelerationLabel.visible =
     isUniformlyAcceleratedMotion && showVectors
@@ -2665,6 +2729,7 @@ function updateConstrainedBodyObjects(
       ),
     )
     objects.secondaryBody.scale.setScalar(orbitMoonRadius)
+    updateOrbitSpacetimeFabric(objects, sample)
     updateOrbitSatellitePath(objects, sample, orbitMoonMinimumRadius)
     return
   }
@@ -2967,6 +3032,63 @@ function updateUniformlyAcceleratedMotionObjects(
       )} m/s^2`,
     )
   }
+}
+
+function updateOrbitSpacetimeFabric(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+) {
+  const positions = objects.orbitFabricPositionAttribute.array as Float32Array
+  const orbitingBodyPosition = toKinematicsScenePosition(
+    sample,
+    objects.sceneProjection,
+  )
+  const fabricPosition = objects.orbitFabric.position
+  const centralDepth = clamp(
+    sample.spacetimeCentralDeformation * objects.bodyRadius * 4.6,
+    0,
+    objects.bodyRadius * 10,
+  )
+  const orbitingDepth = clamp(
+    sample.spacetimeOrbitingDeformation * objects.bodyRadius * 3.2,
+    0,
+    objects.bodyRadius * 4.5,
+  )
+  const centralWidth = Math.max(
+    objects.bodyRadius * 4.2,
+    objects.orbitFabricReferenceRadius * 0.54,
+    0.9,
+  )
+  const orbitingWidth = Math.max(
+    objects.bodyRadius * 1.9,
+    objects.orbitFabricReferenceRadius * 0.12,
+    0.46,
+  )
+  const wells = [
+    {
+      centerX: -fabricPosition.x,
+      centerY: -fabricPosition.y,
+      depth: centralDepth,
+      width: centralWidth,
+    },
+    {
+      centerX: orbitingBodyPosition.x - fabricPosition.x,
+      centerY: orbitingBodyPosition.y - fabricPosition.y,
+      depth: orbitingDepth,
+      width: orbitingWidth,
+    },
+  ]
+
+  for (let offset = 0; offset < positions.length; offset += 3) {
+    const x = objects.orbitFabricBasePositions[offset]
+    const y = objects.orbitFabricBasePositions[offset + 1]
+
+    positions[offset] = x
+    positions[offset + 1] = y
+    positions[offset + 2] = computeSpacetimeFabricHeight(x, y, wells)
+  }
+
+  objects.orbitFabricPositionAttribute.needsUpdate = true
 }
 
 function updateOrbitSatellitePath(
@@ -9796,7 +9918,7 @@ function getKinematicsCanvasAriaLabel(simulationId: KinematicsSimulationId) {
   }
 
   if (simulationId === 'gravitational-field-orbits') {
-    return 'Cena 3D orbital com corpo central, planeta, lua didatica e arraste para orbitar, e Shift + scroll para zoom'
+    return 'Cena 3D orbital com corpo central, planeta, lua didatica e malha do espaco-tempo deformada por dois pocos, com arraste para orbitar e Shift + scroll para zoom'
   }
 
   if (simulationId === 'hydrostatics-buoyancy') {

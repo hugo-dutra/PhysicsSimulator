@@ -401,6 +401,21 @@ const kinematicsSampleTableColumnIds = [
   'work',
   'total',
 ] as const
+const gravitationalOrbitSampleTableColumnIds = [
+  'time',
+  'radius',
+  'x',
+  'z',
+  'speed',
+  'field',
+  'force',
+  'specificPotential',
+  'kinetic',
+  'potential',
+  'total',
+  'centralWell',
+  'orbitingWell',
+] as const
 const kinematicsVectorLegendItemsById = {
   'atwood-machine': [
     {
@@ -4461,21 +4476,41 @@ function KinematicsRuntime({
               >
                 <TableHead>
                   <TableRow>
-                    <TableCell>t</TableCell>
-                    <TableCell>s</TableCell>
-                    <TableCell>Delta s</TableCell>
-                    <TableCell>x</TableCell>
-                    <TableCell>z</TableCell>
-                    <TableCell>v</TableCell>
-                    <TableCell>|v|</TableCell>
-                    <TableCell>a</TableCell>
-                    <TableCell>F</TableCell>
-                    <TableCell>T</TableCell>
-                    <TableCell>K</TableCell>
-                    <TableCell>U</TableCell>
-                    <TableCell>E_t</TableCell>
-                    <TableCell>W</TableCell>
-                    <TableCell>E</TableCell>
+                    {simulationId === 'gravitational-field-orbits' ? (
+                      <>
+                        <TableCell>t</TableCell>
+                        <TableCell>r</TableCell>
+                        <TableCell>x</TableCell>
+                        <TableCell>z</TableCell>
+                        <TableCell>|v|</TableCell>
+                        <TableCell>g</TableCell>
+                        <TableCell>F_g</TableCell>
+                        <TableCell>Phi</TableCell>
+                        <TableCell>K</TableCell>
+                        <TableCell>U_g</TableCell>
+                        <TableCell>E</TableCell>
+                        <TableCell>D_c</TableCell>
+                        <TableCell>D_o</TableCell>
+                      </>
+                    ) : (
+                      <>
+                        <TableCell>t</TableCell>
+                        <TableCell>s</TableCell>
+                        <TableCell>Delta s</TableCell>
+                        <TableCell>x</TableCell>
+                        <TableCell>z</TableCell>
+                        <TableCell>v</TableCell>
+                        <TableCell>|v|</TableCell>
+                        <TableCell>a</TableCell>
+                        <TableCell>F</TableCell>
+                        <TableCell>T</TableCell>
+                        <TableCell>K</TableCell>
+                        <TableCell>U</TableCell>
+                        <TableCell>E_t</TableCell>
+                        <TableCell>W</TableCell>
+                        <TableCell>E</TableCell>
+                      </>
+                    )}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -4486,63 +4521,9 @@ function KinematicsRuntime({
                       }
                       sx={{ height: 34 }}
                     >
-                      {sample ? (
-                        <>
-                          <TableCell>
-                            {formatNumber(sample.timeSeconds, 's')}
-                          </TableCell>
-                          <TableCell>
-                            {formatNumber(sample.positionMeters, 'm')}
-                          </TableCell>
-                          <TableCell>
-                            {formatNumber(sample.displacementMeters, 'm')}
-                          </TableCell>
-                          <TableCell>
-                            {formatNumber(sample.xMeters, 'm')}
-                          </TableCell>
-                          <TableCell>
-                            {formatNumber(sample.zMeters, 'm')}
-                          </TableCell>
-                          <TableCell>
-                            {formatNumber(
-                              sample.velocityMetersPerSecond,
-                              'm/s',
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {formatNumber(sample.speedMetersPerSecond, 'm/s')}
-                          </TableCell>
-                          <TableCell>
-                          {formatNumber(
-                              sample.accelerationMetersPerSecondSquared,
-                              'm/s^2',
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {formatNumber(sample.netForceNewtons, 'N')}
-                          </TableCell>
-                          <TableCell>
-                            {formatNumber(sample.tensionNewtons, 'N')}
-                          </TableCell>
-                          <TableCell>
-                            {formatEnergy(sample.kineticEnergyJoules)}
-                          </TableCell>
-                          <TableCell>
-                            {formatEnergy(sample.potentialEnergyJoules)}
-                          </TableCell>
-                          <TableCell>
-                            {formatEnergy(sample.thermalEnergyJoules)}
-                          </TableCell>
-                          <TableCell>
-                            {formatEnergy(sample.appliedWorkJoules)}
-                          </TableCell>
-                          <TableCell>
-                            {formatEnergy(sample.totalEnergyJoules)}
-                          </TableCell>
-                        </>
-                      ) : (
-                        renderEmptyKinematicsTableCells()
-                      )}
+                      {sample
+                        ? renderKinematicsTableCells(sample, simulationId)
+                        : renderEmptyKinematicsTableCells(simulationId)}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -4693,6 +4674,21 @@ function buildKinematicsReadoutMetrics({
       {
         label: 'Campo g',
         value: formatNumber(sample.gravitationalFieldNewtonsPerKilogram, 'N/kg'),
+      },
+      {
+        label: 'Potencial especifico',
+        value: formatNumber(
+          sample.specificGravitationalPotentialJoulesPerKilogram,
+          'J/kg',
+        ),
+      },
+      {
+        label: 'Poco central',
+        value: formatNumber(sample.spacetimeCentralDeformation, 'x'),
+      },
+      {
+        label: 'Poco orbital',
+        value: formatNumber(sample.spacetimeOrbitingDeformation, 'x'),
       },
       ...energyMetric,
       frameMetric,
@@ -7062,6 +7058,66 @@ function UniformlyAcceleratedMotionHud({
   )
 }
 
+function renderKinematicsTableCells(
+  sample: KinematicsSample,
+  simulationId: KinematicsSimulationId,
+) {
+  if (simulationId === 'gravitational-field-orbits') {
+    return (
+      <>
+        <TableCell>{formatNumber(sample.timeSeconds, 's')}</TableCell>
+        <TableCell>{formatNumber(sample.positionMeters, 'm')}</TableCell>
+        <TableCell>{formatNumber(sample.xMeters, 'm')}</TableCell>
+        <TableCell>{formatNumber(sample.zMeters, 'm')}</TableCell>
+        <TableCell>{formatNumber(sample.speedMetersPerSecond, 'm/s')}</TableCell>
+        <TableCell>
+          {formatNumber(sample.gravitationalFieldNewtonsPerKilogram, 'N/kg')}
+        </TableCell>
+        <TableCell>{formatNumber(sample.netForceNewtons, 'N')}</TableCell>
+        <TableCell>
+          {formatNumber(
+            sample.specificGravitationalPotentialJoulesPerKilogram,
+            'J/kg',
+          )}
+        </TableCell>
+        <TableCell>{formatEnergy(sample.kineticEnergyJoules)}</TableCell>
+        <TableCell>{formatEnergy(sample.potentialEnergyJoules)}</TableCell>
+        <TableCell>{formatEnergy(sample.totalEnergyJoules)}</TableCell>
+        <TableCell>
+          {formatNumber(sample.spacetimeCentralDeformation, 'x')}
+        </TableCell>
+        <TableCell>
+          {formatNumber(sample.spacetimeOrbitingDeformation, 'x')}
+        </TableCell>
+      </>
+    )
+  }
+
+  return (
+    <>
+      <TableCell>{formatNumber(sample.timeSeconds, 's')}</TableCell>
+      <TableCell>{formatNumber(sample.positionMeters, 'm')}</TableCell>
+      <TableCell>{formatNumber(sample.displacementMeters, 'm')}</TableCell>
+      <TableCell>{formatNumber(sample.xMeters, 'm')}</TableCell>
+      <TableCell>{formatNumber(sample.zMeters, 'm')}</TableCell>
+      <TableCell>
+        {formatNumber(sample.velocityMetersPerSecond, 'm/s')}
+      </TableCell>
+      <TableCell>{formatNumber(sample.speedMetersPerSecond, 'm/s')}</TableCell>
+      <TableCell>
+        {formatNumber(sample.accelerationMetersPerSecondSquared, 'm/s^2')}
+      </TableCell>
+      <TableCell>{formatNumber(sample.netForceNewtons, 'N')}</TableCell>
+      <TableCell>{formatNumber(sample.tensionNewtons, 'N')}</TableCell>
+      <TableCell>{formatEnergy(sample.kineticEnergyJoules)}</TableCell>
+      <TableCell>{formatEnergy(sample.potentialEnergyJoules)}</TableCell>
+      <TableCell>{formatEnergy(sample.thermalEnergyJoules)}</TableCell>
+      <TableCell>{formatEnergy(sample.appliedWorkJoules)}</TableCell>
+      <TableCell>{formatEnergy(sample.totalEnergyJoules)}</TableCell>
+    </>
+  )
+}
+
 function renderEmptyTableCells() {
   return sampleTableColumnIds.map((columnId) => (
     <TableCell key={columnId} sx={{ color: 'text.disabled' }}>
@@ -7078,8 +7134,15 @@ function renderEmptyInclinedPlaneTableCells() {
   ))
 }
 
-function renderEmptyKinematicsTableCells() {
-  return kinematicsSampleTableColumnIds.map((columnId) => (
+function renderEmptyKinematicsTableCells(
+  simulationId: KinematicsSimulationId,
+) {
+  const columnIds =
+    simulationId === 'gravitational-field-orbits'
+      ? gravitationalOrbitSampleTableColumnIds
+      : kinematicsSampleTableColumnIds
+
+  return columnIds.map((columnId) => (
     <TableCell key={columnId} sx={{ color: 'text.disabled' }}>
       --
     </TableCell>

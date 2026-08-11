@@ -142,7 +142,6 @@ describe('simulation registry', () => {
       'work-energy-track',
       'collisions-1d-2d',
       'continuity-bernoulli',
-      'gravitational-field-orbits',
       'hydrostatics-buoyancy',
       'mass-spring',
       'particle-equilibrium',
@@ -163,10 +162,10 @@ describe('simulation registry', () => {
       expect(simulation.technologyPlan?.engine).toBe('custom-analytic')
       expect(simulation.technologyPlan?.charting).toBe('live-canvas')
       expect(fixture.simulationId).toBe(simulationId)
-      const expectedRuntimeParameterIds =
-        simulationId === 'gravitational-field-orbits'
-          ? ['durationSeconds', 'chartWindowSeconds', 'modelTimeScale']
-          : ['durationSeconds', 'chartWindowSeconds']
+      const expectedRuntimeParameterIds = [
+        'durationSeconds',
+        'chartWindowSeconds',
+      ]
 
       expect(fixture.runtimeParameters.map((parameter) => parameter.id)).toEqual([
         ...expectedRuntimeParameterIds,
@@ -176,6 +175,41 @@ describe('simulation registry', () => {
       expect(fixture.limits.length).toBeGreaterThan(0)
       expect(fixture.formulas.length).toBeGreaterThan(0)
     })
+  })
+
+  it('keeps the spacetime-fabric gravity simulation ready after visual approval', () => {
+    const simulation = findSimulation('gravitational-field-orbits')
+    const fixture = kinematicsFixtures['gravitational-field-orbits']
+
+    expect(simulation.status).toBe('ready')
+    expect(simulation.topicPath).toEqual([
+      'Mecanica',
+      'Gravitacao',
+      'Campo gravitacional e orbitas',
+    ])
+    expect(fixture.parameters.map((parameter) => parameter.id)).toContain(
+      'fabricDeformationScale',
+    )
+    const fabricLineOpacity = fixture.parameters.find(
+      (parameter) => parameter.id === 'fabricLineOpacity',
+    )
+
+    expect(fabricLineOpacity).toMatchObject({
+      defaultValue: 0.6,
+      max: 1,
+      min: 0,
+    })
+    expect(fixture.parameters.map((parameter) => parameter.id)).toContain(
+      'orbitingBodyWellAmplification',
+    )
+    expect(fixture.runtimeParameters.map((parameter) => parameter.id)).toEqual([
+      'durationSeconds',
+      'chartWindowSeconds',
+      'modelTimeScale',
+    ])
+    expect(fixture.formulas.map((formula) => formula.id)).toContain(
+      'fabric-visual-mapping',
+    )
   })
 
   it('declares the approved Fase 4 oscillators and mechanical waves as ready', () => {

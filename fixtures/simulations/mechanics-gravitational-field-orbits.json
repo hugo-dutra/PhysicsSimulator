@@ -43,7 +43,10 @@
     "orbitalRadiusKilometers": 7000,
     "eccentricity": 0.12,
     "satelliteMassKilograms": 900,
-    "initialAngleDegrees": 0
+    "initialAngleDegrees": 0,
+    "fabricDeformationScale": 1,
+    "fabricLineOpacity": 0.6,
+    "orbitingBodyWellAmplification": 0.35
   },
   "parameters": [
     {
@@ -99,6 +102,39 @@
       "max": 360,
       "step": 1,
       "defaultValue": 0
+    },
+    {
+      "id": "fabricDeformationScale",
+      "label": "Profundidade do tecido",
+      "description": "Escala somente visual aplicada aos pocos da malha didatica. Zero deixa o tecido plano sem alterar orbita, campo, forca ou energia; aumentar aprofunda os pocos calculados pelo motor para facilitar a leitura.",
+      "unit": "x",
+      "kind": "number",
+      "min": 0,
+      "max": 2,
+      "step": 0.05,
+      "defaultValue": 1
+    },
+    {
+      "id": "fabricLineOpacity",
+      "label": "Alfa das linhas",
+      "description": "Transparencia das linhas do tecido do espaco-tempo. Zero oculta apenas o wireframe e 1 deixa as linhas totalmente opacas; o padrao de 0,60 mantem a malha sutil sem alterar pocos, orbita ou grandezas fisicas.",
+      "unit": "x",
+      "kind": "number",
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "defaultValue": 0.6
+    },
+    {
+      "id": "orbitingBodyWellAmplification",
+      "label": "Amplificacao do poco orbital",
+      "description": "Amplificacao didatica da deformacao produzida pelo corpo em orbita. Zero remove apenas esse poco visual; aumentar torna sua deformacao local mais perceptivel, sem fingir que a malha esta em escala fisica.",
+      "unit": "x",
+      "kind": "number",
+      "min": 0,
+      "max": 1.2,
+      "step": 0.05,
+      "defaultValue": 0.35
     }
   ],
   "presets": [
@@ -110,7 +146,10 @@
         "orbitalRadiusKilometers": 7000,
         "eccentricity": 0.02,
         "satelliteMassKilograms": 900,
-        "initialAngleDegrees": 0
+        "initialAngleDegrees": 0,
+        "fabricDeformationScale": 1,
+        "fabricLineOpacity": 0.6,
+        "orbitingBodyWellAmplification": 0.35
       }
     },
     {
@@ -121,7 +160,10 @@
         "orbitalRadiusKilometers": 7000,
         "eccentricity": 0.45,
         "satelliteMassKilograms": 900,
-        "initialAngleDegrees": 0
+        "initialAngleDegrees": 0,
+        "fabricDeformationScale": 1.15,
+        "fabricLineOpacity": 0.6,
+        "orbitingBodyWellAmplification": 0.42
       }
     },
     {
@@ -132,11 +174,40 @@
         "orbitalRadiusKilometers": 12000,
         "eccentricity": 0.18,
         "satelliteMassKilograms": 900,
-        "initialAngleDegrees": 30
+        "initialAngleDegrees": 30,
+        "fabricDeformationScale": 1.35,
+        "fabricLineOpacity": 0.6,
+        "orbitingBodyWellAmplification": 0.5
+      }
+    },
+    {
+      "id": "two-visible-wells",
+      "label": "Dois pocos visiveis",
+      "parameters": {
+        "centralMassEarths": 1.5,
+        "orbitalRadiusKilometers": 9000,
+        "eccentricity": 0.22,
+        "satelliteMassKilograms": 2200,
+        "initialAngleDegrees": 20,
+        "fabricDeformationScale": 1.25,
+        "fabricLineOpacity": 0.6,
+        "orbitingBodyWellAmplification": 0.8
       }
     }
   ],
   "regimes": [
+    {
+      "id": "spacetime-fabric-analogy",
+      "label": "Malha didatica amplificada",
+      "condition": "fabricDeformationScale > 0; o poco orbital tambem exige orbitingBodyWellAmplification > 0.",
+      "transitionLimit": "Ao zerar uma escala visual, o poco correspondente desaparece sem alterar os samples orbitais fisicos.",
+      "sampleFields": [
+        "spacetimeCentralDeformation",
+        "spacetimeOrbitingDeformation",
+        "specificGravitationalPotentialJoulesPerKilogram"
+      ],
+      "warningCode": "SPACETIME_FABRIC_ANALOGY"
+    },
     {
       "id": "two-body-keplerian-orbit",
       "label": "Orbita kepleriana de dois corpos",
@@ -148,6 +219,9 @@
         "positionMeters",
         "speedMetersPerSecond",
         "gravitationalFieldNewtonsPerKilogram",
+        "specificGravitationalPotentialJoulesPerKilogram",
+        "spacetimeCentralDeformation",
+        "spacetimeOrbitingDeformation",
         "kineticEnergyJoules",
         "potentialEnergyJoules",
         "totalEnergyJoules"
@@ -171,6 +245,8 @@
     }
   ],
   "limits": [
+    "A malha funciona como analogia de potencial em uma superficie 2D: nao e um tecido material, nao mostra uma dimensao espacial curvada literalmente e nao representa a metrica da relatividade geral em escala.",
+    "O poco do corpo em orbita e amplificado didaticamente para permanecer visivel; a amplificacao nao entra na trajetoria kepleriana, no campo, na forca ou na energia.",
     "O modelo usa campo central de dois corpos para a orbita principal e ignora atmosfera, arrasto, oblatividade e perturbacoes de terceiros.",
     "A lua visual e um satelite didatico calculado no sample para leitura Sol-planeta-lua, mas nao perturba a orbita principal nem entra na energia orbital.",
     "A velocidade orbital da lua visual e relativa ao planeta e usa ritmo didatico proprio, desacoplado da velocidade kepleriana instantanea que varia com a excentricidade.",
@@ -195,6 +271,40 @@
       "sampleFields": ["positionMeters", "gravitationalFieldNewtonsPerKilogram"],
       "relatedChartIds": ["field-time"],
       "relatedVectorIds": ["gravity"]
+    },
+    {
+      "id": "specific-gravitational-potential",
+      "title": "Potencial gravitacional especifico",
+      "expressionLatex": "\\Phi=-\\frac{GM}{r}",
+      "description": "Relaciona massa central e distancia ao potencial por unidade de massa usado como base conceitual da analogia da malha.",
+      "variables": [
+        { "symbol": "\\Phi", "label": "potencial gravitacional especifico", "unit": "J/kg" },
+        { "symbol": "G", "label": "constante gravitacional" },
+        { "symbol": "M", "label": "massa central", "unit": "kg" },
+        { "symbol": "r", "label": "distancia ao centro", "unit": "m" }
+      ],
+      "usedWhen": "Usar no campo newtoniano central para comparar como o potencial fica mais negativo perto da massa.",
+      "notUsedWhen": "Nao interpretar a coordenada vertical desenhada pela malha como uma dimensao espacial fisica ou como a metrica relativistica.",
+      "parameterIds": ["centralMassEarths", "orbitalRadiusKilometers", "eccentricity"],
+      "sampleFields": ["positionMeters", "specificGravitationalPotentialJoulesPerKilogram"],
+      "relatedChartIds": ["potential-time"]
+    },
+    {
+      "id": "fabric-visual-mapping",
+      "title": "Mapeamento visual dos pocos",
+      "expressionLatex": "z_{malha}=-\\frac{D_c}{1+(\\rho/w_c)^2}-\\frac{D_o}{1+(\\rho_o/w_o)^2}",
+      "description": "Superpoe dois pocos suaves: um fixo na massa central e outro movendo-se com o corpo orbital. D_c e D_o chegam ao renderer pelo mesmo sample da orbita; fabricLineOpacity controla apenas o alfa do material wireframe.",
+      "variables": [
+        { "symbol": "D_c", "label": "escala visual do poco central" },
+        { "symbol": "D_o", "label": "escala visual amplificada do poco orbital" },
+        { "symbol": "\\rho", "label": "distancia desenhada ao centro da massa" },
+        { "symbol": "w", "label": "largura visual suavizada do poco" }
+      ],
+      "usedWhen": "Usar somente para ler a analogia de tecido e comparar qualitativamente massas e posicoes.",
+      "notUsedWhen": "Nao usar para medir curvatura relativistica, dilatacao temporal, ondas gravitacionais ou trajetorias profissionais.",
+      "parameterIds": ["centralMassEarths", "satelliteMassKilograms", "fabricDeformationScale", "fabricLineOpacity", "orbitingBodyWellAmplification"],
+      "sampleFields": ["xMeters", "zMeters", "spacetimeCentralDeformation", "spacetimeOrbitingDeformation"],
+      "relatedChartIds": ["fabric-time"]
     },
     {
       "id": "vis-viva",

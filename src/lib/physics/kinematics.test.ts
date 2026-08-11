@@ -1104,7 +1104,10 @@ describe('kinematics physics engine', () => {
     const parameters: GravitationalFieldOrbitsParameters = {
       centralMassEarths: 1,
       eccentricity: 0,
+      fabricDeformationScale: 1,
+      fabricLineOpacity: 0.6,
       initialAngleDegrees: 0,
+      orbitingBodyWellAmplification: 0.35,
       orbitalRadiusKilometers: 7000,
       satelliteMassKilograms: 900,
     }
@@ -1120,13 +1123,61 @@ describe('kinematics physics engine', () => {
     expect(sample.speedMetersPerSecond).toBeGreaterThan(7000)
     expect(sample.gravitationalFieldNewtonsPerKilogram).toBeGreaterThan(7)
     expect(sample.totalEnergyJoules).toBeLessThan(0)
+    expect(sample.specificGravitationalPotentialJoulesPerKilogram)
+      .toBeCloseTo(sample.potentialEnergyJoules / 900)
+    expect(sample.spacetimeCentralDeformation).toBeCloseTo(1)
+    expect(sample.spacetimeOrbitingDeformation).toBeCloseTo(0.35)
+    expect(result.warnings.map((warning) => warning.code)).toContain(
+      'SPACETIME_FABRIC_ANALOGY',
+    )
+  })
+
+  it('can flatten either didactic spacetime well without changing the orbit', () => {
+    const baseParameters: GravitationalFieldOrbitsParameters = {
+      centralMassEarths: 1,
+      eccentricity: 0.2,
+      fabricDeformationScale: 1,
+      fabricLineOpacity: 0.6,
+      initialAngleDegrees: 20,
+      orbitingBodyWellAmplification: 0.35,
+      orbitalRadiusKilometers: 7000,
+      satelliteMassKilograms: 900,
+    }
+    const reference = computeKinematicsSample(
+      'gravitational-field-orbits',
+      baseParameters,
+      120,
+    )
+    const flatFabric = computeKinematicsSample(
+      'gravitational-field-orbits',
+      { ...baseParameters, fabricDeformationScale: 0 },
+      120,
+    )
+    const centralWellOnly = computeKinematicsSample(
+      'gravitational-field-orbits',
+      { ...baseParameters, orbitingBodyWellAmplification: 0 },
+      120,
+    )
+
+    expect(flatFabric.spacetimeCentralDeformation).toBe(0)
+    expect(flatFabric.spacetimeOrbitingDeformation).toBe(0)
+    expect(centralWellOnly.spacetimeCentralDeformation).toBeGreaterThan(0)
+    expect(centralWellOnly.spacetimeOrbitingDeformation).toBe(0)
+    expect(flatFabric.xMeters).toBeCloseTo(reference.xMeters)
+    expect(flatFabric.zMeters).toBeCloseTo(reference.zMeters)
+    expect(flatFabric.totalEnergyJoules).toBeCloseTo(
+      reference.totalEnergyJoules,
+    )
   })
 
   it('varies elliptical orbital speed while preserving equal areas', () => {
     const parameters: GravitationalFieldOrbitsParameters = {
       centralMassEarths: 1,
       eccentricity: 0.45,
+      fabricDeformationScale: 1,
+      fabricLineOpacity: 0.6,
       initialAngleDegrees: 0,
+      orbitingBodyWellAmplification: 0.35,
       orbitalRadiusKilometers: 7000,
       satelliteMassKilograms: 900,
     }
@@ -1174,7 +1225,10 @@ describe('kinematics physics engine', () => {
     const firstParameters: GravitationalFieldOrbitsParameters = {
       centralMassEarths: 1,
       eccentricity: 0.2,
+      fabricDeformationScale: 1,
+      fabricLineOpacity: 0.6,
       initialAngleDegrees: 35,
+      orbitingBodyWellAmplification: 0.35,
       orbitalRadiusKilometers: 7000,
       satelliteMassKilograms: 900,
     }
@@ -1212,7 +1266,10 @@ describe('kinematics physics engine', () => {
     const parameters: GravitationalFieldOrbitsParameters = {
       centralMassEarths: 1,
       eccentricity: 0.08,
+      fabricDeformationScale: 1,
+      fabricLineOpacity: 0.6,
       initialAngleDegrees: 0,
+      orbitingBodyWellAmplification: 0.35,
       orbitalRadiusKilometers: 7000,
       satelliteMassKilograms: 900,
     }
@@ -1250,7 +1307,10 @@ describe('kinematics physics engine', () => {
     const circularParameters: GravitationalFieldOrbitsParameters = {
       centralMassEarths: 1,
       eccentricity: 0,
+      fabricDeformationScale: 1,
+      fabricLineOpacity: 0.6,
       initialAngleDegrees: 0,
+      orbitingBodyWellAmplification: 0.35,
       orbitalRadiusKilometers: 7000,
       satelliteMassKilograms: 900,
     }
@@ -2138,7 +2198,10 @@ function readFixtureLikeParameters(
       return {
         centralMassEarths: 1,
         eccentricity: 0.08,
+        fabricDeformationScale: 1,
+        fabricLineOpacity: 0.6,
         initialAngleDegrees: 0,
+        orbitingBodyWellAmplification: 0.35,
         orbitalRadiusKilometers: 7000,
         satelliteMassKilograms: 900,
       }
