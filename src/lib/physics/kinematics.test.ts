@@ -1170,6 +1170,56 @@ describe('kinematics physics engine', () => {
     )
   })
 
+  it('materializes mass-dependent deformation and influence for the volumetric lattice', () => {
+    const lighterParameters: GravitationalFieldOrbitsParameters = {
+      centralMassEarths: 0.5,
+      eccentricity: 0.12,
+      fabricDeformationScale: 1,
+      fabricLineOpacity: 0.48,
+      initialAngleDegrees: 0,
+      orbitingBodyWellAmplification: 0.55,
+      orbitalRadiusKilometers: 7000,
+      satelliteMassKilograms: 300,
+    }
+    const heavierParameters: GravitationalFieldOrbitsParameters = {
+      ...lighterParameters,
+      centralMassEarths: 4,
+      satelliteMassKilograms: 4800,
+    }
+    const lighter = computeKinematicsSample(
+      'gravitational-space-lattice',
+      lighterParameters,
+      0,
+    )
+    const heavier = computeKinematicsSample(
+      'gravitational-space-lattice',
+      heavierParameters,
+      0,
+    )
+    const result = computeKinematicsTimeline({
+      durationSeconds: 60,
+      parameters: lighterParameters,
+      sampleRateHz: 1,
+      simulationId: 'gravitational-space-lattice',
+    })
+
+    expect(heavier.spacetimeCentralDeformation).toBeGreaterThan(
+      lighter.spacetimeCentralDeformation,
+    )
+    expect(heavier.spacetimeCentralInfluenceScale).toBeGreaterThan(
+      lighter.spacetimeCentralInfluenceScale,
+    )
+    expect(heavier.spacetimeOrbitingDeformation).toBeGreaterThan(
+      lighter.spacetimeOrbitingDeformation,
+    )
+    expect(heavier.spacetimeOrbitingInfluenceScale).toBeGreaterThan(
+      lighter.spacetimeOrbitingInfluenceScale,
+    )
+    expect(result.warnings.map((warning) => warning.code)).toContain(
+      'SPACETIME_LATTICE_ANALOGY',
+    )
+  })
+
   it('varies elliptical orbital speed while preserving equal areas', () => {
     const parameters: GravitationalFieldOrbitsParameters = {
       centralMassEarths: 1,
@@ -2195,6 +2245,7 @@ function readFixtureLikeParameters(
         tensionNewtons: 18,
       }
     case 'gravitational-field-orbits':
+    case 'gravitational-space-lattice':
       return {
         centralMassEarths: 1,
         eccentricity: 0.08,

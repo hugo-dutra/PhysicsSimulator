@@ -68,6 +68,45 @@ describe('kinematics chart configs', () => {
     ).toBeGreaterThan(0.1)
   })
 
+  it('shows mass-derived convergence and reach for the volumetric lattice', () => {
+    const parameters: GravitationalFieldOrbitsParameters = {
+      centralMassEarths: 2,
+      eccentricity: 0.2,
+      fabricDeformationScale: 1.1,
+      fabricLineOpacity: 0.48,
+      initialAngleDegrees: 0,
+      orbitingBodyWellAmplification: 0.7,
+      orbitalRadiusKilometers: 9000,
+      satelliteMassKilograms: 2400,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 60,
+      parameters,
+      sampleRateHz: 1,
+      simulationId: 'gravitational-space-lattice',
+    })
+    const charts = buildKinematicsChartConfigs(
+      result.samples,
+      'gravitational-space-lattice',
+      true,
+    )
+    const latticeChart = charts.find((chart) => chart.id === 'fabric')
+
+    expect(latticeChart?.title).toBe('Intensidade e alcance da malha 3D')
+    expect(latticeChart?.traces.map((trace) => trace.name)).toEqual([
+      'Convergencia central (escala visual)',
+      'Alcance central derivado da massa (escala visual)',
+      'Convergencia orbital amplificada (escala visual)',
+      'Alcance orbital derivado da massa (escala visual)',
+    ])
+    expect(latticeChart?.traces[1]?.y[0]).toBeCloseTo(
+      result.samples[0].spacetimeCentralInfluenceScale,
+    )
+    expect(latticeChart?.traces[3]?.y[0]).toBeCloseTo(
+      result.samples[0].spacetimeOrbitingInfluenceScale,
+    )
+  })
+
   it('shows per-body energy traces for torque levers', () => {
     const parameters: TorqueLeversCenterMassParameters = {
       appliedForceArmMeters: 1.5,

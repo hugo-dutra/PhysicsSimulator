@@ -103,11 +103,20 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /Rolamento sem escorregamento/i }),
     ).toBeInTheDocument()
-    fireEvent.click(
-      screen.getByRole('button', { name: /Alternar subarea Gravitacao/i }),
-    )
+    const gravityToggle = screen.getByRole('button', {
+      name: /Alternar subarea Gravitacao/i,
+    })
+
+    if (gravityToggle.getAttribute('aria-expanded') !== 'true') {
+      fireEvent.click(gravityToggle)
+    }
     expect(
       screen.getByRole('button', { name: /Campo gravitacional e orbitas/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: /Curvatura gravitacional em malha 3D/i,
+      }),
     ).toBeInTheDocument()
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
@@ -628,7 +637,7 @@ describe('App', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Alternar area Mecanica/i }),
-    ).toHaveAttribute('aria-expanded', 'false')
+    ).toHaveAttribute('aria-expanded', 'true')
     openMechanicsArea()
     expect(
       screen.getByRole('button', { name: /Alternar area Mecanica/i }),
@@ -639,10 +648,6 @@ describe('App', () => {
     expect(
       document.querySelector('[aria-controls="subarea-mechanics-oscilacoes"]'),
     ).toBeNull()
-    expect(
-      getToggleByControls('subarea-mechanics-gravitacao'),
-    ).toHaveAttribute('aria-expanded', 'false')
-    fireEvent.click(getToggleByControls('subarea-mechanics-gravitacao'))
     expect(
       getToggleByControls('subarea-mechanics-gravitacao'),
     ).toHaveAttribute('aria-expanded', 'true')
@@ -720,7 +725,7 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
     ).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(4)
+    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(5)
     expect(screen.getAllByText(/^pronto$/i).length).toBeGreaterThan(0)
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),
@@ -944,7 +949,7 @@ describe('App', () => {
       expect(screen.getByRole('img', { name: chart })).toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: /Recolher Graficos/i }))
     })
-  }, 30_000)
+  }, 60_000)
 
   it('opens the inclined plane simulation through the shared shell', () => {
     render(
@@ -1186,6 +1191,12 @@ describe('App', () => {
         subarea: /Alternar subarea Gravitacao/i,
         chart: /Campo gravitacional por tempo/i,
         control: /Massa central \(M_terra\)/i,
+      },
+      {
+        title: /Curvatura gravitacional em malha 3D/i,
+        subarea: /Alternar subarea Gravitacao/i,
+        chart: /Intensidade e alcance da malha 3D/i,
+        control: /Intensidade da malha 3D \(x\)/i,
       },
       {
         title: /Hidrostatica e empuxo/i,

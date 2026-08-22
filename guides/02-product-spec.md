@@ -40,7 +40,7 @@ O catalogo detalhado de simulacoes fica em `09-simulation-catalog-plan.md`. A ex
 - filtros ou agrupamentos por area, nivel e tipo de modelo quando o catalogo crescer.
 
 Itens planejados podem aparecer na sidebar como bloqueados, desabilitados ou marcados como `planejado`. Eles nao devem parecer clicaveis como simulacoes completas enquanto nao tiverem motor, visualizacao, graficos, tabela, formulas e teoria.
-A sidebar deve ser organizada como arvore compacta: area principal expansivel, subarea expansivel e simulacoes como folhas marcadas por status. Subareas que contenham ao menos uma simulacao `analysis` iniciam abertas para destacar o que precisa de teste; subareas que contenham apenas simulacoes `ready` ou `planned` iniciam recolhidas. O fixture local de catalogo deve conter todas as simulacoes planejadas em `09-simulation-catalog-plan.md`. No estado atual, `Campo gravitacional e orbitas` voltou para `ready` depois da aprovacao manual da malha deformavel com dois pocos; `Onda longitudinal em mola`, `Reflexao e refracao`, `Lentes e espelhos` e `Difracao e interferencia da luz` permanecem em `analysis`. As demais simulacoes funcionais previamente aprovadas permanecem `ready`.
+A sidebar deve ser organizada como arvore compacta: area principal expansivel, subarea expansivel e simulacoes como folhas marcadas por status. Subareas que contenham ao menos uma simulacao `analysis` iniciam abertas para destacar o que precisa de teste; subareas que contenham apenas simulacoes `ready` ou `planned` iniciam recolhidas. O fixture local de catalogo deve conter todas as simulacoes planejadas em `09-simulation-catalog-plan.md`. No estado atual, `Campo gravitacional e orbitas` permanece `ready` depois da aprovacao manual da malha deformavel com dois pocos; a segunda visualizacao, `Curvatura gravitacional em malha 3D`, entra como `analysis`, junto de `Onda longitudinal em mola`, `Reflexao e refracao`, `Lentes e espelhos` e `Difracao e interferencia da luz`, aguardando teste manual. As demais simulacoes funcionais previamente aprovadas permanecem `ready`.
 Antes de uma simulacao aparecer como `analysis`, virar `ready` ou continuar em um desses estados depois de uma mudanca, ela precisa passar pelo `Simulation Fidelity Adjustment Guide`: o modelo declarado deve gerar os samples, os regimes fisicos precisam mudar o estado real quando um limite for atingido, e cena, graficos, tabela, formulas, teoria e warnings devem refletir essa mesma fonte. A promocao de `analysis` para `ready` fica reservada ao teste manual do dono do projeto.
 
 ## Tela da simulacao
@@ -158,6 +158,7 @@ Layout recomendado:
 - Rotacao de corpo rigido: inercia base do rotor, distancia radial e valor da massa movel, torque aplicado, velocidade angular inicial de referencia, modo de energia constante que altera omega quando a massa movel muda I, angulo inicial e amortecimento angular.
 - Rolamento sem escorregamento: restricao `v = omega R`, aceleracao no plano, atrito requerido/disponivel e energia translacional/rotacional.
 - Campo gravitacional e orbitas: campo `GM/r^2`, potencial especifico `-GM/r`, equacao vis-viva, forca central, energia orbital e escalas visuais dos dois pocos da malha.
+- Curvatura gravitacional em malha 3D: reutiliza o mesmo campo/orbita, mas materializa uma grade volumetrica de cubos; intensidade, nucleo de convergencia e alcance visual de cada deformacao crescem com a massa correspondente.
 - Hidrostatica e empuxo: pressao `rho g h`, densidade derivada `rho = m/V`, principio de Arquimedes e criterio de flutuacao por densidades.
 - Continuidade e Bernoulli: vazao `Q = Av`, Bernoulli ideal e queda de pressao entre secoes.
 - Blocos chevron, grafico em foco e maximizacao com o mesmo comportamento das simulacoes anteriores.
@@ -172,12 +173,14 @@ Layout recomendado:
 - Toggles de vetores, trilha e energia quando o modelo tiver energia mecanica relevante.
 - Rolamento sem escorregamento: massa, raio, comprimento do trilho, angulo do plano, velocidade inicial, coeficiente de atrito e gravidade.
 - Campo gravitacional e orbitas: massa central, raio de periastro, excentricidade, massa do satelite, angulo inicial, profundidade visual do tecido, alfa das linhas com padrao 60% e amplificacao didatica do poco orbital.
+- Curvatura gravitacional em malha 3D: os mesmos parametros orbitais, intensidade da malha, alfa das linhas 3D e amplificacao didatica da massa orbital, com presets voltados a volume, alcance e convergencia de vertices.
 - Hidrostatica e empuxo: densidade do fluido, massa do corpo, volume do corpo, profundidade inicial e gravidade, com densidade do corpo derivada de `m/V`.
 - Continuidade e Bernoulli: area de entrada, area da garganta, vazao, densidade do fluido, pressao de entrada, desnivel da garganta e gravidade.
 - Blocos chevron, grafico em foco e maximizacao com o mesmo comportamento das simulacoes anteriores.
 
 ## Representacoes esperadas
 
+- Em `Curvatura gravitacional em malha 3D`, o espaco deve aparecer como cubos interligados por linhas originalmente paralelas e perpendiculares. Perto de cada massa, varios vertices convergem exatamente para seu centro; fora do nucleo, as linhas curvam de modo continuo, com intensidade e distancia perceptivel derivadas da massa. A quantidade de cubos permanece fixa, mas cada aresta pode receber amostras intermediarias para suavizar a curva. A cor deve formar um gradiente teal-amarelo-vermelho, ficando vermelha onde influencia visual e desvio geometrico sao maiores. A cena deve declarar que se trata de uma analogia visual, sem sugerir uma borda fisica finita do campo gravitacional.
 - Cena 3D animada do pendulo, com massa renderizada como cubo didatico em vez de circulo plano.
 - Vetores de peso, tensao e velocidade linear com legenda detalhada de cor, modulo e significado acima da cena, alem de legenda compacta dentro da animacao com traco colorido, grandeza e unidade abreviada.
 - Cena 3D animada do massa-mola vertical, com suporte superior fixo, mola helicoidal deformando no eixo vertical, massa esferica presa a extremidade inferior, referencia de equilibrio e vetores de peso, forca elastica, velocidade e aceleracao derivados do mesmo sample.

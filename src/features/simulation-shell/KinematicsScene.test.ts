@@ -305,6 +305,36 @@ describe('KinematicsScene projection helpers', () => {
     )
   })
 
+  it('keeps the volumetric gravity lattice and its orbit on a shared horizontal plane', () => {
+    const parameters: GravitationalFieldOrbitsParameters = {
+      centralMassEarths: 1,
+      eccentricity: 0.2,
+      fabricDeformationScale: 1,
+      fabricLineOpacity: 0.48,
+      initialAngleDegrees: 25,
+      orbitingBodyWellAmplification: 0.55,
+      orbitalRadiusKilometers: 7000,
+      satelliteMassKilograms: 900,
+    }
+    const result = computeKinematicsTimeline({
+      durationSeconds: 60,
+      parameters,
+      sampleRateHz: 1,
+      simulationId: 'gravitational-space-lattice',
+    })
+    const projection = createKinematicsSceneProjection(
+      result.samples,
+      'gravitational-space-lattice',
+    )
+    const bodyPosition = toKinematicsScenePosition(
+      result.samples[10],
+      projection,
+    )
+
+    expect(projection.horizontalPlane).toBe(true)
+    expect(bodyPosition.z).toBe(0)
+  })
+
   it('keeps the didactic moon visually clear of Earth when eccentricity expands the main orbit scale', () => {
     const parameters: GravitationalFieldOrbitsParameters = {
       centralMassEarths: 1,

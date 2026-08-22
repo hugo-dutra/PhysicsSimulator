@@ -68,6 +68,7 @@ import {
 import {
   computeKinematicsTimeline,
   getKinematicsVectorOverlays,
+  isGravitationalFieldSimulationId,
   isKinematicsSimulationId,
   toKinematicsParameters,
   type CoupledOscillatorsParameters,
@@ -110,6 +111,7 @@ import {
   type PendulumVectorOverlay,
 } from '../../lib/physics/pendulum'
 import gravitationalFieldOrbitsTheory from '../../content/simulations/mechanics/gravitational-field-orbits/theory.md?raw'
+import gravitationalSpaceLatticeTheory from '../../content/simulations/mechanics/gravitational-space-lattice/theory.md?raw'
 import hydrostaticsBuoyancyTheory from '../../content/simulations/mechanics/hydrostatics-buoyancy/theory.md?raw'
 import inclinedPlaneTheory from '../../content/simulations/mechanics/inclined-plane-friction/theory.md?raw'
 import massSpringTheory from '../../content/simulations/mechanics/mass-spring/theory.md?raw'
@@ -242,6 +244,7 @@ const kinematicsTheoryById = {
   'doppler-effect': dopplerEffectTheory,
   'forced-oscillator-resonance': forcedOscillatorResonanceTheory,
   'gravitational-field-orbits': gravitationalFieldOrbitsTheory,
+  'gravitational-space-lattice': gravitationalSpaceLatticeTheory,
   'hydrostatics-buoyancy': hydrostaticsBuoyancyTheory,
   'lenses-mirrors': lensesMirrorsTheory,
   'light-diffraction-interference': lightDiffractionInterferenceTheory,
@@ -414,7 +417,9 @@ const gravitationalOrbitSampleTableColumnIds = [
   'potential',
   'total',
   'centralWell',
+  'centralInfluence',
   'orbitingWell',
+  'orbitingInfluence',
 ] as const
 const kinematicsVectorLegendItemsById = {
   'atwood-machine': [
@@ -521,6 +526,26 @@ const kinematicsVectorLegendItemsById = {
       label: 'Forca gravitacional',
       color: themeTokens.warning,
       description: 'forca central que sustenta a curvatura orbital',
+    },
+  ],
+  'gravitational-space-lattice': [
+    {
+      id: 'velocity',
+      label: 'Velocidade orbital',
+      color: themeTokens.cyan,
+      description: 'velocidade tangencial aproximada no ponto da orbita',
+    },
+    {
+      id: 'gravity',
+      label: 'Campo gravitacional',
+      color: themeTokens.danger,
+      description: 'aceleracao gravitacional apontando para o corpo central',
+    },
+    {
+      id: 'centripetal',
+      label: 'Forca gravitacional',
+      color: themeTokens.warning,
+      description: 'forca central usada pelo mesmo sample que deforma a malha',
     },
   ],
   'hydrostatics-buoyancy': [
@@ -4476,7 +4501,7 @@ function KinematicsRuntime({
               >
                 <TableHead>
                   <TableRow>
-                    {simulationId === 'gravitational-field-orbits' ? (
+                    {isGravitationalFieldSimulationId(simulationId) ? (
                       <>
                         <TableCell>t</TableCell>
                         <TableCell>r</TableCell>
@@ -4490,7 +4515,9 @@ function KinematicsRuntime({
                         <TableCell>U_g</TableCell>
                         <TableCell>E</TableCell>
                         <TableCell>D_c</TableCell>
+                        <TableCell>R_c</TableCell>
                         <TableCell>D_o</TableCell>
+                        <TableCell>R_o</TableCell>
                       </>
                     ) : (
                       <>
@@ -4661,7 +4688,7 @@ function buildKinematicsReadoutMetrics({
     ]
   }
 
-  if (simulationId === 'gravitational-field-orbits') {
+  if (isGravitationalFieldSimulationId(simulationId)) {
     return [
       {
         label: 'Raio orbital',
@@ -4683,12 +4710,26 @@ function buildKinematicsReadoutMetrics({
         ),
       },
       {
-        label: 'Poco central',
+        label:
+          simulationId === 'gravitational-space-lattice'
+            ? 'Convergencia central'
+            : 'Poco central',
         value: formatNumber(sample.spacetimeCentralDeformation, 'x'),
       },
       {
-        label: 'Poco orbital',
+        label: 'Alcance central',
+        value: formatNumber(sample.spacetimeCentralInfluenceScale, 'x'),
+      },
+      {
+        label:
+          simulationId === 'gravitational-space-lattice'
+            ? 'Convergencia orbital'
+            : 'Poco orbital',
         value: formatNumber(sample.spacetimeOrbitingDeformation, 'x'),
+      },
+      {
+        label: 'Alcance orbital',
+        value: formatNumber(sample.spacetimeOrbitingInfluenceScale, 'x'),
       },
       ...energyMetric,
       frameMetric,
@@ -7062,7 +7103,7 @@ function renderKinematicsTableCells(
   sample: KinematicsSample,
   simulationId: KinematicsSimulationId,
 ) {
-  if (simulationId === 'gravitational-field-orbits') {
+  if (isGravitationalFieldSimulationId(simulationId)) {
     return (
       <>
         <TableCell>{formatNumber(sample.timeSeconds, 's')}</TableCell>
@@ -7087,7 +7128,13 @@ function renderKinematicsTableCells(
           {formatNumber(sample.spacetimeCentralDeformation, 'x')}
         </TableCell>
         <TableCell>
+          {formatNumber(sample.spacetimeCentralInfluenceScale, 'x')}
+        </TableCell>
+        <TableCell>
           {formatNumber(sample.spacetimeOrbitingDeformation, 'x')}
+        </TableCell>
+        <TableCell>
+          {formatNumber(sample.spacetimeOrbitingInfluenceScale, 'x')}
         </TableCell>
       </>
     )
@@ -7138,7 +7185,7 @@ function renderEmptyKinematicsTableCells(
   simulationId: KinematicsSimulationId,
 ) {
   const columnIds =
-    simulationId === 'gravitational-field-orbits'
+    isGravitationalFieldSimulationId(simulationId)
       ? gravitationalOrbitSampleTableColumnIds
       : kinematicsSampleTableColumnIds
 

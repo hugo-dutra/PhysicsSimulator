@@ -125,6 +125,22 @@ Visualizacoes de gravidade com uma malha deformavel devem separar explicitamente
 
 Aplicacao imediata: `Mecanica > Gravitacao > Campo gravitacional e orbitas` mostra um poco fixo sob a massa central e outro, amplificado, seguindo o planeta na malha wireframe.
 
+## Guia visual para a analogia de malha gravitacional volumetrica
+
+A segunda visualizacao de gravidade representa o espaco como cubos interligados e deve preservar as seguintes invariantes:
+
+- Na grade-base, toda aresta e paralela a X, Y ou Z; nao existem diagonais internas nem planos desconectados.
+- A intensidade, o raio do nucleo e o alcance visual de cada deformacao derivam dos campos de massa/deformacao do mesmo `KinematicsSample` usado por graficos e tabela.
+- Dentro do nucleo dependente da massa, varios vertices coincidem exatamente no centro da massa, tornando visivel que as linhas convergem ao mesmo ponto.
+- Fora do nucleo, a curva decai suavemente. O alcance marca onde a deformacao fica perceptivel na analogia, nao uma distancia fisica finita onde o campo comeca ou termina.
+- A massa orbital acompanha a posicao do sample e pode usar amplificacao didatica declarada; nenhuma escala visual retroage sobre orbita, campo, forca, periodo ou energia.
+- Zerar a intensidade visual restaura a grade ortogonal, inclusive nos centros, sem alterar os samples fisicos.
+- A quantidade de cubos deve permanecer estavel. Para suavizar curvas, o renderer pode subdividir visualmente cada aresta e recalcular seus pontos intermediarios pelo mesmo mapeamento, sem adicionar novas celulas ao espaco.
+- A cor pode codificar a intensidade da analogia: teal na grade quase reta, amarelo/laranja na transicao e vermelho onde influencia visual e desvio geometrico sao maiores. O heatmap deriva apenas dos mesmos pocos visuais e nao deve ser rotulado como uma medicao local exata de `g`.
+- A geometria e o material devem ser reutilizados no loop, com densidade limitada e smoke de FPS/console antes de promocao.
+
+Aplicacao imediata: `Mecanica > Gravitacao > Curvatura gravitacional em malha 3D` usa uma grade cubica unica, com convergencia central e orbital e escalas de influencia proporcionais a raiz cubica das massas de referencia.
+
 ## Plano de ajuste das demais simulacoes
 
 Ao revisar uma simulacao existente, seguir esta ordem:

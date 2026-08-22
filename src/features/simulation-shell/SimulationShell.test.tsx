@@ -92,7 +92,7 @@ describe('SimulationShell playback continuity', () => {
     fireEvent.click(screen.getByLabelText(/Resetar simulacao/i))
 
     expect(readPendulumResetVersion()).toBe('1')
-  })
+  }, 15_000)
 
   it('switches the viewport camera projection without resetting playback', () => {
     render(

@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import {
   hydrostaticTankDepthMeters,
+  isGravitationalFieldSimulationId,
   type KinematicsSample,
   type KinematicsSimulationId,
   type KinematicsVectorOverlay,
@@ -19,7 +20,7 @@ export function createKinematicsSceneProjection(
 ): KinematicsSceneProjection {
   const horizontalPlane =
     simulationId === 'collisions-1d-2d' ||
-    simulationId === 'gravitational-field-orbits' ||
+    isGravitationalFieldSimulationId(simulationId) ||
     simulationId === 'particle-equilibrium' ||
     simulationId === 'rigid-body-rotation' ||
     simulationId === 'uniform-circular-motion' ||

@@ -53,6 +53,7 @@
 - O segundo lote da Fase 3 mantem `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho` como `ready`; `Trabalho e energia em trilho` foi aprovada manualmente apos ser alterada para rampa em U com perda percentual. Todas reutilizam o motor analitico compartilhado com campos extras de forca, tensao, atrito, trabalho, dissipacao, percentual de perda e limites de modelo.
 - O terceiro lote da Fase 3 mantem `Colisoes 1D e 2D`, `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido` como `ready`, ampliando o motor compartilhado com momento linear, impulso, componentes de forca, centro de massa, torque, momento de inercia e grandezas angulares.
 - O quarto lote da Fase 3 mantem `Rolamento sem escorregamento`, `Campo gravitacional e orbitas`, `Hidrostatica e empuxo` e `Continuidade e Bernoulli` como `ready`. A malha gravitacional com dois pocos e analogia explicitamente amplificada foi aprovada manualmente depois do novo gate visual.
+- `Curvatura gravitacional em malha 3D` entra separadamente como `analysis`: usa cubos interligados, arestas ortogonais, convergencia de varios vertices nos centros das massas e intensidade/nucleo/alcance visual derivados da massa. O alcance e uma convencao perceptiva da analogia, nao uma fronteira fisica do campo.
 - `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical` fica como `ready`, ampliando o motor compartilhado com equilibrio estatico `mg/k`, forca elastica, energia elastica/gravitacional, mola helicoidal sincronizada e warning de amortecimento.
 - `Oscilacoes e Ondas > Oscilacoes` concentra `Pendulo simples`, `Massa-mola vertical`, `Oscilador amortecido`, `Oscilador forcado e ressonancia` e `Osciladores acoplados` como simulacoes `ready` apos aprovacao manual, usando fixtures locais, live-canvas, cenas Three.js de osciladores, regimes de amortecimento/ressonancia/acoplamento e teoria Markdown com KaTeX.
 - `Oscilacoes e Ondas > Ondas mecanicas` mantem `Onda em corda`, `Superposicao e interferencia` e `Ondas estacionarias` como `ready` apos aprovacao manual, usando solucao senoidal 1D no motor compartilhado, cena Three.js, probe sincronizado, componentes/envelope, live-canvas, tabela, formulas e teoria Markdown com KaTeX. PixiJS continua opcional para ondas 2D densas futuras.
@@ -69,6 +70,7 @@
 - Definir estrategia final de testes e2e apos inicializar o frontend.
 - Definir criterios objetivos para quando PixiJS, Rapier, Matter.js, D3.js ou Manim deixam de ser opcionais e entram no bundle.
 - Definir se a proxima fatia deve promover Optica para `ready` apos teste manual ou seguir para `Termodinamica`/`Eletromagnetismo`.
+- Aprovar ou solicitar ajustes visuais em `Curvatura gravitacional em malha 3D` antes de promover `gravitational-space-lattice` de `analysis` para `ready`.
 
 ## Gaps deixados para depois
 

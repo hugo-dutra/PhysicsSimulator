@@ -3838,3 +3838,56 @@ Status: pronto.
 - A suite completa passou com 15 arquivos e 152 testes aprovados.
 - `npm run lint` passou sem erros.
 - `npm run build:pages` gerou o bundle de producao com a base `/PhysicsSimulator-build/`; permaneceu apenas o aviso conhecido de chunk acima de 500 kB.
+
+## 2026-08-22 - Curvatura gravitacional em malha 3D
+
+Status: implementada em `analysis`, aguardando aprovacao visual do dono.
+
+Pedido:
+
+- Adicionar uma segunda simulacao de gravidade, separada do tecido 2D aprovado, representando o espaco por varios cubos formados por linhas paralelas e perpendiculares.
+- Fazer as linhas convergirem para as massas, com varios vertices dos cubos encontrando-se exatamente no centro de cada massa.
+- Fazer intensidade, nucleo e distancia perceptivel da curvatura crescerem conforme a massa.
+
+Ajuste:
+
+- Adicionado `Mecanica > Gravitacao > Curvatura gravitacional em malha 3D` ao catalogo como `gravitational-space-lattice`, com fixture, quatro presets, formulas, teoria, limites, warnings, controles com tooltip, graficos e tabela especializados.
+- A orbita newtoniana existente continua sendo a fonte fisica. A nova cena apenas troca a representacao visual por uma `BufferGeometry` volumetrica indexada com 12 divisoes por eixo, 2.197 vertices e 6.084 arestas exclusivamente ortogonais.
+- O motor materializa `spacetimeCentralInfluenceScale` e `spacetimeOrbitingInfluenceScale`, proporcionais a raiz cubica das massas de referencia. O renderer combina essas escalas com as deformacoes do sample para calcular intensidade, nucleo de convergencia e alcance visual.
+- Dentro do nucleo, multiplos vertices coincidem exatamente no centro da massa. Fora dele, uma queda suave curva a grade sem definir uma borda fisica finita do campo gravitacional.
+- Intensidade zero restaura a grade cubica ortogonal sem alterar posicao, campo, forca, periodo ou energia. O tecido 2D anterior permanece separado e `ready`.
+- O shell ganhou leituras de convergencia/alcance, quatro series no grafico da malha 3D, colunas de influencia na tabela, legenda, teoria e warning `SPACETIME_LATTICE_ANALOGY`.
+
+Gate de fidelidade:
+
+- Aplicado `guides/10-simulation-fidelity-adjustment-guide.md`: parametros e zero visual, regimes, samples, cena, graficos, tabela, formulas, teoria, warning e testes usam a mesma fonte e declaram a analogia.
+- Testes puros cobrem arestas apenas X/Y/Z, convergencia de varios vertices no centro, massa maior ampliando intensidade/nucleo/alcance e intensidade zero preservando a grade-base.
+- O alcance registrado e perceptivo/visual; a documentacao nao afirma que o campo gravitacional comeca ou termina nessa distancia.
+- A promocao para `ready` continua condicionada ao teste manual do dono.
+
+Documentacao:
+
+- Lidos `AGENTS.md`, `guides/00-index.md`, os guides de produto, arquitetura, regras, roadmap, dados/API, qualidade, contratos, catalogo, fidelity e `guides/issues.md`.
+- Atualizados `guides/02-product-spec.md` a `guides/10-simulation-fidelity-adjustment-guide.md` nos pontos aplicaveis, alem de `guides/issues.md` e este registro.
+- HLD/diagrama nao foi atualizado porque nao houve nova fronteira de servico, persistencia ou fluxo estrutural; a entrega especializa o renderer e estende o sample no pipeline existente.
+
+Validacao:
+
+- Suite direcionada de fisica, geometria, catalogo, graficos e cena: 5 arquivos e 99 testes passaram.
+- Suite completa final: 16 arquivos e 160 testes passaram.
+- `npm run lint` passou.
+- `npm run build` passou; permaneceu apenas o aviso conhecido de chunk acima de 500 kB.
+- Smoke visual no navegador local confirmou duas massas visiveis, volume de cubos, convergencia, aumento do alcance com massa central de `1` para `8`, restauracao ortogonal com intensidade `0`, 69-75 FPS e nenhum erro no console.
+- O validador de guides foi executado e encontrou somente ausencias estruturais preexistentes (`README.md`, `.agent`, `tasks` e `adr`), sem apontar inconsistencia nos guides alterados.
+- O Vite ficou rodando em `http://127.0.0.1:5173/` e a aba da nova simulacao foi aberta para inspecao do dono.
+
+Complemento visual aprovado:
+
+- Mantida exatamente a mesma topologia de 1.728 cubos e 6.084 arestas-base; cada aresta passou a ter uma amostra intermediaria, totalizando 8.281 pontos e 12.168 segmentos renderizados para suavizar as curvas sem aumentar a quantidade de cubos.
+- O buffer dinamico de posicoes passou a ser acompanhado por um buffer dinamico de cores por vertice. A escala visual percorre teal, amarelo e vermelho conforme a combinacao local de desvio geometrico e intensidade do poco cresce.
+- Intensidade zero continua restaurando a grade ortogonal e agora tambem mantem todas as linhas na cor fria. Massas maiores ampliam de forma continua tanto a regiao deformada quanto a regiao quente do gradiente.
+- A nova coloracao e declarada como leitura didatica da deformacao visual, sem alterar o campo newtoniano, a orbita, os graficos, a tabela ou as formulas.
+- A suite completa final passou com 16 arquivos e 163 testes aprovados; os novos testes cobrem preservacao da contagem de cubos, subdivisao suave e extremos frio/quente do gradiente.
+- `npm run lint` passou.
+- `npm run build:pages` gerou o bundle com base `/PhysicsSimulator-build/`; permaneceu apenas o aviso conhecido de chunk acima de 500 kB.
+- Smoke visual final no navegador interno confirmou massa e intensidade em `1`, cena a 75 FPS e nenhum erro ou warning de execucao no console.

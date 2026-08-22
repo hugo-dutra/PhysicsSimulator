@@ -37,10 +37,10 @@ describe('simulation registry', () => {
       (area) => area.simulations,
     )
 
-    expect(allSimulations).toHaveLength(52)
+    expect(allSimulations).toHaveLength(53)
     expect(
       allSimulations.filter((item) => item.status === 'analysis'),
-    ).toHaveLength(4)
+    ).toHaveLength(5)
     expect(
       allSimulations.filter((item) => item.status === 'ready'),
     ).toHaveLength(26)
@@ -54,7 +54,7 @@ describe('simulation registry', () => {
       simulationCatalog.areas.map((area) => [area.id, area.simulations]),
     )
 
-    expect(simulationsByArea.get('mechanics')).toHaveLength(16)
+    expect(simulationsByArea.get('mechanics')).toHaveLength(17)
     expect(simulationsByArea.get('thermodynamics')).toHaveLength(10)
     expect(simulationsByArea.get('waves')).toHaveLength(14)
     expect(simulationsByArea.get('electromagnetism')).toHaveLength(12)
@@ -209,6 +209,36 @@ describe('simulation registry', () => {
     ])
     expect(fixture.formulas.map((formula) => formula.id)).toContain(
       'fabric-visual-mapping',
+    )
+  })
+
+  it('declares the volumetric gravity lattice as a separate analysis simulation', () => {
+    const simulation = findSimulation('gravitational-space-lattice')
+    const fixture = kinematicsFixtures['gravitational-space-lattice']
+
+    expect(simulation.status).toBe('analysis')
+    expect(simulation.topicPath).toEqual([
+      'Mecanica',
+      'Gravitacao',
+      'Curvatura gravitacional em malha 3D',
+    ])
+    expect(simulation.modelKind).toBe('hybrid')
+    expect(fixture.simulationId).toBe('gravitational-space-lattice')
+    expect(fixture.parameters.map((parameter) => parameter.id)).toEqual([
+      'centralMassEarths',
+      'orbitalRadiusKilometers',
+      'eccentricity',
+      'satelliteMassKilograms',
+      'initialAngleDegrees',
+      'fabricDeformationScale',
+      'fabricLineOpacity',
+      'orbitingBodyWellAmplification',
+    ])
+    expect(fixture.regimes?.map((regime) => regime.warningCode)).toContain(
+      'SPACETIME_LATTICE_ANALOGY',
+    )
+    expect(fixture.formulas.map((formula) => formula.id)).toContain(
+      'lattice-volume-mapping',
     )
   })
 

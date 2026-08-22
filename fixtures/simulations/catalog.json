@@ -718,6 +718,53 @@
           ]
         },
         {
+          "id": "gravitational-space-lattice",
+          "areaId": "mechanics",
+          "topicPath": ["Mecanica", "Gravitacao", "Curvatura gravitacional em malha 3D"],
+          "title": "Curvatura gravitacional em malha 3D",
+          "status": "analysis",
+          "level": "intermediate",
+          "modelKind": "hybrid",
+          "renderer": "three",
+          "fixturePath": "fixtures/simulations/mechanics-gravitational-space-lattice.json",
+          "theoryPath": "src/content/simulations/mechanics/gravitational-space-lattice/theory.md",
+          "description": "Campo e orbita newtonianos vistos dentro de uma malha cubica volumetrica cujos vertices convergem para as massas.",
+          "technologyPlan": {
+            "engine": "custom-analytic",
+            "charting": "live-canvas",
+            "content": "mdx-katex",
+            "notes": "Reutiliza os samples orbitais e materializa intensidade, nucleo e alcance visual dependentes da massa em uma unica BufferGeometry dinamica de arestas ortogonais."
+          },
+          "charts": [
+            {
+              "id": "position-time",
+              "title": "Raio orbital por tempo",
+              "sampleFields": ["timeSeconds", "positionMeters", "xMeters", "zMeters"]
+            },
+            {
+              "id": "field-time",
+              "title": "Campo gravitacional por tempo",
+              "sampleFields": ["timeSeconds", "gravitationalFieldNewtonsPerKilogram", "centripetalForceNewtons"]
+            },
+            {
+              "id": "lattice-time",
+              "title": "Intensidade e alcance da malha 3D",
+              "sampleFields": [
+                "timeSeconds",
+                "spacetimeCentralDeformation",
+                "spacetimeCentralInfluenceScale",
+                "spacetimeOrbitingDeformation",
+                "spacetimeOrbitingInfluenceScale"
+              ]
+            },
+            {
+              "id": "energy-time",
+              "title": "Energia por tempo",
+              "sampleFields": ["timeSeconds", "kineticEnergyJoules", "potentialEnergyJoules", "totalEnergyJoules"]
+            }
+          ]
+        },
+        {
           "id": "hydrostatics-buoyancy",
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Fluidos basicos", "Hidrostatica e empuxo"],

@@ -1,6 +1,7 @@
-import type {
-  KinematicsSample,
-  KinematicsSimulationId,
+import {
+  isGravitationalFieldSimulationId,
+  type KinematicsSample,
+  type KinematicsSimulationId,
 } from '../../lib/physics/kinematics'
 import { themeTokens } from '../../theme/appTheme'
 import type { ChartTrace, ChartYAxisMode } from './LiveLineChartModel'
@@ -350,7 +351,9 @@ export function buildKinematicsChartConfigs(
         yAxisTitle: 'Pressao (pascals)',
       },
     )
-  } else if (simulationId === 'gravitational-field-orbits') {
+  } else if (isGravitationalFieldSimulationId(simulationId)) {
+    const isVolumetricLattice =
+      simulationId === 'gravitational-space-lattice'
     const referenceSample = samples[0]
     const referenceSpecificArealRate = referenceSample
       ? readSpecificArealRate(referenceSample)
@@ -459,20 +462,50 @@ export function buildKinematicsChartConfigs(
       },
       {
         id: 'fabric',
-        title: 'Pocos da malha didatica',
+        title: isVolumetricLattice
+          ? 'Intensidade e alcance da malha 3D'
+          : 'Pocos da malha didatica',
         traces: [
           {
             lineColor: themeTokens.warning,
-            name: 'Poco central (escala visual)',
+            name: isVolumetricLattice
+              ? 'Convergencia central (escala visual)'
+              : 'Poco central (escala visual)',
             x: time,
             y: samples.map((sample) => sample.spacetimeCentralDeformation),
           },
+          ...(isVolumetricLattice
+            ? [
+                {
+                  lineColor: themeTokens.danger,
+                  name: 'Alcance central derivado da massa (escala visual)',
+                  x: time,
+                  y: samples.map(
+                    (sample) => sample.spacetimeCentralInfluenceScale,
+                  ),
+                },
+              ]
+            : []),
           {
             lineColor: themeTokens.teal,
-            name: 'Poco orbital amplificado (escala visual)',
+            name: isVolumetricLattice
+              ? 'Convergencia orbital amplificada (escala visual)'
+              : 'Poco orbital amplificado (escala visual)',
             x: time,
             y: samples.map((sample) => sample.spacetimeOrbitingDeformation),
           },
+          ...(isVolumetricLattice
+            ? [
+                {
+                  lineColor: themeTokens.cyan,
+                  name: 'Alcance orbital derivado da massa (escala visual)',
+                  x: time,
+                  y: samples.map(
+                    (sample) => sample.spacetimeOrbitingInfluenceScale,
+                  ),
+                },
+              ]
+            : []),
         ],
         yAxisTitle: 'Escala visual adimensional',
       },
@@ -1951,7 +1984,7 @@ export function buildKinematicsChartConfigs(
               ]
             :
         simulationId === 'atwood-machine' ||
-        simulationId === 'gravitational-field-orbits' ||
+        isGravitationalFieldSimulationId(simulationId) ||
         simulationId === 'projectile-motion' ||
         simulationId === 'rolling-without-slipping' ||
         simulationId === 'work-energy-track'

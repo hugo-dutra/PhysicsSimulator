@@ -9,6 +9,7 @@ import dampedOscillatorFixtureJson from '../../fixtures/simulations/waves-damped
 import dopplerEffectFixtureJson from '../../fixtures/simulations/waves-doppler-effect.json'
 import forcedOscillatorResonanceFixtureJson from '../../fixtures/simulations/waves-forced-oscillator-resonance.json'
 import gravitationalFieldOrbitsFixtureJson from '../../fixtures/simulations/mechanics-gravitational-field-orbits.json'
+import gravitationalSpaceLatticeFixtureJson from '../../fixtures/simulations/mechanics-gravitational-space-lattice.json'
 import hydrostaticsBuoyancyFixtureJson from '../../fixtures/simulations/mechanics-hydrostatics-buoyancy.json'
 import inclinedPlaneFixtureJson from '../../fixtures/simulations/mechanics-inclined-plane-friction.json'
 import lensesMirrorsFixtureJson from '../../fixtures/simulations/waves-lenses-mirrors.json'
@@ -58,6 +59,8 @@ export const kinematicsFixtures = {
     forcedOscillatorResonanceFixtureJson as SimulationFixture,
   'gravitational-field-orbits':
     gravitationalFieldOrbitsFixtureJson as SimulationFixture,
+  'gravitational-space-lattice':
+    gravitationalSpaceLatticeFixtureJson as SimulationFixture,
   'hydrostatics-buoyancy':
     hydrostaticsBuoyancyFixtureJson as SimulationFixture,
   'lenses-mirrors': lensesMirrorsFixtureJson as SimulationFixture,

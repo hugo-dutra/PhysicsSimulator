@@ -17,6 +17,7 @@ import {
   getKinematicsVectorOverlays,
   hydrostaticTankDepthMeters,
   interpolateKinematicsSample,
+  isGravitationalFieldSimulationId,
   type DopplerEffectParameters,
   type GravitationalFieldOrbitsParameters,
   type KinematicsParameters,
@@ -60,6 +61,14 @@ import {
   computeSpacetimeFabricHeight,
   createSpacetimeFabricGridIndices,
 } from '../../lib/rendering/spacetimeFabric'
+import {
+  computeSpacetimeLatticeHeat,
+  computeSpacetimeLatticePoint,
+  computeSpacetimeLatticeVisualProfile,
+  createSpacetimeLatticeGeometryData,
+  spacetimeLatticeCurveSubdivisions,
+  writeSpacetimeLatticeHeatColor,
+} from '../../lib/rendering/spacetimeLattice'
 import { themeTokens } from '../../theme/appTheme'
 import {
   getRigidBodyRotationBaseRadius,
@@ -274,6 +283,11 @@ type SceneObjects = {
   leverRightMass: THREE.Mesh
   leverSupportHoleShadow: THREE.Mesh
   leverSupport: THREE.Mesh
+  gravityLattice: THREE.LineSegments
+  gravityLatticeBasePositions: Float32Array
+  gravityLatticeCellSize: number
+  gravityLatticeColorAttribute: THREE.BufferAttribute
+  gravityLatticePositionAttribute: THREE.BufferAttribute
   orbitCentralBody: THREE.Mesh
   orbitFabric: THREE.LineSegments
   orbitFabricBasePositions: Float32Array
@@ -499,6 +513,7 @@ const rigidRotationCurvedArrowSegments = 36
 const rigidRotationAxisHeight = 0.7
 const orbitSatellitePathSegments = 96
 const orbitFabricSegments = 96
+const gravityLatticeDivisions = 12
 const hydroTankWidthMeters = 2.8
 const hydroTankHorizontalDepthMeters = 1.8
 const hydroPressureFieldSegments = 24
@@ -858,8 +873,12 @@ export function KinematicsScene({
     )
     const grid = new THREE.GridHelper(gridSize, 10, 0x2a2f3a, 0x20242d)
 
+    const isVolumetricGravityLattice =
+      simulationId === 'gravitational-space-lattice'
+
     gridBackground.position.set(bounds.centerX, bounds.centerY, -0.018)
     gridBackground.renderOrder = 0
+    gridBackground.visible = !isVolumetricGravityLattice
     scene.add(gridBackground)
 
     grid.rotation.x = Math.PI / 2
@@ -869,7 +888,7 @@ export function KinematicsScene({
       simulationId === 'rigid-body-rotation' ? 0.18 : 0.38
     grid.material.depthWrite = false
     grid.renderOrder = 1
-    grid.visible = simulationId !== 'gravitational-field-orbits'
+    grid.visible = !isGravitationalFieldSimulationId(simulationId)
     scene.add(grid)
 
     const orbitFabricGeometry = new THREE.PlaneGeometry(
@@ -909,6 +928,63 @@ export function KinematicsScene({
     orbitFabric.renderOrder = 3
     orbitFabric.visible = simulationId === 'gravitational-field-orbits'
     scene.add(orbitFabric)
+
+    const gravityLatticeData = createSpacetimeLatticeGeometryData(
+      gridSize * 1.04,
+      gravityLatticeDivisions,
+      spacetimeLatticeCurveSubdivisions,
+    )
+    const gravityLatticeGeometry = new THREE.BufferGeometry()
+    const gravityLatticePositions = new Float32Array(
+      gravityLatticeData.positions,
+    )
+    const gravityLatticeColors = new Float32Array(
+      gravityLatticeData.positions.length,
+    )
+    const gravityLatticePositionAttribute = new THREE.BufferAttribute(
+      gravityLatticePositions,
+      3,
+    )
+    const gravityLatticeColorAttribute = new THREE.BufferAttribute(
+      gravityLatticeColors,
+      3,
+    )
+
+    for (let offset = 0; offset < gravityLatticeColors.length; offset += 3) {
+      writeSpacetimeLatticeHeatColor(gravityLatticeColors, offset, 0)
+    }
+
+    gravityLatticePositionAttribute.setUsage(THREE.DynamicDrawUsage)
+    gravityLatticeColorAttribute.setUsage(THREE.DynamicDrawUsage)
+    gravityLatticeGeometry.setAttribute(
+      'position',
+      gravityLatticePositionAttribute,
+    )
+    gravityLatticeGeometry.setAttribute('color', gravityLatticeColorAttribute)
+    gravityLatticeGeometry.setIndex(gravityLatticeData.indices)
+
+    const gravityLattice = new THREE.LineSegments(
+      gravityLatticeGeometry,
+      new THREE.LineBasicMaterial({
+        color: 0xffffff,
+        depthWrite: false,
+        opacity: isVolumetricGravityLattice
+          ? clamp(
+              (parameters as GravitationalFieldOrbitsParameters)
+                .fabricLineOpacity,
+              0,
+              1,
+            )
+          : 0.48,
+        transparent: true,
+        vertexColors: true,
+      }),
+    )
+
+    gravityLattice.position.set(bounds.centerX, bounds.centerY, 0)
+    gravityLattice.renderOrder = 2
+    gravityLattice.visible = isVolumetricGravityLattice
+    scene.add(gravityLattice)
     scene.add(
       createOriginAxesMarker({
         axisLength: getOriginAxesLength(gridSize),
@@ -916,7 +992,9 @@ export function KinematicsScene({
           centerX: bounds.centerX,
           centerY: bounds.centerY,
           size: gridSize,
-          z: grid.position.z + 0.035,
+          z: isVolumetricGravityLattice
+            ? -gridSize * 0.52 + 0.035
+            : grid.position.z + 0.035,
         }),
       }),
     )
@@ -935,7 +1013,7 @@ export function KinematicsScene({
 
     const sceneBodySize = getBodyDisplaySize(bounds.span)
     const orbitFabricReferenceRadius =
-      simulationId === 'gravitational-field-orbits'
+      isGravitationalFieldSimulationId(simulationId)
         ? Math.max(
             sceneBodySize * 4,
             ...referencePathSamples.map(
@@ -1381,7 +1459,7 @@ export function KinematicsScene({
 
     const secondaryBody = new THREE.Mesh(
       simulationId === 'collisions-1d-2d' ||
-        simulationId === 'gravitational-field-orbits'
+        isGravitationalFieldSimulationId(simulationId)
         ? new THREE.SphereGeometry(1, 24, 16)
         : new THREE.BoxGeometry(atwoodMassSize, atwoodMassSize, atwoodMassSize),
       new THREE.MeshStandardMaterial({
@@ -2081,6 +2159,11 @@ export function KinematicsScene({
       leverRightMass,
       leverSupportHoleShadow,
       leverSupport,
+      gravityLattice,
+      gravityLatticeBasePositions: gravityLatticeData.positions,
+      gravityLatticeCellSize: gravityLatticeData.cellSize,
+      gravityLatticeColorAttribute,
+      gravityLatticePositionAttribute,
       orbitCentralBody,
       orbitFabric,
       orbitFabricBasePositions,
@@ -2592,7 +2675,9 @@ function updateConstrainedBodyObjects(
   const isMechanicalWave = isMechanicalWaveSimulation(simulationId)
   const isOptics = isOpticsSimulation(simulationId)
   const isSoundWave = isSoundWaveSimulation(simulationId)
-  const isOrbit = simulationId === 'gravitational-field-orbits'
+  const isOrbit = isGravitationalFieldSimulationId(simulationId)
+  const isVolumetricGravityLattice =
+    simulationId === 'gravitational-space-lattice'
   const isRigidRotation = simulationId === 'rigid-body-rotation'
   const isRolling = simulationId === 'rolling-without-slipping'
   const isTorqueLever = simulationId === 'torque-levers-center-mass'
@@ -2607,7 +2692,7 @@ function updateConstrainedBodyObjects(
     isAtwood ||
     isCollision ||
     isCoupledOscillator ||
-      isOrbit ||
+    (isOrbit && !isVolumetricGravityLattice) ||
     simulationId === 'doppler-effect'
   objects.rollingPlane.visible = isRolling
   objects.rollingPlaneEdges.visible = isRolling
@@ -2653,8 +2738,10 @@ function updateConstrainedBodyObjects(
   objects.leverSupportHoleShadow.visible = isTorqueLever
   objects.leverSupport.visible = isTorqueLever
   objects.orbitCentralBody.visible = isOrbit
-  objects.orbitFabric.visible = isOrbit
-  objects.orbitSatellitePath.visible = isOrbit
+  objects.orbitFabric.visible = simulationId === 'gravitational-field-orbits'
+  objects.gravityLattice.visible = isVolumetricGravityLattice
+  objects.orbitSatellitePath.visible =
+    simulationId === 'gravitational-field-orbits'
   objects.acceleratedMotionAccelerationLabel.visible =
     isUniformlyAcceleratedMotion && showVectors
   objects.acceleratedMotionBodyShadow.visible = isUniformlyAcceleratedMotion
@@ -2721,16 +2808,20 @@ function updateConstrainedBodyObjects(
     objects.orbitCentralBody.scale.setScalar(
       clamp(objects.bodyRadius * 1.18, 0.48, 0.88),
     )
-    objects.secondaryBody.position.copy(
-      toOrbitSatelliteScenePosition(
-        sample,
-        objects.sceneProjection,
-        orbitMoonMinimumRadius,
-      ),
-    )
-    objects.secondaryBody.scale.setScalar(orbitMoonRadius)
-    updateOrbitSpacetimeFabric(objects, sample)
-    updateOrbitSatellitePath(objects, sample, orbitMoonMinimumRadius)
+    if (isVolumetricGravityLattice) {
+      updateVolumetricGravityLattice(objects, sample)
+    } else {
+      objects.secondaryBody.position.copy(
+        toOrbitSatelliteScenePosition(
+          sample,
+          objects.sceneProjection,
+          orbitMoonMinimumRadius,
+        ),
+      )
+      objects.secondaryBody.scale.setScalar(orbitMoonRadius)
+      updateOrbitSpacetimeFabric(objects, sample)
+      updateOrbitSatellitePath(objects, sample, orbitMoonMinimumRadius)
+    }
     return
   }
 
@@ -3089,6 +3180,91 @@ function updateOrbitSpacetimeFabric(
   }
 
   objects.orbitFabricPositionAttribute.needsUpdate = true
+}
+
+function updateVolumetricGravityLattice(
+  objects: SceneObjects,
+  sample: KinematicsSample,
+) {
+  const positions = objects.gravityLatticePositionAttribute
+    .array as Float32Array
+  const colors = objects.gravityLatticeColorAttribute.array as Float32Array
+  const latticePosition = objects.gravityLattice.position
+  const orbitingBodyPosition = toKinematicsScenePosition(
+    sample,
+    objects.sceneProjection,
+  )
+  const centralProfile = computeSpacetimeLatticeVisualProfile({
+    bodyRadius: objects.bodyRadius,
+    deformation: sample.spacetimeCentralDeformation,
+    massInfluenceScale: sample.spacetimeCentralInfluenceScale,
+    referenceRadius: objects.orbitFabricReferenceRadius,
+    role: 'central',
+  })
+  const orbitingProfile = computeSpacetimeLatticeVisualProfile({
+    bodyRadius: objects.bodyRadius,
+    deformation: sample.spacetimeOrbitingDeformation,
+    massInfluenceScale: sample.spacetimeOrbitingInfluenceScale,
+    referenceRadius: objects.orbitFabricReferenceRadius,
+    role: 'orbiting',
+  })
+  const centralCoreRadius = Math.max(
+    centralProfile.coreRadius,
+    objects.gravityLatticeCellSize *
+      (0.72 + sample.spacetimeCentralInfluenceScale * 0.34),
+  )
+  const orbitingCoreRadius = Math.max(
+    orbitingProfile.coreRadius,
+    objects.gravityLatticeCellSize *
+      (0.68 + sample.spacetimeOrbitingInfluenceScale * 0.3),
+  )
+  const wells = [
+    {
+      centerX: -latticePosition.x,
+      centerY: -latticePosition.y,
+      centerZ: -latticePosition.z,
+      ...centralProfile,
+      coreRadius: centralCoreRadius,
+      influenceRadius: Math.max(
+        centralProfile.influenceRadius,
+        centralCoreRadius * 1.35,
+      ),
+    },
+    {
+      centerX: orbitingBodyPosition.x - latticePosition.x,
+      centerY: orbitingBodyPosition.y - latticePosition.y,
+      centerZ: orbitingBodyPosition.z - latticePosition.z,
+      ...orbitingProfile,
+      coreRadius: orbitingCoreRadius,
+      influenceRadius: Math.max(
+        orbitingProfile.influenceRadius,
+        orbitingCoreRadius * 1.35,
+      ),
+    },
+  ]
+
+  for (let offset = 0; offset < positions.length; offset += 3) {
+    const basePoint = {
+      x: objects.gravityLatticeBasePositions[offset],
+      y: objects.gravityLatticeBasePositions[offset + 1],
+      z: objects.gravityLatticeBasePositions[offset + 2],
+    }
+    const point = computeSpacetimeLatticePoint(basePoint, wells)
+    const heat = computeSpacetimeLatticeHeat(
+      basePoint,
+      point,
+      wells,
+      objects.gravityLatticeCellSize,
+    )
+
+    positions[offset] = point.x
+    positions[offset + 1] = point.y
+    positions[offset + 2] = point.z
+    writeSpacetimeLatticeHeatColor(colors, offset, heat)
+  }
+
+  objects.gravityLatticePositionAttribute.needsUpdate = true
+  objects.gravityLatticeColorAttribute.needsUpdate = true
 }
 
 function updateOrbitSatellitePath(
@@ -6031,7 +6207,7 @@ function createSceneReferencePathSamples(
   parameters: KinematicsParameters,
   waveProfileDomain: MechanicalWaveProfileDomain | null,
 ) {
-  if (simulationId === 'gravitational-field-orbits') {
+  if (isGravitationalFieldSimulationId(simulationId)) {
     return computeGravitationalOrbitPathSamples(
       parameters as GravitationalFieldOrbitsParameters,
     )
@@ -9921,6 +10097,10 @@ function getKinematicsCanvasAriaLabel(simulationId: KinematicsSimulationId) {
     return 'Cena 3D orbital com corpo central, planeta, lua didatica e malha do espaco-tempo deformada por dois pocos, com arraste para orbitar e Shift + scroll para zoom'
   }
 
+  if (simulationId === 'gravitational-space-lattice') {
+    return 'Cena 3D orbital dentro de uma malha cubica volumetrica, com vertices convergindo no centro das massas e alcance dependente da massa, arraste para orbitar e Shift + scroll para zoom'
+  }
+
   if (simulationId === 'hydrostatics-buoyancy') {
     return 'Cena 3D de hidrostatica com tanque transparente, esfera no fluido, vetores de empuxo e peso, arraste para orbitar e Shift + scroll para zoom'
   }
@@ -9941,7 +10121,7 @@ function normalizeModelTimeScale(value: number) {
 }
 
 function getTraceFadeSeconds(simulationId: KinematicsSimulationId) {
-  return simulationId === 'gravitational-field-orbits'
+  return isGravitationalFieldSimulationId(simulationId)
     ? orbitalTraceFadeSeconds
     : traceFadeSeconds
 }

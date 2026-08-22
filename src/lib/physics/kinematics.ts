@@ -9,6 +9,7 @@ export type KinematicsSimulationId =
   | 'doppler-effect'
   | 'forced-oscillator-resonance'
   | 'gravitational-field-orbits'
+  | 'gravitational-space-lattice'
   | 'hydrostatics-buoyancy'
   | 'lenses-mirrors'
   | 'light-diffraction-interference'
@@ -445,7 +446,9 @@ export type KinematicsSample = {
   secondaryZMeters: number
   speedMetersPerSecond: number
   spacetimeCentralDeformation: number
+  spacetimeCentralInfluenceScale: number
   spacetimeOrbitingDeformation: number
+  spacetimeOrbitingInfluenceScale: number
   specificGravitationalPotentialJoulesPerKilogram: number
   springForceNewtons: number
   submergedFraction: number
@@ -536,6 +539,7 @@ const kinematicsSimulationIds = [
   'doppler-effect',
   'forced-oscillator-resonance',
   'gravitational-field-orbits',
+  'gravitational-space-lattice',
   'hydrostatics-buoyancy',
   'lenses-mirrors',
   'light-diffraction-interference',
@@ -627,7 +631,9 @@ const sampleNumericKeys = [
   'secondaryZMeters',
   'speedMetersPerSecond',
   'spacetimeCentralDeformation',
+  'spacetimeCentralInfluenceScale',
   'spacetimeOrbitingDeformation',
+  'spacetimeOrbitingInfluenceScale',
   'specificGravitationalPotentialJoulesPerKilogram',
   'springForceNewtons',
   'submergedFraction',
@@ -674,6 +680,15 @@ export function isKinematicsSimulationId(
 ): simulationId is KinematicsSimulationId {
   return kinematicsSimulationIds.includes(
     simulationId as KinematicsSimulationId,
+  )
+}
+
+export function isGravitationalFieldSimulationId(
+  simulationId: KinematicsSimulationId,
+) {
+  return (
+    simulationId === 'gravitational-field-orbits' ||
+    simulationId === 'gravitational-space-lattice'
   )
 }
 
@@ -1044,7 +1059,8 @@ export function toKinematicsParameters(
       validateForcedOscillatorResonanceParameters(parameters)
       return parameters
     }
-    case 'gravitational-field-orbits': {
+    case 'gravitational-field-orbits':
+    case 'gravitational-space-lattice': {
       const parameters: GravitationalFieldOrbitsParameters = {
         centralMassEarths: readNumber(values, 'centralMassEarths'),
         eccentricity: readNumber(values, 'eccentricity'),
@@ -1470,6 +1486,7 @@ export function computeKinematicsSample(
         timeSeconds,
       )
     case 'gravitational-field-orbits':
+    case 'gravitational-space-lattice':
       return computeGravitationalFieldOrbitsSample(
         parameters as GravitationalFieldOrbitsParameters,
         timeSeconds,
@@ -1702,7 +1719,7 @@ export function getKinematicsVectorOverlays(
     ]
   }
 
-  if (simulationId === 'gravitational-field-orbits') {
+  if (isGravitationalFieldSimulationId(simulationId)) {
     return [
       {
         direction: normalizeVector({
@@ -3081,10 +3098,16 @@ function computeGravitationalFieldOrbitsSample(
   const spacetimeCentralDeformation =
     parameters.fabricDeformationScale *
     Math.cbrt(parameters.centralMassEarths)
+  const spacetimeCentralInfluenceScale = Math.cbrt(
+    parameters.centralMassEarths,
+  )
   const spacetimeOrbitingDeformation =
     parameters.fabricDeformationScale *
     parameters.orbitingBodyWellAmplification *
     Math.cbrt(parameters.satelliteMassKilograms / 900)
+  const spacetimeOrbitingInfluenceScale = Math.cbrt(
+    parameters.satelliteMassKilograms / 900,
+  )
   const periodSeconds =
     (2 * Math.PI) / meanMotionRadiansPerSecond
 
@@ -3121,7 +3144,9 @@ function computeGravitationalFieldOrbitsSample(
     secondaryZMeters,
     speedMetersPerSecond: orbitalSpeedMetersPerSecond,
     spacetimeCentralDeformation,
+    spacetimeCentralInfluenceScale,
     spacetimeOrbitingDeformation,
+    spacetimeOrbitingInfluenceScale,
     specificGravitationalPotentialJoulesPerKilogram,
     timeSeconds,
     totalEnergyJoules: kineticEnergyJoules + potentialEnergyJoules,
@@ -6823,8 +6848,12 @@ function buildSample(
     speedMetersPerSecond: sample.speedMetersPerSecond ?? 0,
     spacetimeCentralDeformation:
       sample.spacetimeCentralDeformation ?? 0,
+    spacetimeCentralInfluenceScale:
+      sample.spacetimeCentralInfluenceScale ?? 0,
     spacetimeOrbitingDeformation:
       sample.spacetimeOrbitingDeformation ?? 0,
+    spacetimeOrbitingInfluenceScale:
+      sample.spacetimeOrbitingInfluenceScale ?? 0,
     specificGravitationalPotentialJoulesPerKilogram:
       sample.specificGravitationalPotentialJoulesPerKilogram ?? 0,
     springForceNewtons: sample.springForceNewtons ?? 0,
@@ -6945,13 +6974,19 @@ function getKinematicsWarnings(
     return []
   }
 
-  if (simulationId === 'gravitational-field-orbits') {
+  if (isGravitationalFieldSimulationId(simulationId)) {
     const orbitParameters = parameters as GravitationalFieldOrbitsParameters
+    const isVolumetricLattice =
+      simulationId === 'gravitational-space-lattice'
     const warnings: SimulationWarning[] = [
       {
-        code: 'SPACETIME_FABRIC_ANALOGY',
+        code: isVolumetricLattice
+          ? 'SPACETIME_LATTICE_ANALOGY'
+          : 'SPACETIME_FABRIC_ANALOGY',
         message:
-          'A malha deformada e uma analogia visual amplificada do potencial gravitacional, nao um tecido fisico nem uma representacao em escala da relatividade geral.',
+          isVolumetricLattice
+            ? 'A malha cubica deformada e uma analogia visual amplificada do potencial gravitacional: as linhas e a convergencia dos vertices nao sao estruturas materiais nem uma metrica relativistica em escala.'
+            : 'A malha deformada e uma analogia visual amplificada do potencial gravitacional, nao um tecido fisico nem uma representacao em escala da relatividade geral.',
       },
     ]
 
@@ -7664,6 +7699,7 @@ function validateKinematicsParameters(
       )
       return
     case 'gravitational-field-orbits':
+    case 'gravitational-space-lattice':
       validateGravitationalFieldOrbitsParameters(
         parameters as GravitationalFieldOrbitsParameters,
       )

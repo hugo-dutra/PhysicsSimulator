@@ -106,6 +106,7 @@ Tasks:
 - `[x]` Implementar `Mecanica > Rotacao > Rolamento sem escorregamento`.
 - `[x]` Implementar `Mecanica > Gravitacao > Campo gravitacional e orbitas`.
 - `[x]` Evoluir `Campo gravitacional e orbitas` com malha deformavel, poco central, poco orbital amplificado, potencial especifico, controles, graficos, tabela, formulas, teoria e testes sincronizados; promover novamente para `ready` apos aprovacao visual manual.
+- `[x]` Implementar a segunda visualizacao `Mecanica > Gravitacao > Curvatura gravitacional em malha 3D`, com cubos interligados, convergencia de vertices no centro das massas e intensidade/nucleo/alcance dependentes da massa; manter em `analysis` ate teste manual.
 - `[x]` Implementar `Mecanica > Fluidos basicos > Hidrostatica e empuxo`.
 - `[x]` Implementar `Mecanica > Fluidos basicos > Continuidade e Bernoulli`.
 - `[x]` Criar presets didaticos por subarea mecanica.

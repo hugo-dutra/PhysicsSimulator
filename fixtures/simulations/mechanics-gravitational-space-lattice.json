@@ -1,0 +1,334 @@
+{
+  "simulationId": "gravitational-space-lattice",
+  "durationSeconds": 7200,
+  "sampleRateHz": 1,
+  "chartWindowSeconds": 1800,
+  "runtimeParameters": [
+    {
+      "id": "durationSeconds",
+      "label": "Horizonte calculado",
+      "description": "Horizonte de tempo pre-calculado para a orbita, os graficos e a tabela. Aumentar permite acompanhar mais tempo do mesmo modelo fisico.",
+      "unit": "s",
+      "kind": "number",
+      "min": 900,
+      "max": 21600,
+      "step": 60,
+      "defaultValue": 7200
+    },
+    {
+      "id": "chartWindowSeconds",
+      "label": "Janela do grafico",
+      "description": "Intervalo recente mostrado nos graficos e na tabela. Aumentar mostra mais da orbita; diminuir aproxima a leitura do estado atual.",
+      "unit": "s",
+      "kind": "number",
+      "min": 300,
+      "max": 7200,
+      "step": 60,
+      "defaultValue": 1800
+    },
+    {
+      "id": "modelTimeScale",
+      "label": "Tempo orbital exibido",
+      "description": "Quantidade de segundos fisicos percorridos por segundo real. Aumentar acelera apenas a leitura dos mesmos samples orbitais e nao altera forca, energia ou deformacao calculada.",
+      "unit": "s/s",
+      "kind": "number",
+      "min": 1,
+      "max": 360,
+      "step": 5,
+      "defaultValue": 120
+    }
+  ],
+  "defaultParameters": {
+    "centralMassEarths": 1,
+    "orbitalRadiusKilometers": 7000,
+    "eccentricity": 0.12,
+    "satelliteMassKilograms": 900,
+    "initialAngleDegrees": 0,
+    "fabricDeformationScale": 1,
+    "fabricLineOpacity": 0.48,
+    "orbitingBodyWellAmplification": 0.55
+  },
+  "parameters": [
+    {
+      "id": "centralMassEarths",
+      "label": "Massa central",
+      "description": "Massa do corpo central em massas da Terra. Massas maiores intensificam o campo e fazem os cubos convergirem a partir de uma distancia visual maior.",
+      "unit": "M_terra",
+      "kind": "number",
+      "min": 0.05,
+      "max": 8,
+      "step": 0.05,
+      "defaultValue": 1
+    },
+    {
+      "id": "orbitalRadiusKilometers",
+      "label": "Raio de periastro",
+      "description": "Distancia minima da orbita ao centro. Aumentar amplia a cena, alonga o periodo e reduz o campo gravitacional no corpo orbital.",
+      "unit": "km",
+      "kind": "number",
+      "min": 1200,
+      "max": 30000,
+      "step": 100,
+      "defaultValue": 7000
+    },
+    {
+      "id": "eccentricity",
+      "label": "Excentricidade",
+      "description": "Forma da orbita eliptica. Zero gera uma orbita circular; valores maiores alongam a trajetoria e deslocam o poco movel pela malha volumetrica.",
+      "kind": "number",
+      "min": 0,
+      "max": 0.84,
+      "step": 0.01,
+      "defaultValue": 0.12
+    },
+    {
+      "id": "satelliteMassKilograms",
+      "label": "Massa do corpo em orbita",
+      "description": "Massa do corpo orbital. Aumentar escala forca e energia e tambem amplia o nucleo e o alcance visual em que os vertices convergem para essa massa.",
+      "unit": "kg",
+      "kind": "number",
+      "min": 1,
+      "max": 5000,
+      "step": 10,
+      "defaultValue": 900
+    },
+    {
+      "id": "initialAngleDegrees",
+      "label": "Angulo inicial",
+      "description": "Orientacao inicial do corpo orbital. Alterar move o ponto de partida e a singularidade visual movel sem trocar o modelo gravitacional.",
+      "unit": "deg",
+      "kind": "number",
+      "min": 0,
+      "max": 360,
+      "step": 1,
+      "defaultValue": 0
+    },
+    {
+      "id": "fabricDeformationScale",
+      "label": "Intensidade da malha 3D",
+      "description": "Escala somente visual da convergencia dos cubos. Zero restaura a malha ortogonal sem alterar orbita, campo, forca ou energia; aumentar aproxima mais vertices das massas.",
+      "unit": "x",
+      "kind": "number",
+      "min": 0,
+      "max": 2,
+      "step": 0.05,
+      "defaultValue": 1
+    },
+    {
+      "id": "fabricLineOpacity",
+      "label": "Alfa das linhas 3D",
+      "description": "Transparencia das arestas dos cubos. Zero oculta apenas a malha e 1 deixa todas as linhas opacas, sem alterar a geometria ou qualquer grandeza fisica.",
+      "unit": "x",
+      "kind": "number",
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "defaultValue": 0.48
+    },
+    {
+      "id": "orbitingBodyWellAmplification",
+      "label": "Amplificacao da massa orbital",
+      "description": "Ganho didatico aplicado somente a intensidade da convergencia no corpo orbital. Zero remove sua deformacao visual; a massa ainda determina o nucleo e o alcance relativo.",
+      "unit": "x",
+      "kind": "number",
+      "min": 0,
+      "max": 1.2,
+      "step": 0.05,
+      "defaultValue": 0.55
+    }
+  ],
+  "presets": [
+    {
+      "id": "earth-volume",
+      "label": "Volume terrestre",
+      "parameters": {
+        "centralMassEarths": 1,
+        "orbitalRadiusKilometers": 7000,
+        "eccentricity": 0.08,
+        "satelliteMassKilograms": 900,
+        "initialAngleDegrees": 0,
+        "fabricDeformationScale": 1,
+        "fabricLineOpacity": 0.48,
+        "orbitingBodyWellAmplification": 0.55
+      }
+    },
+    {
+      "id": "wide-heavy-well",
+      "label": "Massa central intensa",
+      "parameters": {
+        "centralMassEarths": 5,
+        "orbitalRadiusKilometers": 15000,
+        "eccentricity": 0.18,
+        "satelliteMassKilograms": 1200,
+        "initialAngleDegrees": 20,
+        "fabricDeformationScale": 1.25,
+        "fabricLineOpacity": 0.52,
+        "orbitingBodyWellAmplification": 0.55
+      }
+    },
+    {
+      "id": "moving-singularity",
+      "label": "Nucleo orbital visivel",
+      "parameters": {
+        "centralMassEarths": 1.4,
+        "orbitalRadiusKilometers": 9000,
+        "eccentricity": 0.32,
+        "satelliteMassKilograms": 4800,
+        "initialAngleDegrees": 35,
+        "fabricDeformationScale": 1.15,
+        "fabricLineOpacity": 0.5,
+        "orbitingBodyWellAmplification": 0.95
+      }
+    },
+    {
+      "id": "orthogonal-reference",
+      "label": "Malha ortogonal",
+      "parameters": {
+        "centralMassEarths": 1,
+        "orbitalRadiusKilometers": 7000,
+        "eccentricity": 0.12,
+        "satelliteMassKilograms": 900,
+        "initialAngleDegrees": 0,
+        "fabricDeformationScale": 0,
+        "fabricLineOpacity": 0.42,
+        "orbitingBodyWellAmplification": 0.55
+      }
+    }
+  ],
+  "regimes": [
+    {
+      "id": "volumetric-lattice-analogy",
+      "label": "Malha cubica gravitacional",
+      "condition": "fabricDeformationScale > 0; a massa orbital tambem exige orbitingBodyWellAmplification > 0 para produzir intensidade visual.",
+      "transitionLimit": "Ao zerar a intensidade, os vertices retornam a grade ortogonal sem mudar os samples orbitais fisicos.",
+      "sampleFields": [
+        "spacetimeCentralDeformation",
+        "spacetimeCentralInfluenceScale",
+        "spacetimeOrbitingDeformation",
+        "spacetimeOrbitingInfluenceScale",
+        "specificGravitationalPotentialJoulesPerKilogram"
+      ],
+      "warningCode": "SPACETIME_LATTICE_ANALOGY"
+    },
+    {
+      "id": "two-body-keplerian-orbit",
+      "label": "Orbita kepleriana de dois corpos",
+      "condition": "0 <= eccentricity < 0.85 no campo central newtoniano GM/r^2.",
+      "transitionLimit": "Excentricidades altas continuam elipticas, mas perturbacoes, arrasto e precessao ficam fora do modelo.",
+      "sampleFields": [
+        "xMeters",
+        "zMeters",
+        "speedMetersPerSecond",
+        "gravitationalFieldNewtonsPerKilogram",
+        "kineticEnergyJoules",
+        "potentialEnergyJoules",
+        "totalEnergyJoules"
+      ]
+    },
+    {
+      "id": "high-eccentricity-warning",
+      "label": "Excentricidade alta didatica",
+      "condition": "eccentricity > highEccentricityWarningThreshold.",
+      "transitionLimit": "O modelo mantem a solucao de Kepler e emite aviso sobre aproximacoes ausentes.",
+      "sampleFields": ["xMeters", "zMeters", "positionMeters", "speedMetersPerSecond"],
+      "warningCode": "ORBIT_HIGH_ECCENTRICITY"
+    }
+  ],
+  "limits": [
+    "A malha cubica e uma analogia visual do potencial newtoniano; nao e uma estrutura material do espaco nem uma solucao da relatividade geral.",
+    "O encontro de varios vertices no centro das massas e uma singularidade visual didatica, nao o interior fisico de um corpo extenso.",
+    "O alcance perceptivel da curva e um limiar visual suave derivado da massa; o campo gravitacional real nao comeca em uma borda finita.",
+    "A massa orbital usa amplificacao visual declarada para permanecer legivel e essa amplificacao nao altera trajetoria, forca ou energia.",
+    "O modelo orbital ignora atmosfera, arrasto, oblatividade, propulsao, mares e perturbacoes gravitacionais de terceiros.",
+    "A lua auxiliar continua sendo apenas um marcador didatico e nao participa da deformacao volumetrica nem da energia orbital principal."
+  ],
+  "formulas": [
+    {
+      "id": "gravitational-field",
+      "title": "Campo gravitacional",
+      "expressionLatex": "g=\\frac{GM}{r^2}",
+      "description": "Calcula a intensidade do campo newtoniano criado pela massa central na posicao do corpo orbital.",
+      "variables": [
+        { "symbol": "G", "label": "constante gravitacional" },
+        { "symbol": "M", "label": "massa central", "unit": "kg" },
+        { "symbol": "r", "label": "distancia ao centro", "unit": "m" }
+      ],
+      "usedWhen": "Usar para um campo central esfericamente simetrico no modelo newtoniano.",
+      "notUsedWhen": "Nao cobre relatividade geral, distribuicoes irregulares ou perturbacoes externas.",
+      "parameterIds": ["centralMassEarths", "orbitalRadiusKilometers"],
+      "sampleFields": ["positionMeters", "gravitationalFieldNewtonsPerKilogram"],
+      "relatedChartIds": ["field-time"],
+      "relatedVectorIds": ["gravity"]
+    },
+    {
+      "id": "specific-gravitational-potential",
+      "title": "Potencial gravitacional especifico",
+      "expressionLatex": "\\Phi=-\\frac{GM}{r}",
+      "description": "Relaciona massa e distancia ao potencial por unidade de massa que fundamenta qualitativamente a analogia visual.",
+      "variables": [
+        { "symbol": "\\Phi", "label": "potencial especifico", "unit": "J/kg" },
+        { "symbol": "G", "label": "constante gravitacional" },
+        { "symbol": "M", "label": "massa central", "unit": "kg" },
+        { "symbol": "r", "label": "distancia ao centro", "unit": "m" }
+      ],
+      "usedWhen": "Usar para comparar qualitativamente regioes mais ou menos ligadas ao campo central.",
+      "notUsedWhen": "Nao interpretar coordenadas da malha como curvatura metricamente mensuravel.",
+      "parameterIds": ["centralMassEarths", "orbitalRadiusKilometers", "eccentricity"],
+      "sampleFields": ["positionMeters", "specificGravitationalPotentialJoulesPerKilogram"],
+      "relatedChartIds": ["potential-time"]
+    },
+    {
+      "id": "lattice-volume-mapping",
+      "title": "Mapeamento visual da malha volumetrica",
+      "expressionLatex": "\\vec p'=\\vec c_i\\ (d_i\\le r_{n,i}),\\qquad \\vec p'=\\vec p+\\sum_i(\\vec c_i-\\vec p)\\alpha_i e^{-1.7((d_i-r_{n,i})/R_i)^2}",
+      "description": "Fora do nucleo, desloca vertices suavemente na direcao das massas; dentro do nucleo, vertices vizinhos encontram o mesmo centro visual.",
+      "variables": [
+        { "symbol": "\\vec p", "label": "vertice original da grade" },
+        { "symbol": "\\vec c_i", "label": "centro visual da massa i" },
+        { "symbol": "d_i", "label": "distancia do vertice a massa" },
+        { "symbol": "r_{n,i}", "label": "raio visual do nucleo" },
+        { "symbol": "R_i", "label": "alcance visual derivado da massa" },
+        { "symbol": "\\alpha_i", "label": "intensidade visual da convergencia" }
+      ],
+      "usedWhen": "Usar apenas para compreender qualitativamente como massas maiores produzem uma influencia visual mais intensa e ampla.",
+      "notUsedWhen": "Nao usar para medir curvatura relativistica, horizonte de eventos, dilatacao temporal ou estrutura interna da massa.",
+      "parameterIds": ["centralMassEarths", "satelliteMassKilograms", "fabricDeformationScale", "fabricLineOpacity", "orbitingBodyWellAmplification"],
+      "sampleFields": ["xMeters", "zMeters", "spacetimeCentralDeformation", "spacetimeCentralInfluenceScale", "spacetimeOrbitingDeformation", "spacetimeOrbitingInfluenceScale"],
+      "relatedChartIds": ["lattice-time"]
+    },
+    {
+      "id": "vis-viva",
+      "title": "Equacao vis-viva",
+      "expressionLatex": "v=\\sqrt{GM\\left(\\frac{2}{r}-\\frac{1}{a}\\right)}",
+      "description": "Relaciona a velocidade orbital ao raio atual e ao semi-eixo maior da elipse kepleriana.",
+      "variables": [
+        { "symbol": "v", "label": "velocidade orbital", "unit": "m/s" },
+        { "symbol": "r", "label": "raio atual", "unit": "m" },
+        { "symbol": "a", "label": "semi-eixo maior", "unit": "m" }
+      ],
+      "usedWhen": "Usar em orbitas keplerianas ideais de dois corpos.",
+      "notUsedWhen": "Nao descreve arrasto, propulsao ou perturbacoes relevantes de terceiros.",
+      "parameterIds": ["centralMassEarths", "eccentricity", "orbitalRadiusKilometers"],
+      "sampleFields": ["speedMetersPerSecond", "positionMeters"],
+      "relatedChartIds": ["velocity-time"],
+      "relatedVectorIds": ["velocity"]
+    },
+    {
+      "id": "orbital-energy",
+      "title": "Energia orbital",
+      "expressionLatex": "E=\\frac{1}{2}mv^2-\\frac{GMm}{r}",
+      "description": "Combina energia cinetica e potencial gravitacional do corpo orbital no campo central.",
+      "variables": [
+        { "symbol": "E", "label": "energia mecanica", "unit": "J" },
+        { "symbol": "m", "label": "massa orbital", "unit": "kg" },
+        { "symbol": "v", "label": "rapidez orbital", "unit": "m/s" },
+        { "symbol": "r", "label": "raio orbital", "unit": "m" }
+      ],
+      "usedWhen": "Usar para comparar a conservacao de energia no modelo orbital ideal.",
+      "notUsedWhen": "Nao representa perdas por atmosfera, propulsao ou efeitos de mare.",
+      "parameterIds": ["centralMassEarths", "satelliteMassKilograms", "orbitalRadiusKilometers"],
+      "sampleFields": ["kineticEnergyJoules", "potentialEnergyJoules", "totalEnergyJoules"],
+      "relatedChartIds": ["energy-time"]
+    }
+  ]
+}
