@@ -49,6 +49,7 @@
     "latticeDensityMultiplier": 1,
     "orbitingBodyWellAmplification": 0.55,
     "orbitingBodyVisible": true,
+    "moonEnabled": true,
     "orbitTrailVisible": true,
     "lightBeamEnabled": false,
     "lightBeamPlane": "yz",
@@ -163,6 +164,13 @@
       "defaultValue": true
     },
     {
+      "id": "moonEnabled",
+      "label": "Lua e campo lunar",
+      "description": "Liga ou desliga a Lua didatica, sua orbita local e o terceiro poco visual da malha. Desligar remove somente esses elementos: a orbita principal, o campo Sol-planeta, as forcas e as energias continuam iguais.",
+      "kind": "boolean",
+      "defaultValue": true
+    },
+    {
       "id": "orbitTrailVisible",
       "label": "Rastro da orbita",
       "description": "Mostra ou oculta a elipse de referencia e o rastro progressivo do corpo orbital. Este controle e somente visual e funciona em conjunto com o toggle geral de Trilha, sem alterar a trajetoria calculada.",
@@ -249,6 +257,7 @@
         "latticeDensityMultiplier": 1,
         "orbitingBodyWellAmplification": 0.55,
         "orbitingBodyVisible": true,
+        "moonEnabled": true,
         "orbitTrailVisible": true,
         "lightBeamEnabled": true,
         "lightBeamPlane": "xy",
@@ -271,6 +280,7 @@
         "latticeDensityMultiplier": 1,
         "orbitingBodyWellAmplification": 0.55,
         "orbitingBodyVisible": true,
+        "moonEnabled": true,
         "orbitTrailVisible": true,
         "lightBeamEnabled": true,
         "lightBeamPlane": "xy",
@@ -293,6 +303,7 @@
         "latticeDensityMultiplier": 1,
         "orbitingBodyWellAmplification": 0.95,
         "orbitingBodyVisible": true,
+        "moonEnabled": true,
         "orbitTrailVisible": true,
         "lightBeamEnabled": true,
         "lightBeamPlane": "yz",
@@ -315,6 +326,7 @@
         "latticeDensityMultiplier": 1,
         "orbitingBodyWellAmplification": 0.55,
         "orbitingBodyVisible": true,
+        "moonEnabled": true,
         "orbitTrailVisible": true,
         "lightBeamEnabled": true,
         "lightBeamPlane": "xz",
@@ -335,6 +347,8 @@
         "spacetimeCentralInfluenceScale",
         "spacetimeOrbitingDeformation",
         "spacetimeOrbitingInfluenceScale",
+        "spacetimeMoonDeformation",
+        "spacetimeMoonInfluenceScale",
         "specificGravitationalPotentialJoulesPerKilogram"
       ],
       "warningCode": "SPACETIME_LATTICE_ANALOGY"
@@ -367,11 +381,11 @@
     "A malha cubica e uma analogia visual do potencial newtoniano; nao e uma estrutura material do espaco nem uma solucao da relatividade geral.",
     "O encontro de varios vertices no centro das massas e uma singularidade visual didatica, nao o interior fisico de um corpo extenso.",
     "O alcance perceptivel da curva e um limiar visual suave derivado da massa; o campo gravitacional real nao comeca em uma borda finita.",
-    "A massa orbital usa amplificacao visual declarada para permanecer legivel e essa amplificacao nao altera trajetoria, forca ou energia.",
+    "A massa orbital e a Lua usam amplificacao visual declarada para permanecer legiveis; essa amplificacao nao altera trajetoria, forca ou energia.",
     "O feixe neon usa os mesmos pocos visuais da malha, mas integra a mudanca de direcao ao longo do caminho: quando a influencia se torna desprezivel, segue reto pela tangente adquirida. A trajetoria continua qualitativa e nao calcula uma geodesica nula da relatividade geral nem lentes gravitacionais em escala.",
     "A densidade da malha altera somente a tesselação do volume. O valor 10x e um alvo aproximado para a quantidade total de cubos porque uma grade cubica exige o mesmo numero inteiro de divisoes nos tres eixos; valores altos aumentam o custo de CPU, GPU e memoria.",
     "O modelo orbital ignora atmosfera, arrasto, oblatividade, propulsao, mares e perturbacoes gravitacionais de terceiros.",
-    "A lua auxiliar continua sendo apenas um marcador didatico e nao participa da deformacao volumetrica nem da energia orbital principal."
+    "A Lua didatica produz um terceiro poco somente na analogia volumetrica. Sua distancia visual e ampliada para separar os nucleos, mas ela nao perturba a orbita principal nem entra na forca ou energia do problema de dois corpos."
   ],
   "formulas": [
     {
@@ -412,7 +426,7 @@
       "id": "lattice-volume-mapping",
       "title": "Mapeamento visual da malha volumetrica",
       "expressionLatex": "\\vec p'=\\vec c_i\\ (d_i\\le r_{n,i}),\\qquad \\vec p'=\\vec p+\\sum_i(\\vec c_i-\\vec p)\\alpha_i e^{-1.7((d_i-r_{n,i})/R_i)^2}",
-      "description": "Fora do nucleo, desloca vertices suavemente na direcao das massas; dentro do nucleo, vertices vizinhos encontram o mesmo centro visual.",
+      "description": "Fora do nucleo, desloca vertices suavemente na direcao das tres massas visuais; dentro do nucleo, vertices vizinhos encontram o mesmo centro visual.",
       "variables": [
         { "symbol": "\\vec p", "label": "vertice original da grade" },
         { "symbol": "\\vec c_i", "label": "centro visual da massa i" },
@@ -423,8 +437,8 @@
       ],
       "usedWhen": "Usar apenas para compreender qualitativamente como massas maiores produzem uma influencia visual mais intensa e ampla.",
       "notUsedWhen": "Nao usar para medir curvatura relativistica, horizonte de eventos, dilatacao temporal ou estrutura interna da massa.",
-      "parameterIds": ["centralMassEarths", "satelliteMassKilograms", "fabricDeformationScale", "fabricLineOpacity", "latticeDensityMultiplier", "orbitingBodyWellAmplification"],
-      "sampleFields": ["xMeters", "zMeters", "spacetimeCentralDeformation", "spacetimeCentralInfluenceScale", "spacetimeOrbitingDeformation", "spacetimeOrbitingInfluenceScale"],
+      "parameterIds": ["centralMassEarths", "satelliteMassKilograms", "fabricDeformationScale", "fabricLineOpacity", "latticeDensityMultiplier", "orbitingBodyWellAmplification", "moonEnabled"],
+      "sampleFields": ["xMeters", "zMeters", "secondaryXMeters", "secondaryZMeters", "spacetimeCentralDeformation", "spacetimeCentralInfluenceScale", "spacetimeOrbitingDeformation", "spacetimeOrbitingInfluenceScale", "spacetimeMoonDeformation", "spacetimeMoonInfluenceScale"],
       "relatedChartIds": ["lattice-time"]
     },
     {
@@ -440,8 +454,8 @@
       ],
       "usedWhen": "Usar para acompanhar qualitativamente a construcao progressiva da trajetoria e a permanencia do angulo de saida.",
       "notUsedWhen": "Nao usar para medir um angulo relativistico real; a intensidade continua visualmente amplificada.",
-      "parameterIds": ["centralMassEarths", "satelliteMassKilograms", "fabricDeformationScale", "orbitingBodyWellAmplification", "lightBeamEnabled", "lightBeamPlane", "lightBeamOffsetUCells", "lightBeamOffsetVCells", "lightBeamProgressPercent"],
-      "sampleFields": ["spacetimeCentralDeformation", "spacetimeCentralInfluenceScale", "spacetimeOrbitingDeformation", "spacetimeOrbitingInfluenceScale"],
+      "parameterIds": ["centralMassEarths", "satelliteMassKilograms", "fabricDeformationScale", "orbitingBodyWellAmplification", "moonEnabled", "lightBeamEnabled", "lightBeamPlane", "lightBeamOffsetUCells", "lightBeamOffsetVCells", "lightBeamProgressPercent"],
+      "sampleFields": ["spacetimeCentralDeformation", "spacetimeCentralInfluenceScale", "spacetimeOrbitingDeformation", "spacetimeOrbitingInfluenceScale", "spacetimeMoonDeformation", "spacetimeMoonInfluenceScale"],
       "relatedChartIds": ["lattice-time"]
     },
     {

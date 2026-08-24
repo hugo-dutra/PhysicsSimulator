@@ -4000,3 +4000,20 @@ Validacao:
 - `npm run lint` passou.
 - `npm run build` passou; permaneceu apenas o aviso conhecido de chunk acima de 500 kB.
 - Smoke visual confirmou o controle em `1x` e `10x`, aumento nitido de cubos/vertices e renderizacao correta da convergencia e do gradiente. A aba automatizada ficou limitada a `1 FPS` em ambas as densidades, portanto essa leitura nao foi usada para comparar desempenho; o teste de FPS em primeiro plano permanece para avaliacao manual do dono.
+
+## 2026-08-24 - Lua com terceiro campo na malha gravitacional 3D
+
+Status: implementado em `analysis`, aguardando avaliacao visual do dono.
+
+- A Lua didatica ja presente nos samples orbitais passou a aparecer tambem na malha volumetrica, com material cinza, guia orbital local e separacao visual minima de `1,55` celula-base para manter seu campo distinguivel do campo do planeta.
+- O motor passou a materializar `spacetimeMoonDeformation` e `spacetimeMoonInfluenceScale`. A escala parte da razao Lua/Terra de referencia `0,0123` e a intensidade recebe ganho visual fixo de `3x`, permanecendo menor que a deformacao orbital padrao.
+- Adicionado `moonEnabled`, exposto como `Lua e campo lunar`, ligado por padrao. O toggle inclui ou remove Lua, guia e terceiro poco da malha/feixe sem alterar as coordenadas secundarias do sample nem posicao, velocidade, forca, energia ou periodo da orbita principal.
+- Graficos, leituras, tabela, formulas, fixture, teoria e guides foram alinhados aos dois novos campos. A dinamica continua explicitamente kepleriana de dois corpos; a Lua participa somente da analogia visual volumetrica.
+- Aplicado o `Simulation Fidelity Adjustment Guide`. Nenhum HLD/diagrama foi alterado porque a mudanca reutiliza o contrato, o renderer e o fluxo existentes, sem nova fronteira arquitetural.
+
+Validacao:
+
+- Suite direcionada de fisica, malha, catalogo, cena e graficos: 5 arquivos e 110 testes passaram.
+- Suite completa: 16 arquivos e 171 testes passaram.
+- `npm run lint` e `npm run build` passaram; o build manteve apenas o aviso conhecido de chunk acima de 500 kB.
+- Smoke visual local, com playback pausado no mesmo instante, confirmou a Lua cinza e sua guia ao redor do planeta, o terceiro foco de deformacao distinguivel e o toggle removendo/recolocando Lua, guia e campo sem deslocar o sistema principal. A cena permaneceu entre 41 e 49 FPS nas capturas observadas.

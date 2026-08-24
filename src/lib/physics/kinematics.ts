@@ -213,6 +213,7 @@ export type GravitationalFieldOrbitsParameters = {
   lightBeamOffsetVCells?: number
   lightBeamPlane?: SpacetimeLatticeBeamPlane
   lightBeamProgressPercent?: number
+  moonEnabled?: boolean
   orbitingBodyVisible?: boolean
   orbitTrailVisible?: boolean
   orbitingBodyWellAmplification: number
@@ -459,6 +460,8 @@ export type KinematicsSample = {
   spacetimeCentralInfluenceScale: number
   spacetimeOrbitingDeformation: number
   spacetimeOrbitingInfluenceScale: number
+  spacetimeMoonDeformation: number
+  spacetimeMoonInfluenceScale: number
   specificGravitationalPotentialJoulesPerKilogram: number
   springForceNewtons: number
   submergedFraction: number
@@ -644,6 +647,8 @@ const sampleNumericKeys = [
   'spacetimeCentralInfluenceScale',
   'spacetimeOrbitingDeformation',
   'spacetimeOrbitingInfluenceScale',
+  'spacetimeMoonDeformation',
+  'spacetimeMoonInfluenceScale',
   'specificGravitationalPotentialJoulesPerKilogram',
   'springForceNewtons',
   'submergedFraction',
@@ -667,6 +672,8 @@ const gravitationalConstant = 6.6743e-11
 const highEccentricityWarningThreshold = 0.65
 const orbitalSatelliteRadiusRatio = 0.16
 const orbitalSatelliteSpeedRatio = 12
+const didacticMoonToOrbitingBodyMassRatio = 0.0123
+const didacticMoonFieldVisualAmplification = 3
 const bernoulliTubeHalfLengthMeters = 3
 const bernoulliThroatWidthMeters = 0.95
 const hydrostaticFloatToleranceNewtons = 1e-6
@@ -1090,6 +1097,7 @@ export function toKinematicsParameters(
         lightBeamPlane: readSpacetimeLatticeBeamPlane(values),
         lightBeamProgressPercent:
           readOptionalNumber(values, 'lightBeamProgressPercent') ?? 100,
+        moonEnabled: readBoolean(values, 'moonEnabled', true),
         orbitingBodyVisible: readBoolean(values, 'orbitingBodyVisible', true),
         orbitTrailVisible: readBoolean(values, 'orbitTrailVisible', true),
         orbitingBodyWellAmplification: readNumber(
@@ -3130,6 +3138,15 @@ function computeGravitationalFieldOrbitsSample(
   const spacetimeOrbitingInfluenceScale = Math.cbrt(
     parameters.satelliteMassKilograms / 900,
   )
+  const spacetimeMoonInfluenceScale = Math.cbrt(
+    (parameters.satelliteMassKilograms / 900) *
+      didacticMoonToOrbitingBodyMassRatio,
+  )
+  const spacetimeMoonDeformation =
+    parameters.fabricDeformationScale *
+    parameters.orbitingBodyWellAmplification *
+    didacticMoonFieldVisualAmplification *
+    spacetimeMoonInfluenceScale
   const periodSeconds =
     (2 * Math.PI) / meanMotionRadiansPerSecond
 
@@ -3169,6 +3186,8 @@ function computeGravitationalFieldOrbitsSample(
     spacetimeCentralInfluenceScale,
     spacetimeOrbitingDeformation,
     spacetimeOrbitingInfluenceScale,
+    spacetimeMoonDeformation,
+    spacetimeMoonInfluenceScale,
     specificGravitationalPotentialJoulesPerKilogram,
     timeSeconds,
     totalEnergyJoules: kineticEnergyJoules + potentialEnergyJoules,
@@ -6876,6 +6895,10 @@ function buildSample(
       sample.spacetimeOrbitingDeformation ?? 0,
     spacetimeOrbitingInfluenceScale:
       sample.spacetimeOrbitingInfluenceScale ?? 0,
+    spacetimeMoonDeformation:
+      sample.spacetimeMoonDeformation ?? 0,
+    spacetimeMoonInfluenceScale:
+      sample.spacetimeMoonInfluenceScale ?? 0,
     specificGravitationalPotentialJoulesPerKilogram:
       sample.specificGravitationalPotentialJoulesPerKilogram ?? 0,
     springForceNewtons: sample.springForceNewtons ?? 0,

@@ -1216,6 +1216,16 @@ describe('kinematics physics engine', () => {
     expect(heavier.spacetimeOrbitingInfluenceScale).toBeGreaterThan(
       lighter.spacetimeOrbitingInfluenceScale,
     )
+    expect(heavier.spacetimeMoonDeformation).toBeGreaterThan(
+      lighter.spacetimeMoonDeformation,
+    )
+    expect(heavier.spacetimeMoonInfluenceScale).toBeGreaterThan(
+      lighter.spacetimeMoonInfluenceScale,
+    )
+    expect(lighter.spacetimeMoonDeformation).toBeGreaterThan(0)
+    expect(lighter.spacetimeMoonDeformation).toBeLessThan(
+      lighter.spacetimeOrbitingDeformation,
+    )
     expect(Number.isFinite(heavier.speedMetersPerSecond)).toBe(true)
     expect(Number.isFinite(heavier.gravitationalFieldNewtonsPerKilogram))
       .toBe(true)
@@ -1236,6 +1246,7 @@ describe('kinematics physics engine', () => {
       lightBeamOffsetVCells: -2,
       lightBeamPlane: 'yz',
       lightBeamProgressPercent: 42,
+      moonEnabled: true,
       orbitingBodyVisible: true,
       orbitTrailVisible: true,
       orbitingBodyWellAmplification: 0.55,
@@ -1249,6 +1260,7 @@ describe('kinematics physics engine', () => {
       lightBeamOffsetVCells: 6,
       lightBeamPlane: 'xz' as const,
       lightBeamProgressPercent: 100,
+      moonEnabled: false,
       orbitingBodyVisible: false,
       orbitTrailVisible: false,
     }
@@ -1278,10 +1290,12 @@ describe('kinematics physics engine', () => {
     expect(withBeam.lightBeamOffsetVCells).toBe(-2)
     expect(withBeam.lightBeamProgressPercent).toBe(42)
     expect(withBeam.latticeDensityMultiplier).toBe(1)
+    expect(withBeam.moonEnabled).toBe(true)
     expect(withBeam.orbitingBodyVisible).toBe(true)
     expect(withBeam.orbitTrailVisible).toBe(true)
     expect(withoutBeam.orbitingBodyVisible).toBe(false)
     expect(withoutBeam.orbitTrailVisible).toBe(false)
+    expect(withoutBeam.moonEnabled).toBe(false)
     expect(hiddenSample.xMeters).toBeCloseTo(visibleSample.xMeters)
     expect(hiddenSample.zMeters).toBeCloseTo(visibleSample.zMeters)
     expect(hiddenSample.speedMetersPerSecond).toBeCloseTo(
@@ -1292,6 +1306,12 @@ describe('kinematics physics engine', () => {
     )
     expect(hiddenSample.totalEnergyJoules).toBeCloseTo(
       visibleSample.totalEnergyJoules,
+    )
+    expect(hiddenSample.spacetimeMoonDeformation).toBeCloseTo(
+      visibleSample.spacetimeMoonDeformation,
+    )
+    expect(hiddenSample.secondaryXMeters).toBeCloseTo(
+      visibleSample.secondaryXMeters,
     )
     expect(maximumDensitySample.xMeters).toBeCloseTo(visibleSample.xMeters)
     expect(maximumDensitySample.speedMetersPerSecond).toBeCloseTo(

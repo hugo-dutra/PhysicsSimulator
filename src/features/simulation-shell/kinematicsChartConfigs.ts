@@ -504,6 +504,22 @@ export function buildKinematicsChartConfigs(
                     (sample) => sample.spacetimeOrbitingInfluenceScale,
                   ),
                 },
+                {
+                  lineColor: themeTokens.vector,
+                  name: 'Convergencia lunar amplificada (escala visual)',
+                  x: time,
+                  y: samples.map(
+                    (sample) => sample.spacetimeMoonDeformation,
+                  ),
+                },
+                {
+                  lineColor: themeTokens.muted,
+                  name: 'Alcance lunar derivado da massa (escala visual)',
+                  x: time,
+                  y: samples.map(
+                    (sample) => sample.spacetimeMoonInfluenceScale,
+                  ),
+                },
               ]
             : []),
         ],

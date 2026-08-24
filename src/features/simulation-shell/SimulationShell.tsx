@@ -421,6 +421,10 @@ const gravitationalOrbitSampleTableColumnIds = [
   'orbitingWell',
   'orbitingInfluence',
 ] as const
+const gravitationalMoonSampleTableColumnIds = [
+  'moonWell',
+  'moonInfluence',
+] as const
 const kinematicsVectorLegendItemsById = {
   'atwood-machine': [
     {
@@ -4518,6 +4522,12 @@ function KinematicsRuntime({
                         <TableCell>R_c</TableCell>
                         <TableCell>D_o</TableCell>
                         <TableCell>R_o</TableCell>
+                        {simulationId === 'gravitational-space-lattice' ? (
+                          <>
+                            <TableCell>D_l</TableCell>
+                            <TableCell>R_l</TableCell>
+                          </>
+                        ) : null}
                       </>
                     ) : (
                       <>
@@ -4731,6 +4741,18 @@ function buildKinematicsReadoutMetrics({
         label: 'Alcance orbital',
         value: formatNumber(sample.spacetimeOrbitingInfluenceScale, 'x'),
       },
+      ...(simulationId === 'gravitational-space-lattice'
+        ? [
+            {
+              label: 'Convergencia lunar',
+              value: formatNumber(sample.spacetimeMoonDeformation, 'x'),
+            },
+            {
+              label: 'Alcance lunar',
+              value: formatNumber(sample.spacetimeMoonInfluenceScale, 'x'),
+            },
+          ]
+        : []),
       ...energyMetric,
       frameMetric,
     ]
@@ -7136,6 +7158,16 @@ function renderKinematicsTableCells(
         <TableCell>
           {formatNumber(sample.spacetimeOrbitingInfluenceScale, 'x')}
         </TableCell>
+        {simulationId === 'gravitational-space-lattice' ? (
+          <>
+            <TableCell>
+              {formatNumber(sample.spacetimeMoonDeformation, 'x')}
+            </TableCell>
+            <TableCell>
+              {formatNumber(sample.spacetimeMoonInfluenceScale, 'x')}
+            </TableCell>
+          </>
+        ) : null}
       </>
     )
   }
@@ -7186,7 +7218,12 @@ function renderEmptyKinematicsTableCells(
 ) {
   const columnIds =
     isGravitationalFieldSimulationId(simulationId)
-      ? gravitationalOrbitSampleTableColumnIds
+      ? simulationId === 'gravitational-space-lattice'
+        ? [
+            ...gravitationalOrbitSampleTableColumnIds,
+            ...gravitationalMoonSampleTableColumnIds,
+          ]
+        : gravitationalOrbitSampleTableColumnIds
       : kinematicsSampleTableColumnIds
 
   return columnIds.map((columnId) => (

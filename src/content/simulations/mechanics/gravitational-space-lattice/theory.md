@@ -1,6 +1,6 @@
 # Curvatura gravitacional em malha 3D
 
-Esta simulação coloca a órbita newtoniana dentro de uma malha volumétrica formada por arestas paralelas aos três eixos. Longe das massas, as células permanecem quase cúbicas. Perto delas, os vértices se deslocam gradualmente para o centro; dentro do núcleo visual, vários vértices encontram o mesmo ponto e as arestas parecem convergir para uma singularidade.
+Esta simulação coloca um sistema didático Sol–planeta–Lua dentro de uma malha volumétrica formada por arestas paralelas aos três eixos. Longe das massas, as células permanecem quase cúbicas. Perto delas, os vértices se deslocam gradualmente para o centro; dentro do núcleo visual, vários vértices encontram o mesmo ponto e as arestas parecem convergir para uma singularidade.
 
 Essa construção é uma **analogia visual**. As linhas não são fios materiais existentes no espaço, e o encontro dos vértices não descreve o interior físico de um planeta nem calcula uma singularidade da relatividade geral.
 
@@ -34,7 +34,7 @@ Posição, velocidade, campo, força, potencial, energia e período vêm dos mes
 
 ## Como a malha cúbica é deformada
 
-Para cada massa, o motor fornece duas escalas visuais separadas:
+Para cada um dos três poços, o motor fornece duas escalas visuais separadas:
 
 - intensidade de deformação, usada para definir quanto cada vértice se aproxima do centro;
 - escala de influência, derivada da raiz cúbica da massa e usada para ampliar o núcleo e o alcance perceptível da curva.
@@ -49,6 +49,12 @@ $$
 Aqui, $d_i$ é a distância até a massa, $r_{n,i}$ é o raio do núcleo, $R_i$ é o alcance visual e $\alpha_i$ é a intensidade. Quando $d_i\le r_{n,i}$, os vértices vizinhos são colocados em $\vec c_i$; por isso várias arestas dos cubos se encontram visualmente no centro da massa.
 
 Massas maiores elevam simultaneamente $\alpha_i$, $r_{n,i}$ e $R_i$: a convergência fica mais forte e começa a ser perceptível mais longe. Não existe, porém, uma borda física onde a gravidade “começa”. $R_i$ é apenas um limiar visual suave para manter a malha legível.
+
+### Lua didática e terceiro poço
+
+A Lua gira ao redor do planeta usando as coordenadas secundárias já calculadas no mesmo sample orbital. Para que seu poço não fique escondido dentro do poço do planeta na escala da viewport, o renderer preserva a direção dessa órbita local, mas impõe uma separação visual mínima de aproximadamente uma célula e meia da grade-base.
+
+A intensidade lunar parte da razão de massa Lua/Terra de referência, `0,0123`, e recebe uma amplificação visual fixa de `3x`. O resultado continua menor que o poço do planeta, porém suficientemente amplo para curvar e aquecer as linhas vizinhas. Essa razão e esse ganho pertencem à analogia visual: a Lua não perturba a elipse principal e não entra na força, na energia nem no período do problema kepleriano de dois corpos.
 
 ## Densidade, suavidade e gradiente de cor
 
@@ -94,11 +100,14 @@ Esse traço mostra o desvio **qualitativo da analogia escolhida**. A persistênc
 
 `Corpo em órbita` controla apenas a esfera que percorre a trajetória. `Rastro da órbita` controla a elipse de referência e o trecho progressivo já percorrido; ele também respeita o toggle geral `Trilha`. Ocultar qualquer um desses elementos não remove a massa orbital nem seu poço e não altera campo, energia, período, malha, feixe ou samples.
 
+`Lua e campo lunar` controla em conjunto a esfera lunar, sua guia orbital local e o terceiro poço usado pela malha e pelo feixe. Desligá-lo não apaga as coordenadas lunares do sample e não recalcula a órbita principal; apenas remove a contribuição lunar da analogia renderizada.
+
 ## Regimes e limites
 
 - Malha ativa: intensidade maior que zero deforma a grade a partir dos campos visuais do sample.
 - Malha ortogonal: intensidade zero remove a deformação e preserva integralmente a órbita.
 - Núcleo orbital oculto: amplificação orbital zero remove apenas a convergência visual ligada ao corpo em órbita.
+- Lua desligada: corpo lunar, guia local e terceiro poço deixam de ser renderizados, enquanto os samples orbitais permanecem idênticos.
 - Excentricidade alta: a elipse de Kepler continua calculada, mas atmosfera, precessão e perturbações de terceiros ficam fora do modelo.
 
-O modelo não calcula métrica de Schwarzschild, dilatação temporal, lentes gravitacionais, ondas gravitacionais, horizonte de eventos nem relatividade de muitos corpos. A lua auxiliar da cena orbital continua sendo apenas um marcador didático e não produz um terceiro núcleo na malha.
+O modelo não calcula métrica de Schwarzschild, dilatação temporal, lentes gravitacionais, ondas gravitacionais, horizonte de eventos nem relatividade de muitos corpos. A Lua produz um terceiro núcleo apenas na analogia visual volumétrica; ela ainda não transforma a dinâmica principal em um problema gravitacional de três corpos.

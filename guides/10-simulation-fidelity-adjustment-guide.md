@@ -134,6 +134,7 @@ A segunda visualizacao de gravidade representa o espaco como cubos interligados 
 - Dentro do nucleo dependente da massa, varios vertices coincidem exatamente no centro da massa, tornando visivel que as linhas convergem ao mesmo ponto.
 - Fora do nucleo, a curva decai suavemente. O alcance marca onde a deformacao fica perceptivel na analogia, nao uma distancia fisica finita onde o campo comeca ou termina.
 - A massa orbital acompanha a posicao do sample e pode usar amplificacao didatica declarada; nenhuma escala visual retroage sobre orbita, campo, forca, periodo ou energia.
+- Um terceiro poco lunar pode usar coordenadas secundarias do sample, razao de massa e amplificacao visual declaradas e separacao minima de viewport para permanecer legivel. Seu toggle pode remover corpo, guia e poco do renderer, mas nao pode apagar os campos do sample nem transformar silenciosamente a solucao orbital principal em dinamica de tres corpos.
 - Zerar a intensidade visual restaura a grade ortogonal, inclusive nos centros, sem alterar os samples fisicos.
 - A quantidade de cubos permanece estavel enquanto os parametros nao mudam. Um controle visual declarado pode aumentar em ate aproximadamente `10x` o total de cubos e vertices, distribuindo novas divisoes igualmente nos tres eixos sem mudar volume, pocos ou samples. Para suavizar curvas, o renderer tambem pode subdividir visualmente cada aresta e recalcular seus pontos intermediarios pelo mesmo mapeamento, sem adicionar celulas alem das definidas pelo controle de densidade.
 - A cor pode codificar a intensidade da analogia: teal na grade quase reta, amarelo/laranja na transicao e vermelho onde influencia visual e desvio geometrico sao maiores. O heatmap deriva apenas dos mesmos pocos visuais e nao deve ser rotulado como uma medicao local exata de `g`.
@@ -142,7 +143,7 @@ A segunda visualizacao de gravidade representa o espaco como cubos interligados 
 - Corpo orbital e rastro orbital podem ter toggles separados, mas ambos sao apenas visuais. Desligar o corpo nao elimina sua massa, seu poco ou seus samples; desligar o rastro nao altera a trajetoria resolvida e deve ocultar tanto a referencia completa quanto o trecho progressivo.
 - A geometria e o material devem ser reutilizados no loop, com densidade limitada e smoke de FPS/console antes de promocao.
 
-Aplicacao imediata: `Mecanica > Gravitacao > Curvatura gravitacional em malha 3D` usa uma grade cubica unica, com convergencia central e orbital e escalas de influencia proporcionais a raiz cubica das massas de referencia.
+Aplicacao imediata: `Mecanica > Gravitacao > Curvatura gravitacional em malha 3D` usa uma grade cubica unica, com convergencia central, orbital e lunar e escalas de influencia proporcionais a raiz cubica das massas de referencia.
 
 ## Plano de ajuste das demais simulacoes
 

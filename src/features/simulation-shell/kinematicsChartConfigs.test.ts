@@ -98,12 +98,20 @@ describe('kinematics chart configs', () => {
       'Alcance central derivado da massa (escala visual)',
       'Convergencia orbital amplificada (escala visual)',
       'Alcance orbital derivado da massa (escala visual)',
+      'Convergencia lunar amplificada (escala visual)',
+      'Alcance lunar derivado da massa (escala visual)',
     ])
     expect(latticeChart?.traces[1]?.y[0]).toBeCloseTo(
       result.samples[0].spacetimeCentralInfluenceScale,
     )
     expect(latticeChart?.traces[3]?.y[0]).toBeCloseTo(
       result.samples[0].spacetimeOrbitingInfluenceScale,
+    )
+    expect(latticeChart?.traces[4]?.y[0]).toBeCloseTo(
+      result.samples[0].spacetimeMoonDeformation,
+    )
+    expect(latticeChart?.traces[5]?.y[0]).toBeCloseTo(
+      result.samples[0].spacetimeMoonInfluenceScale,
     )
   })
 

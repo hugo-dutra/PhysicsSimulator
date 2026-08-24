@@ -235,6 +235,7 @@ describe('simulation registry', () => {
       'latticeDensityMultiplier',
       'orbitingBodyWellAmplification',
       'orbitingBodyVisible',
+      'moonEnabled',
       'orbitTrailVisible',
       'lightBeamEnabled',
       'lightBeamPlane',
@@ -276,6 +277,7 @@ describe('simulation registry', () => {
     expect(fixture.defaultParameters.lightBeamOffsetVCells).toBe(2)
     expect(fixture.defaultParameters.lightBeamProgressPercent).toBe(100)
     expect(fixture.defaultParameters.orbitingBodyVisible).toBe(true)
+    expect(fixture.defaultParameters.moonEnabled).toBe(true)
     expect(fixture.defaultParameters.orbitTrailVisible).toBe(true)
     expect(
       fixture.parameters.find(
@@ -295,6 +297,11 @@ describe('simulation registry', () => {
     expect(
       fixture.parameters.find(
         (parameter) => parameter.id === 'orbitTrailVisible',
+      )?.defaultValue,
+    ).toBe(true)
+    expect(
+      fixture.parameters.find(
+        (parameter) => parameter.id === 'moonEnabled',
       )?.defaultValue,
     ).toBe(true)
   })

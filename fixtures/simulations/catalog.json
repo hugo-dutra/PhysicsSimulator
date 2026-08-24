@@ -728,12 +728,12 @@
           "renderer": "three",
           "fixturePath": "fixtures/simulations/mechanics-gravitational-space-lattice.json",
           "theoryPath": "src/content/simulations/mechanics/gravitational-space-lattice/theory.md",
-          "description": "Campo e orbita newtonianos vistos dentro de uma malha cubica volumetrica cujos vertices convergem para as massas.",
+          "description": "Sistema didatico Sol-planeta-Lua dentro de uma malha cubica volumetrica cujos vertices convergem para tres pocos visuais.",
           "technologyPlan": {
             "engine": "custom-analytic",
             "charting": "live-canvas",
             "content": "mdx-katex",
-            "notes": "Reutiliza os samples orbitais e materializa intensidade, nucleo e alcance visual dependentes da massa em uma unica BufferGeometry dinamica de arestas ortogonais."
+            "notes": "Reutiliza os samples da orbita principal e da Lua didatica, materializando intensidade, nucleo e alcance visual dos tres pocos em uma unica BufferGeometry dinamica de arestas ortogonais."
           },
           "charts": [
             {
@@ -754,7 +754,9 @@
                 "spacetimeCentralDeformation",
                 "spacetimeCentralInfluenceScale",
                 "spacetimeOrbitingDeformation",
-                "spacetimeOrbitingInfluenceScale"
+                "spacetimeOrbitingInfluenceScale",
+                "spacetimeMoonDeformation",
+                "spacetimeMoonInfluenceScale"
               ]
             },
             {

@@ -1540,7 +1540,15 @@ export function KinematicsScene({
         ? new THREE.SphereGeometry(1, 24, 16)
         : new THREE.BoxGeometry(atwoodMassSize, atwoodMassSize, atwoodMassSize),
       new THREE.MeshStandardMaterial({
-        color: 0x38bdf8,
+        color: isGravitationalFieldSimulationId(simulationId)
+          ? 0xcbd5e1
+          : 0x38bdf8,
+        emissive: isGravitationalFieldSimulationId(simulationId)
+          ? 0x273449
+          : 0x000000,
+        emissiveIntensity: isGravitationalFieldSimulationId(simulationId)
+          ? 0.22
+          : 0,
         metalness: 0.05,
         roughness: 0.5,
       }),
@@ -2789,6 +2797,8 @@ function updateConstrainedBodyObjects(
     volumetricOrbitParameters?.orbitingBodyVisible !== false
   const showVolumetricOrbitTrail =
     volumetricOrbitParameters?.orbitTrailVisible !== false
+  const showVolumetricMoon =
+    volumetricOrbitParameters?.moonEnabled !== false
 
   setRigidBodyRotationObjectsVisible(objects, isRigidRotation)
   objects.body.visible =
@@ -2797,7 +2807,7 @@ function updateConstrainedBodyObjects(
     isAtwood ||
     isCollision ||
     isCoupledOscillator ||
-    (isOrbit && !isVolumetricGravityLattice) ||
+    (isOrbit && (!isVolumetricGravityLattice || showVolumetricMoon)) ||
     simulationId === 'doppler-effect'
   objects.rollingPlane.visible = isRolling
   objects.rollingPlaneEdges.visible = isRolling
@@ -2853,7 +2863,8 @@ function updateConstrainedBodyObjects(
   objects.gravityLightBeamGlow.visible =
     objects.gravityLightBeamCore.visible
   objects.orbitSatellitePath.visible =
-    simulationId === 'gravitational-field-orbits'
+    simulationId === 'gravitational-field-orbits' ||
+    (isVolumetricGravityLattice && showVolumetricMoon)
   objects.acceleratedMotionAccelerationLabel.visible =
     isUniformlyAcceleratedMotion && showVectors
   objects.acceleratedMotionBodyShadow.visible = isUniformlyAcceleratedMotion
@@ -2913,30 +2924,43 @@ function updateConstrainedBodyObjects(
 
   if (isOrbit) {
     const orbitMoonRadius = getOrbitMoonDisplayRadius(objects)
-    const orbitMoonMinimumRadius =
+    const baseOrbitMoonMinimumRadius =
       objects.bodyRadius + orbitMoonRadius + objects.bodyRadius * 0.18
+    const orbitMoonMinimumRadius = isVolumetricGravityLattice
+      ? Math.max(
+          baseOrbitMoonMinimumRadius,
+          objects.gravityLatticeReferenceCellSize * 1.55,
+        )
+      : baseOrbitMoonMinimumRadius
+    const moonPosition = showVolumetricMoon || !isVolumetricGravityLattice
+      ? toOrbitSatelliteScenePosition(
+          sample,
+          objects.sceneProjection,
+          orbitMoonMinimumRadius,
+        )
+      : null
 
     objects.orbitCentralBody.position.set(0, 0, 0)
     objects.orbitCentralBody.scale.setScalar(
       clamp(objects.bodyRadius * 1.18, 0.48, 0.88),
     )
+    if (moonPosition) {
+      objects.secondaryBody.position.copy(moonPosition)
+      objects.secondaryBody.scale.setScalar(orbitMoonRadius)
+      updateOrbitSatellitePath(objects, sample, orbitMoonMinimumRadius)
+    } else {
+      objects.orbitSatellitePath.visible = false
+      objects.orbitSatellitePath.geometry.setDrawRange(0, 0)
+    }
     if (isVolumetricGravityLattice) {
       updateVolumetricGravityLattice(
         objects,
         parameters as GravitationalFieldOrbitsParameters,
         sample,
+        moonPosition,
       )
     } else {
-      objects.secondaryBody.position.copy(
-        toOrbitSatelliteScenePosition(
-          sample,
-          objects.sceneProjection,
-          orbitMoonMinimumRadius,
-        ),
-      )
-      objects.secondaryBody.scale.setScalar(orbitMoonRadius)
       updateOrbitSpacetimeFabric(objects, sample)
-      updateOrbitSatellitePath(objects, sample, orbitMoonMinimumRadius)
     }
     return
   }
@@ -3302,6 +3326,7 @@ function updateVolumetricGravityLattice(
   objects: SceneObjects,
   parameters: GravitationalFieldOrbitsParameters,
   sample: KinematicsSample,
+  moonPosition: THREE.Vector3 | null,
 ) {
   const positions = objects.gravityLatticePositionAttribute
     .array as Float32Array
@@ -3325,6 +3350,15 @@ function updateVolumetricGravityLattice(
     referenceRadius: objects.orbitFabricReferenceRadius,
     role: 'orbiting',
   })
+  const moonProfile = moonPosition
+    ? computeSpacetimeLatticeVisualProfile({
+        bodyRadius: getOrbitMoonDisplayRadius(objects),
+        deformation: sample.spacetimeMoonDeformation,
+        massInfluenceScale: sample.spacetimeMoonInfluenceScale,
+        referenceRadius: objects.orbitFabricReferenceRadius,
+        role: 'orbiting',
+      })
+    : null
   const centralCoreRadius = Math.max(
     centralProfile.coreRadius,
     objects.gravityLatticeReferenceCellSize *
@@ -3335,6 +3369,13 @@ function updateVolumetricGravityLattice(
     objects.gravityLatticeReferenceCellSize *
       (0.68 + sample.spacetimeOrbitingInfluenceScale * 0.3),
   )
+  const moonCoreRadius = moonProfile
+    ? Math.max(
+        moonProfile.coreRadius,
+        objects.gravityLatticeReferenceCellSize *
+          (0.48 + sample.spacetimeMoonInfluenceScale * 0.16),
+      )
+    : 0
   const wells = [
     {
       centerX: -latticePosition.x,
@@ -3358,6 +3399,21 @@ function updateVolumetricGravityLattice(
         orbitingCoreRadius * 1.35,
       ),
     },
+    ...(moonProfile && moonPosition
+      ? [
+          {
+            centerX: moonPosition.x - latticePosition.x,
+            centerY: moonPosition.y - latticePosition.y,
+            centerZ: moonPosition.z - latticePosition.z,
+            ...moonProfile,
+            coreRadius: moonCoreRadius,
+            influenceRadius: Math.max(
+              moonProfile.influenceRadius,
+              moonCoreRadius * 1.55,
+            ),
+          },
+        ]
+      : []),
   ]
 
   for (let offset = 0; offset < positions.length; offset += 3) {
@@ -10316,7 +10372,7 @@ function getKinematicsCanvasAriaLabel(simulationId: KinematicsSimulationId) {
   }
 
   if (simulationId === 'gravitational-space-lattice') {
-    return 'Cena 3D orbital dentro de uma malha cubica volumetrica, com vertices convergindo no centro das massas e feixe de luz neon acumulando o desvio antes de seguir pela tangente adquirida, arraste para orbitar e Shift + scroll para zoom'
+    return 'Cena 3D orbital com astro central, planeta, lua e tres pocos visuais dentro de uma malha cubica volumetrica, com feixe de luz neon acumulando o desvio antes de seguir pela tangente adquirida, arraste para orbitar e Shift + scroll para zoom'
   }
 
   if (simulationId === 'hydrostatics-buoyancy') {
