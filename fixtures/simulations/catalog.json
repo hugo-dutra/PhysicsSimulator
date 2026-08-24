@@ -1306,7 +1306,7 @@
           "areaId": "waves",
           "topicPath": ["Oscilacoes e Ondas", "Ondas mecanicas", "Onda longitudinal em mola"],
           "title": "Onda longitudinal em mola",
-          "status": "analysis",
+          "status": "ready",
           "level": "introductory",
           "modelKind": "analytic",
           "renderer": "three",

@@ -61,7 +61,7 @@ type SimulationParameter = {
 };
 ```
 
-`description` e obrigatoria para todo parametro fisico e para todo `runtimeParameter`. Ela alimenta a tooltip com icone de interrogacao no painel de controles e deve explicar o que a variavel representa, como ela participa do modelo e qual efeito esperado ao aumentar, diminuir ou zerar o valor quando isso for valido. Controles globais de runtime, como velocidade de passagem do tempo `0..1`, seguem o mesmo formato de ajuda mesmo quando nao pertencem a uma fixture especifica.
+`description` e obrigatoria para todo parametro fisico e para todo `runtimeParameter`. Ela alimenta a tooltip com icone de interrogacao no painel de controles e deve explicar o que a variavel representa, como ela participa do modelo e qual efeito esperado ao aumentar, diminuir ou zerar o valor quando isso for valido. Controles globais de runtime, como velocidade de passagem do tempo `0..1`, seguem o mesmo formato de ajuda mesmo quando nao pertencem a uma fixture especifica. O shell oferece os atalhos compartilhados `0,1x`, `0,25x`, `0,5x`, `0,75x` e `1x`, todos dentro desse contrato.
 
 ## Contrato `FormulaReference`
 

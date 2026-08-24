@@ -32,6 +32,7 @@ npm run test:e2e
 - Testes de validacao de parametros e unidades.
 - Testes de valores limite fisicamente validos, como atrito zero, forca aplicada zero e velocidades iniciais nulas quando o modelo permitir.
 - Testes de contrato garantindo que todo parametro fisico e de runtime possua descricao de ajuda para a tooltip de interrogacao.
+- Teste do controle global de playback garantindo cinco atalhos unicos e acionaveis: `0,1x`, `0,25x`, `0,5x`, `0,75x` e `1x`.
 - Testes de troca de regime quando uma restricao fisica falhar, como perda de aderencia em curva ou parada em fim de curso.
 - Testes de geracao de samples para graficos e tabela.
 - Testes de campos derivados de cinematica quando eles alimentarem graficos, tabela, legendas ou formulas.

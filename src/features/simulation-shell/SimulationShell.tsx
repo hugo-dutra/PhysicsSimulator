@@ -267,7 +267,7 @@ const kinematicsTheoryById = {
 
 const customPresetId = 'custom'
 const defaultPlaybackRate = 1
-const playbackRateOptions = [0.25, 0.5, 1, 2] as const
+const playbackRateOptions = [0.1, 0.25, 0.5, 0.75, 1] as const
 const playbackRateParameter = {
   id: 'playbackRate',
   label: 'Velocidade do tempo',

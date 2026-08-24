@@ -133,6 +133,7 @@ Tasks:
 - `[x]` Implementar `Oscilacoes e Ondas > Oscilacoes > Oscilador forcado e ressonancia`.
 - `[x]` Implementar `Oscilacoes e Ondas > Oscilacoes > Osciladores acoplados`.
 - `[x]` Implementar `Oscilacoes e Ondas > Ondas mecanicas > Onda em corda`.
+- `[x]` Implementar e promover `Oscilacoes e Ondas > Ondas mecanicas > Onda longitudinal em mola` para `ready` apos aprovacao manual.
 - `[x]` Implementar `Oscilacoes e Ondas > Ondas mecanicas > Superposicao e interferencia`.
 - `[x]` Implementar `Oscilacoes e Ondas > Ondas mecanicas > Ondas estacionarias`.
 - `[x]` Implementar `Oscilacoes e Ondas > Som > Batimentos`.
@@ -147,7 +148,7 @@ Criterio de saida:
 
 - O produto cobre os fenomenos basicos de oscilacao, onda mecanica, som e optica.
 - A massa-mola vertical mostra a deformacao real da mola a partir do sample, com posicao, velocidade, aceleracao, forca elastica, peso e energias sincronizados entre cena, graficos, tabela, formulas e teoria.
-- Os tres osciladores avancados de `Oscilacoes e Ondas > Oscilacoes` e os tres primeiros itens de `Oscilacoes e Ondas > Ondas mecanicas` ficam como `ready` apos aprovacao manual, com regimes de amortecimento/ressonancia/acoplamento, propagacao, interferencia e modos estacionarios declarados nos fixtures.
+- Os tres osciladores avancados de `Oscilacoes e Ondas > Oscilacoes` e as quatro simulacoes funcionais de `Oscilacoes e Ondas > Ondas mecanicas` ficam como `ready` apos aprovacao manual, com regimes de amortecimento/ressonancia/acoplamento, propagacao transversal e longitudinal, interferencia e modos estacionarios declarados nos fixtures.
 - `Batimentos` e `Efeito Doppler` ficam como `ready` apos aprovacao manual, representando o campo sonoro por um volume 3D de pontinhos/marcadores de pressao e mantendo pressao, frequencia percebida, velocidade do meio, formulas e teoria derivados do mesmo sample.
 - `Reflexao e refracao`, `Lentes e espelhos` e `Difracao e interferencia da luz` ficam como `analysis` ate teste manual, declarando regimes de Snell/reflexao total, imagem real/virtual e difracao/interferencia nos fixtures.
 - PixiJS e Web Audio API so entram se houver ganho didatico claro.

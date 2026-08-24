@@ -4048,3 +4048,21 @@ Validacao:
 - Suite completa: 16 arquivos e 172 testes passaram.
 - `npm run lint`, `npm run build` e `npm run build:pages` passaram; os builds mantiveram apenas o aviso conhecido de chunk acima de 500 kB.
 - Smoke visual local confirmou as 54 voltas com curvas mais suaves, aproximadamente 62-63 FPS e nenhum warning ou erro no console.
+
+## 2026-08-24 - Atalhos globais de velocidade e promocao da mola longitudinal
+
+Status: aprovada manualmente e promovida para `ready`.
+
+- O conjunto compartilhado de atalhos de velocidade passou a oferecer exatamente `0,1x`, `0,25x`, `0,5x`, `0,75x` e `1x` em todas as simulacoes.
+- Removido o atalho fora do contrato `2x`, que era normalizado pelo runtime para `1x` e produzia dois botoes visualmente identicos. Os cinco novos valores permanecem dentro da faixa global `0..1` e atualizam o mesmo controle de playback.
+- O dono do projeto aprovou `Oscilacoes e Ondas > Ondas mecanicas > Onda longitudinal em mola`; `longitudinal-wave` passou de `analysis` para `ready` no catalogo local e a subarea `Ondas mecanicas` agora inicia recolhida por conter somente simulacoes prontas.
+- O gate do `Simulation Fidelity Adjustment Guide` permanece satisfeito: o ajuste de playback nao muda modelo, regimes ou samples, e a mola conserva os 1.536 vertices, as 54 voltas, a propagacao longitudinal, os graficos, a tabela, as formulas, a teoria e os warnings validados na entrega anterior.
+- Guides de produto, arquitetura, regras, roadmap, dados/API, contratos, qualidade, catalogo e issues foram alinhados. Nenhum HLD/diagrama mudou porque nao houve nova fronteira, persistencia, servico ou fluxo arquitetural.
+
+Validacao:
+
+- Teste do shell cobre os cinco atalhos unicos, o estado pressionado e a aplicacao de `0,75x` ao input global.
+- Testes de catalogo e sidebar cobrem as novas contagens de status e o recolhimento padrao de `Ondas mecanicas`.
+- Suite direcionada de shell, catalogo e sidebar: 2 arquivos e 26 testes passaram.
+- Suite completa: 16 arquivos e 172 testes passaram.
+- `npm run lint`, `npm run build` e `npm run build:pages` passaram; os builds mantiveram apenas o aviso conhecido de chunk acima de 500 kB.

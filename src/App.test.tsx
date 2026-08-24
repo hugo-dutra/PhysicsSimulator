@@ -359,8 +359,29 @@ describe('App', () => {
     const playbackSpeedInput = screen.getByLabelText(
       /Velocidade do tempo \(x\)/i,
     )
+    const playbackSpeedShortcuts = within(
+      screen.getByRole('group', {
+        name: /Atalhos de velocidade da simulacao/i,
+      }),
+    ).getAllByRole('button')
 
     expect(playbackSpeedInput).toHaveValue(1)
+    expect(
+      playbackSpeedShortcuts.map((button) => button.getAttribute('aria-label')),
+    ).toEqual([
+      'Velocidade 0,1x',
+      'Velocidade 0,25x',
+      'Velocidade 0,5x',
+      'Velocidade 0,75x',
+      'Velocidade 1x',
+    ])
+    expect(playbackSpeedShortcuts.at(-1)).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    fireEvent.click(playbackSpeedShortcuts[3])
+    expect(playbackSpeedInput).toHaveValue(0.75)
+    expect(playbackSpeedShortcuts[3]).toHaveAttribute('aria-pressed', 'true')
     fireEvent.change(playbackSpeedInput, {
       target: { value: '0.25' },
     })
@@ -668,10 +689,10 @@ describe('App', () => {
     )
     const opticsToggle = getToggleByControls('subarea-waves-optica')
 
-    expect(mechanicalWavesToggle).toHaveAttribute('aria-expanded', 'true')
+    expect(mechanicalWavesToggle).toHaveAttribute('aria-expanded', 'false')
     expect(
-      screen.getByRole('button', { name: /Onda longitudinal em mola/i }),
-    ).toBeInTheDocument()
+      screen.queryByRole('button', { name: /Onda longitudinal em mola/i }),
+    ).not.toBeInTheDocument()
     expect(soundToggle).toHaveAttribute(
       'aria-expanded',
       'false',
@@ -725,7 +746,7 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
     ).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(4)
+    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(3)
     expect(screen.getAllByText(/^pronto$/i).length).toBeGreaterThan(0)
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),

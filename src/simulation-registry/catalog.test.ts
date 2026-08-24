@@ -40,10 +40,10 @@ describe('simulation registry', () => {
     expect(allSimulations).toHaveLength(53)
     expect(
       allSimulations.filter((item) => item.status === 'analysis'),
-    ).toHaveLength(4)
+    ).toHaveLength(3)
     expect(
       allSimulations.filter((item) => item.status === 'ready'),
-    ).toHaveLength(27)
+    ).toHaveLength(28)
     expect(allSimulations.some((item) => item.status === 'planned')).toBe(true)
     expect(findSimulation('inclined-plane-friction').status).toBe('ready')
     expect(findSimulation('projectile-motion').status).toBe('ready')
@@ -330,11 +330,11 @@ describe('simulation registry', () => {
     })
   })
 
-  it('declares the longitudinal spring wave as an analysis simulation', () => {
+  it('declares the longitudinal spring wave as a ready simulation', () => {
     const simulation = findSimulation('longitudinal-wave')
     const fixture = kinematicsFixtures['longitudinal-wave']
 
-    expect(simulation.status).toBe('analysis')
+    expect(simulation.status).toBe('ready')
     expect(simulation.topicPath).toEqual([
       'Oscilacoes e Ondas',
       'Ondas mecanicas',
