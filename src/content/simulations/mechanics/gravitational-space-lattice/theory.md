@@ -62,6 +62,24 @@ A cor também é calculada no renderer a partir da influência visual dos núcle
 
 Esse gradiente é um heatmap da **analogia de deformação**, não uma medição local exata do campo em `m/s²`. Em intensidade zero, toda a grade volta simultaneamente à geometria ortogonal e à cor teal.
 
+## Feixe de luz iniciado sobre uma linha da grade
+
+O feixe neon nasce sobre uma das linhas da malha-base e aponta para a face oposta. A partir desse estado inicial, sua posição e sua direção são integradas em 72 passos. Em cada passo, os mesmos poços visuais usados pela malha acrescentam somente uma mudança transversal à direção acumulada do raio.
+
+Por isso, uma linha distante dos núcleos permanece praticamente reta. Quando o feixe passa perto de uma massa, a direção muda continuamente. Depois que a influência visual fica desprezível, a mudança transversal zera e o feixe continua em linha reta pela última tangente adquirida: ele não retorna à direção nem à linha-base originais.
+
+O controle `Trajetória do feixe` não recalcula uma física diferente. Ele apenas revela de 0% a 100% os segmentos consecutivos do caminho já calculado; o último segmento também pode aparecer parcialmente, permitindo acompanhar a propagação de forma contínua enquanto o slider é arrastado.
+
+O plano define como o feixe é posicionado e qual eixo ele atravessa:
+
+- `XY`: os controles U/V movem o feixe em X/Y e a propagação ocorre em Z;
+- `YZ`: os controles U/V movem o feixe em Y/Z e a propagação ocorre em X;
+- `XZ`: os controles U/V movem o feixe em X/Z e a propagação ocorre em Y.
+
+U e V são medidos em células inteiras para o ponto e a direção iniciais coincidirem com uma linha existente. Depois do desvio, o raio pode naturalmente deixar essa linha. Ligar, desligar, mover ou revelar parcialmente o feixe não muda nenhum sample orbital.
+
+Esse traço mostra o desvio **qualitativo da analogia escolhida**. A persistência da tangente de saída corrige o comportamento conceitual do percurso, mas a intensidade continua amplificada para ser visível. O modelo não resolve uma geodésica nula de uma métrica relativística, não calcula lentes gravitacionais reais e não deve ser interpretado como uma previsão quantitativa do ângulo de deflexão da luz.
+
 ## Controles visuais
 
 `Intensidade da malha 3D` multiplica a convergência sem mudar a física. Em zero, a grade volta a ser ortogonal, mas posição, força, energia e período permanecem iguais.

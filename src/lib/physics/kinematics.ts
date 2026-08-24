@@ -199,12 +199,19 @@ export type StandingWavesParameters = {
   tensionNewtons: number
 }
 
+export type SpacetimeLatticeBeamPlane = 'xy' | 'xz' | 'yz'
+
 export type GravitationalFieldOrbitsParameters = {
   centralMassEarths: number
   eccentricity: number
   fabricDeformationScale: number
   fabricLineOpacity: number
   initialAngleDegrees: number
+  lightBeamEnabled?: boolean
+  lightBeamOffsetUCells?: number
+  lightBeamOffsetVCells?: number
+  lightBeamPlane?: SpacetimeLatticeBeamPlane
+  lightBeamProgressPercent?: number
   orbitingBodyWellAmplification: number
   orbitalRadiusKilometers: number
   satelliteMassKilograms: number
@@ -1070,6 +1077,14 @@ export function toKinematicsParameters(
         ),
         fabricLineOpacity: readNumber(values, 'fabricLineOpacity'),
         initialAngleDegrees: readNumber(values, 'initialAngleDegrees'),
+        lightBeamEnabled: readBoolean(values, 'lightBeamEnabled', false),
+        lightBeamOffsetUCells:
+          readOptionalNumber(values, 'lightBeamOffsetUCells') ?? 0,
+        lightBeamOffsetVCells:
+          readOptionalNumber(values, 'lightBeamOffsetVCells') ?? 0,
+        lightBeamPlane: readSpacetimeLatticeBeamPlane(values),
+        lightBeamProgressPercent:
+          readOptionalNumber(values, 'lightBeamProgressPercent') ?? 100,
         orbitingBodyWellAmplification: readNumber(
           values,
           'orbitingBodyWellAmplification',
@@ -8140,6 +8155,18 @@ function validateGravitationalFieldOrbitsParameters(
   )
   assertFiniteNonNegative('fabricLineOpacity', parameters.fabricLineOpacity)
   assertFinite('initialAngleDegrees', parameters.initialAngleDegrees)
+  if (parameters.lightBeamOffsetUCells !== undefined) {
+    assertFinite('lightBeamOffsetUCells', parameters.lightBeamOffsetUCells)
+  }
+  if (parameters.lightBeamOffsetVCells !== undefined) {
+    assertFinite('lightBeamOffsetVCells', parameters.lightBeamOffsetVCells)
+  }
+  if (parameters.lightBeamProgressPercent !== undefined) {
+    assertFinite(
+      'lightBeamProgressPercent',
+      parameters.lightBeamProgressPercent,
+    )
+  }
   assertFiniteNonNegative(
     'orbitingBodyWellAmplification',
     parameters.orbitingBodyWellAmplification,
@@ -8928,6 +8955,18 @@ function readOpticalElementKind(
   }
 
   return 'converging-lens'
+}
+
+function readSpacetimeLatticeBeamPlane(
+  values: Record<string, unknown>,
+): SpacetimeLatticeBeamPlane {
+  const value = values.lightBeamPlane
+
+  if (value === 'xy' || value === 'xz' || value === 'yz') {
+    return value
+  }
+
+  return 'xy'
 }
 
 function readBoolean(

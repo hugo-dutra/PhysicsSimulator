@@ -4,6 +4,17 @@ export type SpacetimeLatticePoint = {
   z: number
 }
 
+export type SpacetimeLatticeBeamPlane = 'xy' | 'xz' | 'yz'
+
+type SpacetimeLatticeBeamBasePointInput = {
+  cellSize: number
+  divisions: number
+  offsetUCells: number
+  offsetVCells: number
+  plane: SpacetimeLatticeBeamPlane
+  progress: number
+}
+
 export type SpacetimeLatticeWell = {
   centerX: number
   centerY: number
@@ -11,6 +22,16 @@ export type SpacetimeLatticeWell = {
   coreRadius: number
   influenceRadius: number
   strength: number
+}
+
+type SpacetimeLightRayTrajectoryInput = {
+  cellSize: number
+  divisions: number
+  offsetUCells: number
+  offsetVCells: number
+  plane: SpacetimeLatticeBeamPlane
+  segmentCount: number
+  wells: readonly SpacetimeLatticeWell[]
 }
 
 export type SpacetimeLatticeMassRole = 'central' | 'orbiting'
@@ -22,6 +43,9 @@ const warmLatticeColor = [250 / 255, 204 / 255, 21 / 255] as const
 const hotLatticeColor = [239 / 255, 68 / 255, 68 / 255] as const
 const latticeHeatMidpoint = 0.34
 const latticeHeatHotThreshold = 0.78
+const lightRayVisualCurvatureScale = 0.045
+const lightRayFalloffCutoff = 0.0005
+const lightRayMaximumTurnPerStep = 0.055
 
 type SpacetimeLatticeVisualProfileInput = {
   bodyRadius: number
@@ -148,6 +172,209 @@ export function computeSpacetimeLatticeVisualProfile({
       safeReferenceRadius *
       clamp(baseReach + safeMassScale * massReach, baseReach, maxReach),
     strength: safeDeformation * (isCentral ? 1.45 : 1.85),
+  }
+}
+
+export function computeSpacetimeLatticeBeamBasePoint({
+  cellSize,
+  divisions,
+  offsetUCells,
+  offsetVCells,
+  plane,
+  progress,
+}: SpacetimeLatticeBeamBasePointInput): SpacetimeLatticePoint {
+  const safeCellSize = Math.max(1e-6, Math.abs(cellSize))
+  const safeDivisions = Math.max(1, Math.floor(divisions))
+  const halfExtent = (safeCellSize * safeDivisions) / 2
+  const halfCellCount = safeDivisions / 2
+  const offsetU =
+    clamp(Math.round(offsetUCells), -halfCellCount, halfCellCount) *
+    safeCellSize
+  const offsetV =
+    clamp(Math.round(offsetVCells), -halfCellCount, halfCellCount) *
+    safeCellSize
+  const propagationCoordinate = lerp(
+    -halfExtent,
+    halfExtent,
+    clamp(progress, 0, 1),
+  )
+
+  if (plane === 'yz') {
+    return {
+      x: propagationCoordinate,
+      y: offsetU,
+      z: offsetV,
+    }
+  }
+
+  if (plane === 'xz') {
+    return {
+      x: offsetU,
+      y: propagationCoordinate,
+      z: offsetV,
+    }
+  }
+
+  return {
+    x: offsetU,
+    y: offsetV,
+    z: propagationCoordinate,
+  }
+}
+
+export function computeSpacetimeLightRayTrajectory({
+  cellSize,
+  divisions,
+  offsetUCells,
+  offsetVCells,
+  plane,
+  segmentCount,
+  wells,
+}: SpacetimeLightRayTrajectoryInput): SpacetimeLatticePoint[] {
+  const safeSegmentCount = Math.max(1, Math.floor(segmentCount))
+  const startPoint = computeSpacetimeLatticeBeamBasePoint({
+    cellSize,
+    divisions,
+    offsetUCells,
+    offsetVCells,
+    plane,
+    progress: 0,
+  })
+  const baseEndPoint = computeSpacetimeLatticeBeamBasePoint({
+    cellSize,
+    divisions,
+    offsetUCells,
+    offsetVCells,
+    plane,
+    progress: 1,
+  })
+  let directionX = baseEndPoint.x - startPoint.x
+  let directionY = baseEndPoint.y - startPoint.y
+  let directionZ = baseEndPoint.z - startPoint.z
+  const basePathLength = Math.max(
+    1e-6,
+    Math.hypot(directionX, directionY, directionZ),
+  )
+  const stepLength = basePathLength / safeSegmentCount
+
+  directionX /= basePathLength
+  directionY /= basePathLength
+  directionZ /= basePathLength
+
+  const points: SpacetimeLatticePoint[] = [{ ...startPoint }]
+  let currentX = startPoint.x
+  let currentY = startPoint.y
+  let currentZ = startPoint.z
+
+  for (let index = 0; index < safeSegmentCount; index += 1) {
+    let turnX = 0
+    let turnY = 0
+    let turnZ = 0
+
+    wells.forEach((well) => {
+      if (
+        well.strength <= 0 ||
+        well.influenceRadius <= 0 ||
+        well.coreRadius < 0
+      ) {
+        return
+      }
+
+      const toMassX = well.centerX - currentX
+      const toMassY = well.centerY - currentY
+      const toMassZ = well.centerZ - currentZ
+      const distance = Math.hypot(toMassX, toMassY, toMassZ)
+
+      if (distance <= 1e-9) {
+        return
+      }
+
+      const longitudinalProjection =
+        toMassX * directionX +
+        toMassY * directionY +
+        toMassZ * directionZ
+      const transverseX =
+        toMassX - directionX * longitudinalProjection
+      const transverseY =
+        toMassY - directionY * longitudinalProjection
+      const transverseZ =
+        toMassZ - directionZ * longitudinalProjection
+      const transverseDistance = Math.hypot(
+        transverseX,
+        transverseY,
+        transverseZ,
+      )
+
+      if (transverseDistance <= 1e-9) {
+        return
+      }
+
+      const transitionDistance = Math.max(0, distance - well.coreRadius)
+      const normalizedDistance =
+        transitionDistance / well.influenceRadius
+      const falloff = Math.exp(-1.7 * normalizedDistance ** 2)
+
+      if (falloff < lightRayFalloffCutoff) {
+        return
+      }
+
+      const turnMagnitude =
+        lightRayVisualCurvatureScale *
+        well.strength *
+        falloff *
+        (stepLength / Math.max(well.influenceRadius, stepLength))
+
+      turnX += (transverseX / transverseDistance) * turnMagnitude
+      turnY += (transverseY / transverseDistance) * turnMagnitude
+      turnZ += (transverseZ / transverseDistance) * turnMagnitude
+    })
+
+    const turnLength = Math.hypot(turnX, turnY, turnZ)
+    const turnScale =
+      turnLength > lightRayMaximumTurnPerStep
+        ? lightRayMaximumTurnPerStep / turnLength
+        : 1
+
+    directionX += turnX * turnScale
+    directionY += turnY * turnScale
+    directionZ += turnZ * turnScale
+
+    const directionLength = Math.max(
+      1e-9,
+      Math.hypot(directionX, directionY, directionZ),
+    )
+
+    directionX /= directionLength
+    directionY /= directionLength
+    directionZ /= directionLength
+    currentX += directionX * stepLength
+    currentY += directionY * stepLength
+    currentZ += directionZ * stepLength
+    points.push({ x: currentX, y: currentY, z: currentZ })
+  }
+
+  return points
+}
+
+export function computeSpacetimeLightRayReveal(
+  segmentCount: number,
+  progressPercent: number,
+) {
+  const safeSegmentCount = Math.max(1, Math.floor(segmentCount))
+  const progress = clamp(progressPercent / 100, 0, 1)
+  const exactRenderedSegmentCount = progress * safeSegmentCount
+  const completeSegmentCount = Math.floor(exactRenderedSegmentCount)
+  const partialSegmentProgress =
+    exactRenderedSegmentCount - completeSegmentCount
+  const renderedSegmentCount = Math.min(
+    safeSegmentCount,
+    completeSegmentCount + (partialSegmentProgress > 1e-6 ? 1 : 0),
+  )
+
+  return {
+    completeSegmentCount,
+    partialSegmentProgress,
+    renderedSegmentCount,
   }
 }
 

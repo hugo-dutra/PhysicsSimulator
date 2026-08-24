@@ -233,6 +233,11 @@ describe('simulation registry', () => {
       'fabricDeformationScale',
       'fabricLineOpacity',
       'orbitingBodyWellAmplification',
+      'lightBeamEnabled',
+      'lightBeamPlane',
+      'lightBeamOffsetUCells',
+      'lightBeamOffsetVCells',
+      'lightBeamProgressPercent',
     ])
     expect(fixture.regimes?.map((regime) => regime.warningCode)).toContain(
       'SPACETIME_LATTICE_ANALOGY',
@@ -240,6 +245,26 @@ describe('simulation registry', () => {
     expect(fixture.formulas.map((formula) => formula.id)).toContain(
       'lattice-volume-mapping',
     )
+    expect(
+      fixture.parameters.find(
+        (parameter) => parameter.id === 'centralMassEarths',
+      )?.max,
+    ).toBe(20)
+    expect(fixture.defaultParameters.lightBeamEnabled).toBe(false)
+    expect(fixture.defaultParameters.lightBeamPlane).toBe('yz')
+    expect(fixture.defaultParameters.lightBeamOffsetUCells).toBe(0)
+    expect(fixture.defaultParameters.lightBeamOffsetVCells).toBe(2)
+    expect(fixture.defaultParameters.lightBeamProgressPercent).toBe(100)
+    expect(
+      fixture.parameters.find(
+        (parameter) => parameter.id === 'lightBeamEnabled',
+      )?.defaultValue,
+    ).toBe(false)
+    expect(
+      fixture.parameters.find(
+        (parameter) => parameter.id === 'lightBeamPlane',
+      )?.defaultValue,
+    ).toBe('yz')
   })
 
   it('declares the approved Fase 4 oscillators and mechanical waves as ready', () => {

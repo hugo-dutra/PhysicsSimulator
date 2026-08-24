@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  computeSpacetimeLatticeBeamBasePoint,
   computeSpacetimeLatticeHeat,
   computeSpacetimeLatticePoint,
   computeSpacetimeLatticeVisualProfile,
+  computeSpacetimeLightRayReveal,
+  computeSpacetimeLightRayTrajectory,
   createSpacetimeLatticeGeometryData,
   spacetimeLatticeCurveSubdivisions,
   writeSpacetimeLatticeHeatColor,
@@ -55,6 +58,167 @@ describe('volumetric spacetime lattice visual mapping', () => {
 
       expect(changedAxes).toHaveLength(1)
     }
+  })
+
+  it('places the beam on lattice lines across the selected coordinate plane', () => {
+    const input = {
+      cellSize: 1,
+      divisions: 12,
+      offsetUCells: 2,
+      offsetVCells: -1,
+    }
+
+    expect(
+      computeSpacetimeLatticeBeamBasePoint({
+        ...input,
+        plane: 'xy',
+        progress: 0,
+      }),
+    ).toEqual({ x: 2, y: -1, z: -6 })
+    expect(
+      computeSpacetimeLatticeBeamBasePoint({
+        ...input,
+        plane: 'xy',
+        progress: 1,
+      }),
+    ).toEqual({ x: 2, y: -1, z: 6 })
+    expect(
+      computeSpacetimeLatticeBeamBasePoint({
+        ...input,
+        plane: 'yz',
+        progress: 0,
+      }),
+    ).toEqual({ x: -6, y: 2, z: -1 })
+    expect(
+      computeSpacetimeLatticeBeamBasePoint({
+        ...input,
+        plane: 'xz',
+        progress: 1,
+      }),
+    ).toEqual({ x: 2, y: 6, z: -1 })
+  })
+
+  it('bends a near beam more than a far beam through the same visual wells', () => {
+    const well = {
+      centerX: 0,
+      centerY: 0,
+      centerZ: 0,
+      coreRadius: 0.35,
+      influenceRadius: 2.8,
+      strength: 1.3,
+    }
+    const nearTrajectory = computeSpacetimeLightRayTrajectory({
+      cellSize: 1,
+      divisions: 12,
+      offsetUCells: 1,
+      offsetVCells: 0,
+      plane: 'xy',
+      segmentCount: 72,
+      wells: [well],
+    })
+    const farTrajectory = computeSpacetimeLightRayTrajectory({
+      cellSize: 1,
+      divisions: 12,
+      offsetUCells: 6,
+      offsetVCells: 0,
+      plane: 'xy',
+      segmentCount: 72,
+      wells: [well],
+    })
+    const nearEnd = nearTrajectory.at(-1)!
+    const farEnd = farTrajectory.at(-1)!
+    const nearDeviation = Math.hypot(nearEnd.x - 1, nearEnd.y)
+    const farDeviation = Math.hypot(farEnd.x - 6, farEnd.y)
+
+    expect(nearDeviation).toBeGreaterThan(farDeviation)
+    expect(nearDeviation).toBeGreaterThan(0.05)
+  })
+
+  it('keeps the acquired light-ray direction after leaving the well', () => {
+    const trajectory = computeSpacetimeLightRayTrajectory({
+      cellSize: 1,
+      divisions: 20,
+      offsetUCells: 0,
+      offsetVCells: 2,
+      plane: 'yz',
+      segmentCount: 120,
+      wells: [
+        {
+          centerX: 0,
+          centerY: 0,
+          centerZ: 0,
+          coreRadius: 0.3,
+          influenceRadius: 2.2,
+          strength: 1.8,
+        },
+      ],
+    })
+    const exitStart = trajectory.at(-3)!
+    const exitMiddle = trajectory.at(-2)!
+    const exitEnd = trajectory.at(-1)!
+    const previousDirection = {
+      x: exitMiddle.x - exitStart.x,
+      y: exitMiddle.y - exitStart.y,
+      z: exitMiddle.z - exitStart.z,
+    }
+    const outgoingDirection = {
+      x: exitEnd.x - exitMiddle.x,
+      y: exitEnd.y - exitMiddle.y,
+      z: exitEnd.z - exitMiddle.z,
+    }
+
+    expect(outgoingDirection.z).toBeLessThan(-0.001)
+    expect(exitEnd.z).toBeLessThan(exitMiddle.z)
+    expect(outgoingDirection.x).toBeCloseTo(previousDirection.x, 8)
+    expect(outgoingDirection.y).toBeCloseTo(previousDirection.y, 8)
+    expect(outgoingDirection.z).toBeCloseTo(previousDirection.z, 8)
+  })
+
+  it('keeps a light ray straight when every visual well is inactive', () => {
+    const trajectory = computeSpacetimeLightRayTrajectory({
+      cellSize: 1,
+      divisions: 12,
+      offsetUCells: 0,
+      offsetVCells: 2,
+      plane: 'yz',
+      segmentCount: 12,
+      wells: [
+        {
+          centerX: 0,
+          centerY: 0,
+          centerZ: 0,
+          coreRadius: 0.3,
+          influenceRadius: 3,
+          strength: 0,
+        },
+      ],
+    })
+
+    expect(trajectory).toHaveLength(13)
+    trajectory.forEach((point, index) => {
+      expect(point).toEqual({ x: -6 + index, y: 0, z: 2 })
+    })
+  })
+
+  it('reveals the light-ray trajectory continuously from zero to one hundred percent', () => {
+    expect(computeSpacetimeLightRayReveal(72, 0)).toEqual({
+      completeSegmentCount: 0,
+      partialSegmentProgress: 0,
+      renderedSegmentCount: 0,
+    })
+    expect(computeSpacetimeLightRayReveal(72, 50)).toEqual({
+      completeSegmentCount: 36,
+      partialSegmentProgress: 0,
+      renderedSegmentCount: 36,
+    })
+
+    const partialReveal = computeSpacetimeLightRayReveal(72, 50.5)
+
+    expect(partialReveal.completeSegmentCount).toBe(36)
+    expect(partialReveal.partialSegmentProgress).toBeCloseTo(0.36)
+    expect(partialReveal.renderedSegmentCount).toBe(37)
+    expect(computeSpacetimeLightRayReveal(72, 100).renderedSegmentCount)
+      .toBe(72)
   })
 
   it('makes neighboring cube vertices meet at the center of a mass', () => {

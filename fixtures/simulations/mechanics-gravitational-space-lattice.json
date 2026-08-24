@@ -46,17 +46,22 @@
     "initialAngleDegrees": 0,
     "fabricDeformationScale": 1,
     "fabricLineOpacity": 0.48,
-    "orbitingBodyWellAmplification": 0.55
+    "orbitingBodyWellAmplification": 0.55,
+    "lightBeamEnabled": false,
+    "lightBeamPlane": "yz",
+    "lightBeamOffsetUCells": 0,
+    "lightBeamOffsetVCells": 2,
+    "lightBeamProgressPercent": 100
   },
   "parameters": [
     {
       "id": "centralMassEarths",
       "label": "Massa central",
-      "description": "Massa do corpo central em massas da Terra. Massas maiores intensificam o campo e fazem os cubos convergirem a partir de uma distancia visual maior.",
+      "description": "Massa do corpo central em massas da Terra, ajustavel ate 20 massas terrestres. Massas maiores intensificam o campo e fazem os cubos convergirem a partir de uma distancia visual maior.",
       "unit": "M_terra",
       "kind": "number",
       "min": 0.05,
-      "max": 8,
+      "max": 20,
       "step": 0.05,
       "defaultValue": 1
     },
@@ -135,6 +140,70 @@
       "max": 1.2,
       "step": 0.05,
       "defaultValue": 0.55
+    },
+    {
+      "id": "lightBeamEnabled",
+      "label": "Feixe de luz",
+      "description": "Liga ou desliga o feixe neon que nasce sobre uma linha selecionada da malha. Os mesmos pocos visuais curvam progressivamente sua direcao; ao sair da influencia, ele segue pela tangente adquirida sem alterar a orbita nem o campo calculado.",
+      "kind": "boolean",
+      "defaultValue": false
+    },
+    {
+      "id": "lightBeamPlane",
+      "label": "Plano do feixe",
+      "description": "Escolhe o plano usado para posicionar o feixe. XY posiciona em X/Y e propaga em Z; YZ posiciona em Y/Z e propaga em X; XZ posiciona em X/Z e propaga em Y.",
+      "kind": "choice",
+      "defaultValue": "yz",
+      "options": [
+        {
+          "label": "Plano XY",
+          "value": "xy",
+          "description": "Move o feixe em X/Y e o faz atravessar o volume ao longo de Z."
+        },
+        {
+          "label": "Plano YZ",
+          "value": "yz",
+          "description": "Move o feixe em Y/Z e o faz atravessar o volume ao longo de X."
+        },
+        {
+          "label": "Plano XZ",
+          "value": "xz",
+          "description": "Move o feixe em X/Z e o faz atravessar o volume ao longo de Y."
+        }
+      ]
+    },
+    {
+      "id": "lightBeamOffsetUCells",
+      "label": "Posicao U do feixe",
+      "description": "Desloca o feixe em celulas da propria malha no primeiro eixo do plano: X em XY/XZ e Y em YZ. Valores perto de zero aproximam o raio da massa central.",
+      "unit": "celulas",
+      "kind": "number",
+      "min": -6,
+      "max": 6,
+      "step": 1,
+      "defaultValue": 0
+    },
+    {
+      "id": "lightBeamOffsetVCells",
+      "label": "Posicao V do feixe",
+      "description": "Desloca o feixe em celulas da propria malha no segundo eixo do plano: Y em XY e Z em YZ/XZ. A combinacao U/V seleciona uma linha existente da grade.",
+      "unit": "celulas",
+      "kind": "number",
+      "min": -6,
+      "max": 6,
+      "step": 1,
+      "defaultValue": 2
+    },
+    {
+      "id": "lightBeamProgressPercent",
+      "label": "Trajetoria do feixe",
+      "description": "Revela progressivamente de 0% a 100% o caminho ja calculado do feixe. Em 0% nenhum trecho aparece; ao aumentar, a luz percorre a trajetoria e preserva o desvio acumulado depois de sair da regiao de maior curvatura.",
+      "unit": "%",
+      "kind": "number",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "defaultValue": 100
     }
   ],
   "presets": [
@@ -149,7 +218,12 @@
         "initialAngleDegrees": 0,
         "fabricDeformationScale": 1,
         "fabricLineOpacity": 0.48,
-        "orbitingBodyWellAmplification": 0.55
+        "orbitingBodyWellAmplification": 0.55,
+        "lightBeamEnabled": true,
+        "lightBeamPlane": "xy",
+        "lightBeamOffsetUCells": 2,
+        "lightBeamOffsetVCells": 0,
+        "lightBeamProgressPercent": 100
       }
     },
     {
@@ -163,7 +237,12 @@
         "initialAngleDegrees": 20,
         "fabricDeformationScale": 1.25,
         "fabricLineOpacity": 0.52,
-        "orbitingBodyWellAmplification": 0.55
+        "orbitingBodyWellAmplification": 0.55,
+        "lightBeamEnabled": true,
+        "lightBeamPlane": "xy",
+        "lightBeamOffsetUCells": 2,
+        "lightBeamOffsetVCells": 0,
+        "lightBeamProgressPercent": 100
       }
     },
     {
@@ -177,7 +256,12 @@
         "initialAngleDegrees": 35,
         "fabricDeformationScale": 1.15,
         "fabricLineOpacity": 0.5,
-        "orbitingBodyWellAmplification": 0.95
+        "orbitingBodyWellAmplification": 0.95,
+        "lightBeamEnabled": true,
+        "lightBeamPlane": "yz",
+        "lightBeamOffsetUCells": 2,
+        "lightBeamOffsetVCells": 0,
+        "lightBeamProgressPercent": 100
       }
     },
     {
@@ -191,7 +275,12 @@
         "initialAngleDegrees": 0,
         "fabricDeformationScale": 0,
         "fabricLineOpacity": 0.42,
-        "orbitingBodyWellAmplification": 0.55
+        "orbitingBodyWellAmplification": 0.55,
+        "lightBeamEnabled": true,
+        "lightBeamPlane": "xz",
+        "lightBeamOffsetUCells": 2,
+        "lightBeamOffsetVCells": 0,
+        "lightBeamProgressPercent": 100
       }
     }
   ],
@@ -200,7 +289,7 @@
       "id": "volumetric-lattice-analogy",
       "label": "Malha cubica gravitacional",
       "condition": "fabricDeformationScale > 0; a massa orbital tambem exige orbitingBodyWellAmplification > 0 para produzir intensidade visual.",
-      "transitionLimit": "Ao zerar a intensidade, os vertices retornam a grade ortogonal sem mudar os samples orbitais fisicos.",
+      "transitionLimit": "Ao zerar a intensidade, os vertices e o feixe retornam a linhas ortogonais sem mudar os samples orbitais fisicos.",
       "sampleFields": [
         "spacetimeCentralDeformation",
         "spacetimeCentralInfluenceScale",
@@ -239,6 +328,7 @@
     "O encontro de varios vertices no centro das massas e uma singularidade visual didatica, nao o interior fisico de um corpo extenso.",
     "O alcance perceptivel da curva e um limiar visual suave derivado da massa; o campo gravitacional real nao comeca em uma borda finita.",
     "A massa orbital usa amplificacao visual declarada para permanecer legivel e essa amplificacao nao altera trajetoria, forca ou energia.",
+    "O feixe neon usa os mesmos pocos visuais da malha, mas integra a mudanca de direcao ao longo do caminho: quando a influencia se torna desprezivel, segue reto pela tangente adquirida. A trajetoria continua qualitativa e nao calcula uma geodesica nula da relatividade geral nem lentes gravitacionais em escala.",
     "O modelo orbital ignora atmosfera, arrasto, oblatividade, propulsao, mares e perturbacoes gravitacionais de terceiros.",
     "A lua auxiliar continua sendo apenas um marcador didatico e nao participa da deformacao volumetrica nem da energia orbital principal."
   ],
@@ -294,6 +384,23 @@
       "notUsedWhen": "Nao usar para medir curvatura relativistica, horizonte de eventos, dilatacao temporal ou estrutura interna da massa.",
       "parameterIds": ["centralMassEarths", "satelliteMassKilograms", "fabricDeformationScale", "fabricLineOpacity", "orbitingBodyWellAmplification"],
       "sampleFields": ["xMeters", "zMeters", "spacetimeCentralDeformation", "spacetimeCentralInfluenceScale", "spacetimeOrbitingDeformation", "spacetimeOrbitingInfluenceScale"],
+      "relatedChartIds": ["lattice-time"]
+    },
+    {
+      "id": "light-ray-direction-update",
+      "title": "Direcao acumulada do feixe",
+      "expressionLatex": "\\hat n_{k+1}=\\operatorname{norm}(\\hat n_k+\\Delta\\hat n_{\\perp,k}),\\qquad \\vec p_{k+1}=\\vec p_k+\\Delta s\\,\\hat n_{k+1}",
+      "description": "A cada passo, os pocos visuais alteram somente a componente transversal da direcao. Quando essa influencia cai abaixo do limiar visual, Delta n_perp zera e o feixe continua reto pela ultima tangente, sem retornar a linha-base.",
+      "variables": [
+        { "symbol": "\\hat n_k", "label": "direcao acumulada do feixe" },
+        { "symbol": "\\Delta\\hat n_{\\perp,k}", "label": "incremento transversal qualitativo produzido pelos pocos" },
+        { "symbol": "\\Delta s", "label": "comprimento de um segmento renderizado" },
+        { "symbol": "\\vec p_k", "label": "posicao atual do feixe" }
+      ],
+      "usedWhen": "Usar para acompanhar qualitativamente a construcao progressiva da trajetoria e a permanencia do angulo de saida.",
+      "notUsedWhen": "Nao usar para medir um angulo relativistico real; a intensidade continua visualmente amplificada.",
+      "parameterIds": ["centralMassEarths", "satelliteMassKilograms", "fabricDeformationScale", "orbitingBodyWellAmplification", "lightBeamEnabled", "lightBeamPlane", "lightBeamOffsetUCells", "lightBeamOffsetVCells", "lightBeamProgressPercent"],
+      "sampleFields": ["spacetimeCentralDeformation", "spacetimeCentralInfluenceScale", "spacetimeOrbitingDeformation", "spacetimeOrbitingInfluenceScale"],
       "relatedChartIds": ["lattice-time"]
     },
     {

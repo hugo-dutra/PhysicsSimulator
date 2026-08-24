@@ -1183,7 +1183,7 @@ describe('kinematics physics engine', () => {
     }
     const heavierParameters: GravitationalFieldOrbitsParameters = {
       ...lighterParameters,
-      centralMassEarths: 4,
+      centralMassEarths: 20,
       satelliteMassKilograms: 4800,
     }
     const lighter = computeKinematicsSample(
@@ -1215,8 +1215,64 @@ describe('kinematics physics engine', () => {
     expect(heavier.spacetimeOrbitingInfluenceScale).toBeGreaterThan(
       lighter.spacetimeOrbitingInfluenceScale,
     )
+    expect(Number.isFinite(heavier.speedMetersPerSecond)).toBe(true)
+    expect(Number.isFinite(heavier.gravitationalFieldNewtonsPerKilogram))
+      .toBe(true)
     expect(result.warnings.map((warning) => warning.code)).toContain(
       'SPACETIME_LATTICE_ANALOGY',
+    )
+  })
+
+  it('keeps light-beam controls visual and outside the orbital solution', () => {
+    const withBeam = toKinematicsParameters('gravitational-space-lattice', {
+      centralMassEarths: 20,
+      eccentricity: 0.12,
+      fabricDeformationScale: 1,
+      fabricLineOpacity: 0.48,
+      initialAngleDegrees: 0,
+      lightBeamEnabled: true,
+      lightBeamOffsetUCells: 1,
+      lightBeamOffsetVCells: -2,
+      lightBeamPlane: 'yz',
+      lightBeamProgressPercent: 42,
+      orbitingBodyWellAmplification: 0.55,
+      orbitalRadiusKilometers: 7000,
+      satelliteMassKilograms: 900,
+    }) as GravitationalFieldOrbitsParameters
+    const withoutBeam = {
+      ...withBeam,
+      lightBeamEnabled: false,
+      lightBeamOffsetUCells: 6,
+      lightBeamOffsetVCells: 6,
+      lightBeamPlane: 'xz' as const,
+      lightBeamProgressPercent: 100,
+    }
+    const visibleSample = computeKinematicsSample(
+      'gravitational-space-lattice',
+      withBeam,
+      120,
+    )
+    const hiddenSample = computeKinematicsSample(
+      'gravitational-space-lattice',
+      withoutBeam,
+      120,
+    )
+
+    expect(withBeam.lightBeamEnabled).toBe(true)
+    expect(withBeam.lightBeamPlane).toBe('yz')
+    expect(withBeam.lightBeamOffsetUCells).toBe(1)
+    expect(withBeam.lightBeamOffsetVCells).toBe(-2)
+    expect(withBeam.lightBeamProgressPercent).toBe(42)
+    expect(hiddenSample.xMeters).toBeCloseTo(visibleSample.xMeters)
+    expect(hiddenSample.zMeters).toBeCloseTo(visibleSample.zMeters)
+    expect(hiddenSample.speedMetersPerSecond).toBeCloseTo(
+      visibleSample.speedMetersPerSecond,
+    )
+    expect(hiddenSample.gravitationalFieldNewtonsPerKilogram).toBeCloseTo(
+      visibleSample.gravitationalFieldNewtonsPerKilogram,
+    )
+    expect(hiddenSample.totalEnergyJoules).toBeCloseTo(
+      visibleSample.totalEnergyJoules,
     )
   })
 

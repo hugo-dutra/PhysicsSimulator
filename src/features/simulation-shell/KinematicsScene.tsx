@@ -65,6 +65,8 @@ import {
   computeSpacetimeLatticeHeat,
   computeSpacetimeLatticePoint,
   computeSpacetimeLatticeVisualProfile,
+  computeSpacetimeLightRayReveal,
+  computeSpacetimeLightRayTrajectory,
   createSpacetimeLatticeGeometryData,
   spacetimeLatticeCurveSubdivisions,
   writeSpacetimeLatticeHeatColor,
@@ -288,6 +290,9 @@ type SceneObjects = {
   gravityLatticeCellSize: number
   gravityLatticeColorAttribute: THREE.BufferAttribute
   gravityLatticePositionAttribute: THREE.BufferAttribute
+  gravityLightBeamCore: THREE.InstancedMesh
+  gravityLightBeamGlow: THREE.InstancedMesh
+  gravityLightBeamHelper: THREE.Object3D
   orbitCentralBody: THREE.Mesh
   orbitFabric: THREE.LineSegments
   orbitFabricBasePositions: Float32Array
@@ -514,6 +519,9 @@ const rigidRotationAxisHeight = 0.7
 const orbitSatellitePathSegments = 96
 const orbitFabricSegments = 96
 const gravityLatticeDivisions = 12
+const gravityLightBeamSegmentCount = 72
+const gravityLightBeamDirection = new THREE.Vector3()
+const gravityLightBeamUpAxis = new THREE.Vector3(0, 1, 0)
 const hydroTankWidthMeters = 2.8
 const hydroTankHorizontalDepthMeters = 1.8
 const hydroPressureFieldSegments = 24
@@ -985,6 +993,53 @@ export function KinematicsScene({
     gravityLattice.renderOrder = 2
     gravityLattice.visible = isVolumetricGravityLattice
     scene.add(gravityLattice)
+
+    const gravityLightBeamCore = new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(
+        gravityLatticeData.cellSize * 0.032,
+        gravityLatticeData.cellSize * 0.032,
+        1,
+        10,
+      ),
+      new THREE.MeshBasicMaterial({
+        blending: THREE.AdditiveBlending,
+        color: 0xc9fbff,
+        depthTest: false,
+        depthWrite: false,
+        transparent: true,
+      }),
+      gravityLightBeamSegmentCount,
+    )
+    const gravityLightBeamGlow = new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(
+        gravityLatticeData.cellSize * 0.082,
+        gravityLatticeData.cellSize * 0.082,
+        1,
+        12,
+      ),
+      new THREE.MeshBasicMaterial({
+        blending: THREE.AdditiveBlending,
+        color: 0x38dff8,
+        depthTest: false,
+        depthWrite: false,
+        opacity: 0.24,
+        transparent: true,
+      }),
+      gravityLightBeamSegmentCount,
+    )
+    const gravityLightBeamHelper = new THREE.Object3D()
+
+    gravityLightBeamCore.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+    gravityLightBeamGlow.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+    gravityLightBeamCore.position.copy(gravityLattice.position)
+    gravityLightBeamGlow.position.copy(gravityLattice.position)
+    gravityLightBeamCore.frustumCulled = false
+    gravityLightBeamGlow.frustumCulled = false
+    gravityLightBeamCore.renderOrder = 8
+    gravityLightBeamGlow.renderOrder = 7
+    gravityLightBeamCore.visible = false
+    gravityLightBeamGlow.visible = false
+    scene.add(gravityLightBeamGlow, gravityLightBeamCore)
     scene.add(
       createOriginAxesMarker({
         axisLength: getOriginAxesLength(gridSize),
@@ -2164,6 +2219,9 @@ export function KinematicsScene({
       gravityLatticeCellSize: gravityLatticeData.cellSize,
       gravityLatticeColorAttribute,
       gravityLatticePositionAttribute,
+      gravityLightBeamCore,
+      gravityLightBeamGlow,
+      gravityLightBeamHelper,
       orbitCentralBody,
       orbitFabric,
       orbitFabricBasePositions,
@@ -2740,6 +2798,11 @@ function updateConstrainedBodyObjects(
   objects.orbitCentralBody.visible = isOrbit
   objects.orbitFabric.visible = simulationId === 'gravitational-field-orbits'
   objects.gravityLattice.visible = isVolumetricGravityLattice
+  objects.gravityLightBeamCore.visible =
+    isVolumetricGravityLattice &&
+    (parameters as GravitationalFieldOrbitsParameters).lightBeamEnabled === true
+  objects.gravityLightBeamGlow.visible =
+    objects.gravityLightBeamCore.visible
   objects.orbitSatellitePath.visible =
     simulationId === 'gravitational-field-orbits'
   objects.acceleratedMotionAccelerationLabel.visible =
@@ -2809,7 +2872,11 @@ function updateConstrainedBodyObjects(
       clamp(objects.bodyRadius * 1.18, 0.48, 0.88),
     )
     if (isVolumetricGravityLattice) {
-      updateVolumetricGravityLattice(objects, sample)
+      updateVolumetricGravityLattice(
+        objects,
+        parameters as GravitationalFieldOrbitsParameters,
+        sample,
+      )
     } else {
       objects.secondaryBody.position.copy(
         toOrbitSatelliteScenePosition(
@@ -3184,6 +3251,7 @@ function updateOrbitSpacetimeFabric(
 
 function updateVolumetricGravityLattice(
   objects: SceneObjects,
+  parameters: GravitationalFieldOrbitsParameters,
   sample: KinematicsSample,
 ) {
   const positions = objects.gravityLatticePositionAttribute
@@ -3265,6 +3333,103 @@ function updateVolumetricGravityLattice(
 
   objects.gravityLatticePositionAttribute.needsUpdate = true
   objects.gravityLatticeColorAttribute.needsUpdate = true
+  updateGravityLightBeam(objects, parameters, wells)
+}
+
+function updateGravityLightBeam(
+  objects: SceneObjects,
+  parameters: GravitationalFieldOrbitsParameters,
+  wells: readonly {
+    centerX: number
+    centerY: number
+    centerZ: number
+    coreRadius: number
+    influenceRadius: number
+    strength: number
+  }[],
+) {
+  const isVisible = parameters.lightBeamEnabled === true
+  const progress = clamp(
+    (parameters.lightBeamProgressPercent ?? 100) / 100,
+    0,
+    1,
+  )
+
+  objects.gravityLightBeamCore.visible = isVisible && progress > 0
+  objects.gravityLightBeamGlow.visible = isVisible && progress > 0
+
+  if (!isVisible || progress <= 0) {
+    objects.gravityLightBeamCore.count = 0
+    objects.gravityLightBeamGlow.count = 0
+    return
+  }
+
+  const plane = parameters.lightBeamPlane ?? 'xy'
+  const offsetUCells = parameters.lightBeamOffsetUCells ?? 0
+  const offsetVCells = parameters.lightBeamOffsetVCells ?? 0
+  const trajectory = computeSpacetimeLightRayTrajectory({
+    cellSize: objects.gravityLatticeCellSize,
+    divisions: gravityLatticeDivisions,
+    offsetUCells,
+    offsetVCells,
+    plane,
+    segmentCount: gravityLightBeamSegmentCount,
+    wells,
+  })
+  const {
+    completeSegmentCount,
+    partialSegmentProgress,
+    renderedSegmentCount,
+  } = computeSpacetimeLightRayReveal(
+    gravityLightBeamSegmentCount,
+    progress * 100,
+  )
+
+  objects.gravityLightBeamCore.count = renderedSegmentCount
+  objects.gravityLightBeamGlow.count = renderedSegmentCount
+
+  for (let index = 0; index < renderedSegmentCount; index += 1) {
+    const startPoint = trajectory[index]
+    const fullEndPoint = trajectory[index + 1]
+    const isPartialSegment =
+      index === completeSegmentCount && partialSegmentProgress > 1e-6
+    const segmentProgress = isPartialSegment ? partialSegmentProgress : 1
+    const endX = startPoint.x +
+      (fullEndPoint.x - startPoint.x) * segmentProgress
+    const endY = startPoint.y +
+      (fullEndPoint.y - startPoint.y) * segmentProgress
+    const endZ = startPoint.z +
+      (fullEndPoint.z - startPoint.z) * segmentProgress
+    const segmentDirection = gravityLightBeamDirection.set(
+      endX - startPoint.x,
+      endY - startPoint.y,
+      endZ - startPoint.z,
+    )
+    const segmentLength = Math.max(1e-6, segmentDirection.length())
+
+    objects.gravityLightBeamHelper.position.set(
+      (startPoint.x + endX) / 2,
+      (startPoint.y + endY) / 2,
+      (startPoint.z + endZ) / 2,
+    )
+    objects.gravityLightBeamHelper.quaternion.setFromUnitVectors(
+      gravityLightBeamUpAxis,
+      segmentDirection.normalize(),
+    )
+    objects.gravityLightBeamHelper.scale.set(1, segmentLength, 1)
+    objects.gravityLightBeamHelper.updateMatrix()
+    objects.gravityLightBeamCore.setMatrixAt(
+      index,
+      objects.gravityLightBeamHelper.matrix,
+    )
+    objects.gravityLightBeamGlow.setMatrixAt(
+      index,
+      objects.gravityLightBeamHelper.matrix,
+    )
+  }
+
+  objects.gravityLightBeamCore.instanceMatrix.needsUpdate = true
+  objects.gravityLightBeamGlow.instanceMatrix.needsUpdate = true
 }
 
 function updateOrbitSatellitePath(
@@ -10098,7 +10263,7 @@ function getKinematicsCanvasAriaLabel(simulationId: KinematicsSimulationId) {
   }
 
   if (simulationId === 'gravitational-space-lattice') {
-    return 'Cena 3D orbital dentro de uma malha cubica volumetrica, com vertices convergindo no centro das massas e alcance dependente da massa, arraste para orbitar e Shift + scroll para zoom'
+    return 'Cena 3D orbital dentro de uma malha cubica volumetrica, com vertices convergindo no centro das massas e feixe de luz neon acumulando o desvio antes de seguir pela tangente adquirida, arraste para orbitar e Shift + scroll para zoom'
   }
 
   if (simulationId === 'hydrostatics-buoyancy') {

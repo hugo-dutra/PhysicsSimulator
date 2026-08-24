@@ -3891,3 +3891,57 @@ Complemento visual aprovado:
 - `npm run lint` passou.
 - `npm run build:pages` gerou o bundle com base `/PhysicsSimulator-build/`; permaneceu apenas o aviso conhecido de chunk acima de 500 kB.
 - Smoke visual final no navegador interno confirmou massa e intensidade em `1`, cena a 75 FPS e nenhum erro ou warning de execucao no console.
+
+## 2026-08-22 - Massa central ate 20 e feixe de luz na malha 3D
+
+Status: implementado em `analysis`, aguardando aprovacao visual do dono.
+
+Pedido:
+
+- Ampliar a massa central maxima da malha gravitacional 3D para `20 M_terra`.
+- Adicionar um feixe de luz grosso, neon azul-claro, que possa ser ligado ou desligado, movido em linhas dos planos `XY`, `YZ` e `XZ` e deformado junto com a linha da grade escolhida.
+- Manter o feixe praticamente reto longe das massas e evidenciar o desvio quando ele atravessa uma regiao de curvatura intensa.
+
+Ajuste:
+
+- O limite de `centralMassEarths` da simulacao volumetrica passou de `8` para `20`, preservando a escala continua de intensidade, nucleo e alcance visual.
+- Adicionados os controles visuais `lightBeamEnabled`, `lightBeamPlane`, `lightBeamOffsetUCells` e `lightBeamOffsetVCells`, todos declarados na fixture com tooltip. Os deslocamentos inteiros de `-6` a `6` mantem o feixe coincidente com uma linha existente da malha.
+- Em `XY`, o feixe e posicionado por `X/Y` e percorre `Z`; em `YZ`, e posicionado por `Y/Z` e percorre `X`; em `XZ`, e posicionado por `X/Z` e percorre `Y`.
+- O renderer reutiliza exatamente a mesma funcao e os mesmos pocos que deformam os vertices da grade. O feixe e composto por duas `InstancedMesh` de 72 cilindros, com nucleo branco-ciano e halo azul-claro aditivo, sem recriar geometria ou material no loop de animacao.
+- Ligar, desligar, mover ou trocar o plano do feixe nao altera samples, posicao, velocidade, campo, forca, periodo ou energia orbital.
+- Teoria, formulas, limites e guides declaram o feixe como sobreposicao didatica da deformacao visual, nao como calculo relativistico de geodesica nula ou lente gravitacional.
+- Nenhum HLD/diagrama mudou porque nao foi criada nova fronteira de servico, persistencia ou pipeline.
+
+Validacao:
+
+- Suite direcionada de fisica, geometria, catalogo e cena: 4 arquivos e 94 testes passaram.
+- Suite completa final: 16 arquivos e 166 testes passaram.
+- `npm run lint` passou.
+- `npm run build` passou; permaneceu apenas o aviso conhecido de chunk acima de 500 kB.
+- Smoke visual no navegador local confirmou o toggle, os tres planos, o movimento `U/V` em celulas, massa central em `20 M_terra`, maior desvio perto da massa e cena estabilizando aproximadamente entre 50 e 60 FPS.
+- O Vite permanece rodando em `http://127.0.0.1:5173/`, com o feixe ligado no plano `XY` e posicionado proximo da massa para inspecao do dono.
+
+Ajuste posterior:
+
+- O feixe passou a iniciar desligado em `defaultParameters`, no plano `YZ`, com U `0` e V `2`; o controle e os presets que o ligam continuam disponiveis, sem mudanca na malha, no renderer ou nos samples fisicos.
+- A trajetoria deixou de deformar cada ponto isoladamente de volta a linha-base. Agora 72 passos acumulam a mudanca transversal de direcao produzida pelos mesmos pocos; quando a influencia cai, os passos restantes preservam a tangente adquirida.
+- Adicionado `Trajetoria do feixe`, de `0%` a `100%`, com tooltip e padrao `100%`. O renderer ajusta a contagem de instancias e interpola o ultimo cilindro para revelar continuamente o percurso durante o arraste.
+- O modelo continua sendo uma analogia visual amplificada, nao uma geodesica nula quantitativa; ligar, mover ou revelar o feixe permanece fora dos samples orbitais.
+
+## 2026-08-24 - Tangente acumulada e revelacao da trajetoria luminosa
+
+Status: implementado em `analysis`, aguardando aprovacao visual final do dono.
+
+- Corrigido o problema conceitual do feixe que retornava a linha-base quando a deformacao local diminuia. A direcao agora acumula incrementos transversais durante 72 passos e permanece constante depois que a influencia dos pocos cai abaixo do limiar visual.
+- Adicionado `lightBeamProgressPercent`, controle numerico/slider de `0%` a `100%`, com tooltip, padrao `100%` e interpolacao do ultimo segmento parcial. O controle apenas revela o caminho calculado e nao altera samples orbitais.
+- O feixe continua iniciando desligado no plano `YZ`, U `0`, V `2`; os presets continuam podendo liga-lo com trajetoria completa.
+- Teoria, formula numerica, fixture, arquitetura, regras, contratos, qualidade, fidelity guide e issues foram alinhados com a permanencia da tangente e com o limite qualitativo da analogia.
+- Nenhum HLD/diagrama foi alterado porque o ajuste permanece dentro do helper e do renderer existentes, sem nova fronteira de servico, persistencia ou pipeline.
+
+Validacao:
+
+- Suite direcionada de renderer, fisica, catalogo e cena: 4 arquivos e 97 testes passaram.
+- Suite completa: 16 arquivos e 169 testes passaram.
+- `npm run lint` passou.
+- `npm run build` e `npm run build:pages` passaram; permaneceu apenas o aviso conhecido de chunk acima de 500 kB.
+- Smoke visual local confirmou feixe ausente em `0%`, metade do percurso em `50%`, percurso completo em `100%`, continuacao pela tangente de saida e cena na faixa observada de 47-57 FPS.
