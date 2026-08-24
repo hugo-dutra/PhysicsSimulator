@@ -90,6 +90,7 @@ Ondas longitudinais em mola devem comunicar que o meio material oscila na mesma 
 
 - A mola fica alinhada ao eixo declarado da simulacao e a perturbacao percorre esse eixo.
 - As espiras se comprimem e se rarefazem a partir do deslocamento longitudinal calculado no sample; nao deve haver oscilacao transversal usada como atalho visual.
+- A densidade de vertices da linha helicoidal pode aumentar para suavizar as espiras, mas nao pode mudar o numero de voltas, o comprimento da mola ou o perfil fisico; o renderer atual usa 1.536 vertices, quatro vezes a resolucao original de 384.
 - Fonte, probe, vetores de deslocamento/velocidade/aceleracao e medida de comprimento de onda devem estar paralelos ao eixo da mola.
 - A velocidade da onda deve vir do modelo declarado, seja `v = sqrt(C/mu)` para rigidez longitudinal e densidade linear, seja `v = lambda f` no modo didatico.
 - Compressao local, forca elastica, energia didatica, graficos, tabela, formulas e teoria devem usar os mesmos campos do sample.

@@ -28,8 +28,14 @@ import {
   getRigidBodySlidingMassRadiusRatio,
   rigidRotationRotorZ,
 } from './rigidBodyRotationSceneGeometry'
+import { getWaveProfilePointCount } from './waveSceneResolution'
 
 describe('KinematicsScene projection helpers', () => {
+  it('renders the longitudinal spring with four times its original vertex resolution', () => {
+    expect(getWaveProfilePointCount('longitudinal-wave')).toBe(384 * 4)
+    expect(getWaveProfilePointCount('wave-on-string')).toBe(128)
+  })
+
   it('selects equally spaced stroboscopic marks for MRU', () => {
     const parameters: UniformLinearMotionParameters = {
       initialPositionMeters: 0,

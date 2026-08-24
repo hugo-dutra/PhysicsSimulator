@@ -4032,3 +4032,19 @@ Validacao:
 - Suite direcionada de catalogo, sidebar e app: 3 arquivos e 30 testes passaram.
 - Suite completa: 16 arquivos e 171 testes passaram.
 - `npm run lint`, `npm run build` e `npm run build:pages` passaram; os builds mantiveram apenas o aviso conhecido de chunk acima de 500 kB.
+
+## 2026-08-24 - Resolucao 4x da mola longitudinal
+
+Status: implementado em `analysis`, aguardando avaliacao visual do dono.
+
+- A linha helicoidal de `Onda longitudinal em mola` passou de 384 para 1.536 vertices dinamicos, aumentando a resolucao geometrica em exatamente quatro vezes.
+- O controle `Voltas da mola` permanece em 54 por padrao. Comprimento, compressao/rarefacao, velocidade, forca, probe, graficos, tabela, formulas e samples fisicos nao foram alterados.
+- O buffer continua sendo criado uma unica vez e reutilizado no loop renderer-first; somente a quantidade de pontos atualizados por frame aumentou.
+- Aplicado o `Simulation Fidelity Adjustment Guide`; arquitetura, smoke visual, teoria e teste de regressao foram alinhados. Nenhum HLD/diagrama mudou porque nao houve nova fronteira, persistencia, contrato ou fluxo arquitetural.
+
+Validacao:
+
+- Suite direcionada de renderer, motor e catalogo: 3 arquivos e 86 testes passaram; depois da extracao do helper puro, o teste final do renderer passou com 13 testes.
+- Suite completa: 16 arquivos e 172 testes passaram.
+- `npm run lint`, `npm run build` e `npm run build:pages` passaram; os builds mantiveram apenas o aviso conhecido de chunk acima de 500 kB.
+- Smoke visual local confirmou as 54 voltas com curvas mais suaves, aproximadamente 62-63 FPS e nenhum warning ou erro no console.

@@ -95,6 +95,11 @@ import {
   type KinematicsSceneProjection,
 } from './KinematicsSceneProjection'
 import { ViewportOriginLegend } from './ViewportOriginLegend'
+import {
+  getWaveProfilePointCount,
+  longitudinalWaveStringPointCapacity,
+  waveStringPointCapacity,
+} from './waveSceneResolution'
 
 export type KinematicsFrameStats = FrameStats
 export type KinematicsCameraViewMode =
@@ -448,8 +453,6 @@ const waveEnergyPacketCapacity = Math.max(
   dopplerWavefrontMarkerCount,
 )
 const waveHistoryLineCount = 7
-const waveStringPointCapacity = 128
-const longitudinalWaveStringPointCapacity = 384
 const waveLinePointCapacity = Math.max(
   waveStringPointCapacity,
   longitudinalWaveStringPointCapacity,
@@ -6445,12 +6448,6 @@ function readFirstKinematicsSample(samples: KinematicsSample[]) {
   }
 
   return firstSample
-}
-
-function getWaveProfilePointCount(simulationId: KinematicsSimulationId) {
-  return simulationId === 'longitudinal-wave'
-    ? longitudinalWaveStringPointCapacity
-    : waveStringPointCapacity
 }
 
 function readLongitudinalSpringCoilTurns(
