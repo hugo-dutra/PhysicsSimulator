@@ -1177,6 +1177,7 @@ describe('kinematics physics engine', () => {
       fabricDeformationScale: 1,
       fabricLineOpacity: 0.48,
       initialAngleDegrees: 0,
+      latticeDensityMultiplier: 1,
       orbitingBodyWellAmplification: 0.55,
       orbitalRadiusKilometers: 7000,
       satelliteMassKilograms: 300,
@@ -1223,7 +1224,7 @@ describe('kinematics physics engine', () => {
     )
   })
 
-  it('keeps light-beam controls visual and outside the orbital solution', () => {
+  it('keeps light-beam and orbit visibility controls outside the orbital solution', () => {
     const withBeam = toKinematicsParameters('gravitational-space-lattice', {
       centralMassEarths: 20,
       eccentricity: 0.12,
@@ -1235,6 +1236,8 @@ describe('kinematics physics engine', () => {
       lightBeamOffsetVCells: -2,
       lightBeamPlane: 'yz',
       lightBeamProgressPercent: 42,
+      orbitingBodyVisible: true,
+      orbitTrailVisible: true,
       orbitingBodyWellAmplification: 0.55,
       orbitalRadiusKilometers: 7000,
       satelliteMassKilograms: 900,
@@ -1246,6 +1249,12 @@ describe('kinematics physics engine', () => {
       lightBeamOffsetVCells: 6,
       lightBeamPlane: 'xz' as const,
       lightBeamProgressPercent: 100,
+      orbitingBodyVisible: false,
+      orbitTrailVisible: false,
+    }
+    const maximumDensity = {
+      ...withBeam,
+      latticeDensityMultiplier: 10,
     }
     const visibleSample = computeKinematicsSample(
       'gravitational-space-lattice',
@@ -1257,12 +1266,22 @@ describe('kinematics physics engine', () => {
       withoutBeam,
       120,
     )
+    const maximumDensitySample = computeKinematicsSample(
+      'gravitational-space-lattice',
+      maximumDensity,
+      120,
+    )
 
     expect(withBeam.lightBeamEnabled).toBe(true)
     expect(withBeam.lightBeamPlane).toBe('yz')
     expect(withBeam.lightBeamOffsetUCells).toBe(1)
     expect(withBeam.lightBeamOffsetVCells).toBe(-2)
     expect(withBeam.lightBeamProgressPercent).toBe(42)
+    expect(withBeam.latticeDensityMultiplier).toBe(1)
+    expect(withBeam.orbitingBodyVisible).toBe(true)
+    expect(withBeam.orbitTrailVisible).toBe(true)
+    expect(withoutBeam.orbitingBodyVisible).toBe(false)
+    expect(withoutBeam.orbitTrailVisible).toBe(false)
     expect(hiddenSample.xMeters).toBeCloseTo(visibleSample.xMeters)
     expect(hiddenSample.zMeters).toBeCloseTo(visibleSample.zMeters)
     expect(hiddenSample.speedMetersPerSecond).toBeCloseTo(
@@ -1272,6 +1291,13 @@ describe('kinematics physics engine', () => {
       visibleSample.gravitationalFieldNewtonsPerKilogram,
     )
     expect(hiddenSample.totalEnergyJoules).toBeCloseTo(
+      visibleSample.totalEnergyJoules,
+    )
+    expect(maximumDensitySample.xMeters).toBeCloseTo(visibleSample.xMeters)
+    expect(maximumDensitySample.speedMetersPerSecond).toBeCloseTo(
+      visibleSample.speedMetersPerSecond,
+    )
+    expect(maximumDensitySample.totalEnergyJoules).toBeCloseTo(
       visibleSample.totalEnergyJoules,
     )
   })

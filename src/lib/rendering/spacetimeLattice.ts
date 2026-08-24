@@ -37,12 +37,15 @@ type SpacetimeLightRayTrajectoryInput = {
 export type SpacetimeLatticeMassRole = 'central' | 'orbiting'
 
 export const spacetimeLatticeCurveSubdivisions = 2
+export const spacetimeLatticeMaximumDensityMultiplier = 10
 
 const coolLatticeColor = [45 / 255, 212 / 255, 191 / 255] as const
 const warmLatticeColor = [250 / 255, 204 / 255, 21 / 255] as const
 const hotLatticeColor = [239 / 255, 68 / 255, 68 / 255] as const
 const latticeHeatMidpoint = 0.34
 const latticeHeatHotThreshold = 0.78
+const latticeMinimumOpacityFactor = 0.055
+const latticeFullOpacityHeat = 0.72
 const lightRayVisualCurvatureScale = 0.045
 const lightRayFalloffCutoff = 0.0005
 const lightRayMaximumTurnPerStep = 0.055
@@ -53,6 +56,23 @@ type SpacetimeLatticeVisualProfileInput = {
   massInfluenceScale: number
   referenceRadius: number
   role: SpacetimeLatticeMassRole
+}
+
+export function computeSpacetimeLatticeDivisions(
+  baseDivisions: number,
+  densityMultiplier: number,
+) {
+  const safeBaseDivisions = Math.max(1, Math.floor(baseDivisions))
+  const safeDensityMultiplier = clamp(
+    Number.isFinite(densityMultiplier) ? densityMultiplier : 1,
+    1,
+    spacetimeLatticeMaximumDensityMultiplier,
+  )
+
+  return Math.max(
+    safeBaseDivisions,
+    Math.round(safeBaseDivisions * Math.cbrt(safeDensityMultiplier)),
+  )
 }
 
 export function createSpacetimeLatticeGeometryData(
@@ -529,6 +549,13 @@ export function writeSpacetimeLatticeHeatColor(
   target[offset] = lerp(from[0], to[0], smoothProgress)
   target[offset + 1] = lerp(from[1], to[1], smoothProgress)
   target[offset + 2] = lerp(from[2], to[2], smoothProgress)
+}
+
+export function computeSpacetimeLatticeOpacityFactor(heat: number) {
+  const safeHeat = clamp(Number.isFinite(heat) ? heat : 0, 0, 1)
+  const proximityProgress = smoothstep(safeHeat / latticeFullOpacityHeat)
+
+  return lerp(latticeMinimumOpacityFactor, 1, proximityProgress)
 }
 
 function addSubdividedLatticeEdge(

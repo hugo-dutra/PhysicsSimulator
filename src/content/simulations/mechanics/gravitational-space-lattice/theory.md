@@ -50,9 +50,11 @@ Aqui, $d_i$ é a distância até a massa, $r_{n,i}$ é o raio do núcleo, $R_i$ 
 
 Massas maiores elevam simultaneamente $\alpha_i$, $r_{n,i}$ e $R_i$: a convergência fica mais forte e começa a ser perceptível mais longe. Não existe, porém, uma borda física onde a gravidade “começa”. $R_i$ é apenas um limiar visual suave para manter a malha legível.
 
-## Suavidade e gradiente de cor
+## Densidade, suavidade e gradiente de cor
 
-A malha continua contendo exatamente $12^3=1.728$ cubos. Para evitar quinas muito marcadas nas regiões curvas, cada aresta recebe um ponto intermediário de renderização. Esses pontos são submetidos à mesma deformação dos vértices principais: eles suavizam a linha, mas não criam novos cubos nem alteram a física.
+Em `Densidade de cubos = 1x`, a malha preserva a resolução original de $12^3=1.728$ cubos. O controle pode elevar o orçamento total até aproximadamente `10x`. Como as células precisam continuar cúbicas, o renderer aplica a raiz cúbica do multiplicador aos três eixos e arredonda para um número inteiro de divisões; no máximo, a grade usa $26^3=17.576$ cubos. Assim o controle não significa `10x` em cada eixo — o que produziria `1000x` mais cubos — e continua utilizável em WebGL.
+
+Na densidade padrão, cada aresta recebe um ponto intermediário de renderização para evitar quinas muito marcadas. Acima de `1x`, os próprios cubos menores fornecem a suavidade espacial e o ponto intermediário é removido para não duplicar todos os segmentos transparentes. Isso não remove vértices reais da grade: eles crescem de $13^3=2.197$ para $27^3=19.683$ no máximo. Aumentar a densidade recria os buffers apenas quando o parâmetro muda; durante a animação, geometria, material e arrays tipados de posição/cor são reutilizados. Valores altos exigem mais CPU, GPU e memória e podem reduzir o FPS.
 
 A cor também é calculada no renderer a partir da influência visual dos núcleos e do quanto cada ponto se desviou da grade ortogonal:
 
@@ -84,9 +86,13 @@ Esse traço mostra o desvio **qualitativo da analogia escolhida**. A persistênc
 
 `Intensidade da malha 3D` multiplica a convergência sem mudar a física. Em zero, a grade volta a ser ortogonal, mas posição, força, energia e período permanecem iguais.
 
-`Alfa das linhas 3D` altera somente a transparência. Zero oculta as arestas sem remover massas ou recalcular samples.
+`Alfa das linhas 3D` define a transparência máxima nas regiões próximas às massas e inicia em `0,25`. Conforme a influência visual diminui com a distância, o alfa também cai suavemente até um piso muito baixo, mas não nulo, reduzindo a poluição visual sem apagar a referência do espaço distante. Zero continua ocultando toda a malha sem remover massas ou recalcular samples.
+
+`Densidade de cubos` inicia em `1x` e altera somente a tesselação visual do mesmo volume. Aumentá-la cria mais cubos, arestas e vértices, mantendo o alcance da cena, a espessura do feixe, os poços visuais e todos os samples orbitais inalterados.
 
 `Amplificação da massa orbital` torna a deformação do corpo pequeno visível na escala da massa central. Ela muda a intensidade didática desse núcleo, mas a massa ainda determina seu tamanho e alcance relativos.
+
+`Corpo em órbita` controla apenas a esfera que percorre a trajetória. `Rastro da órbita` controla a elipse de referência e o trecho progressivo já percorrido; ele também respeita o toggle geral `Trilha`. Ocultar qualquer um desses elementos não remove a massa orbital nem seu poço e não altera campo, energia, período, malha, feixe ou samples.
 
 ## Regimes e limites
 

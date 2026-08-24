@@ -3945,3 +3945,58 @@ Validacao:
 - `npm run lint` passou.
 - `npm run build` e `npm run build:pages` passaram; permaneceu apenas o aviso conhecido de chunk acima de 500 kB.
 - Smoke visual local confirmou feixe ausente em `0%`, metade do percurso em `50%`, percurso completo em `100%`, continuacao pela tangente de saida e cena na faixa observada de 47-57 FPS.
+
+## 2026-08-24 - Gradiente de alfa da malha gravitacional 3D
+
+Status: implementado em `analysis`, aguardando aprovacao visual final do dono.
+
+- O atributo dinamico de cor da malha volumetrica passou de RGB para RGBA por vertice. O alfa usa o mesmo heat local do gradiente teal-amarelo-vermelho, combinando influencia dos pocos e desvio geometrico.
+- `Alfa das linhas 3D` continua sendo o teto escolhido pelo usuario e e atingido nas proximidades das massas. Longe delas, a opacidade decai suavemente para 5,5% desse teto, mantendo os cubos distantes apenas como referencia sutil e nao totalmente invisivel.
+- Alfa configurado em zero continua ocultando toda a grade. O ajuste pertence somente ao renderer e nao altera geometria, orbita, campo, forca, energia, graficos, tabela ou samples.
+- Aplicado o `Simulation Fidelity Adjustment Guide`; fixture, tooltip, teoria, arquitetura, regras, qualidade e fidelity guide foram alinhados. Nenhum HLD/diagrama foi alterado porque nao houve nova fronteira, fluxo ou servico.
+
+Validacao:
+
+- Testes direcionados de malha e cena: 2 arquivos e 25 testes passaram.
+- Suite completa: 16 arquivos e 170 testes passaram.
+- `npm run lint` passou.
+- `npm run build` passou; permaneceu apenas o aviso conhecido de chunk acima de 500 kB.
+- Smoke visual no navegador local confirmou nucleo forte, linhas distantes muito fracas mas visiveis, aproximadamente 49 FPS e nenhum erro ou warning no console.
+
+## 2026-08-24 - Controles de corpo e rastro orbital na malha 3D
+
+Status: implementado em `analysis`, aguardando aprovacao visual final do dono.
+
+- Adicionados `orbitingBodyVisible` e `orbitTrailVisible`, ambos ligados por padrao e expostos como `Corpo em orbita` e `Rastro da orbita` com tooltips.
+- O primeiro toggle atua somente na mesh do corpo orbital. O segundo controla a elipse de referencia e o rastro progressivo, em conjunto com o overlay geral `Trilha`.
+- Ocultar corpo ou rastro nao remove a massa orbital, seu poco movel ou seus samples e nao altera malha, campo, forca, energia, periodo ou feixe de luz.
+- Aplicado o `Simulation Fidelity Adjustment Guide`; fixture, teoria e guides de produto, arquitetura, regras, dados, qualidade, contratos e fidelidade foram alinhados. Nenhum HLD/diagrama foi alterado porque nao houve nova fronteira, servico ou fluxo estrutural.
+
+Validacao:
+
+- Suite direcionada de fisica, catalogo e cena: 3 arquivos e 85 testes passaram.
+- `npm run lint` passou.
+- `npm run build` passou; permaneceu apenas o aviso conhecido de chunk acima de 500 kB.
+- Smoke visual local confirmou corpo desligado com rastro ligado, ambos desligados, corpo ligado sem rastro e o toggle geral `Trilha` ocultando tambem a referencia orbital; o poco movel permaneceu ativo e o console nao registrou erros ou warnings.
+
+Complemento:
+
+- O valor inicial de `Alfa das linhas 3D` foi reduzido de `0,48` para `0,25`, preservando o gradiente espacial, a faixa `0..1` e os valores demonstrativos especificos de cada preset.
+
+## 2026-08-24 - Controle de densidade da malha gravitacional 3D
+
+Status: implementado em `analysis`, aguardando avaliacao visual do dono.
+
+- Adicionado `latticeDensityMultiplier`, exposto como `Densidade de cubos`, com faixa `1x..10x`, passo `1x`, tooltip e padrao `1x`, preservando exatamente a malha anterior no estado inicial.
+- O multiplicador representa o alvo para a quantidade total de cubos, nao uma multiplicacao isolada de cada eixo. O renderer aplica a raiz cubica do valor aos tres eixos: `1x` usa `12^3 = 1.728` cubos e `10x` usa `26^3 = 17.576` cubos, mantendo celulas cubicas e evitando uma explosao de `1000x`.
+- Os vertices reais da grade crescem de `13^3 = 2.197` para `27^3 = 19.683`. Acima de `1x`, os cubos menores substituem os pontos intermediarios de suavizacao por aresta, reduzindo segmentos transparentes redundantes sem mudar a topologia cubica.
+- Volume, escala dos pocos, alfa/heatmap, espessura do feixe e offsets aproximados permanecem estaveis quando a densidade muda. O parametro e somente visual e nao altera orbita, campo, forca, energia, periodo, graficos, tabela ou samples.
+- Aplicado o `Simulation Fidelity Adjustment Guide`; fixture, teoria e guides de produto, arquitetura, regras, dados, qualidade, contratos e fidelidade foram alinhados. Nenhum HLD/diagrama foi alterado porque nao houve nova fronteira, servico, persistencia ou fluxo estrutural.
+
+Validacao:
+
+- Testes direcionados de geometria, fisica e catalogo: 3 arquivos e 87 testes passaram.
+- Suite completa: 16 arquivos e 171 testes passaram.
+- `npm run lint` passou.
+- `npm run build` passou; permaneceu apenas o aviso conhecido de chunk acima de 500 kB.
+- Smoke visual confirmou o controle em `1x` e `10x`, aumento nitido de cubos/vertices e renderizacao correta da convergencia e do gradiente. A aba automatizada ficou limitada a `1 FPS` em ambas as densidades, portanto essa leitura nao foi usada para comparar desempenho; o teste de FPS em primeiro plano permanece para avaliacao manual do dono.

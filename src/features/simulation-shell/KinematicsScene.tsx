@@ -63,7 +63,9 @@ import {
 } from '../../lib/rendering/spacetimeFabric'
 import {
   computeSpacetimeLatticeHeat,
+  computeSpacetimeLatticeOpacityFactor,
   computeSpacetimeLatticePoint,
+  computeSpacetimeLatticeDivisions,
   computeSpacetimeLatticeVisualProfile,
   computeSpacetimeLightRayReveal,
   computeSpacetimeLightRayTrajectory,
@@ -289,7 +291,9 @@ type SceneObjects = {
   gravityLatticeBasePositions: Float32Array
   gravityLatticeCellSize: number
   gravityLatticeColorAttribute: THREE.BufferAttribute
+  gravityLatticeDivisions: number
   gravityLatticePositionAttribute: THREE.BufferAttribute
+  gravityLatticeReferenceCellSize: number
   gravityLightBeamCore: THREE.InstancedMesh
   gravityLightBeamGlow: THREE.InstancedMesh
   gravityLightBeamHelper: THREE.Object3D
@@ -298,6 +302,7 @@ type SceneObjects = {
   orbitFabricBasePositions: Float32Array
   orbitFabricPositionAttribute: THREE.BufferAttribute
   orbitFabricReferenceRadius: number
+  referencePath: THREE.Object3D
   orbitSatellitePath: THREE.Line
   orbitSatellitePathPositionAttribute: THREE.BufferAttribute
   orbitSatellitePathPositions: Float32Array
@@ -518,7 +523,7 @@ const rigidRotationCurvedArrowSegments = 36
 const rigidRotationAxisHeight = 0.7
 const orbitSatellitePathSegments = 96
 const orbitFabricSegments = 96
-const gravityLatticeDivisions = 12
+const gravityLatticeBaseDivisions = 12
 const gravityLightBeamSegmentCount = 72
 const gravityLightBeamDirection = new THREE.Vector3()
 const gravityLightBeamUpAxis = new THREE.Vector3(0, 1, 0)
@@ -937,17 +942,33 @@ export function KinematicsScene({
     orbitFabric.visible = simulationId === 'gravitational-field-orbits'
     scene.add(orbitFabric)
 
+    const gravityLatticeSize = gridSize * 1.04
+    const gravityLatticeDensityMultiplier = isVolumetricGravityLattice
+      ? (parameters as GravitationalFieldOrbitsParameters)
+          .latticeDensityMultiplier ?? 1
+      : 1
+    const gravityLatticeDivisionCount = computeSpacetimeLatticeDivisions(
+      gravityLatticeBaseDivisions,
+      gravityLatticeDensityMultiplier,
+    )
+    const gravityLatticeCurveSubdivisions =
+      gravityLatticeDensityMultiplier > 1
+        ? 1
+        : spacetimeLatticeCurveSubdivisions
+    const gravityLatticeReferenceCellSize =
+      gravityLatticeSize / gravityLatticeBaseDivisions
     const gravityLatticeData = createSpacetimeLatticeGeometryData(
-      gridSize * 1.04,
-      gravityLatticeDivisions,
-      spacetimeLatticeCurveSubdivisions,
+      gravityLatticeSize,
+      gravityLatticeDivisionCount,
+      gravityLatticeCurveSubdivisions,
     )
     const gravityLatticeGeometry = new THREE.BufferGeometry()
     const gravityLatticePositions = new Float32Array(
       gravityLatticeData.positions,
     )
+    const gravityLatticeVertexCount = gravityLatticeData.positions.length / 3
     const gravityLatticeColors = new Float32Array(
-      gravityLatticeData.positions.length,
+      gravityLatticeVertexCount * 4,
     )
     const gravityLatticePositionAttribute = new THREE.BufferAttribute(
       gravityLatticePositions,
@@ -955,11 +976,13 @@ export function KinematicsScene({
     )
     const gravityLatticeColorAttribute = new THREE.BufferAttribute(
       gravityLatticeColors,
-      3,
+      4,
     )
 
-    for (let offset = 0; offset < gravityLatticeColors.length; offset += 3) {
+    for (let offset = 0; offset < gravityLatticeColors.length; offset += 4) {
       writeSpacetimeLatticeHeatColor(gravityLatticeColors, offset, 0)
+      gravityLatticeColors[offset + 3] =
+        computeSpacetimeLatticeOpacityFactor(0)
     }
 
     gravityLatticePositionAttribute.setUsage(THREE.DynamicDrawUsage)
@@ -996,8 +1019,8 @@ export function KinematicsScene({
 
     const gravityLightBeamCore = new THREE.InstancedMesh(
       new THREE.CylinderGeometry(
-        gravityLatticeData.cellSize * 0.032,
-        gravityLatticeData.cellSize * 0.032,
+        gravityLatticeReferenceCellSize * 0.032,
+        gravityLatticeReferenceCellSize * 0.032,
         1,
         10,
       ),
@@ -1012,8 +1035,8 @@ export function KinematicsScene({
     )
     const gravityLightBeamGlow = new THREE.InstancedMesh(
       new THREE.CylinderGeometry(
-        gravityLatticeData.cellSize * 0.082,
-        gravityLatticeData.cellSize * 0.082,
+        gravityLatticeReferenceCellSize * 0.082,
+        gravityLatticeReferenceCellSize * 0.082,
         1,
         12,
       ),
@@ -1057,14 +1080,13 @@ export function KinematicsScene({
     const pathSamples =
       simulationId === 'doppler-effect' ? framingSamples : referencePathSamples
 
-    scene.add(
-      createReferencePath(
-        pathSamples,
-        simulationId,
-        sceneProjection,
-        workEnergyProfile,
-      ),
+    const referencePath = createReferencePath(
+      pathSamples,
+      simulationId,
+      sceneProjection,
+      workEnergyProfile,
     )
+    scene.add(referencePath)
 
     const sceneBodySize = getBodyDisplaySize(bounds.span)
     const orbitFabricReferenceRadius =
@@ -2218,7 +2240,9 @@ export function KinematicsScene({
       gravityLatticeBasePositions: gravityLatticeData.positions,
       gravityLatticeCellSize: gravityLatticeData.cellSize,
       gravityLatticeColorAttribute,
+      gravityLatticeDivisions: gravityLatticeDivisionCount,
       gravityLatticePositionAttribute,
+      gravityLatticeReferenceCellSize,
       gravityLightBeamCore,
       gravityLightBeamGlow,
       gravityLightBeamHelper,
@@ -2227,6 +2251,7 @@ export function KinematicsScene({
       orbitFabricBasePositions,
       orbitFabricPositionAttribute,
       orbitFabricReferenceRadius,
+      referencePath,
       orbitSatellitePath,
       orbitSatellitePathPositionAttribute,
       orbitSatellitePathPositions,
@@ -2520,7 +2545,21 @@ function updateKinematicsObjects({
     })
   }
 
-  updateTrace(objects, samples, sampleIndex, sample, showTrace, simulationId)
+  const effectiveShowTrace =
+    simulationId === 'gravitational-space-lattice'
+      ? showTrace &&
+        (parameters as GravitationalFieldOrbitsParameters).orbitTrailVisible !==
+          false
+      : showTrace
+
+  updateTrace(
+    objects,
+    samples,
+    sampleIndex,
+    sample,
+    effectiveShowTrace,
+    simulationId,
+  )
 }
 
 function getKinematicsVectorOrigin(
@@ -2743,9 +2782,17 @@ function updateConstrainedBodyObjects(
   const isUniformLinearMotion = simulationId === 'uniform-linear-motion'
   const isUniformlyAcceleratedMotion =
     simulationId === 'uniformly-accelerated-motion'
+  const volumetricOrbitParameters = isVolumetricGravityLattice
+    ? (parameters as GravitationalFieldOrbitsParameters)
+    : null
+  const showVolumetricOrbitingBody =
+    volumetricOrbitParameters?.orbitingBodyVisible !== false
+  const showVolumetricOrbitTrail =
+    volumetricOrbitParameters?.orbitTrailVisible !== false
 
   setRigidBodyRotationObjectsVisible(objects, isRigidRotation)
-  objects.body.visible = !isOptics
+  objects.body.visible =
+    !isOptics && (!isVolumetricGravityLattice || showVolumetricOrbitingBody)
   objects.secondaryBody.visible =
     isAtwood ||
     isCollision ||
@@ -2798,6 +2845,8 @@ function updateConstrainedBodyObjects(
   objects.orbitCentralBody.visible = isOrbit
   objects.orbitFabric.visible = simulationId === 'gravitational-field-orbits'
   objects.gravityLattice.visible = isVolumetricGravityLattice
+  objects.referencePath.visible =
+    !isVolumetricGravityLattice || (showVolumetricOrbitTrail && showTrace)
   objects.gravityLightBeamCore.visible =
     isVolumetricGravityLattice &&
     (parameters as GravitationalFieldOrbitsParameters).lightBeamEnabled === true
@@ -3278,12 +3327,12 @@ function updateVolumetricGravityLattice(
   })
   const centralCoreRadius = Math.max(
     centralProfile.coreRadius,
-    objects.gravityLatticeCellSize *
+    objects.gravityLatticeReferenceCellSize *
       (0.72 + sample.spacetimeCentralInfluenceScale * 0.34),
   )
   const orbitingCoreRadius = Math.max(
     orbitingProfile.coreRadius,
-    objects.gravityLatticeCellSize *
+    objects.gravityLatticeReferenceCellSize *
       (0.68 + sample.spacetimeOrbitingInfluenceScale * 0.3),
   )
   const wells = [
@@ -3312,6 +3361,7 @@ function updateVolumetricGravityLattice(
   ]
 
   for (let offset = 0; offset < positions.length; offset += 3) {
+    const colorOffset = (offset / 3) * 4
     const basePoint = {
       x: objects.gravityLatticeBasePositions[offset],
       y: objects.gravityLatticeBasePositions[offset + 1],
@@ -3322,13 +3372,14 @@ function updateVolumetricGravityLattice(
       basePoint,
       point,
       wells,
-      objects.gravityLatticeCellSize,
+      objects.gravityLatticeReferenceCellSize,
     )
 
     positions[offset] = point.x
     positions[offset + 1] = point.y
     positions[offset + 2] = point.z
-    writeSpacetimeLatticeHeatColor(colors, offset, heat)
+    writeSpacetimeLatticeHeatColor(colors, colorOffset, heat)
+    colors[colorOffset + 3] = computeSpacetimeLatticeOpacityFactor(heat)
   }
 
   objects.gravityLatticePositionAttribute.needsUpdate = true
@@ -3367,11 +3418,13 @@ function updateGravityLightBeam(
   const plane = parameters.lightBeamPlane ?? 'xy'
   const offsetUCells = parameters.lightBeamOffsetUCells ?? 0
   const offsetVCells = parameters.lightBeamOffsetVCells ?? 0
+  const beamOffsetCellScale =
+    objects.gravityLatticeDivisions / gravityLatticeBaseDivisions
   const trajectory = computeSpacetimeLightRayTrajectory({
     cellSize: objects.gravityLatticeCellSize,
-    divisions: gravityLatticeDivisions,
-    offsetUCells,
-    offsetVCells,
+    divisions: objects.gravityLatticeDivisions,
+    offsetUCells: offsetUCells * beamOffsetCellScale,
+    offsetVCells: offsetVCells * beamOffsetCellScale,
     plane,
     segmentCount: gravityLightBeamSegmentCount,
     wells,

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   computeSpacetimeLatticeBeamBasePoint,
   computeSpacetimeLatticeHeat,
+  computeSpacetimeLatticeDivisions,
+  computeSpacetimeLatticeOpacityFactor,
   computeSpacetimeLatticePoint,
   computeSpacetimeLatticeVisualProfile,
   computeSpacetimeLightRayReveal,
@@ -12,6 +14,32 @@ import {
 } from './spacetimeLattice'
 
 describe('volumetric spacetime lattice visual mapping', () => {
+  it('raises the total cube budget up to about ten times without scaling each axis by ten', () => {
+    const baseDivisions = computeSpacetimeLatticeDivisions(12, 1)
+    const maximumDivisions = computeSpacetimeLatticeDivisions(12, 10)
+    const baseLattice = createSpacetimeLatticeGeometryData(
+      12,
+      baseDivisions,
+      spacetimeLatticeCurveSubdivisions,
+    )
+    const denseLattice = createSpacetimeLatticeGeometryData(
+      12,
+      maximumDivisions,
+      1,
+    )
+
+    expect(baseDivisions).toBe(12)
+    expect(maximumDivisions).toBe(26)
+    expect(denseLattice.cubeCount / baseLattice.cubeCount).toBeCloseTo(
+      10,
+      0,
+    )
+    expect(denseLattice.positions.length).toBeGreaterThan(
+      (baseDivisions + 1) ** 3,
+    )
+    expect(computeSpacetimeLatticeDivisions(12, 100)).toBe(26)
+  })
+
   it('creates only orthogonal cube edges across three spatial axes', () => {
     const lattice = createSpacetimeLatticeGeometryData(2, 2)
     const vertexCount = lattice.positions.length / 3
@@ -341,5 +369,18 @@ describe('volumetric spacetime lattice visual mapping', () => {
       expect.closeTo(212 / 255, 5),
       expect.closeTo(191 / 255, 5),
     ])
+  })
+
+  it('keeps distant lines faint and reaches the selected alpha near a mass', () => {
+    const distantOpacity = computeSpacetimeLatticeOpacityFactor(0)
+    const transitionOpacity = computeSpacetimeLatticeOpacityFactor(0.36)
+    const nearOpacity = computeSpacetimeLatticeOpacityFactor(0.72)
+
+    expect(distantOpacity).toBeGreaterThan(0)
+    expect(distantOpacity).toBeLessThan(0.1)
+    expect(transitionOpacity).toBeGreaterThan(distantOpacity)
+    expect(transitionOpacity).toBeLessThan(nearOpacity)
+    expect(nearOpacity).toBe(1)
+    expect(computeSpacetimeLatticeOpacityFactor(1)).toBe(1)
   })
 })

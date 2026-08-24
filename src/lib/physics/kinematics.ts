@@ -207,11 +207,14 @@ export type GravitationalFieldOrbitsParameters = {
   fabricDeformationScale: number
   fabricLineOpacity: number
   initialAngleDegrees: number
+  latticeDensityMultiplier?: number
   lightBeamEnabled?: boolean
   lightBeamOffsetUCells?: number
   lightBeamOffsetVCells?: number
   lightBeamPlane?: SpacetimeLatticeBeamPlane
   lightBeamProgressPercent?: number
+  orbitingBodyVisible?: boolean
+  orbitTrailVisible?: boolean
   orbitingBodyWellAmplification: number
   orbitalRadiusKilometers: number
   satelliteMassKilograms: number
@@ -1077,6 +1080,8 @@ export function toKinematicsParameters(
         ),
         fabricLineOpacity: readNumber(values, 'fabricLineOpacity'),
         initialAngleDegrees: readNumber(values, 'initialAngleDegrees'),
+        latticeDensityMultiplier:
+          readOptionalNumber(values, 'latticeDensityMultiplier') ?? 1,
         lightBeamEnabled: readBoolean(values, 'lightBeamEnabled', false),
         lightBeamOffsetUCells:
           readOptionalNumber(values, 'lightBeamOffsetUCells') ?? 0,
@@ -1085,6 +1090,8 @@ export function toKinematicsParameters(
         lightBeamPlane: readSpacetimeLatticeBeamPlane(values),
         lightBeamProgressPercent:
           readOptionalNumber(values, 'lightBeamProgressPercent') ?? 100,
+        orbitingBodyVisible: readBoolean(values, 'orbitingBodyVisible', true),
+        orbitTrailVisible: readBoolean(values, 'orbitTrailVisible', true),
         orbitingBodyWellAmplification: readNumber(
           values,
           'orbitingBodyWellAmplification',
@@ -8155,6 +8162,12 @@ function validateGravitationalFieldOrbitsParameters(
   )
   assertFiniteNonNegative('fabricLineOpacity', parameters.fabricLineOpacity)
   assertFinite('initialAngleDegrees', parameters.initialAngleDegrees)
+  if (parameters.latticeDensityMultiplier !== undefined) {
+    assertFinite(
+      'latticeDensityMultiplier',
+      parameters.latticeDensityMultiplier,
+    )
+  }
   if (parameters.lightBeamOffsetUCells !== undefined) {
     assertFinite('lightBeamOffsetUCells', parameters.lightBeamOffsetUCells)
   }
@@ -8186,6 +8199,14 @@ function validateGravitationalFieldOrbitsParameters(
 
   if (parameters.fabricLineOpacity > 1) {
     throw new Error('fabricLineOpacity must be between 0 and 1.')
+  }
+
+  if (
+    parameters.latticeDensityMultiplier !== undefined &&
+    (parameters.latticeDensityMultiplier < 1 ||
+      parameters.latticeDensityMultiplier > 10)
+  ) {
+    throw new Error('latticeDensityMultiplier must be between 1 and 10.')
   }
 }
 

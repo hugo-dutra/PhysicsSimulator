@@ -232,7 +232,10 @@ describe('simulation registry', () => {
       'initialAngleDegrees',
       'fabricDeformationScale',
       'fabricLineOpacity',
+      'latticeDensityMultiplier',
       'orbitingBodyWellAmplification',
+      'orbitingBodyVisible',
+      'orbitTrailVisible',
       'lightBeamEnabled',
       'lightBeamPlane',
       'lightBeamOffsetUCells',
@@ -250,11 +253,30 @@ describe('simulation registry', () => {
         (parameter) => parameter.id === 'centralMassEarths',
       )?.max,
     ).toBe(20)
+    expect(fixture.defaultParameters.fabricLineOpacity).toBe(0.25)
+    expect(fixture.defaultParameters.latticeDensityMultiplier).toBe(1)
+    expect(
+      fixture.parameters.find(
+        (parameter) => parameter.id === 'fabricLineOpacity',
+      )?.defaultValue,
+    ).toBe(0.25)
+    expect(
+      fixture.parameters.find(
+        (parameter) => parameter.id === 'latticeDensityMultiplier',
+      ),
+    ).toMatchObject({
+      defaultValue: 1,
+      max: 10,
+      min: 1,
+      step: 1,
+    })
     expect(fixture.defaultParameters.lightBeamEnabled).toBe(false)
     expect(fixture.defaultParameters.lightBeamPlane).toBe('yz')
     expect(fixture.defaultParameters.lightBeamOffsetUCells).toBe(0)
     expect(fixture.defaultParameters.lightBeamOffsetVCells).toBe(2)
     expect(fixture.defaultParameters.lightBeamProgressPercent).toBe(100)
+    expect(fixture.defaultParameters.orbitingBodyVisible).toBe(true)
+    expect(fixture.defaultParameters.orbitTrailVisible).toBe(true)
     expect(
       fixture.parameters.find(
         (parameter) => parameter.id === 'lightBeamEnabled',
@@ -265,6 +287,16 @@ describe('simulation registry', () => {
         (parameter) => parameter.id === 'lightBeamPlane',
       )?.defaultValue,
     ).toBe('yz')
+    expect(
+      fixture.parameters.find(
+        (parameter) => parameter.id === 'orbitingBodyVisible',
+      )?.defaultValue,
+    ).toBe(true)
+    expect(
+      fixture.parameters.find(
+        (parameter) => parameter.id === 'orbitTrailVisible',
+      )?.defaultValue,
+    ).toBe(true)
   })
 
   it('declares the approved Fase 4 oscillators and mechanical waves as ready', () => {
