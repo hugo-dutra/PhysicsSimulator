@@ -722,7 +722,7 @@
           "areaId": "mechanics",
           "topicPath": ["Mecanica", "Gravitacao", "Curvatura gravitacional em malha 3D"],
           "title": "Curvatura gravitacional em malha 3D",
-          "status": "analysis",
+          "status": "ready",
           "level": "intermediate",
           "modelKind": "hybrid",
           "renderer": "three",

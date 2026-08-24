@@ -40,10 +40,10 @@ describe('simulation registry', () => {
     expect(allSimulations).toHaveLength(53)
     expect(
       allSimulations.filter((item) => item.status === 'analysis'),
-    ).toHaveLength(5)
+    ).toHaveLength(4)
     expect(
       allSimulations.filter((item) => item.status === 'ready'),
-    ).toHaveLength(26)
+    ).toHaveLength(27)
     expect(allSimulations.some((item) => item.status === 'planned')).toBe(true)
     expect(findSimulation('inclined-plane-friction').status).toBe('ready')
     expect(findSimulation('projectile-motion').status).toBe('ready')
@@ -212,11 +212,11 @@ describe('simulation registry', () => {
     )
   })
 
-  it('declares the volumetric gravity lattice as a separate analysis simulation', () => {
+  it('keeps the volumetric gravity lattice ready after visual approval', () => {
     const simulation = findSimulation('gravitational-space-lattice')
     const fixture = kinematicsFixtures['gravitational-space-lattice']
 
-    expect(simulation.status).toBe('analysis')
+    expect(simulation.status).toBe('ready')
     expect(simulation.topicPath).toEqual([
       'Mecanica',
       'Gravitacao',

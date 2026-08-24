@@ -4017,3 +4017,18 @@ Validacao:
 - Suite completa: 16 arquivos e 171 testes passaram.
 - `npm run lint` e `npm run build` passaram; o build manteve apenas o aviso conhecido de chunk acima de 500 kB.
 - Smoke visual local, com playback pausado no mesmo instante, confirmou a Lua cinza e sua guia ao redor do planeta, o terceiro foco de deformacao distinguivel e o toggle removendo/recolocando Lua, guia e campo sem deslocar o sistema principal. A cena permaneceu entre 41 e 49 FPS nas capturas observadas.
+
+## 2026-08-24 - Promocao da malha gravitacional 3D para ready
+
+Status: aprovada manualmente e promovida para `ready`.
+
+- O dono do projeto aprovou a experiencia visual consolidada de `Mecanica > Gravitacao > Curvatura gravitacional em malha 3D`, incluindo malha volumetrica, gradientes de cor e alfa, densidade ajustavel, controles da orbita, terceiro poco lunar e feixe de luz com tangente acumulada.
+- `gravitational-space-lattice` passou de `analysis` para `ready` no catalogo local. As contagens e expectativas da sidebar foram atualizadas: Gravitacao agora inicia recolhida por conter apenas simulacoes `ready`.
+- O gate do `Simulation Fidelity Adjustment Guide` permanece satisfeito pelas validacoes registradas nas entregas anteriores; esta promocao completa o teste manual exigido pelo catalogo.
+- Guides de produto, arquitetura, regras, roadmap, dados/API, catalogo e issues foram alinhados ao novo estado. Nenhum HLD/diagrama mudou porque a promocao nao altera fronteiras, persistencia, contratos ou fluxo arquitetural.
+
+Validacao:
+
+- Suite direcionada de catalogo, sidebar e app: 3 arquivos e 30 testes passaram.
+- Suite completa: 16 arquivos e 171 testes passaram.
+- `npm run lint`, `npm run build` e `npm run build:pages` passaram; os builds mantiveram apenas o aviso conhecido de chunk acima de 500 kB.

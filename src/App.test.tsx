@@ -637,7 +637,7 @@ describe('App', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Alternar area Mecanica/i }),
-    ).toHaveAttribute('aria-expanded', 'true')
+    ).toHaveAttribute('aria-expanded', 'false')
     openMechanicsArea()
     expect(
       screen.getByRole('button', { name: /Alternar area Mecanica/i }),
@@ -650,10 +650,10 @@ describe('App', () => {
     ).toBeNull()
     expect(
       getToggleByControls('subarea-mechanics-gravitacao'),
-    ).toHaveAttribute('aria-expanded', 'true')
+    ).toHaveAttribute('aria-expanded', 'false')
     expect(
-      screen.getByRole('button', { name: /Campo gravitacional e orbitas/i }),
-    ).toBeInTheDocument()
+      screen.queryByRole('button', { name: /Campo gravitacional e orbitas/i }),
+    ).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Alternar area Oscilacoes e Ondas/i }),
     ).toHaveAttribute('aria-expanded', 'true')
@@ -721,11 +721,11 @@ describe('App', () => {
     ).toHaveAttribute('aria-expanded', 'false')
     expect(
       screen.getByRole('button', { name: /Alternar subarea Gravitacao/i }),
-    ).toHaveAttribute('aria-expanded', 'true')
+    ).toHaveAttribute('aria-expanded', 'false')
     expect(
       screen.getByRole('button', { name: /Alternar subarea Fluidos basicos/i }),
     ).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(5)
+    expect(screen.queryAllByText(/^analise$/i)).toHaveLength(4)
     expect(screen.getAllByText(/^pronto$/i).length).toBeGreaterThan(0)
     fireEvent.click(
       screen.getByRole('button', { name: /Alternar subarea Cinematica/i }),

@@ -53,7 +53,7 @@
 - O segundo lote da Fase 3 mantem `Maquina de Atwood`, `Forca centripeta em curva` e `Trabalho e energia em trilho` como `ready`; `Trabalho e energia em trilho` foi aprovada manualmente apos ser alterada para rampa em U com perda percentual. Todas reutilizam o motor analitico compartilhado com campos extras de forca, tensao, atrito, trabalho, dissipacao, percentual de perda e limites de modelo.
 - O terceiro lote da Fase 3 mantem `Colisoes 1D e 2D`, `Equilibrio de particula`, `Torque, alavancas e centro de massa` e `Rotacao de corpo rigido` como `ready`, ampliando o motor compartilhado com momento linear, impulso, componentes de forca, centro de massa, torque, momento de inercia e grandezas angulares.
 - O quarto lote da Fase 3 mantem `Rolamento sem escorregamento`, `Campo gravitacional e orbitas`, `Hidrostatica e empuxo` e `Continuidade e Bernoulli` como `ready`. A malha gravitacional com dois pocos e analogia explicitamente amplificada foi aprovada manualmente depois do novo gate visual.
-- `Curvatura gravitacional em malha 3D` entra separadamente como `analysis`: usa cubos interligados, arestas ortogonais, convergencia de varios vertices nos centros das massas e intensidade/nucleo/alcance visual derivados da massa. O alcance e uma convencao perceptiva da analogia, nao uma fronteira fisica do campo.
+- `Curvatura gravitacional em malha 3D` fica separadamente como `ready` depois do gate automatizado e da aprovacao visual manual: usa cubos interligados, arestas ortogonais, convergencia de varios vertices nos centros das massas e intensidade/nucleo/alcance visual derivados da massa. O alcance e uma convencao perceptiva da analogia, nao uma fronteira fisica do campo.
 - A malha 3D inclui uma Lua didatica com razao de massa de referencia, ganho visual fixo e separacao minima ampliada para tornar o terceiro poco distinguivel. `moonEnabled` remove Lua, guia local e poco apenas do renderer; a dinamica orbital continua sendo de dois corpos.
 - O feixe neon da malha 3D nasce sobre uma linha-base selecionada por plano `XY`/`YZ`/`XZ` e offsets U/V inteiros. Ele usa os mesmos pocos visuais, mas integra mudancas transversais na direcao e preserva a tangente de saida quando a influencia cai; `lightBeamProgressPercent` apenas revela `0..100%` desse caminho. Continua sendo um overlay qualitativo, nao uma simulacao de geodesica nula ou lente gravitacional quantitativa.
 - `Oscilacoes e Ondas > Oscilacoes > Massa-mola vertical` fica como `ready`, ampliando o motor compartilhado com equilibrio estatico `mg/k`, forca elastica, energia elastica/gravitacional, mola helicoidal sincronizada e warning de amortecimento.
@@ -72,7 +72,6 @@
 - Definir estrategia final de testes e2e apos inicializar o frontend.
 - Definir criterios objetivos para quando PixiJS, Rapier, Matter.js, D3.js ou Manim deixam de ser opcionais e entram no bundle.
 - Definir se a proxima fatia deve promover Optica para `ready` apos teste manual ou seguir para `Termodinamica`/`Eletromagnetismo`.
-- Aprovar ou solicitar ajustes visuais em `Curvatura gravitacional em malha 3D` antes de promover `gravitational-space-lattice` de `analysis` para `ready`.
 
 ## Gaps deixados para depois
 
